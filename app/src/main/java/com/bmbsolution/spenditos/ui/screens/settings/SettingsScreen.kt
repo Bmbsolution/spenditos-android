@@ -31,6 +31,8 @@ import java.util.Locale
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPaywall: () -> Unit,
+    onNavigateToCSVImport: () -> Unit,
+    onNavigateToStatementImport: () -> Unit,
     onLogoutComplete: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -175,6 +177,8 @@ fun SettingsScreen(
     if (uiState.showImportData) {
         ImportDataSheet(
             onDismiss = { viewModel.hideImportData() },
+            onNavigateToCSVImport = onNavigateToCSVImport,
+            onNavigateToStatementImport = onNavigateToStatementImport,
             isPro = uiState.user?.settings?.let { false } ?: false // TODO: Check Pro status
         )
     }
@@ -530,6 +534,8 @@ private fun SectionDivider() {
 @Composable
 private fun ImportDataSheet(
     onDismiss: () -> Unit,
+    onNavigateToCSVImport: () -> Unit,
+    onNavigateToStatementImport: () -> Unit,
     isPro: Boolean
 ) {
     ModalBottomSheet(
@@ -574,6 +580,12 @@ private fun ImportDataSheet(
             }
 
             Card(
+                onClick = {
+                    if (isPro) {
+                        onDismiss()
+                        onNavigateToCSVImport()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = isPro
             ) {
@@ -594,6 +606,12 @@ private fun ImportDataSheet(
             }
 
             Card(
+                onClick = {
+                    if (isPro) {
+                        onDismiss()
+                        onNavigateToStatementImport()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = isPro
             ) {

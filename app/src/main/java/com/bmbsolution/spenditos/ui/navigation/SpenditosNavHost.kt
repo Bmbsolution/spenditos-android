@@ -7,11 +7,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bmbsolution.spenditos.ui.screens.budgets.BudgetsScreen
 import com.bmbsolution.spenditos.ui.screens.dashboard.DashboardScreen
+import com.bmbsolution.spenditos.ui.screens.import_data.CSVImportScreen
+import com.bmbsolution.spenditos.ui.screens.import_data.StatementImportScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
 import com.bmbsolution.spenditos.ui.screens.settings.SettingsScreen
 import com.bmbsolution.spenditos.ui.screens.splash.SplashScreen
 import com.bmbsolution.spenditos.ui.screens.transactions.TransactionsScreen
+import com.bmbsolution.spenditos.ui.subscription.PaywallScreen
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -22,7 +25,8 @@ sealed class Screen(val route: String) {
     data object Budgets : Screen("budgets")
     data object Gamification : Screen("gamification")
     data object Settings : Screen("settings")
-    data object ImportData : Screen("import_data")
+    data object CSVImport : Screen("csv_import")
+    data object StatementImport : Screen("statement_import")
     data object Paywall : Screen("paywall")
 }
 
@@ -131,10 +135,40 @@ fun SpenditosNavHost(
                 onNavigateToPaywall = {
                     navController.navigate(Screen.Paywall.route)
                 },
+                onNavigateToCSVImport = {
+                    navController.navigate(Screen.CSVImport.route)
+                },
+                onNavigateToStatementImport = {
+                    navController.navigate(Screen.StatementImport.route)
+                },
                 onLogoutComplete = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Screen.CSVImport.route) {
+            CSVImportScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.StatementImport.route) {
+            StatementImportScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Paywall.route) {
+            PaywallScreen(
+                onDismiss = {
+                    navController.popBackStack()
                 }
             )
         }
