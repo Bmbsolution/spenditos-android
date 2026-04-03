@@ -1,8 +1,10 @@
 package com.bmbsolution.spenditos.di
 
+import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.bmbsolution.spenditos.BuildConfig
+import com.bmbsolution.spenditos.data.billing.RevenueCatService
 import com.bmbsolution.spenditos.data.local.db.SpenditosDatabase
 import com.bmbsolution.spenditos.data.local.preferences.AuthPreferences
 import com.bmbsolution.spenditos.data.remote.api.*
@@ -152,4 +154,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideCategoryDao(db: SpenditosDatabase) = db.categoryDao()
+
+    // RevenueCat Billing Service
+    @Provides
+    @Singleton
+    fun provideRevenueCatService(application: Application): RevenueCatService {
+        return RevenueCatService(application).apply {
+            configure()
+        }
+    }
 }
