@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bmbsolution.spenditos.ui.screens.budgets.BudgetsScreen
 import com.bmbsolution.spenditos.ui.screens.dashboard.DashboardScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
@@ -103,6 +104,20 @@ fun SpenditosNavHost(
                 },
                 onNavigateToEditTransaction = { transactionId ->
                     // TODO: Navigate to edit transaction screen with transactionId
+                }
+            )
+        }
+
+        composable(Screen.Budgets.route) {
+            BudgetsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddBudget = {
+                    // TODO: Navigate to add budget screen
+                },
+                onNavigateToEditBudget = { budgetId ->
+                    // TODO: Navigate to edit budget screen with budgetId
                 }
             )
         }
