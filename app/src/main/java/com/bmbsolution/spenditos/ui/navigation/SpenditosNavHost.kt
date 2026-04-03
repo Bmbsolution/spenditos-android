@@ -9,6 +9,7 @@ import com.bmbsolution.spenditos.ui.screens.dashboard.DashboardScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
 import com.bmbsolution.spenditos.ui.screens.splash.SplashScreen
+import com.bmbsolution.spenditos.ui.screens.transactions.TransactionsScreen
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -88,6 +89,20 @@ fun SpenditosNavHost(
                 },
                 onNavigateToPaywall = {
                     navController.navigate(Screen.Paywall.route)
+                }
+            )
+        }
+
+        composable(Screen.Transactions.route) {
+            TransactionsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddTransaction = {
+                    // TODO: Navigate to add transaction screen
+                },
+                onNavigateToEditTransaction = { transactionId ->
+                    // TODO: Navigate to edit transaction screen with transactionId
                 }
             )
         }
