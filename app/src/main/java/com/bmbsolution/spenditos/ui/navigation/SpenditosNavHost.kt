@@ -5,10 +5,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bmbsolution.spenditos.ui.screens.budgets.BudgetsScreen
 import com.bmbsolution.spenditos.ui.screens.dashboard.DashboardScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
+import com.bmbsolution.spenditos.ui.screens.settings.SettingsScreen
 import com.bmbsolution.spenditos.ui.screens.splash.SplashScreen
+import com.bmbsolution.spenditos.ui.screens.transactions.TransactionsScreen
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -88,6 +91,50 @@ fun SpenditosNavHost(
                 },
                 onNavigateToPaywall = {
                     navController.navigate(Screen.Paywall.route)
+                }
+            )
+        }
+
+        composable(Screen.Transactions.route) {
+            TransactionsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddTransaction = {
+                    // TODO: Navigate to add transaction screen
+                },
+                onNavigateToEditTransaction = { transactionId ->
+                    // TODO: Navigate to edit transaction screen with transactionId
+                }
+            )
+        }
+
+        composable(Screen.Budgets.route) {
+            BudgetsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddBudget = {
+                    // TODO: Navigate to add budget screen
+                },
+                onNavigateToEditBudget = { budgetId ->
+                    // TODO: Navigate to edit budget screen with budgetId
+                }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToPaywall = {
+                    navController.navigate(Screen.Paywall.route)
+                },
+                onLogoutComplete = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
                 }
             )
         }
