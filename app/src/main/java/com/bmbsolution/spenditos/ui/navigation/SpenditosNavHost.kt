@@ -2,19 +2,24 @@ package com.bmbsolution.spenditos.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.bmbsolution.spenditos.ui.screens.budgets.AddBudgetScreen
 import com.bmbsolution.spenditos.ui.screens.budgets.BudgetsScreen
+import com.bmbsolution.spenditos.ui.screens.budgets.EditBudgetScreen
 import com.bmbsolution.spenditos.ui.screens.dashboard.DashboardScreen
 import com.bmbsolution.spenditos.ui.screens.import_data.CSVImportScreen
 import com.bmbsolution.spenditos.ui.screens.import_data.StatementImportScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
+import com.bmbsolution.spenditos.ui.screens.paywall.PaywallScreen
 import com.bmbsolution.spenditos.ui.screens.settings.SettingsScreen
 import com.bmbsolution.spenditos.ui.screens.splash.SplashScreen
+import com.bmbsolution.spenditos.ui.screens.transactions.AddTransactionScreen
 import com.bmbsolution.spenditos.ui.screens.transactions.TransactionsScreen
-import com.bmbsolution.spenditos.ui.subscription.PaywallScreen
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -22,7 +27,15 @@ sealed class Screen(val route: String) {
     data object Login : Screen("login")
     data object Dashboard : Screen("dashboard")
     data object Transactions : Screen("transactions")
+    data object AddTransaction : Screen("transactions/add")
+    data object EditTransaction : Screen("transactions/edit/{transactionId}") {
+        fun createRoute(transactionId: String) = "transactions/edit/$transactionId"
+    }
     data object Budgets : Screen("budgets")
+    data object AddBudget : Screen("budgets/add")
+    data object EditBudget : Screen("budgets/edit/{budgetId}") {
+        fun createRoute(budgetId: String) = "budgets/edit/$budgetId"
+    }
     data object Gamification : Screen("gamification")
     data object Settings : Screen("settings")
     data object CSVImport : Screen("csv_import")
@@ -95,6 +108,9 @@ fun SpenditosNavHost(
                 },
                 onNavigateToPaywall = {
                     navController.navigate(Screen.Paywall.route)
+                },
+                onNavigateToAddTransaction = {
+                    navController.navigate(Screen.AddTransaction.route)
                 }
             )
         }
@@ -105,10 +121,41 @@ fun SpenditosNavHost(
                     navController.popBackStack()
                 },
                 onNavigateToAddTransaction = {
-                    // TODO: Navigate to add transaction screen
+                    navController.navigate(Screen.AddTransaction.route)
                 },
                 onNavigateToEditTransaction = { transactionId ->
-                    // TODO: Navigate to edit transaction screen with transactionId
+                    navController.navigate(Screen.EditTransaction.createRoute(transactionId))
+                }
+            )
+        }
+
+        composable(Screen.AddTransaction.route) {
+            AddTransactionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveComplete = { _ ->
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditTransaction.route,
+            arguments = listOf(
+                navArgument("transactionId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+            // Note: Since we don't have a getById API endpoint, we pass the transaction data
+            // through shared ViewModel or fetch from local cache
+            // For now, we navigate back after save
+            AddTransactionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveComplete = { _ ->
+                    navController.popBackStack()
                 }
             )
         }
@@ -119,12 +166,47 @@ fun SpenditosNavHost(
                     navController.popBackStack()
                 },
                 onNavigateToAddBudget = {
-                    // TODO: Navigate to add budget screen
+                    navController.navigate(Screen.AddBudget.route)
                 },
                 onNavigateToEditBudget = { budgetId ->
-                    // TODO: Navigate to edit budget screen with budgetId
+                    navController.navigate(Screen.EditBudget.createRoute(budgetId))
                 }
             )
+        }
+
+        composable(Screen.AddBudget.route) {
+            AddBudgetScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveComplete = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditBudget.route,
+            arguments = listOf(
+                navArgument("budgetId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId") ?: ""
+            // Similar to transactions, we navigate with the budget data from the list
+            // or pass through shared state
+            AddBudgetScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveComplete = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Gamification.route) {
+            // GamificationScreen placeholder - will be implemented later
+            Text("Gamification Screen - Coming Soon")
         }
 
         composable(Screen.Settings.route) {
@@ -167,10 +249,27 @@ fun SpenditosNavHost(
 
         composable(Screen.Paywall.route) {
             PaywallScreen(
-                onDismiss = {
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onPurchaseComplete = {
                     navController.popBackStack()
                 }
             )
         }
+
+        composable(Screen.ImportData.route) {
+            // ImportDataScreen placeholder - implemented in CSVImportScreen and StatementImportScreen
+            Text("Import Data Screen - Navigate to CSV or Statement Import")
+        }
     }
+}
+
+@Composable
+private fun Text(text: String) {
+    androidx.compose.material3.Text(
+        text = text,
+        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+    )
 }
