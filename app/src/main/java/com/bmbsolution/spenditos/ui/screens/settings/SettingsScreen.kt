@@ -179,7 +179,7 @@ fun SettingsScreen(
             onDismiss = { viewModel.hideImportData() },
             onNavigateToCSVImport = onNavigateToCSVImport,
             onNavigateToStatementImport = onNavigateToStatementImport,
-            isPro = uiState.user?.settings?.let { false } ?: false // TODO: Check Pro status
+            isPro = uiState.isPro
         )
     }
 

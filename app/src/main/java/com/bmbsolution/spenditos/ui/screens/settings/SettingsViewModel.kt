@@ -2,6 +2,7 @@ package com.bmbsolution.spenditos.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bmbsolution.spenditos.data.billing.RevenueCatService
 import com.bmbsolution.spenditos.data.model.User
 import com.bmbsolution.spenditos.data.model.UserSettings
 import com.bmbsolution.spenditos.data.model.UserSettingsUpdateRequest
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val revenueCatService: RevenueCatService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -34,9 +36,11 @@ class SettingsViewModel @Inject constructor(
                 .collect { result ->
                     result
                         .onSuccess { user ->
+                            val isPro = revenueCatService.checkProAccess()
                             _uiState.update { 
                                 it.copy(
                                     user = user,
+                                    isPro = isPro,
                                     isLoading = false,
                                     error = null
                                 )
@@ -147,6 +151,7 @@ class SettingsViewModel @Inject constructor(
 
 data class SettingsUiState(
     val user: User? = null,
+    val isPro: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isLoggingOut: Boolean = false,
