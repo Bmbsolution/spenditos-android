@@ -23,6 +23,7 @@ fun DashboardScreen(
     onNavigateToGamification: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToPaywall: () -> Unit,
+    onNavigateToAddTransaction: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -108,7 +109,7 @@ fun DashboardScreen(
             // Quick Actions
             item {
                 QuickActionsRow(
-                    onAddTransaction = { /* TODO */ },
+                    onAddTransaction = onNavigateToAddTransaction,
                     onScanReceipt = onNavigateToPaywall,
                     onImportData = onNavigateToPaywall
                 )
