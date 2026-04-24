@@ -15,7 +15,7 @@ import com.bmbsolution.spenditos.ui.screens.import_data.CSVImportScreen
 import com.bmbsolution.spenditos.ui.screens.import_data.StatementImportScreen
 import com.bmbsolution.spenditos.ui.screens.login.LoginScreen
 import com.bmbsolution.spenditos.ui.screens.onboarding.OnboardingScreen
-import com.bmbsolution.spenditos.ui.screens.paywall.PaywallScreen
+import com.bmbsolution.spenditos.ui.subscription.PaywallScreen
 import com.bmbsolution.spenditos.ui.screens.settings.SettingsScreen
 import com.bmbsolution.spenditos.ui.screens.splash.SplashScreen
 import com.bmbsolution.spenditos.ui.screens.transactions.AddTransactionScreen
@@ -257,19 +257,5 @@ fun SpenditosNavHost(
                 }
             )
         }
-
-        composable(Screen.ImportData.route) {
-            // ImportDataScreen placeholder - implemented in CSVImportScreen and StatementImportScreen
-            Text("Import Data Screen - Navigate to CSV or Statement Import")
-        }
     }
-}
-
-@Composable
-private fun Text(text: String) {
-    androidx.compose.material3.Text(
-        text = text,
-        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
-    )
 }
