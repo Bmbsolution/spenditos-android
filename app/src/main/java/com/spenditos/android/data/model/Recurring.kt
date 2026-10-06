@@ -78,4 +78,6 @@ data class GenerateTransactionsResult(
 data class GenerateTransactionsRequest(
     val targetDate: String,
     val templateIds: List<String>? = null,
+    /** `YYYY-MM-DD`: only create entries dated on or after this day (`transactions.ts:146`). */
+    val fromDate: String? = null,
 )

@@ -20,6 +20,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
@@ -65,6 +66,7 @@ class RecurringRepositoryTest {
     ) = """{"id":"tmpl-fake-1","userId":"user-fake-1","categoryId":"cat-fake-1","description":"$description","amount":12.5,"type":"fixed","frequency":"monthly","firstOccurrenceDate":"2026-01-15","occurrencesRemaining":null,"isActive":$active,"amountVaries":$amountVaries}"""
 
     private fun writeResponse(body: String = template()) = MockResponse(code = 200, body = """{"data":$body}""")
+    private fun generateResponse() = MockResponse(body = """{"data":{"message":"Generation complete","generated":1,"skipped":0,"errors":0}}""")
     private fun listResponse(body: String = template()) = MockResponse(body = """{"data":[$body]}""")
     private fun settingsResponse(id: String? = null) = MockResponse(
         body = """{"data":{"userId":"user-fake-1","currency":"CAD","mainIncomeTemplateId":${id?.let { "\"$it\"" } ?: "null"}}}""",
@@ -170,6 +172,7 @@ class RecurringRepositoryTest {
         val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
         server.enqueue(writeResponse()) // the current POST response omits amountVaries
         server.enqueue(writeResponse(template(amountVaries = true)))
+        server.enqueue(generateResponse())
         server.enqueue(listResponse(template(amountVaries = true)))
         server.enqueue(settingsResponse("tmpl-fake-1"))
 
@@ -183,6 +186,7 @@ class RecurringRepositoryTest {
         assertEquals("PUT", followup.method)
         assertEquals("/recurring/tmpl-fake-1", followup.url.encodedPath)
         assertTrue(SpenditosJson.parseToJsonElement(followup.body!!.utf8()).jsonObject["amountVaries"]!!.jsonPrimitive.content.toBoolean())
+        assertEquals("/transactions/generate", server.takeRequest().url.encodedPath)
         assertEquals("/recurring", server.takeRequest().url.encodedPath)
         assertEquals("/user/settings", server.takeRequest().url.encodedPath)
         assertEquals(setOf(Aggregate.RECURRING, Aggregate.TRANSACTION), event.await())
@@ -203,15 +207,17 @@ class RecurringRepositoryTest {
         // Failing here would invite a second Save and a duplicate template (POST is not idempotent).
         server.enqueue(writeResponse())
         server.enqueue(MockResponse(code = 400, body = """{"error":"Invalid update"}"""))
+        server.enqueue(generateResponse())
         server.enqueue(listResponse())
         server.enqueue(settingsResponse())
         val created = repository.create(request(amountVaries = true))
         assertEquals("tmpl-fake-1", created.id)
         assertEquals("POST", server.takeRequest().method)
         assertEquals("PUT", server.takeRequest().method)
+        assertEquals("/transactions/generate", server.takeRequest().url.encodedPath)
         assertEquals("/recurring", server.takeRequest().url.encodedPath)
         assertEquals("/user/settings", server.takeRequest().url.encodedPath)
-        assertEquals(4, server.requestCount)
+        assertEquals(5, server.requestCount)
         assertEquals("tmpl-fake-1", repository.observe().first().single().id)
     }
 
@@ -366,5 +372,43 @@ class RecurringRepositoryTest {
         assertTrue(failure { repository.generate(YearMonth.of(2026, 1)) } is ApiError.Server)
         offline.failNext = 1
         assertTrue(failure { repository.generate(YearMonth.of(2026, 1)) } is ApiError.Network)
+    }
+
+    @Test
+    fun `a new item is logged from today onward for this month, using the mid-month target`() = runTest {
+        server.enqueue(writeResponse())
+        server.enqueue(generateResponse())
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        repository.create(request())
+        server.takeRequest() // POST /recurring
+        val generate = server.takeRequest()
+        assertEquals("/transactions/generate", generate.url.encodedPath)
+        val body = SpenditosJson.parseToJsonElement(generate.body!!.utf8()).jsonObject
+        val today = java.time.LocalDate.now()
+        assertEquals(today.withDayOfMonth(15).toString(), body["targetDate"]!!.jsonPrimitive.content)
+        assertEquals(today.toString(), body["fromDate"]!!.jsonPrimitive.content)
+        assertEquals("tmpl-fake-1", body["templateIds"]!!.jsonArray.single().jsonPrimitive.content)
+    }
+
+    @Test
+    fun `a failed log from today never fails the create`() = runTest {
+        server.enqueue(writeResponse())
+        server.enqueue(MockResponse(code = 500, body = """{"error":"InternalError"}"""))
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        assertEquals("tmpl-fake-1", repository.create(request()).id)
+    }
+
+    @Test
+    fun `an inactive new item is not logged`() = runTest {
+        server.enqueue(writeResponse(template(active = false)))
+        server.enqueue(writeResponse(template(active = false)))
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        repository.create(request(isActive = false))
+        server.takeRequest() // POST
+        server.takeRequest() // PUT pausedAt
+        assertEquals("/recurring", server.takeRequest().url.encodedPath)
     }
 }

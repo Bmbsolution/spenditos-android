@@ -1,5 +1,7 @@
 package com.spenditos.android.data.recurring
 
+import kotlinx.coroutines.CancellationException
+import java.time.LocalDate
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.apiCall
 import com.spenditos.android.core.network.apiCallUnit
@@ -93,10 +95,34 @@ class RecurringRepository @Inject constructor(
             }
         } catch (_: ApiError) {
             // Keep the committed template; the refresh below shows what the server saved.
-        } finally {
-            afterWriteRefresh()
         }
+        // iOS and web log this month from today onward right after a NEW item is created, so the
+        // item shows up this month at once instead of at the next monthly job (O3 in
+        // docs/REVIEW-WAVE-A-B.md). Best effort and idempotent: the item exists either way.
+        logFromToday(created)
+        afterWriteRefresh()
         return created
+    }
+
+    /** `POST /transactions/generate` for one item: this month, entries dated today or later only. */
+    private suspend fun logFromToday(created: RecurringTemplate) {
+        if (!created.isActive) return
+        val today = LocalDate.now()
+        try {
+            apiCall {
+                api.generate(
+                    GenerateTransactionsRequest(
+                        targetDate = generateTargetDate(YearMonth.from(today)),
+                        templateIds = listOf(created.id),
+                        fromDate = today.toString(),
+                    ),
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Not fatal: the item is saved; Generate for a month can create these entries later.
+        }
     }
 
     override suspend fun update(id: String, request: UpdateRecurringTemplateRequest): RecurringTemplate {
