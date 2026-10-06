@@ -2,6 +2,7 @@ package com.spenditos.android.feature.transactions
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +55,7 @@ fun AddTransactionSheet(
     onDismiss: () -> Unit,
     onDone: (message: String) -> Unit,
     onScanReceipt: (() -> Unit)? = null,
+    onCapture: (() -> Unit)? = null,
     prefill: AddTransactionPrefill? = null,
     viewModel: AddTransactionViewModel = hiltViewModel(),
 ) {
@@ -75,8 +77,15 @@ fun AddTransactionSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Text("New transaction", style = MaterialTheme.typography.titleLarge)
-            onScanReceipt?.let { scan ->
-                OutlinedButton(onClick = scan, modifier = Modifier.fillMaxWidth().testTag("add.scanReceipt")) { Text("Scan a receipt") }
+            if (onScanReceipt != null || onCapture != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    onScanReceipt?.let { scan ->
+                        OutlinedButton(onClick = scan, modifier = Modifier.weight(1f).testTag("add.scanReceipt")) { Text("Scan a receipt") }
+                    }
+                    onCapture?.let { capture ->
+                        OutlinedButton(onClick = capture, modifier = Modifier.weight(1f).testTag("add.capture")) { Text("Type or speak") }
+                    }
+                }
             }
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 EntryType.entries.forEachIndexed { index, type ->
