@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +39,9 @@ import com.spenditos.android.ui.theme.Spacing
 fun LoginScreen(
     envName: String?,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onCreateAccount: () -> Unit = {},
+    onForgotPassword: () -> Unit = {},
+    onNeedsVerification: (email: String) -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -82,6 +86,12 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("login.error"),
                 )
             }
+            if (state.needsVerification) {
+                TextButton(
+                    onClick = { onNeedsVerification(state.verificationEmail ?: state.email) },
+                    modifier = Modifier.fillMaxWidth().testTag("login.verifyEmail"),
+                ) { Text("Verify email") }
+            }
             Button(
                 onClick = viewModel::signIn,
                 enabled = state.canSubmit,
@@ -89,6 +99,14 @@ fun LoginScreen(
             ) {
                 if (state.isLoading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Text("Sign in")
             }
+            TextButton(
+                onClick = onCreateAccount,
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("login.createAccount"),
+            ) { Text("Create account") }
+            TextButton(
+                onClick = onForgotPassword,
+                modifier = Modifier.fillMaxWidth().testTag("login.forgotPassword"),
+            ) { Text("Forgot password?") }
         }
     }
 }

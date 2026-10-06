@@ -3,7 +3,7 @@ package com.spenditos.android.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
-import com.spenditos.android.data.auth.AuthRepository
+import com.spenditos.android.data.auth.LoginOperations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,27 +17,37 @@ data class LoginUiState(
     val password: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
+    val needsVerification: Boolean = false,
+    val verificationEmail: String? = null,
 ) {
     val canSubmit: Boolean get() = email.isNotBlank() && password.isNotEmpty() && !isLoading
 }
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(private val auth: AuthRepository) : ViewModel() {
+class LoginViewModel @Inject constructor(private val auth: LoginOperations) : ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 
-    fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null) }
+    fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null, needsVerification = false, verificationEmail = null) }
 
-    fun onPasswordChange(value: String) = _state.update { it.copy(password = value, error = null) }
+    fun onPasswordChange(value: String) = _state.update { it.copy(password = value, error = null, needsVerification = false, verificationEmail = null) }
 
     fun signIn() {
         val current = _state.value
         if (!current.canSubmit) return
-        _state.update { it.copy(isLoading = true, error = null) }
+        _state.update { it.copy(isLoading = true, error = null, needsVerification = false, verificationEmail = null) }
         viewModelScope.launch {
             // Success flips SessionManager.state; AppRoot swaps to the main screens.
             val error = runCatching { auth.login(current.email, current.password) }.exceptionOrNull()
-            _state.update { it.copy(isLoading = false, error = error?.let(::messageFor)) }
+            _state.update {
+                it.copy(
+                    password = if (error == null) "" else it.password,
+                    isLoading = false,
+                    error = error?.let(::messageFor),
+                    needsVerification = error is ApiError.Server && error.status == 403,
+                    verificationEmail = if (error is ApiError.Server && error.status == 403) current.email.trim() else null,
+                )
+            }
         }
     }
 
