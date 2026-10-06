@@ -1,0 +1,8 @@
+{
+  "uploadUrl": "https://example.test/fake-upload",
+  "fields": {
+    "key": "users/fake-user/receipt-fake.jpg",
+    "policy": "fake-policy"
+  },
+  "documentKey": "users/fake-user/receipt-fake.jpg"
+}

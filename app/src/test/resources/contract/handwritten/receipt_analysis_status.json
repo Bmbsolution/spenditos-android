@@ -1,0 +1,13 @@
+{
+  "analysisId": "analysis-fake-001",
+  "status": "success",
+  "result": {
+    "amount": 12.5,
+    "description": "Corner Shop",
+    "date": "2026-09-15",
+    "merchantName": "Fake Market",
+    "currency": "CAD",
+    "categoryId": "category-fake-food",
+    "categoryHint": "Food"
+  }
+}
