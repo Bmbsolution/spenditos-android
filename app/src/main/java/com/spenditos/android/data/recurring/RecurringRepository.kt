@@ -70,6 +70,9 @@ class RecurringRepository @Inject constructor(
         val userId = activateUser()
         var created = apiCall { api.create(request) }
         ensureCurrentUser(userId)
+        // The POST has committed. The follow-up PUTs only restore fields the create handler drops,
+        // so they are best effort: failing the call here would invite a second Save, which creates
+        // a duplicate template (no idempotency on POST /recurring) and doubles its entries.
         try {
             if (request.amountVaries && !created.amountVaries) {
                 // The current create handler drops amountVaries (recurring.ts:295-307); keep the
@@ -78,7 +81,8 @@ class RecurringRepository @Inject constructor(
                 ensureCurrentUser(userId)
             }
             if (!request.isActive) {
-                // The create schema has no pausedAt field; mark an inactive create as a pause by PUT.
+                // isActive=false is already saved by the POST; the create schema has no pausedAt
+                // field, so mark the inactive create as a pause by PUT.
                 created = apiCall {
                     api.update(
                         created.id,
@@ -87,8 +91,9 @@ class RecurringRepository @Inject constructor(
                 }
                 ensureCurrentUser(userId)
             }
+        } catch (_: ApiError) {
+            // Keep the committed template; the refresh below shows what the server saved.
         } finally {
-            // The POST has committed even if the compatibility PUT fails.
             afterWriteRefresh()
         }
         return created
@@ -122,7 +127,10 @@ class RecurringRepository @Inject constructor(
     override suspend fun generate(month: YearMonth): GenerateTransactionsResult {
         val userId = activateUser()
         // The handler creates each template/date pair idempotently, so retrying this same month is safe.
-        val result = apiCall { api.generate(GenerateTransactionsRequest("$month-01")) }
+        // Mid-month like iOS (YearMonth.date, day 15) and web ("<month>-15"): the handler parses the
+        // date as UTC midnight and reads the month in the Lambda's local zone, so day 1 would
+        // generate the previous month in any runtime whose zone is behind UTC.
+        val result = apiCall { api.generate(GenerateTransactionsRequest(generateTargetDate(month))) }
         ensureCurrentUser(userId)
         afterWriteRefresh()
         return result
@@ -165,3 +173,6 @@ class RecurringRepository @Inject constructor(
         val mainIncomeTemplateId: String?,
     )
 }
+
+/** `POST /transactions/generate` target for [month]: its 15th, never near a month boundary. */
+internal fun generateTargetDate(month: YearMonth): String = month.atDay(15).toString()

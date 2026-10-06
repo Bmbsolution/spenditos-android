@@ -199,16 +199,44 @@ class RecurringRepositoryTest {
     }
 
     @Test
-    fun `create reports follow up put failure after amount changes were requested`() = runTest {
+    fun `create succeeds when the follow up put fails because the post already committed`() = runTest {
+        // Failing here would invite a second Save and a duplicate template (POST is not idempotent).
         server.enqueue(writeResponse())
         server.enqueue(MockResponse(code = 400, body = """{"error":"Invalid update"}"""))
         server.enqueue(listResponse())
         server.enqueue(settingsResponse())
-        assertTrue(failure { repository.create(request(amountVaries = true)) } is ApiError.Server)
+        val created = repository.create(request(amountVaries = true))
+        assertEquals("tmpl-fake-1", created.id)
         assertEquals("POST", server.takeRequest().method)
         assertEquals("PUT", server.takeRequest().method)
         assertEquals("/recurring", server.takeRequest().url.encodedPath)
         assertEquals("/user/settings", server.takeRequest().url.encodedPath)
+        assertEquals(4, server.requestCount)
+        assertEquals("tmpl-fake-1", repository.observe().first().single().id)
+    }
+
+    @Test
+    fun `inactive create stays saved when the pause put is offline`() = runTest {
+        // POST succeeds, the pause PUT fails at the transport level, the refresh succeeds.
+        var calls = 0
+        val failPut = Interceptor { chain ->
+            calls++
+            if (calls == 2) throw IOException("offline on pause put")
+            chain.proceed(chain.request())
+        }
+        val api = Retrofit.Builder().baseUrl(server.url("/"))
+            .client(OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(failPut).build())
+            .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
+            .build().create(RecurringApi::class.java)
+        server.enqueue(writeResponse(template(active = false)))
+        server.enqueue(listResponse(template(active = false)))
+        server.enqueue(settingsResponse())
+        val created = RecurringRepository(api, session, FinanceInvalidationBus()).create(request(isActive = false))
+        assertEquals(false, created.isActive)
+        assertEquals("POST", server.takeRequest().method)
+        assertEquals("/recurring", server.takeRequest().url.encodedPath)
+        assertEquals("/user/settings", server.takeRequest().url.encodedPath)
+        assertEquals(3, server.requestCount)
     }
 
     @Test
@@ -311,7 +339,7 @@ class RecurringRepositoryTest {
         assertEquals("POST", firstRequest.method)
         assertEquals("/transactions/generate", firstRequest.url.encodedPath)
         val firstBody = SpenditosJson.parseToJsonElement(firstRequest.body!!.utf8()).jsonObject
-        assertEquals("2026-01-01", firstBody["targetDate"]!!.jsonPrimitive.content)
+        assertEquals("2026-01-15", firstBody["targetDate"]!!.jsonPrimitive.content)
         assertEquals(2, first.generated)
         server.takeRequest(); server.takeRequest()
 
@@ -321,6 +349,13 @@ class RecurringRepositoryTest {
         assertEquals(0, retry.generated)
         assertEquals(2, retry.skipped)
         server.takeRequest(); server.takeRequest()
+    }
+
+    @Test
+    fun `generate targets mid month so a zone behind UTC cannot shift it to the previous month`() {
+        assertEquals("2026-01-15", generateTargetDate(YearMonth.of(2026, 1)))
+        assertEquals("2026-02-15", generateTargetDate(YearMonth.of(2026, 2)))
+        assertEquals("2025-12-15", generateTargetDate(YearMonth.of(2025, 12)))
     }
 
     @Test
