@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-06 (usage limit hit). Waves A and B built AND Opus-reviewed (subagent, commits df556e5..465b893, 203 tests, lint 0 errors). Wave C workers were still running when work stopped.
+Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Remaining: hardening pass.
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
@@ -47,7 +47,11 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 - 254 unit tests, lint clean. Emulator (harness): Home, Plan hub, Month plan checked.
 - Review process going forward (owner asked to avoid Opus cost): codex (xhigh/high) + GLM read-only reviews of each diff, orchestrator verifies claims, fixes; Opus only if a question stays unresolved.
 
-## Remaining: Wave D Statement import (financial write; spec per docs/PARITY.md 'Statement import'), then hardening. Polish backlog: month plan action buttons wrap, Home top inset, Income & bills row layout.
+## Wave D: DONE and merged (Statement import)
+- Flow: Settings > Import statement; pick CSV/XLSX (25 MB cap, streamed copy) -> `upload-url` -> S3 POST (unauthenticated client, fields first) -> analyze -> map columns -> preview -> import with `Idempotency-Key` (one UUID per picked file, reused on retries; new key after a completed import). Gated on `premium.active`, no purchase button. Temp file always deleted. Saved flow is bound to the user id (another account starts clean).
+- Review: codex (xhigh) read-only; GLM returned nothing usable. Fixed: account switch with a saved flow, temp-file leak on a cancellation race. Verified in code: server derives per-row ids from key + row index, so a same-key replay skips rows already created.
+- Open, shared with iOS (server behavior, not changed): with a key the server skips its fuzzy duplicate reconciliation, so importing an overlapping statement as a NEW import can create duplicates; the key store keeps no body fingerprint; the Pro gate is client-side only (server has no gate on /statements/*); dates go through server-local JS Date parsing; amounts are Doubles end to end.
+- Not on-device: the harness user is not Pro and has no S3, so only the Pro-gate screen was checked on the emulator; analyze/preview/import are covered by MockWebServer + ViewModel tests (incl. process-death restore).
 
 ## Waiting on the owner
 - Nothing blocking.

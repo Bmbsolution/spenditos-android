@@ -28,6 +28,7 @@ fun SettingsScreen(
     onOpenProfile: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenChangePassword: () -> Unit,
+    onOpenStatementImport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -55,6 +56,14 @@ fun SettingsScreen(
                     headlineContent = { Text("Categories") },
                     supportingContent = { Text("Manage income and expense categories") },
                     modifier = Modifier.clickable(onClick = onOpenCategories).testTag("settings.categories"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Import statement") },
+                    supportingContent = { Text("Bring in transactions from a bank CSV or Excel file") },
+                    modifier = Modifier.clickable(onClick = onOpenStatementImport).testTag("settings.importStatement"),
                 )
             }
             item { HorizontalDivider() }
