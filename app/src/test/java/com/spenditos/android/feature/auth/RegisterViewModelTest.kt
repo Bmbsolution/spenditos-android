@@ -76,6 +76,15 @@ class RegisterViewModelTest {
     }
 
     @Test
+    fun `registration maps an existing account code to readable copy`() = runTest {
+        accounts.failure = ApiError.Server(409, "UserAlreadyExists")
+        fillForm()
+        viewModel.register()
+        advanceUntilIdle()
+        assertEquals("An account with this email already exists. Sign in or reset your password.", viewModel.state.value.error)
+    }
+
+    @Test
     fun `registration network error shows offline copy`() = runTest {
         accounts.failure = ApiError.Network(IOException("offline"))
         fillForm()

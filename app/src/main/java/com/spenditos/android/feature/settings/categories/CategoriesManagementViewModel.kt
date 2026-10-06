@@ -163,7 +163,7 @@ class CategoriesManagementViewModel @Inject constructor(
                             isOffline = error is ApiError.Network,
                             error = when (error) {
                                 is ApiError.Network -> "You're offline. Try again when you're connected."
-                                is ApiError.Server -> error.serverMessage
+                                is ApiError.Server -> DELETE_ERROR_COPY[error.serverMessage] ?: error.serverMessage
                                 else -> "Couldn't delete this category. Try again."
                             },
                         )
@@ -178,3 +178,9 @@ private fun normalizeCategoryName(value: String): String =
     Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
         .replace(Regex("\\p{Mn}+"), "")
         .lowercase(Locale.getDefault())
+
+/** 409 codes of `DELETE /categories/{id}` (packages/functions/src/api/categories.ts:472, 564-576). */
+private val DELETE_ERROR_COPY = mapOf(
+    "CategoryHasReferences" to "This category is still used by transactions or income and bills. Move them to another category first.",
+    "CategoryDeleteInProgress" to "This category is already being deleted. Try again in a moment.",
+)

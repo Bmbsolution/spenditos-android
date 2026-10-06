@@ -191,6 +191,19 @@ class CategoriesManagementViewModelTest {
         }
     }
 
+    @Test
+    fun `delete of a category in use explains the conflict`() = runTest {
+        val graph = graph(listOf(category()))
+        val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
+        loaded(vm)
+        graph.api.failureFor = "delete"
+        graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
+        vm.deleteCategory("c1")
+        runCurrent()
+        assertTrue(vm.state.first { it.error != null }.error!!.startsWith("This category is still used"))
+        assertEquals(1, vm.state.value.categories.size)
+    }
+
     private inner class FakeCategoriesApi(var rows: MutableList<Category>) : CategoriesApi {
         var failureFor: String? = null
         var failure: Throwable? = null

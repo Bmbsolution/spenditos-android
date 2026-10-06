@@ -64,7 +64,7 @@ class ChangePasswordViewModel @Inject constructor(
                             isOffline = error is ApiError.Network,
                             error = when (error) {
                                 is ApiError.Network -> "You're offline. Try again when you're connected."
-                                is ApiError.Server -> error.serverMessage
+                                is ApiError.Server -> CHANGE_PASSWORD_ERROR_COPY[error.serverMessage] ?: error.serverMessage
                                 else -> "Couldn't change your password. Try again."
                             },
                         )
@@ -74,3 +74,10 @@ class ChangePasswordViewModel @Inject constructor(
         }
     }
 }
+
+/** Error codes of `POST /user/change-password` (packages/functions/src/user.ts:797-812). */
+private val CHANGE_PASSWORD_ERROR_COPY = mapOf(
+    "InvalidPassword" to "Your current password is incorrect.",
+    "WeakPassword" to "Your new password doesn't meet the requirements.",
+    "RateLimited" to "Too many attempts. Try again later.",
+)

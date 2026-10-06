@@ -120,6 +120,21 @@ class ProfileViewModelTest {
         }
     }
 
+    @Test
+    fun `change password explains a wrong current password instead of showing the code`() = runTest {
+        val actions = FakeUserSettingsActions().apply {
+            failureFor = "changePassword"
+            failure = ApiError.Server(400, "InvalidPassword")
+        }
+        val vm = ChangePasswordViewModel(actions)
+        vm.onCurrentPasswordChange("Fake-Current-123!")
+        vm.onNewPasswordChange("Abcdef1!")
+        vm.onConfirmPasswordChange("Abcdef1!")
+        vm.changePassword()
+        advanceUntilIdle()
+        assertEquals("Your current password is incorrect.", vm.state.value.error)
+    }
+
     private class FakeUserSettingsActions : UserSettingsActions {
         var failureFor: String? = null
         var failure: Throwable? = null

@@ -67,6 +67,18 @@ class RegisterViewModel @Inject constructor(private val accounts: AccountOperati
 
 internal fun accountErrorMessage(error: Throwable): String = when (error) {
     is ApiError.Network -> "Can't reach Spenditos. Check your connection and try again."
-    is ApiError.Server -> error.serverMessage
+    is ApiError.Server -> ACCOUNT_ERROR_COPY[error.serverMessage] ?: error.serverMessage
     else -> "Something went wrong. Please try again."
 }
+
+/**
+ * `ApiError.Server.serverMessage` is the envelope's `error` code when present (as iOS), so these
+ * handler codes (packages/functions/src/auth.ts register 282-299, confirm-password 1028-1052,
+ * confirm-registration 1093-1140) would otherwise be shown verbatim.
+ */
+private val ACCOUNT_ERROR_COPY = mapOf(
+    "UserAlreadyExists" to "An account with this email already exists. Sign in or reset your password.",
+    "InvalidPassword" to "That password doesn't meet the requirements.",
+    "CodeMismatch" to "That code isn't right. Check your email and try again.",
+    "ExpiredCode" to "That code has expired. Request a new one.",
+)
