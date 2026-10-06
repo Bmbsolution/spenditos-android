@@ -1,0 +1,11 @@
+{
+  "skipRequest": {
+    "date": "2099-12-15"
+  },
+  "deleteDraftResponse": {
+    "data": {
+      "month": "2099-12",
+      "deleted": true
+    }
+  }
+}
