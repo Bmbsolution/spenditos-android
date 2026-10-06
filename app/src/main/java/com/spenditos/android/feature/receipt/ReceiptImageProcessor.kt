@@ -30,10 +30,20 @@ object ReceiptImageProcessorModule {
     fun receiptImageProcessor(@ApplicationContext context: Context): ReceiptImageProcessing = ReceiptImageProcessor(context)
 }
 
-class ReceiptImageProcessor(private val context: Context) : ReceiptImageProcessing {
+class ReceiptImageProcessor(
+    private val context: Context,
+    now: () -> Long = System::currentTimeMillis,
+) : ReceiptImageProcessing {
     init {
+        // Leftovers of a process that died mid-scan. Scan copies are never resumed, so all go.
+        // Camera originals (full size, with EXIF location) are kept for a while because a camera
+        // result can still arrive after process death; older ones were abandoned and are removed.
+        val staleBefore = now() - STALE_CAMERA_FILE_MILLIS
         File(context.cacheDir, RECEIPT_DIRECTORY).apply { mkdirs() }
-            .listFiles { file -> file.name.startsWith("receipt-scan-") }
+            .listFiles { file ->
+                file.name.startsWith("receipt-scan-") ||
+                    (file.name.startsWith("receipt-camera-") && file.lastModified() < staleBefore)
+            }
             ?.forEach { it.delete() }
     }
 
@@ -112,5 +122,6 @@ class ReceiptImageProcessor(private val context: Context) : ReceiptImageProcessi
         const val RECEIPT_DIRECTORY = "receipts"
         const val MAX_LONG_SIDE = 2048
         const val JPEG_QUALITY = 80
+        const val STALE_CAMERA_FILE_MILLIS = 60 * 60 * 1000L
     }
 }
