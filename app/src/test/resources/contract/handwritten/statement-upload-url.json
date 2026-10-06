@@ -1,0 +1,13 @@
+{
+  "data": {
+    "uploadUrl": "https://uploads.example.test/fake-policy",
+    "fields": {
+      "key": "users/fake-user/statements/fake-file.csv",
+      "policy": "fake-policy-value",
+      "x-amz-credential": "fake-credential-value"
+    },
+    "documentKey": "users/fake-user/statements/fake-file.csv",
+    "expiresIn": 300,
+    "maxFileSizeBytes": 26214400
+  }
+}
