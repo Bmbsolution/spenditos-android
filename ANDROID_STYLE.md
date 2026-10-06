@@ -71,6 +71,9 @@ Register a new Retrofit API in `core/network/NetworkModule.kt` only when the spe
 - **State fed by Room is asynchronous** (Room emits on its own executor). Assert with `vm.state.first { predicate }`, never by reading `state.value` right after an event.
 - Robolectric runs at SDK 35 (`robolectric.properties`); build Room in-memory with `allowMainThreadQueries()`.
 - When you add a constructor parameter to an existing repository, grep the tests (`grep -rn "XRepository(" app/src/test`) and fix every call site.
+- **Virtual time + real I/O don't mix.** Under `runTest`, MockWebServer calls take real time but the scheduler skips virtual time whenever the test is suspended, so `withTimeout`/`delay`-based deadlines fire instantly. Bound polling/retry loops by COUNT (testable) and add a `TimeSource.Monotonic` deadline only as a production backstop.
+- **Inject dispatchers** (`@XyzIoDispatcher CoroutineDispatcher`) instead of calling `Dispatchers.IO` inside a ViewModel; tests pass `Dispatchers.Main` (the test scheduler) so work can be awaited.
+- Screens drawn without a `Scaffold` need `Modifier.safeDrawingPadding()` or they sit under the status bar.
 - Workers cannot run Gradle (sandbox blocks sockets); the orchestrator compiles and tests, and sends errors back. Write conservatively: copy imports and signatures from existing files.
 
 ## Verification (run it yourself; paste the summary lines)

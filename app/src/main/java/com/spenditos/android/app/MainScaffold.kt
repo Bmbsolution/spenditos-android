@@ -38,6 +38,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.spenditos.android.feature.placeholder.ComingSoonScreen
+import com.spenditos.android.feature.receipt.ReceiptScanScreen
+import com.spenditos.android.feature.recurring.IncomeAndBillsScreen
 import com.spenditos.android.feature.reports.DailyAggregatesScreen
 import com.spenditos.android.feature.reports.MonthComparisonScreen
 import com.spenditos.android.feature.reports.PaycheckPeriodsScreen
@@ -47,6 +49,7 @@ import com.spenditos.android.feature.settings.ProfileScreen
 import com.spenditos.android.feature.settings.SettingsScreen
 import com.spenditos.android.feature.settings.categories.CategoriesManagementScreen
 import com.spenditos.android.feature.sync.NotSyncedScreen
+import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.feature.transactions.AddTransactionSheet
 import com.spenditos.android.feature.transactions.TransactionListScreen
 import com.spenditos.android.ui.components.EnvBadge
@@ -62,6 +65,7 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 }
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
+private const val RECEIPT_SCAN_ROUTE = "receipt-scan"
 private const val REPORTS_DAILY_ROUTE = "reports/daily"
 private const val REPORTS_COMPARISON_ROUTE = "reports/comparison"
 private const val REPORTS_PAYCHECK_ROUTE = "reports/paycheck-periods"
@@ -77,6 +81,8 @@ fun MainScaffold(envName: String?) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showAdd by rememberSaveable { mutableStateOf(false) }
+    // Values read from a receipt; the add form opens with them and the user reviews before saving.
+    var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     val onTab = backStack?.destination?.route in Tab.entries.map { it.route }
 
     Scaffold(
@@ -123,7 +129,18 @@ fun MainScaffold(envName: String?) {
             NavHost(nav, startDestination = Tab.TRANSACTIONS.route) {
                 composable(Tab.HOME.route) { ComingSoonScreen("Home", "Your cash-flow status lands in Wave C.") }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
-                composable(Tab.PLAN.route) { ComingSoonScreen("Plan", "Income & bills and Month plan land in Waves B and C.") }
+                // Month plan joins this tab in Wave C (segmented "Income & bills" / "Month plan" like iOS PlanHubView).
+                composable(Tab.PLAN.route) { IncomeAndBillsScreen() }
+                composable(RECEIPT_SCAN_ROUTE) {
+                    ReceiptScanScreen(
+                        onResult = { values ->
+                            receiptPrefill = values
+                            nav.popBackStack()
+                            showAdd = true
+                        },
+                        onBack = { nav.popBackStack() },
+                    )
+                }
                 composable(Tab.REPORTS.route) {
                     ReportsHubScreen(
                         onOpenDaily = { nav.navigate(REPORTS_DAILY_ROUTE) },
@@ -154,11 +171,20 @@ fun MainScaffold(envName: String?) {
     if (showAdd) {
         ScopedViewModels {
             AddTransactionSheet(
-                onDismiss = { showAdd = false },
+                onDismiss = {
+                    showAdd = false
+                    receiptPrefill = null
+                },
                 onDone = { message ->
                     showAdd = false
+                    receiptPrefill = null
                     scope.launch { snackbar.showSnackbar(message) }
                 },
+                onScanReceipt = {
+                    showAdd = false
+                    nav.navigate(RECEIPT_SCAN_ROUTE)
+                },
+                prefill = receiptPrefill,
             )
         }
     }

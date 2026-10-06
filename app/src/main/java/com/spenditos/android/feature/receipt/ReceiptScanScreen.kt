@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.receipt
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -57,7 +59,7 @@ fun ReceiptScanScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(Spacing.screen),
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(Spacing.screen),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
