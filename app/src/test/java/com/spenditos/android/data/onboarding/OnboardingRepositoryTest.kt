@@ -212,6 +212,21 @@ class OnboardingRepositoryTest {
     }
 
     @Test
+    fun `completion succeeds when only the follow-up cache refresh fails`() = runTest {
+        server.enqueue(json(200, categoriesBody()))
+        server.enqueue(json(200, settingsBody(setupCompleted = true)))
+        server.enqueue(json(503, """{"error":"Unavailable"}""")) // settings cache refresh
+
+        repository.complete("Rae", "CAD", "CA", "en", seedRequests())
+
+        assertTrue(flags.isCompleted("user-1"))
+        assertEquals("GET", server.takeRequest().method)
+        assertEquals("PUT", server.takeRequest().method)
+        assertEquals("GET", server.takeRequest().method)
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
     fun `completion surfaces network failure`() = runTest {
         server.enqueue(MockResponse.Builder().onRequestStart(SocketEffect.CloseSocket()).build())
         assertTrue(runCatching { repository.complete("Rae", "CAD", "CA", "en", seedRequests()) }.exceptionOrNull() is ApiError.Network)

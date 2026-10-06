@@ -1,6 +1,7 @@
 package com.spenditos.android.data.onboarding
 
 import com.spenditos.android.core.auth.SessionManager
+import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.apiCall
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.OnboardingCategoryRequest
@@ -84,7 +85,12 @@ class OnboardingRepository @Inject constructor(
             }
         }
         session.currentUserId?.let { flags.markCompleted(it) }
-        settings.refresh()
-        categories.refresh()
+        // Setup is saved. Warming the caches is best effort: failing here showed "Couldn't finish
+        // setup" for a finished setup (SessionLifecycle and the screens refresh them anyway).
+        try {
+            settings.refresh()
+            categories.refresh()
+        } catch (_: ApiError) {
+        }
     }
 }
