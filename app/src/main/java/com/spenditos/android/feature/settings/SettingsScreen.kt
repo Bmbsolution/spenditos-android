@@ -22,14 +22,48 @@ import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-/** Phase 1 subset: account, sync queue, environment, sign out. The rest lands in Wave A. */
 @Composable
-fun SettingsScreen(onOpenNotSynced: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onOpenNotSynced: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onOpenCategories: () -> Unit,
+    onOpenChangePassword: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            item { ListItem(headlineContent = { Text("Account") }, supportingContent = { Text(state.email ?: "Signed in") }) }
+            item {
+                ListItem(
+                    headlineContent = { Text("Account") },
+                    supportingContent = { Text(state.email ?: "Signed in") },
+                    modifier = Modifier.testTag("settings.account"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Profile") },
+                    supportingContent = { Text("Name and currency") },
+                    modifier = Modifier.clickable(onClick = onOpenProfile).testTag("settings.profile"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Categories") },
+                    supportingContent = { Text("Manage income and expense categories") },
+                    modifier = Modifier.clickable(onClick = onOpenCategories).testTag("settings.categories"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Change password") },
+                    modifier = Modifier.clickable(onClick = onOpenChangePassword).testTag("settings.changePassword"),
+                )
+            }
             item { HorizontalDivider() }
             item {
                 ListItem(
@@ -39,7 +73,13 @@ fun SettingsScreen(onOpenNotSynced: () -> Unit, viewModel: SettingsViewModel = h
                 )
             }
             item { HorizontalDivider() }
-            item { ListItem(headlineContent = { Text("Environment") }, supportingContent = { Text("${state.envName} (${state.stage})") }) }
+            item {
+                ListItem(
+                    headlineContent = { Text("Environment") },
+                    supportingContent = { Text("${state.envName} (${state.stage})") },
+                    modifier = Modifier.testTag("settings.environment"),
+                )
+            }
             item { HorizontalDivider() }
             item {
                 ListItem(
@@ -54,8 +94,15 @@ fun SettingsScreen(onOpenNotSynced: () -> Unit, viewModel: SettingsViewModel = h
             onDismissRequest = { confirmSignOut = false },
             title = { Text("Sign out") },
             text = { Text(viewModel.signOutMessage()) },
-            confirmButton = { TextButton(onClick = { confirmSignOut = false; viewModel.signOut() }) { Text("Sign out") } },
-            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } },
+            confirmButton = {
+                TextButton(
+                    onClick = { confirmSignOut = false; viewModel.signOut() },
+                    modifier = Modifier.testTag("settings.signOut.confirm"),
+                ) { Text("Sign out") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSignOut = false }, modifier = Modifier.testTag("settings.signOut.cancel")) { Text("Cancel") }
+            },
         )
     }
 }
