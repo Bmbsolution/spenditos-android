@@ -54,7 +54,7 @@ data class StatementColumnMapping(
 @Serializable(with = StatementCellValueSerializer::class)
 data class StatementCellValue(val text: String)
 
-private object StatementCellValueSerializer : KSerializer<StatementCellValue> {
+object StatementCellValueSerializer : KSerializer<StatementCellValue> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("StatementCellValue", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: StatementCellValue) = encoder.encodeString(value.text)

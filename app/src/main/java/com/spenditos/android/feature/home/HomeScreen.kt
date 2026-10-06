@@ -62,7 +62,7 @@ fun HomeScreen() {
     ) {
         Column(
             modifier = Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.screen, vertical = Spacing.m),
+                .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             if (state.isLoading) {
@@ -175,7 +175,7 @@ private fun CashFlowCard(status: CashFlowStatus, currency: String, locale: Local
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(amount, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(amount, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text("About $daily a day available", style = MaterialTheme.typography.bodyMedium)
             Box(
                 Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)

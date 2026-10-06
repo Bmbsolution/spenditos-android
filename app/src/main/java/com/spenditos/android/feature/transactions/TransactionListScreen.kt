@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -141,7 +142,7 @@ private fun SyncBanner(state: TransactionListUiState, onOpenNotSynced: () -> Uni
     }
     Card(
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().clickable(enabled = state.waitingCount + state.failedCount > 0, onClick = onOpenNotSynced).testTag("transactions.syncBanner"),
+        modifier = Modifier.fillMaxWidth().clickable(enabled = state.waitingCount + state.failedCount > 0, role = Role.Button, onClick = onOpenNotSynced).testTag("transactions.syncBanner"),
     ) {
         Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

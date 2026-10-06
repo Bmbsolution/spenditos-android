@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -193,6 +194,6 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
         headlineContent = { Text(option.code) },
         supportingContent = { Text(option.name) },
         trailingContent = { if (option.code == selectedCode) Text("✓", color = MaterialTheme.colorScheme.primary) },
-        modifier = Modifier.clickable(onClick = onClick).testTag("profile.currency.option.${option.code}"),
+        modifier = Modifier.clickable(role = Role.Button, onClick = onClick).testTag("profile.currency.option.${option.code}"),
     )
 }

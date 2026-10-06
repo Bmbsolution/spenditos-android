@@ -81,7 +81,9 @@ android {
 
     buildTypes {
         debug {
-            isMinifyEnabled = false
+            // -Pspenditos.minifyDebug exercises the release R8 rules on a debug-signed build.
+            isMinifyEnabled = providers.gradleProperty("spenditos.minifyDebug").isPresent
+            if (isMinifyEnabled) proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         release {
             isMinifyEnabled = true

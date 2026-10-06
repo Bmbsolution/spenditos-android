@@ -76,7 +76,7 @@ private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.screen).padding(bottom = Spacing.l),
+                .padding(horizontal = Spacing.screen).padding(bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             MonthPicker(state, viewModel)

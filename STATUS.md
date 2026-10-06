@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Remaining: hardening pass.
+Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
@@ -52,6 +52,13 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 - Review: codex (xhigh) read-only; GLM returned nothing usable. Fixed: account switch with a saved flow, temp-file leak on a cancellation race. Verified in code: server derives per-row ids from key + row index, so a same-key replay skips rows already created.
 - Open, shared with iOS (server behavior, not changed): with a key the server skips its fuzzy duplicate reconciliation, so importing an overlapping statement as a NEW import can create duplicates; the key store keeps no body fingerprint; the Pro gate is client-side only (server has no gate on /statements/*); dates go through server-local JS Date parsing; amounts are Doubles end to end.
 - Not on-device: the harness user is not Pro and has no S3, so only the Pro-gate screen was checked on the emulator; analyze/preview/import are covered by MockWebServer + ViewModel tests (incl. process-death restore).
+
+## Hardening: DONE
+- R8: `assembleStagingRelease` + `assembleProdRelease` succeed (unsigned, ~4.5 MB). `-Pspenditos.minifyDebug` runs R8 on a debug-signed harness build; every tab, sub-screen, an add-transaction write (bulk) and a process kill/restore were exercised on the emulator without crashes (serializer rules hold; `StatementCellValueSerializer` made public to avoid a serializer-not-found warning).
+- Dark mode checked on all five tabs. Font scale 1.6: money amounts no longer clipped (Reports review/Paycheck periods wrap with FlowRow; Home/Comparison unclipped), tab labels capped at 1.0 scale, Income & bills star moved into the action row ("Set as main"), bottom padding so the FAB never covers list tails.
+- Accessibility: clickable rows have `Role.Button`; lint clean.
+- Process death: Profile screen restored after `am kill`; statement import restore covered by unit tests.
+- Not tested: sign-up/verify/forgot flows on device (emulator is signed in to the owner's real staging account), real S3 upload / Pro statement import, TalkBack by hand.
 
 ## Waiting on the owner
 - Nothing blocking.

@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -47,7 +48,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Profile") },
                     supportingContent = { Text("Name and currency") },
-                    modifier = Modifier.clickable(onClick = onOpenProfile).testTag("settings.profile"),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenProfile).testTag("settings.profile"),
                 )
             }
             item { HorizontalDivider() }
@@ -55,7 +56,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Categories") },
                     supportingContent = { Text("Manage income and expense categories") },
-                    modifier = Modifier.clickable(onClick = onOpenCategories).testTag("settings.categories"),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenCategories).testTag("settings.categories"),
                 )
             }
             item { HorizontalDivider() }
@@ -63,14 +64,14 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Import statement") },
                     supportingContent = { Text("Bring in transactions from a bank CSV or Excel file") },
-                    modifier = Modifier.clickable(onClick = onOpenStatementImport).testTag("settings.importStatement"),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenStatementImport).testTag("settings.importStatement"),
                 )
             }
             item { HorizontalDivider() }
             item {
                 ListItem(
                     headlineContent = { Text("Change password") },
-                    modifier = Modifier.clickable(onClick = onOpenChangePassword).testTag("settings.changePassword"),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenChangePassword).testTag("settings.changePassword"),
                 )
             }
             item { HorizontalDivider() }
@@ -78,7 +79,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Not synced") },
                     supportingContent = { Text(if (state.unsyncedCount == 0) "Everything is synced" else "${state.unsyncedCount} waiting") },
-                    modifier = Modifier.clickable(onClick = onOpenNotSynced).testTag("settings.notSynced"),
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenNotSynced).testTag("settings.notSynced"),
                 )
             }
             item { HorizontalDivider() }

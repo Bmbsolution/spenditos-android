@@ -2,6 +2,8 @@ package com.spenditos.android.feature.reports
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -113,6 +115,7 @@ private fun PaycheckSummaryCard(summary: PaycheckPeriodsSummary, currency: Strin
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriodsViewModel, currency: String, locale: Locale) {
     val finance = LocalFinanceColors.current
@@ -157,7 +160,7 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
                         .clip(RoundedCornerShape(4.dp)).background(if (isCovered) finance.income else finance.expense),
                 )
             }
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.amounts.${period.id}")) {
+            FlowRow(horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.amounts.${period.id}")) {
                 PeriodAmount("Income", viewModel.incomeAmount(period), currency, finance.income, Alignment.Start)
                 PeriodAmount("Expenses", viewModel.expenseAmount(period), currency, finance.expense, Alignment.CenterHorizontally)
                 PeriodAmount("Remaining", remaining, currency, if (remaining.signum() >= 0) finance.income else finance.expense, Alignment.End)
@@ -170,7 +173,7 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
 private fun PeriodAmount(label: String, amount: BigDecimal, currency: String, color: androidx.compose.ui.graphics.Color, alignment: Alignment.Horizontal) {
     Column(horizontalAlignment = alignment) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(signedPeriodMoney(amount, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        Text(signedPeriodMoney(amount, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color)
     }
 }
 

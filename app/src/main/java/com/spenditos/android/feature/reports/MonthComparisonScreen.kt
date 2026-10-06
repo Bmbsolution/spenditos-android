@@ -164,7 +164,7 @@ private fun ComparisonMetricCard(
     Card(shape = RoundedCornerShape(16.dp), modifier = modifier.testTag("reports.comparison.metric.${if (isExpense) "expenses" else "income"}")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(Money.format(current.toDouble(), currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(Money.format(current.toDouble(), currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
                 viewModel.percentageChange(current, previous),
                 style = MaterialTheme.typography.bodyMedium,

@@ -20,6 +20,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -119,7 +122,13 @@ fun MainScaffold(envName: String?) {
                                 }
                             },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(tab.label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
+                            // Tab labels stay on one line, so cap their font scale (system bar pattern) instead of clipping them.
+                            label = {
+                                val density = LocalDensity.current
+                                CompositionLocalProvider(LocalDensity provides Density(density.density, minOf(density.fontScale, 1.0f))) {
+                                    Text(tab.label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+                                }
+                            },
                             modifier = Modifier.testTag("tab.${tab.route}"),
                         )
                     }

@@ -3,6 +3,8 @@ package com.spenditos.android.feature.reports
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -63,7 +66,7 @@ fun ReportsHubScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag("reports.hub.list"),
-                contentPadding = PaddingValues(horizontal = Spacing.screen, vertical = Spacing.m),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 item {
@@ -128,6 +131,7 @@ fun ReportsHubScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MonthlyReviewCard(data: com.spenditos.android.data.model.DashboardData, currency: String) {
     val finance = LocalFinanceColors.current
@@ -135,10 +139,10 @@ private fun MonthlyReviewCard(data: com.spenditos.android.data.model.DashboardDa
     Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("reports.hub.review")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Text("Monthly review", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Row(Modifier.testTag("reports.hub.review.metrics"), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                ReviewMetric("Income", Money.format(summary.totalIncome, currency), finance.income, Modifier.weight(1f))
-                ReviewMetric("Expenses", Money.format(summary.totalExpenses, currency), finance.expense, Modifier.weight(1f))
-                ReviewMetric("Net", Money.format(summary.netAmount, currency), if (summary.netAmount >= 0) finance.income else finance.expense, Modifier.weight(1f))
+            FlowRow(Modifier.testTag("reports.hub.review.metrics"), horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                ReviewMetric("Income", Money.format(summary.totalIncome, currency), finance.income, Modifier)
+                ReviewMetric("Expenses", Money.format(summary.totalExpenses, currency), finance.expense, Modifier)
+                ReviewMetric("Net", Money.format(summary.netAmount, currency), if (summary.netAmount >= 0) finance.income else finance.expense, Modifier)
             }
         }
     }
@@ -148,7 +152,7 @@ private fun MonthlyReviewCard(data: com.spenditos.android.data.model.DashboardDa
 private fun ReviewMetric(label: String, amount: String, color: Color, modifier: Modifier) {
     Column(modifier) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(amount, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        Text(amount, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color)
     }
 }
 
@@ -191,7 +195,7 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
 private fun ReportNavigationCard(title: String, detail: String, tag: String, onClick: () -> Unit) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).testTag(tag),
+        modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).testTag(tag),
     ) {
         Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {

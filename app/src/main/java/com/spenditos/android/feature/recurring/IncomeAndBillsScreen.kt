@@ -84,7 +84,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding).testTag("recurring.list"),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.screen, vertical = Spacing.m),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             if (state.isLoading && state.templates.isEmpty()) {
@@ -229,13 +229,18 @@ private fun IncomeBillRow(
             trailingContent = {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     Text("${if (template.amountVaries) "≈ " else ""}$amount", color = if (isIncome) finance.income else finance.expense, style = MaterialTheme.typography.titleSmall)
-                    if (isIncome && (template.id == mainIncomeTemplateId || canEdit)) {
-                        TextButton(onClick = onMainIncome, enabled = template.id == mainIncomeTemplateId || (canEdit && template.isActive), modifier = Modifier.testTag("recurring.mainIncome.${template.id}")) { Text(if (template.id == mainIncomeTemplateId) "★" else "☆") }
-                    }
                 }
             },
         )
         Row(Modifier.fillMaxWidth().padding(start = Spacing.s, bottom = Spacing.xs), horizontalArrangement = Arrangement.End) {
+            if (isIncome && (template.id == mainIncomeTemplateId || canEdit)) {
+                val isMain = template.id == mainIncomeTemplateId
+                TextButton(
+                    onClick = onMainIncome,
+                    enabled = isMain || (canEdit && template.isActive),
+                    modifier = Modifier.testTag("recurring.mainIncome.${template.id}"),
+                ) { Text(if (isMain) "★ Main income" else "☆ Set as main") }
+            }
             if (canEdit) TextButton(onClick = onEdit, modifier = Modifier.testTag("recurring.edit.${template.id}")) { Text("Edit") }
             TextButton(onClick = onDelete, modifier = Modifier.testTag("recurring.delete.${template.id}")) { Text("Delete", color = MaterialTheme.colorScheme.error) }
         }
