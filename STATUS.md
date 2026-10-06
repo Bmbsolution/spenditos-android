@@ -38,13 +38,19 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 - O4 (core + iOS): unmapped server error codes show verbatim; preferring the server's readable message touches core/network/ApiCall.kt serverMessage (FailureClassifier and receipt/quota mapping rely on codes, so change carefully).
 - N1: previous account's screen state may linger in memory after sign-out until the app closes (no cross-account data shown).
 
-## Wave C IN FLIGHT when work stopped (codex workers, not Claude subagents)
-- C1 Home (status card + See the math; parity target on 2026-10-01: left after bills 1,838.50, 21%, ~59.31/day, state tight) worktree `$SCRATCHPAD/runs/*codex-90839/wt`.
-- C2 Month plan draft (apply must be idempotent; one-time entries via /transactions/bulk idempotencyKeyId) worktree `$SCRATCHPAD/runs/*codex-90841/wt`.
-- Specs: `$SCRATCHPAD/specs/waveC/`; results in `$SCRATCHPAD/specs/waveC/out-*.txt`. Next: `scripts/verify.sh <wt>`, fix compile/timing issues (see ANDROID_STYLE.md test patterns), merge, wire MainScaffold (Home tab -> HomeScreen(); Plan tab -> segmented Income & bills / Month plan), then run the Opus REVIEW SUBAGENT (Agent tool, model opus; owner prefers this over switching the session) on C2, then Wave D (statement import).
+## Wave C: DONE and merged (Home, Month plan, Plan hub)
+- Home: `CashFlowStatus` port; parity verified: left after bills 1,838.50, 21% income remaining; per-day figure depends on today (pinned in unit tests to 2026-10-01 -> 59.31).
+- Month plan draft (apply/discard): reviewed by codex + GLM read-only passes (no Opus). Fixes: skip regeneration when an override already moved an occurrence (server dedupes generate by scheduled date; iOS has the same duplicate flaw); freeze one-time entries after an unfinished Apply (server derives ids from entry details); rows/summary now computed from the composed state (fixed an empty-plan bug found on the emulator); locale lint.
+- Plan tab = `PlanHubScreen` (segmented Income & bills / Month plan).
+- O3 DONE (owner approved): a NEW recurring item is logged from today onward for this month (`POST /transactions/generate` with templateIds + fromDate, mid-month target), best effort.
+- Owner decisions on review items: O2 ignore for now; O4 not requested (left open).
+- 254 unit tests, lint clean. Emulator (harness): Home, Plan hub, Month plan checked.
+- Review process going forward (owner asked to avoid Opus cost): codex (xhigh/high) + GLM read-only reviews of each diff, orchestrator verifies claims, fixes; Opus only if a question stays unresolved.
+
+## Remaining: Wave D Statement import (financial write; spec per docs/PARITY.md 'Statement import'), then hardening. Polish backlog: month plan action buttons wrap, Home top inset, Income & bills row layout.
 
 ## Waiting on the owner
-- Decisions on O2/O3/O4 above. Nothing else blocking.
+- Nothing blocking.
 
 ## Remaining plan
 Wave C: Month plan draft, Home. Wave D: Statement import. Hardening: accessibility, dark mode, process-death tests, R8 release build, emulator smoke of every tab. Later (v1.x): voice/text capture, purchases, realtime, gamification, biometric lock, push, widgets.

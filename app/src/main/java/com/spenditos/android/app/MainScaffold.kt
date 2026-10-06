@@ -39,7 +39,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.spenditos.android.feature.home.HomeScreen
 import com.spenditos.android.feature.receipt.ReceiptScanScreen
-import com.spenditos.android.feature.recurring.IncomeAndBillsScreen
+import com.spenditos.android.feature.plan.PlanHubScreen
 import com.spenditos.android.feature.reports.DailyAggregatesScreen
 import com.spenditos.android.feature.reports.MonthComparisonScreen
 import com.spenditos.android.feature.reports.PaycheckPeriodsScreen
@@ -129,8 +129,7 @@ fun MainScaffold(envName: String?) {
             NavHost(nav, startDestination = Tab.TRANSACTIONS.route) {
                 composable(Tab.HOME.route) { HomeScreen() }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
-                // Month plan joins this tab in Wave C (segmented "Income & bills" / "Month plan" like iOS PlanHubView).
-                composable(Tab.PLAN.route) { IncomeAndBillsScreen() }
+                composable(Tab.PLAN.route) { PlanHubScreen() }
                 composable(RECEIPT_SCAN_ROUTE) {
                     ReceiptScanScreen(
                         onResult = { values ->

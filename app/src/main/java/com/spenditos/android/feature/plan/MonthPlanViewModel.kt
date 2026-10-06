@@ -453,8 +453,8 @@ class MonthPlanViewModel @Inject constructor(
         }
     }
 
-    fun rows(): List<MonthPlanRecurringRow> {
-        val current = mutableState.value
+    /** [current] defaults to the live state; screens pass the state they composed from so rows match it. */
+    fun rows(current: MonthPlanUiState = mutableState.value): List<MonthPlanRecurringRow> {
         val snapshot = current.snapshot ?: return emptyList()
         val categoryTypes = categoryTypes(snapshot)
         val byTemplate = snapshot.plan.scheduled
@@ -487,8 +487,7 @@ class MonthPlanViewModel @Inject constructor(
         }.sortedWith(compareBy<MonthPlanRecurringRow> { !it.isIncome }.thenBy { it.dates.firstOrNull() }.thenBy { it.description })
     }
 
-    fun transactionRows(isIncome: Boolean): List<MonthPlanTransactionRow> {
-        val current = mutableState.value
+    fun transactionRows(isIncome: Boolean, current: MonthPlanUiState = mutableState.value): List<MonthPlanTransactionRow> {
         val snapshot = current.snapshot ?: return emptyList()
         val categories = categoryTypes(snapshot)
         return snapshot.transactions
@@ -503,8 +502,7 @@ class MonthPlanViewModel @Inject constructor(
             }
     }
 
-    fun summary(): MonthPlanSummary? {
-        val current = mutableState.value
+    fun summary(current: MonthPlanUiState = mutableState.value): MonthPlanSummary? {
         val snapshot = current.snapshot ?: return null
         val categories = categoryTypes(snapshot)
         var recordsIncome = BigDecimal.ZERO

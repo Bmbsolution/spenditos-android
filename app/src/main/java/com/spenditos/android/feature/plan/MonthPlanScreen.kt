@@ -59,8 +59,8 @@ private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
     var addingOneTime by remember { mutableStateOf(false) }
     var changingRow by remember { mutableStateOf<MonthPlanRecurringRow?>(null) }
     var confirmAction by remember { mutableStateOf<ConfirmAction?>(null) }
-    val rows = viewModel.rows()
-    val summary = viewModel.summary()
+    val rows = viewModel.rows(state)
+    val summary = viewModel.summary(state)
 
     LaunchedEffect(viewModel) { viewModel.load() }
 
@@ -104,8 +104,8 @@ private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
                         DraftActions(state, viewModel, onConfirm = { confirmAction = it })
                     }
                     if (rows.isEmpty() && state.draft.entries.isEmpty()) EmptyPlanCard()
-                    IncomeSection(rows.filter { it.isIncome }, viewModel.transactionRows(isIncome = true), state, viewModel, onChange = { changingRow = it })
-                    BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false), state, viewModel, onChange = { changingRow = it })
+                    IncomeSection(rows.filter { it.isIncome }, viewModel.transactionRows(isIncome = true, current = state), state, viewModel, onChange = { changingRow = it })
+                    BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false, current = state), state, viewModel, onChange = { changingRow = it })
                     OneTimeSection(
                         state = state,
                         viewModel = viewModel,
