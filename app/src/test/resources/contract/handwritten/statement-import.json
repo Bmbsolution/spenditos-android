@@ -1,0 +1,7 @@
+{
+  "data": {
+    "message": "Imported: 2 new. Skipped duplicates: 1.",
+    "count": 2,
+    "stats": {"created": 2, "updated": 0, "skipped": 1}
+  }
+}
