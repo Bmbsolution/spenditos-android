@@ -58,6 +58,21 @@ class MonthComparisonViewModelTest {
     }
 
     @Test
+    fun `net change against a negative previous month keeps the direction`() {
+        val viewModel = MonthComparisonViewModel(fake)
+        // Net improved from -200 to -100: +50%, and it is shown as a positive change.
+        assertEquals("+50%", viewModel.percentageChange(BigDecimal("-100"), BigDecimal("-200")))
+        assertTrue(viewModel.changeIsPositive(BigDecimal("-100"), BigDecimal("-200"), isExpense = false))
+        // Net worsened from -100 to -300: -200%.
+        assertEquals("-200%", viewModel.percentageChange(BigDecimal("-300"), BigDecimal("-100")))
+        // From a deficit to a surplus.
+        assertEquals("+150%", viewModel.percentageChange(BigDecimal("100"), BigDecimal("-200")))
+        // From zero to a deficit is a decrease, not "0%".
+        assertEquals("-100%", viewModel.percentageChange(BigDecimal("-50"), BigDecimal.ZERO))
+        assertEquals("0%", viewModel.percentageChange(BigDecimal.ZERO, BigDecimal.ZERO))
+    }
+
+    @Test
     fun `empty comparison has no weekly values and keeps a scale of one`() = runTest {
         fake.currentRows = emptyList()
         fake.previousRows = emptyList()

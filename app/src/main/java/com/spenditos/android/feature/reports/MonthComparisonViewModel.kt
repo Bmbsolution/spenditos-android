@@ -133,10 +133,19 @@ class MonthComparisonViewModel @Inject constructor(
         DailyAggregate::income,
     )
 
+    /**
+     * iOS MonthComparisonViewModel.percentageChange for positive baselines. Net can be negative:
+     * dividing by a negative baseline flipped the sign (net -200 to -100 showed "-50%" in the
+     * "better" colour), so the change is measured against the baseline's size.
+     */
     fun percentageChange(current: BigDecimal, previous: BigDecimal): String {
-        if (previous.signum() == 0) return if (current.signum() > 0) "+100%" else "0%"
+        if (previous.signum() == 0) return when (current.signum()) {
+            1 -> "+100%"
+            -1 -> "-100%"
+            else -> "0%"
+        }
         val change = current.subtract(previous).multiply(BigDecimal.valueOf(100))
-            .divide(previous, 0, RoundingMode.HALF_UP).toInt()
+            .divide(previous.abs(), 0, RoundingMode.HALF_UP).toInt()
         return if (change >= 0) "+${change}%" else "${change}%"
     }
 
