@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-06, Phase 2 Waves A and B done; **waiting for the owner to switch to Opus for the review batch** (Sonnet orchestrated).
+Last updated: 2026-10-06 (usage limit hit). Waves A and B built AND Opus-reviewed (subagent, commits df556e5..465b893, 203 tests, lint 0 errors). Wave C workers were still running when work stopped.
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
@@ -31,8 +31,20 @@ Review for correctness against the server contract and iOS, security, and idempo
 4. Gate semantics: `OnboardingRepository.needsOnboarding` vs iOS `checkOnboardingStatus` (`SpenditosApp.swift:329-375`).
 No queue/sync or token-storage code changed in Wave A (`core/**` untouched since Phase 1).
 
+## Opus review of Waves A+B: DONE (see docs/REVIEW-WAVE-A-B.md)
+2 must-fix + 6 should-fix fixed with tests. OPEN, needs the owner:
+- O2 (backend): POST /recurring has no idempotency key; a lost response + retry duplicates a bill/income. Fix = accept `idempotencyKeyId`/client id like /transactions/bulk. iOS has the same flaw.
+- O3 (Android behaviour): iOS and web log the current month right after creating a recurring item; Android does not (needs owner go-ahead, creates transactions; send day 15 not day 1).
+- O4 (core + iOS): unmapped server error codes show verbatim; preferring the server's readable message touches core/network/ApiCall.kt serverMessage (FailureClassifier and receipt/quota mapping rely on codes, so change carefully).
+- N1: previous account's screen state may linger in memory after sign-out until the app closes (no cross-account data shown).
+
+## Wave C IN FLIGHT when work stopped (codex workers, not Claude subagents)
+- C1 Home (status card + See the math; parity target on 2026-10-01: left after bills 1,838.50, 21%, ~59.31/day, state tight) worktree `$SCRATCHPAD/runs/*codex-90839/wt`.
+- C2 Month plan draft (apply must be idempotent; one-time entries via /transactions/bulk idempotencyKeyId) worktree `$SCRATCHPAD/runs/*codex-90841/wt`.
+- Specs: `$SCRATCHPAD/specs/waveC/`; results in `$SCRATCHPAD/specs/waveC/out-*.txt`. Next: `scripts/verify.sh <wt>`, fix compile/timing issues (see ANDROID_STYLE.md test patterns), merge, wire MainScaffold (Home tab -> HomeScreen(); Plan tab -> segmented Income & bills / Month plan), then run the Opus REVIEW SUBAGENT (Agent tool, model opus; owner prefers this over switching the session) on C2, then Wave D (statement import).
+
 ## Waiting on the owner
-- Switch the session model to **Opus**, then run the review batch above. Afterwards switch back to Sonnet for Wave C (Month plan draft, Home) and Wave D (Statement import).
+- Decisions on O2/O3/O4 above. Nothing else blocking.
 
 ## Remaining plan
 Wave C: Month plan draft, Home. Wave D: Statement import. Hardening: accessibility, dark mode, process-death tests, R8 release build, emulator smoke of every tab. Later (v1.x): voice/text capture, purchases, realtime, gamification, biometric lock, push, widgets.
@@ -45,6 +57,6 @@ The backend local e2e harness does not serve `POST /categories` (404) or `PUT /u
 - `spenditos-android/`: git repo, branch `main`, local commits only (no remote, never push). Head: see `git log`.
 - `spenditos`: `develop` @ `384235b` (4 behind origin), working tree clean. Scratch detached worktree `$SCRATCHPAD/audit/spenditos` (origin/develop `4acac33`).
 - `spenditos-ios`: untouched.
-- Running: backend e2e harness (`serve:e2e`, port in its log; `adb reverse tcp:4310 → port`), emulator `Pixel_3a_API_34_extension_level_7_arm64-v8a`. The installed harness APK currently uses a FRESH-USER token (onboarding test); reinstall `:app:installHarnessDebug` from `main` to restore the seeded Home user.
+- Backend harness and emulator were STOPPED (2h background limit). Restart: harness `pnpm --filter @spenditos/functions run serve:e2e` (from ../spenditos, needs Docker), emulator `emulator -avd Pixel_3a_API_34_extension_level_7_arm64-v8a`, then `adb reverse tcp:4310 tcp:<harness port>`. Previously running: backend e2e harness (`serve:e2e`, port in its log; `adb reverse tcp:4310 → port`), emulator `Pixel_3a_API_34_extension_level_7_arm64-v8a`. The installed harness APK currently uses a FRESH-USER token (onboarding test); reinstall `:app:installHarnessDebug` from `main` to restore the seeded Home user.
 - Pending side task (owner's choice): "Fix iOS offline replay duplicate transactions".
 - delegate.sh: the codex sandbox cannot run Gradle (blocks sockets); workers write code, the orchestrator verifies; `DELEGATE_BASE=<branch>` starts a worktree from a worker branch for second passes.
