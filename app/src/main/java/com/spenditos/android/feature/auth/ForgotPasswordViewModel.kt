@@ -49,7 +49,7 @@ class ForgotPasswordViewModel @Inject constructor(private val accounts: AccountO
         if (!current.canSendCode || current.step != ForgotPasswordStep.EMAIL) return
         _state.update { it.copy(isLoading = true, error = null, notice = null) }
         viewModelScope.launch {
-            val result = runCatching { accounts.forgotPassword(current.email) }
+            val result = runCatching { accounts.forgotPassword(current.email.trim()) }
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(step = ForgotPasswordStep.RESET, isLoading = false, notice = "If an account exists, a reset code is on its way.") }
@@ -64,7 +64,7 @@ class ForgotPasswordViewModel @Inject constructor(private val accounts: AccountO
         if (!current.canReset || current.step != ForgotPasswordStep.RESET) return
         _state.update { it.copy(isLoading = true, error = null, notice = null) }
         viewModelScope.launch {
-            val result = runCatching { accounts.confirmPassword(current.email, current.code, current.newPassword) }
+            val result = runCatching { accounts.confirmPassword(current.email.trim(), current.code, current.newPassword) }
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(code = "", newPassword = "", isLoading = false, isDone = true, notice = "Password reset. You can now sign in.") }

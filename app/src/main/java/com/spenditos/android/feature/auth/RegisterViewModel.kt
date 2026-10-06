@@ -48,12 +48,14 @@ class RegisterViewModel @Inject constructor(private val accounts: AccountOperati
         val current = _state.value
         if (!current.canRegister) return
         _state.update { it.copy(isLoading = true, error = null) }
+        // Trimmed like sign-in: a keyboard's trailing space would fail the server's email check.
+        val email = current.email.trim()
         viewModelScope.launch {
-            val result = runCatching { accounts.register(current.email, current.password, ZoneId.systemDefault().id) }
+            val result = runCatching { accounts.register(email, current.password, ZoneId.systemDefault().id) }
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(password = "", confirmPasswordText = "", isLoading = false) }
-                    _events.send(RegisterEvent.Registered(current.email))
+                    _events.send(RegisterEvent.Registered(email))
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, error = accountErrorMessage(error)) }

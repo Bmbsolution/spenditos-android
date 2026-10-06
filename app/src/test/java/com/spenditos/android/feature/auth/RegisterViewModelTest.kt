@@ -54,6 +54,18 @@ class RegisterViewModelTest {
     }
 
     @Test
+    fun `registration trims the email like sign in`() = runTest {
+        val event = async { viewModel.events.first() }
+        viewModel.onEmailChange(" person@example.test ")
+        viewModel.onPasswordChange("Abcdef1!")
+        viewModel.onConfirmPasswordChange("Abcdef1!")
+        viewModel.register()
+        advanceUntilIdle()
+        assertEquals("person@example.test", accounts.registeredEmail)
+        assertEquals(RegisterEvent.Registered("person@example.test"), event.await())
+    }
+
+    @Test
     fun `registration client error is shown`() = runTest {
         accounts.failure = ApiError.Server(400, "Invalid registration payload")
         fillForm()

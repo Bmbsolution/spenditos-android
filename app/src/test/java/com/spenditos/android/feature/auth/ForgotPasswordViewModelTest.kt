@@ -43,6 +43,14 @@ class ForgotPasswordViewModelTest {
     }
 
     @Test
+    fun `send code trims the email like sign in`() = runTest {
+        viewModel.onEmailChange(" person@example.test ")
+        viewModel.sendCode()
+        advanceUntilIdle()
+        assertEquals("person@example.test", accounts.forgotEmail)
+    }
+
+    @Test
     fun `send code client error is shown`() = runTest {
         accounts.forgotFailure = ApiError.Server(400, "Invalid email")
         viewModel.onEmailChange("person@example.test")
