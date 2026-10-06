@@ -1,0 +1,32 @@
+{
+  "data": {
+    "results": [
+      {
+        "transaction": {
+          "id": "transaction-fake-lunch",
+          "userId": "user-fake-capture",
+          "categoryId": "category-fake-food",
+          "description": "Lunch",
+          "amount": 24,
+          "date": "2026-10-03",
+          "source": "voice"
+        }
+      },
+      {
+        "transaction": {
+          "id": "transaction-fake-side-job",
+          "userId": "user-fake-capture",
+          "categoryId": "category-fake-income",
+          "description": "Side job",
+          "amount": 80,
+          "date": "2026-10-04",
+          "source": "voice"
+        }
+      }
+    ],
+    "failed": [
+      { "index": 1, "reason": "Category does not belong to this account" }
+    ],
+    "duplicates": 1
+  }
+}

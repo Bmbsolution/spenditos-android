@@ -1,0 +1,34 @@
+{
+  "data": {
+    "analysisId": "analysis-fake-capture-001",
+    "status": "success",
+    "documentKey": "users/fake-user/capture-fake.m4a",
+    "transcript": "Paid 24 for lunch and received 80 from a side job.",
+    "captureSessionId": "analysis-fake-capture-001",
+    "parentAnalysisId": "analysis-fake-parent-001",
+    "items": [
+      {
+        "amount": 24,
+        "currency": "CAD",
+        "date": "2026-10-03",
+        "categoryId": "category-fake-food",
+        "categoryHint": "Food",
+        "merchantName": "Fake Cafe",
+        "description": "Lunch",
+        "confidence": 0.91,
+        "transactionType": "expense"
+      },
+      {
+        "amount": 80,
+        "currency": "CAD",
+        "date": "2026-10-04",
+        "categoryId": null,
+        "categoryHint": "Side income",
+        "merchantName": null,
+        "description": "Side job",
+        "confidence": 0.84,
+        "transactionType": "income"
+      }
+    ]
+  }
+}
