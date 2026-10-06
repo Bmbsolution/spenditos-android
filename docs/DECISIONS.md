@@ -36,5 +36,5 @@ Format: ID · date · decision · why · who decided.
 ## Still open
 
 - Approved 2026-10-06: plan, dependency downloads, local `git init`.
-- Open: local commits (needed before Phase 2 worktrees, which branch from HEAD).
+- Approved 2026-10-06: local commits (no remote, never push). Baseline `8d26aba`.
 - Done 2026-10-06: owner signed in to staging on the emulator (D14).

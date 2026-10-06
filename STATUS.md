@@ -18,8 +18,9 @@ Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, th
 - Staging (2026-10-06): owner signed in on the emulator; `/user/settings`, `/categories`, `/transactions` all 200 through the auth interceptor; user currency applied; session survived a force-stop + relaunch (Keystore token store). Staging screenshots deliberately not kept (real account data).
 
 ## Waiting on the owner
-- Permission to make local commits in `spenditos-android` (baseline commit is needed before Phase 2: worker worktrees branch from HEAD).
 - Model switch to Sonnet for Phase 2.
+
+Owner allowed local commits (2026-10-06): baseline committed; commit each reviewed, verified feature merge locally. Never push (no remote).
 
 ## Next (Phase 2, Sonnet orchestrates, codex workers, one feature per worktree)
 Wave A (parallel): Categories + Settings basics · Reports (4 screens) · Onboarding + register/verify/forgot screens (auth UI only; AuthRepository/SessionManager changes need Opus review).
@@ -32,7 +33,7 @@ Phase 2 TODOs carried from Phase 1:
 - Transaction list: scroll to today / pagination beyond one month is out of scope until filters land.
 
 ## Repos, branches, worktrees, processes
-- `spenditos-android/`: git repo, branch `main`, **no commits yet** (all files untracked). No remote.
+- `spenditos-android/`: git repo, branch `main`, baseline commit `8d26aba` (Phase 1). No remote.
 - `spenditos`: `develop` @ `384235b` (4 behind origin), working tree clean; harness built gitignored output only. Scratch detached worktree at `$SCRATCHPAD/audit/spenditos` (origin/develop `4acac33`, types built, node_modules symlinked); remove with `git -C ../spenditos worktree remove --force <path>`.
 - `spenditos-ios`: untouched.
 - Running (started by Claude): backend e2e harness (`serve:e2e`, port printed in its log), Android emulator `Pixel_3a_API_34_extension_level_7_arm64-v8a`, `adb reverse tcp:4310 → harness port`.
