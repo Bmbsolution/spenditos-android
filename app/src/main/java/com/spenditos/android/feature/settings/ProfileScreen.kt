@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.settings
 
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,12 +95,12 @@ private val currencyOptions = listOf(
 )
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var currencySearch by remember { mutableStateOf("") }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Profile") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("Profile") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }) }) { padding ->
         if (state.isLoading) {
             Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.Center) {
                 CircularProgressIndicator(Modifier.padding(24.dp).testTag("profile.loading"))

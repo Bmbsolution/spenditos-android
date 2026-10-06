@@ -129,14 +129,14 @@ class CategoriesManagementViewModelTest {
         vm.saveCategory(null, CategoryDraft("Fake Salary", "#3F7D70", "💰", true))
         runCurrent()
         assertEquals(CategoriesManagementEvent.Saved, saved.await())
-        assertTrue(vm.state.value.categories.any { it.name == "Fake Salary" && it.isIncome })
+        assertTrue(vm.state.first { s -> s.categories.any { it.name == "Fake Salary" && it.isIncome } }.categories.isNotEmpty()) // Room emits on its own executor
         assertEquals(1, graph.api.createCalls)
 
         val updated = async { vm.events.first() }
         vm.saveCategory("c1", CategoryDraft("Fake Dining", "#B86A6A", null, true))
         runCurrent()
         assertEquals(CategoriesManagementEvent.Saved, updated.await())
-        assertTrue(vm.state.value.categories.any { it.id == "c1" && it.name == "Fake Dining" && it.isIncome })
+        assertTrue(vm.state.first { s -> s.categories.any { it.id == "c1" && it.name == "Fake Dining" && it.isIncome } }.categories.isNotEmpty())
         assertEquals(1, graph.api.updateCalls)
     }
 
@@ -176,7 +176,7 @@ class CategoriesManagementViewModelTest {
         vm.deleteCategory("c1")
         runCurrent()
         assertEquals(CategoriesManagementEvent.Deleted, deleted.await())
-        assertTrue(vm.state.value.categories.isEmpty())
+        assertTrue(vm.state.first { it.categories.isEmpty() }.categories.isEmpty()) // Room emits on its own executor
 
         failures().forEach { failure ->
             val failedGraph = graph(listOf(category()))

@@ -19,9 +19,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
-import mockwebserver3.SocketEffect
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import com.spenditos.android.testing.OfflineInterceptor
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -40,7 +40,7 @@ class UserSettingsRepositoryTest {
     @Before
     fun setUp() {
         server.start()
-        val api = Retrofit.Builder().baseUrl(server.url("/")).client(OkHttpClient())
+        val api = Retrofit.Builder().baseUrl(server.url("/")).client(OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(offline).build())
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
             .build().create(UserApi::class.java)
         val session = SessionManager(
@@ -61,7 +61,7 @@ class UserSettingsRepositoryTest {
     private suspend fun failure(block: suspend () -> Any?): Throwable =
         requireNotNull(runCatching { block() }.exceptionOrNull()) { "expected failure" }
 
-    private fun networkFailure() = MockResponse.Builder().onRequestStart(SocketEffect.CloseSocket()).build()
+    private val offline = OfflineInterceptor()
 
     @Test
     fun `handwritten user request fixture decodes nullable display name and password body`() {
@@ -88,7 +88,7 @@ class UserSettingsRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.refresh() } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.refresh() } is ApiError.Network)
     }
 
@@ -117,7 +117,7 @@ class UserSettingsRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.updateSettings(update) } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.updateSettings(update) } is ApiError.Network)
     }
 
@@ -138,7 +138,7 @@ class UserSettingsRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.changePassword("Fake-Current-123!", "Fake-New-456!") } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.changePassword("Fake-Current-123!", "Fake-New-456!") } is ApiError.Network)
     }
 }

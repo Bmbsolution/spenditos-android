@@ -17,4 +17,8 @@ object OnboardingModule {
     @Provides
     @Singleton
     fun onboardingActions(repository: OnboardingRepository): OnboardingActions = repository
+
+    @Provides
+    @Singleton
+    fun onboardingFlags(store: DataStoreOnboardingFlagStore): OnboardingFlagStore = store
 }

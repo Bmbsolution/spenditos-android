@@ -24,9 +24,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
-import mockwebserver3.SocketEffect
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import com.spenditos.android.testing.OfflineInterceptor
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -51,7 +51,7 @@ class CategoryRepositoryTest {
             ApplicationProvider.getApplicationContext<Context>(),
             SpenditosDatabase::class.java,
         ).allowMainThreadQueries().build()
-        val api = Retrofit.Builder().baseUrl(server.url("/")).client(OkHttpClient())
+        val api = Retrofit.Builder().baseUrl(server.url("/")).client(OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(offline).build())
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
             .build().create(CategoriesApi::class.java)
         val session = SessionManager(
@@ -80,7 +80,7 @@ class CategoryRepositoryTest {
     private suspend fun failure(block: suspend () -> Any?): Throwable =
         requireNotNull(runCatching { block() }.exceptionOrNull()) { "expected failure" }
 
-    private fun networkFailure() = MockResponse.Builder().onRequestStart(SocketEffect.CloseSocket()).build()
+    private val offline = OfflineInterceptor()
 
     @Test
     fun `handwritten category request fixture decodes create and update bodies`() {
@@ -108,7 +108,7 @@ class CategoryRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.refresh() } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         val networkError = failure { repository.refresh() }
         assertTrue(networkError is ApiError.Network)
     }
@@ -139,7 +139,7 @@ class CategoryRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.create(request) } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.create(request) } is ApiError.Network)
     }
 
@@ -165,7 +165,7 @@ class CategoryRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.update("cat-1", update) } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.update("cat-1", update) } is ApiError.Network)
     }
 
@@ -175,8 +175,9 @@ class CategoryRepositoryTest {
         server.enqueue(MockResponse(code = 204))
         server.enqueue(MockResponse(body = listBody()))
         repository.delete("cat-1")
-        assertEquals("DELETE", server.takeRequest().method)
-        assertEquals("/categories/cat-1", server.takeRequest().url.encodedPath)
+        val deleteRequest = server.takeRequest()
+        assertEquals("DELETE", deleteRequest.method)
+        assertEquals("/categories/cat-1", deleteRequest.url.encodedPath)
         assertTrue(db.categories().observe("user-1").first().isEmpty())
     }
 
@@ -188,7 +189,7 @@ class CategoryRepositoryTest {
         server.enqueue(MockResponse(code = 503, body = """{"error":"Unavailable"}"""))
         assertTrue(failure { repository.delete("cat-1") } is ApiError.Server)
 
-        server.enqueue(networkFailure())
+        offline.failNext = 1
         assertTrue(failure { repository.delete("cat-1") } is ApiError.Network)
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,7 +42,7 @@ fun OnboardingScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().padding(Spacing.screen).testTag("onboarding.screen"),
+        Modifier.fillMaxSize().safeDrawingPadding().padding(Spacing.screen).testTag("onboarding.screen"),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Text("Quick setup", style = MaterialTheme.typography.titleLarge)

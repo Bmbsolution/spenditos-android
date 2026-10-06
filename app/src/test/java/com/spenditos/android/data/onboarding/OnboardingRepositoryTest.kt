@@ -11,6 +11,7 @@ import com.spenditos.android.core.db.SpenditosDatabase
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.ApiEnvelope
 import com.spenditos.android.core.network.SpenditosJson
+import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.categories.CategoriesApi
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.Category
@@ -31,6 +32,7 @@ import mockwebserver3.MockWebServer
 import mockwebserver3.SocketEffect
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import com.spenditos.android.testing.OfflineInterceptor
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -48,6 +50,8 @@ class OnboardingRepositoryTest {
     private val server = MockWebServer()
     private lateinit var database: SpenditosDatabase
     private lateinit var repository: OnboardingRepository
+    private val flags = FakeOnboardingFlags()
+    private val offline = OfflineInterceptor()
 
     @Before
     fun setUp() {
@@ -58,7 +62,7 @@ class OnboardingRepositoryTest {
         ).allowMainThreadQueries().build()
         val retrofit = Retrofit.Builder()
             .baseUrl(server.url("/"))
-            .client(OkHttpClient())
+            .client(OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(offline).build())
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
             .build()
         val session = SessionManager(
@@ -74,7 +78,9 @@ class OnboardingRepositoryTest {
                 retrofit.create(UserApi::class.java),
                 session,
             ),
-            CategoryRepository(retrofit.create(CategoriesApi::class.java), database.categories(), session),
+            CategoryRepository(retrofit.create(CategoriesApi::class.java), database.categories(), session, FinanceInvalidationBus()),
+            session,
+            flags,
         )
     }
 
@@ -85,20 +91,35 @@ class OnboardingRepositoryTest {
     }
 
     @Test
-    fun `launch gate is true only for successful incomplete settings`() = runTest {
+    fun `launch gate shows onboarding for incomplete settings and remembers a completed account`() = runTest {
         server.enqueue(json(200, settingsBody(setupCompleted = false)))
         assertTrue(repository.needsOnboarding())
+        assertFalse(flags.isCompleted("user-1"))
 
         server.enqueue(json(200, settingsBody(setupCompleted = true)))
         assertFalse(repository.needsOnboarding())
+        assertTrue(flags.isCompleted("user-1"))
+
+        // Remembered on this device: no further request (iOS hasCompletedOnboarding).
+        val requests = server.requestCount
+        assertFalse(repository.needsOnboarding())
+        assertEquals(requests, server.requestCount)
     }
 
     @Test
-    fun `launch gate fails open for client and network errors`() = runTest {
+    fun `launch gate shows onboarding when the check fails, unless completed on this device`() = runTest {
+        // A brand-new account has no settings row yet: the server answers 404.
         server.enqueue(json(404, """{"error":"NotFound"}"""))
-        assertFalse(repository.needsOnboarding())
+        assertTrue(repository.needsOnboarding())
 
-        server.enqueue(MockResponse.Builder().onRequestStart(SocketEffect.CloseSocket()).build())
+        server.enqueue(json(503, """{"error":"Unavailable"}"""))
+        assertTrue(repository.needsOnboarding())
+
+        offline.failNext = 1
+        assertTrue(repository.needsOnboarding())
+
+        flags.markCompleted("user-1")
+        offline.failNext = 1
         assertFalse(repository.needsOnboarding())
     }
 
@@ -137,6 +158,7 @@ class OnboardingRepositoryTest {
         server.enqueue(json(200, categoriesBody()))
 
         repository.complete("Rae", "CAD", "CA", "fr", seedRequests())
+        assertTrue(flags.isCompleted("user-1"))
 
         val categoriesCheck = server.takeRequest()
         assertEquals("GET", categoriesCheck.method)
@@ -248,5 +270,15 @@ class OnboardingRepositoryTest {
             )
         }
         return """{"data":${SpenditosJson.encodeToString(ListSerializer(Category.serializer()), rows)}}"""
+    }
+}
+
+private class FakeOnboardingFlags : OnboardingFlagStore {
+    private val done = mutableSetOf<String>()
+
+    override suspend fun isCompleted(userId: String) = userId in done
+
+    override suspend fun markCompleted(userId: String) {
+        done += userId
     }
 }

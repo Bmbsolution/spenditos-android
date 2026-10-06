@@ -1,5 +1,6 @@
 package com.spenditos.android.data.onboarding
 
+import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.network.apiCall
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.OnboardingCategoryRequest
@@ -27,14 +28,27 @@ class OnboardingRepository @Inject constructor(
     private val api: OnboardingApi,
     private val settings: UserSettingsRepository,
     private val categories: CategoryRepository,
+    private val session: SessionManager,
+    private val flags: OnboardingFlagStore,
 ) : OnboardingActions {
-    /** Fail open: only a successful settings response with `setupCompleted=false` blocks launch. */
-    override suspend fun needsOnboarding(): Boolean = try {
-        !apiCall { api.settings() }.setupCompleted
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        false
+    /**
+     * iOS `checkOnboardingStatus`: skip when this account already finished setup on this device;
+     * otherwise ask the server. Only `setupCompleted = true` skips it. Any failure (including a 404
+     * for an account with no settings yet) shows onboarding, so a new user is never blocked by a
+     * temporary network error. Completing it again is safe (see [complete]).
+     */
+    override suspend fun needsOnboarding(): Boolean {
+        val userId = session.currentUserId ?: return true
+        if (flags.isCompleted(userId)) return false
+        return try {
+            val done = apiCall { api.settings() }.setupCompleted
+            if (done) flags.markCompleted(userId)
+            !done
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            true
+        }
     }
 
     override suspend fun detectCountry(): String? =
@@ -69,6 +83,7 @@ class OnboardingRepository @Inject constructor(
                 throw IllegalStateException("The server did not save setup completion")
             }
         }
+        session.currentUserId?.let { flags.markCompleted(it) }
         settings.refresh()
         categories.refresh()
     }

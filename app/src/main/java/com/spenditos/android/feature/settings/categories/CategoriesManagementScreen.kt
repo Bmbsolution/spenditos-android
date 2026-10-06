@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.settings.categories
 
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +39,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.theme.Spacing
 
 @Composable
-fun CategoriesManagementScreen(viewModel: CategoriesManagementViewModel = hiltViewModel()) {
+fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManagementViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedIncome by remember { mutableStateOf(false) }
     var showEditor by remember { mutableStateOf(false) }
@@ -58,6 +62,7 @@ fun CategoriesManagementScreen(viewModel: CategoriesManagementViewModel = hiltVi
         topBar = {
             TopAppBar(
                 title = { Text("Categories") },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } },
                 actions = {
                     TextButton(
                         onClick = { categoryToEdit = null; showEditor = true },

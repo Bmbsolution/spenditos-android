@@ -38,7 +38,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.spenditos.android.feature.placeholder.ComingSoonScreen
+import com.spenditos.android.feature.reports.DailyAggregatesScreen
+import com.spenditos.android.feature.reports.MonthComparisonScreen
+import com.spenditos.android.feature.reports.PaycheckPeriodsScreen
+import com.spenditos.android.feature.reports.ReportsHubScreen
+import com.spenditos.android.feature.settings.ChangePasswordScreen
+import com.spenditos.android.feature.settings.ProfileScreen
 import com.spenditos.android.feature.settings.SettingsScreen
+import com.spenditos.android.feature.settings.categories.CategoriesManagementScreen
 import com.spenditos.android.feature.sync.NotSyncedScreen
 import com.spenditos.android.feature.transactions.AddTransactionSheet
 import com.spenditos.android.feature.transactions.TransactionListScreen
@@ -55,6 +62,12 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 }
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
+private const val REPORTS_DAILY_ROUTE = "reports/daily"
+private const val REPORTS_COMPARISON_ROUTE = "reports/comparison"
+private const val REPORTS_PAYCHECK_ROUTE = "reports/paycheck-periods"
+private const val PROFILE_ROUTE = "settings/profile"
+private const val CATEGORIES_ROUTE = "settings/categories"
+private const val CHANGE_PASSWORD_ROUTE = "settings/change-password"
 
 /** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
 @Composable
@@ -111,8 +124,27 @@ fun MainScaffold(envName: String?) {
                 composable(Tab.HOME.route) { ComingSoonScreen("Home", "Your cash-flow status lands in Wave C.") }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
                 composable(Tab.PLAN.route) { ComingSoonScreen("Plan", "Income & bills and Month plan land in Waves B and C.") }
-                composable(Tab.REPORTS.route) { ComingSoonScreen("Reports", "Reports land in Wave A.") }
-                composable(Tab.SETTINGS.route) { SettingsScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
+                composable(Tab.REPORTS.route) {
+                    ReportsHubScreen(
+                        onOpenDaily = { nav.navigate(REPORTS_DAILY_ROUTE) },
+                        onOpenComparison = { nav.navigate(REPORTS_COMPARISON_ROUTE) },
+                        onOpenPaycheckPeriods = { nav.navigate(REPORTS_PAYCHECK_ROUTE) },
+                    )
+                }
+                composable(REPORTS_DAILY_ROUTE) { DailyAggregatesScreen(onBack = { nav.popBackStack() }) }
+                composable(REPORTS_COMPARISON_ROUTE) { MonthComparisonScreen(onBack = { nav.popBackStack() }) }
+                composable(REPORTS_PAYCHECK_ROUTE) { PaycheckPeriodsScreen(onBack = { nav.popBackStack() }) }
+                composable(Tab.SETTINGS.route) {
+                    SettingsScreen(
+                        onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) },
+                        onOpenProfile = { nav.navigate(PROFILE_ROUTE) },
+                        onOpenCategories = { nav.navigate(CATEGORIES_ROUTE) },
+                        onOpenChangePassword = { nav.navigate(CHANGE_PASSWORD_ROUTE) },
+                    )
+                }
+                composable(PROFILE_ROUTE) { ProfileScreen(onBack = { nav.popBackStack() }) }
+                composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
+                composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
             }
             envName?.let { EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp)) }

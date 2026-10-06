@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.settings
 
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,9 +31,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.theme.Spacing
 
 @Composable
-fun ChangePasswordScreen(viewModel: ChangePasswordViewModel = hiltViewModel()) {
+fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Scaffold(topBar = { TopAppBar(title = { Text("Change password") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("Change password") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = Spacing.screen),
             verticalArrangement = Arrangement.spacedBy(16.dp),
