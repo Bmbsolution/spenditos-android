@@ -65,7 +65,7 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 
 ## Remaining plan
 Wave C: Month plan draft, Home. Wave D: Statement import. Hardening: accessibility, dark mode, process-death tests, R8 release build, emulator smoke of every tab. Later (v1.x): voice/text capture, purchases, realtime, gamification, biometric lock, push, widgets.
-Polish backlog (cosmetic): Income & bills rows (inline Edit/Delete, tighter layout), categories rows (color dot, inline Edit/Delete), month comparison "Net" figure crowding its percentage, FAB overlaps list tails, tab label contrast.
+Polish backlog: done (Income & bills, categories color dot + inline actions, comparison Net row, FAB insets). Only tab-label contrast not reviewed.
 
 ## Known harness limits
 The backend local e2e harness does not serve `POST /categories` (404) or `PUT /user/settings` / country-detection for new users, so those writes are covered by MockWebServer tests, not on-device. A fresh user id (any `e2e-<uuid>` token) gets 404 on settings, which is how the onboarding wizard was exercised (temporary token edit, reverted).

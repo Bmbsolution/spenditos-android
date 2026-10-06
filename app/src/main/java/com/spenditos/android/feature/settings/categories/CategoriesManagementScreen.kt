@@ -6,6 +6,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import com.spenditos.android.ui.components.categoryColor
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -129,13 +135,14 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                         Row(Modifier.fillMaxWidth().testTag("categories.row.${category.id}")) {
                             ListItem(
                                 headlineContent = { Text(category.name) },
-                                supportingContent = { Text(category.icon?.takeIf { it.isNotBlank() } ?: "No icon") },
+                                leadingContent = { Box(Modifier.size(20.dp).background(categoryColor(category.color), CircleShape)) },
+                                supportingContent = category.icon?.takeIf { it.isNotBlank() }?.let { icon -> { Text(icon) } },
                                 modifier = Modifier.weight(1f).clickable {
                                     categoryToEdit = category
                                     showEditor = true
                                 }.testTag("categories.item.${category.id}"),
                             )
-                            Column(Modifier.padding(end = 8.dp), verticalArrangement = Arrangement.Center) {
+                            Row(Modifier.padding(end = 8.dp).align(Alignment.CenterVertically)) {
                                 TextButton(
                                     onClick = { categoryToEdit = category; showEditor = true },
                                     modifier = Modifier.testTag("categories.edit.${category.id}"),

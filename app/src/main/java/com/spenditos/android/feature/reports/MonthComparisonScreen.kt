@@ -134,7 +134,7 @@ private fun ComparisonSummaryCards(state: MonthComparisonUiState, viewModel: Mon
             )
         }
         Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("reports.comparison.net")) {
-            Row(Modifier.padding(Spacing.m), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text("Net", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(Money.format(state.currentNet.toDouble(), state.currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
