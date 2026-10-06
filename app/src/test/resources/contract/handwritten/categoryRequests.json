@@ -1,0 +1,14 @@
+{
+  "create": {
+    "name": "Fake Meals",
+    "color": "#B85F42",
+    "isIncome": false,
+    "icon": "🍲"
+  },
+  "update": {
+    "name": "Fake Income",
+    "color": "#3F7D70",
+    "isIncome": true,
+    "icon": ""
+  }
+}
