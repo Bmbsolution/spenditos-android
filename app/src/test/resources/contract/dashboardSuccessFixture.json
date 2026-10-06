@@ -1,0 +1,53 @@
+{
+  "message": "Dashboard data retrieved successfully",
+  "data": {
+    "dateRange": {
+      "startDate": "2026-01-01",
+      "endDate": "2026-01-31"
+    },
+    "summary": {
+      "totalIncome": 6400,
+      "totalExpenses": 3191,
+      "netAmount": 3209
+    },
+    "categoryBreakdown": [
+      {
+        "categoryId": "cat-groceries",
+        "categoryName": "Groceries",
+        "categoryColor": "#4CAF50",
+        "categoryIcon": "shopping-cart",
+        "totalAmount": 42.5,
+        "transactionCount": 1,
+        "isIncome": false
+      }
+    ],
+    "recentTransactions": [
+      {
+        "id": "txn-001",
+        "userId": "user-fixture-001",
+        "categoryId": "cat-groceries",
+        "description": "Whole Foods Market",
+        "amount": 42.5,
+        "date": "2026-01-15",
+        "mood": "necessary",
+        "createdAt": "2026-01-15T10:30:00.000Z",
+        "updatedAt": "2026-01-15T10:30:00.000Z"
+      }
+    ],
+    "activeRecurringTemplatesCount": 2,
+    "gameSummary": {
+      "availablePoints": 1050,
+      "totalEarned": 1250,
+      "level": 5,
+      "levelTitle": "Saver",
+      "pointsAtCurrentLevel": 250,
+      "nextLevelThreshold": 750,
+      "progressPercentage": 33,
+      "unlockedAchievementIds": [
+        "ach-first-transaction"
+      ],
+      "userAchievements": []
+    },
+    "totalTransactionCount": 15
+  }
+}

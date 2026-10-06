@@ -1,0 +1,45 @@
+{
+  "message": "Transactions retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": "txn-001",
+        "userId": "user-fixture-001",
+        "categoryId": "cat-groceries",
+        "description": "Whole Foods Market",
+        "amount": 42.5,
+        "date": "2026-01-15",
+        "mood": "necessary",
+        "createdAt": "2026-01-15T10:30:00.000Z",
+        "updatedAt": "2026-01-15T10:30:00.000Z"
+      },
+      {
+        "id": "txn-projected-001",
+        "userId": "user-fixture-001",
+        "categoryId": "cat-rent",
+        "templateId": "tmpl-rent-001",
+        "description": "Rent - February (projected)",
+        "amount": 1500,
+        "date": "2026-02-01",
+        "mood": null,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "txn-002",
+        "userId": "user-fixture-001",
+        "categoryId": "cat-groceries",
+        "description": "Starbucks",
+        "amount": 5.25,
+        "date": "2026-01-14",
+        "mood": "worth_it",
+        "createdAt": "2026-01-14T07:15:00.000Z",
+        "updatedAt": "2026-01-14T07:15:00.000Z"
+      }
+    ],
+    "pagination": {
+      "hasMore": true,
+      "nextCursor": "eyJza2V0IjoidGhuLTAwMiJ9"
+    }
+  }
+}

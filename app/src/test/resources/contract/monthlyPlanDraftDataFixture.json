@@ -1,0 +1,45 @@
+{
+  "month": "2026-02",
+  "entries": [
+    {
+      "id": "draft-mobile",
+      "idempotencyKeyId": "planning-draft-mobile",
+      "date": "2026-02-12",
+      "description": "Mobile Carrier",
+      "amount": 72,
+      "categoryId": "cat-phone",
+      "recurring": {
+        "type": "fixed",
+        "frequency": "monthly",
+        "repeatInterval": 1,
+        "secondOccurrenceDay": null
+      }
+    }
+  ],
+  "transactionDelta": {},
+  "pendingEdits": [
+    {
+      "transactionId": "txn-mobile",
+      "amount": 80,
+      "description": "Mobile Carrier (adjusted this month)"
+    }
+  ],
+  "pendingLogs": [
+    {
+      "templateId": "tpl-rent",
+      "month": "2026-02",
+      "overrides": [
+        {
+          "occurrenceDate": "2026-02-01",
+          "amount": 1450
+        }
+      ]
+    }
+  ],
+  "pendingDeletes": [
+    {
+      "transactionId": "txn-old-subscription"
+    }
+  ],
+  "updatedAt": "2026-01-20T12:34:56.000Z"
+}

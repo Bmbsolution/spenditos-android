@@ -1,0 +1,15 @@
+{
+  "error": "Validation failed",
+  "details": {
+    "fields": [
+      {
+        "field": "amount",
+        "message": "Amount must be a positive number"
+      },
+      {
+        "field": "date",
+        "message": "Date must be in ISO 8601 format"
+      }
+    ]
+  }
+}

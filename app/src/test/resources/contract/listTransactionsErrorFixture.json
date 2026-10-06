@@ -1,0 +1,7 @@
+{
+  "error": "Invalid date range",
+  "details": {
+    "field": "startDate",
+    "reason": "startDate is required"
+  }
+}

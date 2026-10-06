@@ -1,0 +1,24 @@
+{
+  "message": "Paycheck periods retrieved successfully",
+  "data": {
+    "dateRange": {
+      "startDate": "2026-01-01",
+      "endDate": "2026-01-31"
+    },
+    "periods": [
+      {
+        "id": "period-001",
+        "startDate": "2026-01-01",
+        "endDate": "2026-01-15",
+        "label": "Jan 1 - Jan 15, 2026",
+        "income": {
+          "total": 3200
+        },
+        "expenses": {
+          "total": 1000.5
+        },
+        "coverageStatus": "covered"
+      }
+    ]
+  }
+}

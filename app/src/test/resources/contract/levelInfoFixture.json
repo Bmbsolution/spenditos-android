@@ -1,0 +1,20 @@
+{
+  "level": 5,
+  "title": "Saver",
+  "totalPoints": 1250,
+  "pointsAtCurrentLevel": 250,
+  "pointsForNextLevel": 750,
+  "progressPercentage": 33,
+  "benefits": {
+    "level": 5,
+    "title": "Saver",
+    "unlocks": [
+      "analytics",
+      "streak_freeze"
+    ],
+    "benefits": [
+      "Advanced analytics",
+      "Streak freeze protection"
+    ]
+  }
+}

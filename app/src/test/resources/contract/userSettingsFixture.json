@@ -1,0 +1,9 @@
+{
+  "userId": "user-fixture-001",
+  "currency": "USD",
+  "mainIncomeTemplateId": "tmpl-salary-001",
+  "country": "US",
+  "timezone": "America/New_York",
+  "setupCompleted": true,
+  "displayName": "Fixture User"
+}

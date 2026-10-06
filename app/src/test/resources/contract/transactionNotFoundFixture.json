@@ -1,0 +1,6 @@
+{
+  "error": "Transaction not found",
+  "details": {
+    "transactionId": "txn-nonexistent"
+  }
+}

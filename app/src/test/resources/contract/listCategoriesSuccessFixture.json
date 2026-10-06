@@ -1,0 +1,32 @@
+{
+  "message": "Categories retrieved successfully",
+  "data": [
+    {
+      "id": "cat-salary",
+      "userId": "user-fixture-001",
+      "name": "Salary",
+      "color": "#2196F3",
+      "icon": "briefcase",
+      "isIncome": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cat-groceries",
+      "userId": "user-fixture-001",
+      "name": "Groceries",
+      "color": "#4CAF50",
+      "icon": "shopping-cart",
+      "isIncome": false,
+      "sortOrder": 1
+    },
+    {
+      "id": "cat-rent",
+      "userId": "user-fixture-001",
+      "name": "Rent",
+      "color": "#FF9800",
+      "icon": "home",
+      "isIncome": false,
+      "sortOrder": 2
+    }
+  ]
+}

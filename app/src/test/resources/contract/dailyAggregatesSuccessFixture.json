@@ -1,0 +1,25 @@
+{
+  "message": "Daily aggregates retrieved successfully",
+  "data": {
+    "data": [
+      {
+        "date": "2026-01-15",
+        "income": 0,
+        "expenses": 42.5,
+        "transactionCount": 1
+      },
+      {
+        "date": "2026-01-16",
+        "income": 1600,
+        "expenses": 12.75,
+        "transactionCount": 2
+      },
+      {
+        "date": "2026-01-17",
+        "income": 0,
+        "expenses": 0,
+        "transactionCount": 0
+      }
+    ]
+  }
+}

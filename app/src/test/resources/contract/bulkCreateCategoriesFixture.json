@@ -1,0 +1,32 @@
+{
+  "message": "Bulk category creation completed",
+  "data": [
+    {
+      "id": "cat-salary",
+      "userId": "user-fixture-001",
+      "name": "Salary",
+      "color": "#2196F3",
+      "icon": "briefcase",
+      "isIncome": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cat-groceries",
+      "userId": "user-fixture-001",
+      "name": "Groceries",
+      "color": "#4CAF50",
+      "icon": "shopping-cart",
+      "isIncome": false,
+      "sortOrder": 1
+    },
+    {
+      "id": "cat-utilities",
+      "userId": "user-fixture-001",
+      "name": "Utilities",
+      "color": "#9C27B0",
+      "icon": "lightbulb",
+      "isIncome": false,
+      "sortOrder": 3
+    }
+  ]
+}

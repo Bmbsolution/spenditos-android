@@ -1,0 +1,19 @@
+{
+  "id": "chal-weekly-001",
+  "userId": "user-fixture-001",
+  "type": "transaction_count",
+  "title": "Log 10 transactions this week",
+  "description": "Keep your tracking habit going.",
+  "difficulty": "medium",
+  "target": 100,
+  "current": 45,
+  "completed": false,
+  "date": "2026-01-13",
+  "reward": 50,
+  "createdAt": "2026-01-13T00:00:00.000Z",
+  "updatedAt": "2026-01-15T10:30:00.000Z",
+  "period": "weekly",
+  "family": "transaction_consistency",
+  "personalized": true,
+  "expiresAt": "2026-01-20T00:00:00.000Z"
+}

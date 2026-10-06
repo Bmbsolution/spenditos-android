@@ -1,0 +1,9 @@
+{
+  "message": "No transactions found",
+  "data": {
+    "transactions": [],
+    "pagination": {
+      "hasMore": false
+    }
+  }
+}

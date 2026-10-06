@@ -1,0 +1,10 @@
+{
+  "id": "cat-suggestion-rent",
+  "userId": "user-fixture-001",
+  "name": "Rent",
+  "color": "#FF9800",
+  "icon": "home",
+  "isIncome": false,
+  "sortOrder": 2,
+  "isSystemSuggestion": true
+}

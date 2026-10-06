@@ -1,0 +1,25 @@
+{
+  "message": "Bulk transaction creation completed",
+  "data": {
+    "results": [
+      {
+        "index": 0,
+        "transaction": {
+          "id": "txn-001",
+          "userId": "user-fixture-001",
+          "categoryId": "cat-groceries",
+          "description": "Whole Foods Market",
+          "amount": 42.5,
+          "date": "2026-01-15",
+          "mood": "necessary",
+          "createdAt": "2026-01-15T10:30:00.000Z",
+          "updatedAt": "2026-01-15T10:30:00.000Z"
+        }
+      },
+      {
+        "index": 1,
+        "error": "Invalid amount: must be a positive number"
+      }
+    ]
+  }
+}

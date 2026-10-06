@@ -1,0 +1,8 @@
+{
+  "tier": "pro",
+  "active": true,
+  "expiresAt": "2027-01-01T00:00:00.000Z",
+  "source": "app_store",
+  "grantedAt": "2026-01-01T00:00:00.000Z",
+  "grantReason": "RevenueCat purchase"
+}

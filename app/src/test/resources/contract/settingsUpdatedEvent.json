@@ -1,0 +1,8 @@
+{
+  "eventId": "evt-settings-updated-001",
+  "userId": "user-fixture-001",
+  "occurredAt": "2026-01-15T10:30:00.000Z",
+  "version": 1,
+  "aggregateType": "settings",
+  "mutationType": "updated"
+}

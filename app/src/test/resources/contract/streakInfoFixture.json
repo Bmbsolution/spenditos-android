@@ -1,0 +1,9 @@
+{
+  "userId": "user-fixture-001",
+  "currentStreak": 7,
+  "longestStreak": 14,
+  "lastEntryDate": "2026-01-15",
+  "streakFreezes": 2,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-15T10:30:00.000Z"
+}

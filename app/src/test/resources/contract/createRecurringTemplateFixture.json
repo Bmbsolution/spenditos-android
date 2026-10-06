@@ -1,0 +1,15 @@
+{
+  "message": "Recurring template created successfully",
+  "data": {
+    "id": "tmpl-rent-001",
+    "userId": "user-fixture-001",
+    "categoryId": "cat-rent",
+    "description": "Monthly Rent",
+    "amount": 1500,
+    "type": "fixed",
+    "frequency": "monthly",
+    "firstOccurrenceDate": "2026-01-01",
+    "occurrencesRemaining": null,
+    "isActive": true
+  }
+}

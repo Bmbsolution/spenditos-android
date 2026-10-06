@@ -1,0 +1,6 @@
+{
+  "message": "Device token unregistered successfully",
+  "data": {
+    "unregistered": true
+  }
+}

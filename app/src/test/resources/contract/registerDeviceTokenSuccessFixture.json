@@ -1,0 +1,6 @@
+{
+  "message": "Device token registered successfully",
+  "data": {
+    "registered": true
+  }
+}

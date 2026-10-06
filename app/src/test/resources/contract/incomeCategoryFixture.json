@@ -1,0 +1,9 @@
+{
+  "id": "cat-salary",
+  "userId": "user-fixture-001",
+  "name": "Salary",
+  "color": "#2196F3",
+  "icon": "briefcase",
+  "isIncome": true,
+  "sortOrder": 0
+}

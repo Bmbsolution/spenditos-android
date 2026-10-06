@@ -1,0 +1,52 @@
+{
+  "month": "2026-02",
+  "historyMonths": [
+    "2025-09",
+    "2025-10",
+    "2025-11",
+    "2025-12"
+  ],
+  "monthsWithExpenseHistory": 4,
+  "suggestions": [
+    {
+      "id": "cat-phone:mobilecarrier",
+      "categoryId": "cat-phone",
+      "categoryName": "Phone",
+      "description": "Mobile Carrier",
+      "amount": 72,
+      "recurringType": "fixed",
+      "observedMonths": [
+        "2025-12",
+        "2025-11",
+        "2025-09"
+      ],
+      "evidence": [
+        {
+          "month": "2025-12",
+          "amount": 71,
+          "transactionCount": 1,
+          "dates": [
+            "2025-12-12"
+          ]
+        },
+        {
+          "month": "2025-11",
+          "amount": 72,
+          "transactionCount": 1,
+          "dates": [
+            "2025-11-13"
+          ]
+        },
+        {
+          "month": "2025-09",
+          "amount": 73,
+          "transactionCount": 1,
+          "dates": [
+            "2025-09-12"
+          ]
+        }
+      ],
+      "strength": "likely"
+    }
+  ]
+}

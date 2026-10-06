@@ -1,0 +1,12 @@
+{
+  "message": "Category created successfully",
+  "data": {
+    "id": "cat-groceries",
+    "userId": "user-fixture-001",
+    "name": "Groceries",
+    "color": "#4CAF50",
+    "icon": "shopping-cart",
+    "isIncome": false,
+    "sortOrder": 1
+  }
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "amount": 50,
+    "currency": "CAD",
+    "date": "2026-09-06",
+    "categoryId": "cat_groceries",
+    "categoryHint": null,
+    "merchantName": null,
+    "description": "grocery shopping",
+    "confidence": 0.9,
+    "transactionType": "expense"
+  },
+  {
+    "amount": 10,
+    "currency": "CAD",
+    "date": "2026-09-07",
+    "categoryId": "cat_dining",
+    "categoryHint": null,
+    "merchantName": "Cafe Meridian",
+    "description": "coffee",
+    "confidence": 0.87,
+    "transactionType": "expense"
+  },
+  {
+    "amount": 25,
+    "currency": "CAD",
+    "date": "2026-09-07",
+    "categoryId": null,
+    "categoryHint": "gifts",
+    "merchantName": null,
+    "description": "gift card",
+    "confidence": 0.7,
+    "transactionType": "expense"
+  }
+]

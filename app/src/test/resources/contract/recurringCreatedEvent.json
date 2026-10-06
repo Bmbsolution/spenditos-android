@@ -1,0 +1,9 @@
+{
+  "eventId": "evt-recur-created-001",
+  "userId": "user-fixture-001",
+  "occurredAt": "2026-01-15T10:30:00.000Z",
+  "version": 1,
+  "aggregateType": "recurring",
+  "aggregateId": "tmpl-rent-001",
+  "mutationType": "created"
+}

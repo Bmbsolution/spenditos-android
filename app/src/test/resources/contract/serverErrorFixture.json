@@ -1,0 +1,6 @@
+{
+  "error": "Internal server error",
+  "details": {
+    "requestId": "req-abc-123"
+  }
+}

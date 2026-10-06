@@ -1,0 +1,9 @@
+{
+  "eventId": "evt-import-completed-001",
+  "userId": "user-fixture-001",
+  "occurredAt": "2026-01-15T10:30:00.000Z",
+  "version": 1,
+  "aggregateType": "import",
+  "aggregateId": "import-session-001",
+  "mutationType": "created"
+}

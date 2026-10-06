@@ -1,0 +1,12 @@
+{
+  "id": "ach-first-transaction",
+  "name": "First Step",
+  "description": "Log your first transaction",
+  "icon": "🎯",
+  "points": 50,
+  "category": "tracking",
+  "requirement": {
+    "type": "transaction_count",
+    "value": 1
+  }
+}

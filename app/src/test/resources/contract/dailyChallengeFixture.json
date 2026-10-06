@@ -1,0 +1,18 @@
+{
+  "id": "chal-daily-001",
+  "userId": "user-fixture-001",
+  "type": "transaction_count",
+  "title": "Log 3 transactions today",
+  "description": "Keep your streak alive by logging 3 transactions.",
+  "difficulty": "easy",
+  "target": 3,
+  "current": 1,
+  "completed": false,
+  "date": "2026-01-15",
+  "reward": 15,
+  "createdAt": "2026-01-15T00:00:00.000Z",
+  "updatedAt": "2026-01-15T10:30:00.000Z",
+  "period": "daily",
+  "personalized": true,
+  "expiresAt": "2026-01-16T00:00:00.000Z"
+}

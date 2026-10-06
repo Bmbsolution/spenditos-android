@@ -1,0 +1,23 @@
+{
+  "data": {
+    "id": "tmpl-rent-001",
+    "userId": "user-fixture-001",
+    "categoryId": "cat-rent",
+    "description": "Monthly Rent",
+    "amount": 1500,
+    "type": "fixed",
+    "frequency": "monthly",
+    "firstOccurrenceDate": "2026-01-01",
+    "occurrencesRemaining": null,
+    "isActive": true,
+    "skippedDates": [
+      "2026-03-01"
+    ]
+  },
+  "entries": {
+    "created": 0,
+    "updated": 0,
+    "removed": 1,
+    "month": "2026-03"
+  }
+}

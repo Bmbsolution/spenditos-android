@@ -1,0 +1,10 @@
+{
+  "id": "txn-no-mood-001",
+  "userId": "user-fixture-001",
+  "categoryId": "cat-groceries",
+  "description": "Coffee shop",
+  "amount": 4.75,
+  "date": "2026-01-16",
+  "createdAt": "2026-01-16T08:00:00.000Z",
+  "updatedAt": "2026-01-16T08:00:00.000Z"
+}

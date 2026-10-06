@@ -1,0 +1,111 @@
+{
+  "month": "2026-02",
+  "current": {
+    "month": "2026-02",
+    "totals": {
+      "expectedIncome": 3200,
+      "committedExpenses": 1200,
+      "flexibleExpenses": 400,
+      "plannedExpenses": 1600,
+      "availableToAllocate": 1600
+    },
+    "categories": [
+      {
+        "categoryId": "cat-rent",
+        "name": "Rent",
+        "isIncome": false,
+        "recurringAmount": 1200,
+        "committedAmount": 1200,
+        "plannedAmount": 1600
+      },
+      {
+        "categoryId": "cat-salary",
+        "name": "Salary",
+        "isIncome": true,
+        "recurringAmount": 3200,
+        "committedAmount": 3200,
+        "plannedAmount": 3200
+      }
+    ],
+    "scheduled": [
+      {
+        "templateId": "template-rent",
+        "categoryId": "cat-rent",
+        "description": "Rent",
+        "date": "2026-02-01",
+        "amount": 1200,
+        "isIncome": false,
+        "type": "fixed"
+      },
+      {
+        "templateId": "template-pay",
+        "categoryId": "cat-salary",
+        "description": "Pay",
+        "date": "2026-02-01",
+        "amount": 3200,
+        "isIncome": true,
+        "type": "fixed"
+      }
+    ],
+    "needsIncomeSetup": false,
+    "needsExpensePlan": false
+  },
+  "preview": {
+    "month": "2026-02",
+    "totals": {
+      "expectedIncome": 3200,
+      "committedExpenses": 1200,
+      "flexibleExpenses": 300,
+      "plannedExpenses": 1500,
+      "availableToAllocate": 1700
+    },
+    "categories": [
+      {
+        "categoryId": "cat-rent",
+        "name": "Rent",
+        "isIncome": false,
+        "recurringAmount": 1200,
+        "committedAmount": 1200,
+        "plannedAmount": 1500
+      },
+      {
+        "categoryId": "cat-salary",
+        "name": "Salary",
+        "isIncome": true,
+        "recurringAmount": 3200,
+        "committedAmount": 3200,
+        "plannedAmount": 3200
+      }
+    ],
+    "scheduled": [
+      {
+        "templateId": "template-rent",
+        "categoryId": "cat-rent",
+        "description": "Rent",
+        "date": "2026-02-01",
+        "amount": 1200,
+        "isIncome": false,
+        "type": "fixed"
+      },
+      {
+        "templateId": "template-pay",
+        "categoryId": "cat-salary",
+        "description": "Pay",
+        "date": "2026-02-01",
+        "amount": 3200,
+        "isIncome": true,
+        "type": "fixed"
+      }
+    ],
+    "needsIncomeSetup": false,
+    "needsExpensePlan": false
+  },
+  "changes": [
+    {
+      "categoryId": "cat-rent",
+      "name": "Rent",
+      "currentAmount": 1600,
+      "proposedAmount": 1500
+    }
+  ]
+}

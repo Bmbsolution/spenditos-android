@@ -1,0 +1,12 @@
+{
+  "message": "Analysis completed successfully",
+  "data": {
+    "analysisId": "dca_audio-capture-001",
+    "status": "success",
+    "documentKey": "users/user-123/audio/capture.m4a",
+    "transcript": "Spent twenty dollars at the market yesterday.",
+    "captureSessionId": "dca_audio-capture-001",
+    "inputType": "voice",
+    "mode": "transcribe"
+  }
+}
