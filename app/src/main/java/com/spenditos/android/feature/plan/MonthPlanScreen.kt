@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.plan
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -363,6 +365,7 @@ private fun RecordedPlanEntry(row: MonthPlanTransactionRow, state: MonthPlanUiSt
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RecurringPlanRow(
     row: MonthPlanRecurringRow,
@@ -394,7 +397,7 @@ private fun RecurringPlanRow(
                 else "${row.occurrenceCount} dates · ${Money.format(row.usualAmount.toDouble(), state.currency)} each"
             Text(dates, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!state.isPast) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     TextButton(
                         onClick = { viewModel.stageSkip(row.templateId, row.dates, skipped = !row.isSkipped) },
                         enabled = !state.isApplying,

@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.recurring
 
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -234,10 +235,11 @@ private fun IncomeBillRow(
                 }
             },
         )
-        Row(Modifier.fillMaxWidth().padding(start = Spacing.s), horizontalArrangement = Arrangement.End) {
+        Row(Modifier.fillMaxWidth().padding(start = Spacing.s, bottom = Spacing.xs), horizontalArrangement = Arrangement.End) {
             if (canEdit) TextButton(onClick = onEdit, modifier = Modifier.testTag("recurring.edit.${template.id}")) { Text("Edit") }
             TextButton(onClick = onDelete, modifier = Modifier.testTag("recurring.delete.${template.id}")) { Text("Delete", color = MaterialTheme.colorScheme.error) }
         }
+        HorizontalDivider()
     }
 }
 

@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.home
 
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,7 +61,7 @@ fun HomeScreen() {
         modifier = Modifier.fillMaxSize().testTag("home.refresh"),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.screen, vertical = Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
