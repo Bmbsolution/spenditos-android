@@ -1,0 +1,14 @@
+{
+  "request": {
+    "targetDate": "2026-01-01",
+    "templateIds": ["tmpl-fake-001"]
+  },
+  "response": {
+    "data": {
+      "message": "Generation complete",
+      "generated": 2,
+      "skipped": 1,
+      "errors": 0
+    }
+  }
+}
