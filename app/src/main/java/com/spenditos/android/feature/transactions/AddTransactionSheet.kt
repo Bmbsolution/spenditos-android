@@ -53,12 +53,18 @@ import java.time.format.FormatStyle
 fun AddTransactionSheet(
     onDismiss: () -> Unit,
     onDone: (message: String) -> Unit,
+    onScanReceipt: (() -> Unit)? = null,
+    prefill: AddTransactionPrefill? = null,
     viewModel: AddTransactionViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDatePicker by remember { mutableStateOf(false) }
 
+    // Categories arrive from the Room cache, so apply the prefill once they are available.
+    LaunchedEffect(prefill, state.categories.isNotEmpty()) {
+        if (prefill != null && state.categories.isNotEmpty()) viewModel.applyPrefill(prefill)
+    }
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event -> if (event is AddTransactionEvent.Done) onDone(event.message) }
     }
@@ -69,6 +75,9 @@ fun AddTransactionSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Text("New transaction", style = MaterialTheme.typography.titleLarge)
+            onScanReceipt?.let { scan ->
+                OutlinedButton(onClick = scan, modifier = Modifier.fillMaxWidth().testTag("add.scanReceipt")) { Text("Scan a receipt") }
+            }
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 EntryType.entries.forEachIndexed { index, type ->
                     SegmentedButton(

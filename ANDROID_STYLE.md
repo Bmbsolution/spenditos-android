@@ -64,6 +64,15 @@ Register a new Retrofit API in `core/network/NetworkModule.kt` only when the spe
 - Pure rules (calculations, validation, occurrence math): table-driven tests with the iOS test cases ported as-is.
 - Contract: decode test for every new wire model.
 
+## Test patterns learned in Wave A (use these; they avoid flaky tests)
+
+- **Network failure in tests:** use `testing/OfflineInterceptor` (`offline.failNext = 1`) on the test OkHttp client, built with `.retryOnConnectionFailure(false)`. Do NOT use MockWebServer `SocketEffect.CloseSocket`: on a reused connection OkHttp silently retries and the call "succeeds" with an empty body.
+- **One request, one `takeRequest()`.** A refresh after a write is a second request; take each exactly once and assert on it.
+- **State fed by Room is asynchronous** (Room emits on its own executor). Assert with `vm.state.first { predicate }`, never by reading `state.value` right after an event.
+- Robolectric runs at SDK 35 (`robolectric.properties`); build Room in-memory with `allowMainThreadQueries()`.
+- When you add a constructor parameter to an existing repository, grep the tests (`grep -rn "XRepository(" app/src/test`) and fix every call site.
+- Workers cannot run Gradle (sandbox blocks sockets); the orchestrator compiles and tests, and sends errors back. Write conservatively: copy imports and signatures from existing files.
+
 ## Verification (run it yourself; paste the summary lines)
 
 ```bash

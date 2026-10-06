@@ -49,6 +49,21 @@ internal fun parseAmount(text: String): BigDecimal? {
     return normalized.toBigDecimalOrNull()?.takeIf { it.scale() <= 2 }
 }
 
+/**
+ * Values to start the form with, e.g. from a receipt scan. Everything is optional and is only
+ * applied when valid; the user always reviews and saves (nothing is created by a scan itself).
+ */
+data class AddTransactionPrefill(
+    val amount: Double? = null,
+    val description: String? = null,
+    /** `YYYY-MM-DD`; ignored when it doesn't parse. */
+    val date: String? = null,
+    /** A category id from the server; ignored when the user has no such category. */
+    val categoryId: String? = null,
+    /** A category name hint (case-insensitive match), used when [categoryId] doesn't resolve. */
+    val categoryHint: String? = null,
+)
+
 sealed interface AddTransactionEvent {
     data class Done(val message: String) : AddTransactionEvent
 }
@@ -66,6 +81,26 @@ class AddTransactionViewModel @Inject constructor(
     val state: StateFlow<AddTransactionUiState> = combine(form, categories.observe(), settings.currency()) { f, cats, currency ->
         f.copy(categories = cats, currency = currency)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddTransactionUiState())
+
+    /** Applies [prefill] once the user's categories are known; safe to call repeatedly for the same value. */
+    fun applyPrefill(prefill: AddTransactionPrefill) {
+        val categories = state.value.categories
+        val category = categories.firstOrNull { it.id == prefill.categoryId }
+            ?: prefill.categoryHint?.trim()?.takeIf { it.isNotEmpty() }?.let { hint ->
+                categories.firstOrNull { it.name.equals(hint, ignoreCase = true) }
+            }
+        val parsedDate = prefill.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        form.update { f ->
+            f.copy(
+                type = category?.let { if (it.isIncome) EntryType.INCOME else EntryType.EXPENSE } ?: f.type,
+                amountText = prefill.amount?.takeIf { it > 0 }?.let { BigDecimal.valueOf(it).setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() } ?: f.amountText,
+                categoryId = category?.id ?: f.categoryId,
+                description = prefill.description?.take(200) ?: f.description,
+                date = parsedDate ?: f.date,
+                error = null,
+            )
+        }
+    }
 
     fun onTypeChange(type: EntryType) = form.update { it.copy(type = type, categoryId = null, error = null) }
 
