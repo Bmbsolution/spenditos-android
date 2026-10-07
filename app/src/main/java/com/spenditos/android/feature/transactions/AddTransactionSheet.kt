@@ -44,8 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -910,15 +908,11 @@ private fun RecurringSection(
                 Text("Make it recurring", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                 Text(state.recurringSubtitle, style = IosText.caption, color = IosColors.textSecondary)
             }
-            Switch(
+            com.spenditos.android.ui.components.IosSwitch(
                 checked = state.makeRecurring,
                 onCheckedChange = onRecurringChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = IosColors.spendOrange,
-                    checkedBorderColor = IosColors.spendOrange,
-                ),
                 modifier = Modifier.testTag("quick-add-recurring-toggle"),
+                tint = IosColors.spendOrange,
             )
         }
         if (state.makeRecurring) {

@@ -33,8 +33,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -208,11 +206,11 @@ fun AddEditRecurringSheet(
                         Text("The amount changes each time", style = IosText.subheadline, color = IosColors.textPrimary)
                         Text("Shown as ≈. You confirm the real amount when it's logged.", style = IosText.caption, color = IosColors.textTertiary)
                     }
-                    Switch(
+                    com.spenditos.android.ui.components.IosSwitch(
                         checked = draft.amountVaries,
                         onCheckedChange = { draft = draft.copy(amountVaries = it) },
                         modifier = Modifier.testTag("recurring.form.amountVaries"),
-                        colors = SwitchDefaults.colors(checkedTrackColor = IosColors.spendOrange),
+                        tint = IosColors.spendOrange,
                     )
                 }
                 val lowerDescription = draft.description.lowercase()
@@ -303,11 +301,11 @@ fun AddEditRecurringSheet(
                 Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                     Icon(SfSymbols.icon("power"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(24.dp))
                     Text("Active", Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
-                    Switch(
+                    com.spenditos.android.ui.components.IosSwitch(
                         checked = draft.isActive,
                         onCheckedChange = { draft = draft.copy(isActive = it) },
                         modifier = Modifier.testTag("recurring.form.active"),
-                        colors = SwitchDefaults.colors(checkedTrackColor = IosColors.spendOrange),
+                        tint = IosColors.spendOrange,
                     )
                 }
             }

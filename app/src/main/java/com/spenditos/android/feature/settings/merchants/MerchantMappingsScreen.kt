@@ -30,8 +30,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -277,11 +275,11 @@ private fun MerchantEditor(
                         Text("Match as a pattern", style = IosText.body, color = IosColors.textPrimary)
                         Text("For advanced matching; leave off to match this text anywhere.", style = IosText.caption, color = IosColors.textSecondary)
                     }
-                    Switch(
+                    com.spenditos.android.ui.components.IosSwitch(
                         checked = regex,
                         onCheckedChange = { regex = it },
-                        colors = SwitchDefaults.colors(checkedTrackColor = IosColors.income),
                         modifier = Modifier.testTag("merchants.regex"),
+                        tint = IosColors.income,
                     )
                 }
             }

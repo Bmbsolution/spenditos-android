@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -139,7 +138,7 @@ fun SettingsScreen(
                         divider = false,
                             modifier = Modifier.testTag("settings.notifications"),
                         trailing = {
-                            Switch(
+                            com.spenditos.android.ui.components.IosSwitch(
                                 checked = state.pushEnabled,
                                 onCheckedChange = { wanted ->
                                     val needsPermission = wanted && android.os.Build.VERSION.SDK_INT >= 33 &&
@@ -147,7 +146,6 @@ fun SettingsScreen(
                                         android.content.pm.PackageManager.PERMISSION_GRANTED
                                     if (needsPermission) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else viewModel.setPush(wanted)
                                 },
-                                colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF34C759)),
                                 modifier = Modifier.testTag("settings.notifications.switch"),
                             )
                         },
@@ -183,10 +181,9 @@ fun SettingsScreen(
                             divider = false,
                             modifier = Modifier.testTag("settings.appLock"),
                             trailing = {
-                                Switch(
+                                com.spenditos.android.ui.components.IosSwitch(
                                     checked = state.lockEnabled,
                                     onCheckedChange = { wanted -> activity?.let { viewModel.setLock(it, wanted) } },
-                                    colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF34C759)),
                                     modifier = Modifier.testTag("settings.appLock.switch"),
                                 )
                             },

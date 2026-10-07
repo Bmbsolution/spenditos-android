@@ -366,3 +366,34 @@ fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         )
     }
 }
+
+/**
+ * iOS `Toggle`: solid gray track when off (no outline), white knob that keeps its size, [tint]
+ * track when on. iOS default tint is system green.
+ */
+@Composable
+fun IosSwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    tint: Color = Color(0xFF34C759),
+) {
+    val offTrack = if (isSystemInDarkTheme()) Color(0xFF39393D) else Color(0xFFE9E9EA)
+    androidx.compose.material3.Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        enabled = enabled,
+        // A thumb with content is drawn full size in both states, like the iOS knob.
+        thumbContent = { Box(Modifier.size(androidx.compose.material3.SwitchDefaults.IconSize)) },
+        colors = androidx.compose.material3.SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = tint,
+            checkedBorderColor = Color.Transparent,
+            uncheckedThumbColor = Color.White,
+            uncheckedTrackColor = offTrack,
+            uncheckedBorderColor = Color.Transparent,
+        ),
+    )
+}
