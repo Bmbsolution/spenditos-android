@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// Push needs the owner's Firebase project: with app/google-services.json present the Google Services
+// plugin wires FCM; without it the app builds and runs with push inert (see docs/RELEASE.md).
+if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+
 /** Loads config/<env>.properties (dev.properties is local-only and optional). */
 fun envConfig(name: String): Properties = Properties().apply {
     val file = rootProject.file("config/$name.properties")
@@ -155,6 +159,8 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
     implementation(libs.androidx.biometric)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

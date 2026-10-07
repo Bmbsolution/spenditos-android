@@ -52,6 +52,7 @@ class RootViewModel @Inject constructor(
     val environment: AppEnvironment,
     val onboarding: OnboardingActions,
     val lock: com.spenditos.android.core.lock.AppLockController,
+    val deepLinks: com.spenditos.android.data.push.DeepLinkHandler,
     val authenticator: com.spenditos.android.core.lock.BiometricAuthenticator,
 ) : ViewModel() {
     /** ViewModels of the signed-out steps: kept across rotation, dropped when the step changes. */
@@ -123,7 +124,7 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
                     onFinished = { gate = Gate.Ready },
                     viewModel = hiltViewModel(key = "onboarding:${session.userId}"),
                 )
-                Gate.Ready -> MainScaffold(envName = envName)
+                Gate.Ready -> MainScaffold(envName = envName, deepLinks = viewModel.deepLinks)
             }
         }
             }

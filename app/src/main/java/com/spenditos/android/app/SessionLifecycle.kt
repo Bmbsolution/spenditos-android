@@ -27,6 +27,7 @@ class SessionLifecycle @Inject constructor(
     private val categories: CategoryRepository,
     private val settings: UserSettingsRepository,
     private val sync: SyncRequester,
+    private val push: com.spenditos.android.data.push.PushRegistrar,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -37,6 +38,7 @@ class SessionLifecycle @Inject constructor(
                 sync.requestSync()
                 runCatching { settings.refresh() }
                 runCatching { categories.refresh() }
+                runCatching { push.syncRegistration() }
             }
         }
     }

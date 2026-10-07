@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -84,12 +85,21 @@ private const val PROGRESS_ROUTE = "settings/progress"
 
 /** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
 @Composable
-fun MainScaffold(envName: String?) {
+fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.DeepLinkHandler) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showAdd by rememberSaveable { mutableStateOf(false) }
+    val pendingLink by deepLinks.pending.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(pendingLink) {
+        val link = pendingLink ?: return@LaunchedEffect
+        when (link) {
+            com.spenditos.android.data.push.DeepLink.ADD_TRANSACTION -> showAdd = true
+            com.spenditos.android.data.push.DeepLink.PROGRESS -> nav.navigate(PROGRESS_ROUTE)
+        }
+        deepLinks.consume(link)
+    }
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     val onTab = backStack?.destination?.route in Tab.entries.map { it.route }

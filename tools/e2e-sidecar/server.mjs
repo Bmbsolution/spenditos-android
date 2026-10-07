@@ -493,6 +493,11 @@ async function handleRequest(req, res, server) {
     return json(res, 200, { data: { message: 'Category deleted successfully' } });
   }
 
+  // Push registration: the harness has no device-token route, so acknowledge it (nothing is stored).
+  if (path === '/user/device-token' && (req.method === 'POST' || req.method === 'DELETE')) {
+    await readJson(req);
+    return json(res, 200, { data: { registered: req.method === "POST" } });
+  }
   if (path === '/transactions/upload-url' && req.method === 'POST') return uploadUrl(req, res, account, server);
   if (path === '/statements/analyze-spreadsheet' && req.method === 'POST') return analyzeStatement(req, res, account);
   if (path === '/statements/preview-spreadsheet' && req.method === 'POST') return previewStatement(req, res, account);

@@ -16,6 +16,7 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     private val api: AuthApi,
     private val session: SessionManager,
+    private val push: com.spenditos.android.data.push.PushRegistrar,
 ) {
     /** Throws ApiError.Server(401) for wrong credentials, Server(403) for an unconfirmed email. */
     suspend fun login(email: String, password: String) {
@@ -25,6 +26,8 @@ class AuthRepository @Inject constructor(
 
     /** Revokes the refresh token (best effort, like iOS) and clears local auth state. */
     suspend fun signOut() {
+        // While the access token still works: stop pushes for this user on this device.
+        runCatching { push.unregister() }
         session.refreshTokenOrNull()?.let { token ->
             runCatching { apiCallUnit { api.logout(LogoutRequest(token)) } }
         }

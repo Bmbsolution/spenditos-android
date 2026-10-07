@@ -96,6 +96,30 @@ fun SettingsScreen(
                 item { HorizontalDivider() }
             }
             item {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+                ) { granted -> if (granted) viewModel.setPush(true) }
+                ListItem(
+                    headlineContent = { Text("Notifications") },
+                    supportingContent = { Text("Reminders and progress updates") },
+                    trailingContent = {
+                        androidx.compose.material3.Switch(
+                            checked = state.pushEnabled,
+                            onCheckedChange = { wanted ->
+                                val needsPermission = wanted && android.os.Build.VERSION.SDK_INT >= 33 &&
+                                    androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (needsPermission) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else viewModel.setPush(wanted)
+                            },
+                            modifier = Modifier.testTag("settings.notifications.switch"),
+                        )
+                    },
+                    modifier = Modifier.testTag("settings.notifications"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
                 ListItem(
                     headlineContent = { Text("Change password") },
                     modifier = Modifier.clickable(role = Role.Button, onClick = onOpenChangePassword).testTag("settings.changePassword"),

@@ -30,6 +30,7 @@ data class SettingsUiState(
     val lockAvailable: Boolean = false,
     val lockEnabled: Boolean = false,
     val lockMessage: String? = null,
+    val pushEnabled: Boolean = false,
 )
 
 @HiltViewModel
@@ -40,18 +41,25 @@ class SettingsViewModel @Inject constructor(
     environment: AppEnvironment,
     private val lockSettings: AppLockSettings,
     private val authenticator: BiometricAuthenticator,
+    private val push: com.spenditos.android.data.push.PushRegistrar,
 ) : ViewModel() {
     private val lockMessage = MutableStateFlow<String?>(null)
     private val email = (session.state.value as? SessionState.SignedIn)?.email
 
-    val state: StateFlow<SettingsUiState> = combine(transactions.observeQueue(), lockSettings.enabled, lockMessage) { queue, lockOn, message ->
+    val state: StateFlow<SettingsUiState> = combine(transactions.observeQueue(), lockSettings.enabled, lockMessage, push.enabled) { queue, lockOn, message, pushOn ->
         SettingsUiState(
             email, queue.size, environment.displayName, environment.stage,
             lockAvailable = authenticator.availability() == LockAvailability.AVAILABLE,
             lockEnabled = lockOn,
             lockMessage = message,
+            pushEnabled = pushOn,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState(email, 0, environment.displayName, environment.stage))
+
+    /** Turning notifications on registers this device's token; off removes it. */
+    fun setPush(wanted: Boolean) {
+        viewModelScope.launch { push.setEnabled(wanted) }
+    }
 
     /** Switching the lock on proves the user can pass it first, so it can never lock them out. */
     fun setLock(activity: FragmentActivity, wanted: Boolean) {
