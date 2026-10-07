@@ -1,6 +1,7 @@
 package com.spenditos.android.feature.reports
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -31,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,19 +50,17 @@ import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun ReportsHubScreen(
     onOpenDaily: () -> Unit,
     onOpenComparison: () -> Unit,
     onOpenPaycheckPeriods: () -> Unit,
+    onReviewTransactions: () -> Unit = {},
+    onLogTransaction: () -> Unit = {},
 ) {
     val viewModel: ReportsHubViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
     Scaffold(
@@ -87,22 +85,20 @@ fun ReportsHubScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 item { ReportsHeroCard() }
-                if (state.dashboard == null || state.isEmpty) item {
-                    ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                        subtitle = monthRangeLabel(state.month, locale),
-                        tag = "reports.hub.month",
-                        onPrevious = viewModel::previousMonth,
-                        onNext = viewModel::nextMonth,
-                    )
-                }
                 if (state.isLoading) {
                     item { ReportLoadingCard("Preparing your monthly review…") }
                 } else if (state.loadStatus != null && state.dashboard == null) {
                     val status = requireNotNull(state.loadStatus)
-                    item { ReportsStatusCard(status, viewModel::refresh) }
+                    item {
+                        ReportsStatusCard(
+                            status,
+                            viewModel::refresh,
+                            errorTitle = "Monthly review unavailable",
+                            errorMessage = "We could not refresh this review. Check your connection and try again.",
+                        )
+                    }
                 } else if (state.dashboard == null) {
-                    item { ReportsEmptyReviewCard() }
+                    item { ReportsEmptyReviewCard(onLogTransaction) }
                 } else {
                     val dashboard = requireNotNull(state.dashboard)
                     state.loadStatus?.let { status ->
@@ -114,22 +110,20 @@ fun ReportsHubScreen(
                                 MonthlyReviewCard(
                                     dashboard,
                                     state.currency,
-                                    state.month,
-                                    locale,
                                     viewModel::previousMonth,
                                     viewModel::nextMonth,
                                     state.activeRecurringCount,
+                                    onReviewTransactions,
                                 )
                             }
                         } else {
                             MonthlyReviewCard(
                                 dashboard,
                                 state.currency,
-                                state.month,
-                                locale,
                                 viewModel::previousMonth,
                                 viewModel::nextMonth,
                                 state.activeRecurringCount,
+                                onReviewTransactions,
                             )
                         }
                     }
@@ -192,7 +186,7 @@ private fun ReportsHeroCard() {
 }
 
 @Composable
-private fun ReportsEmptyReviewCard() {
+private fun ReportsEmptyReviewCard(onLogTransaction: () -> Unit) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
@@ -204,6 +198,12 @@ private fun ReportsEmptyReviewCard() {
                 style = IosText.callout,
                 color = IosColors.textSecondary,
             )
+            Text(
+                "Log a transaction",
+                modifier = Modifier.clickable(onClick = onLogTransaction),
+                style = IosText.subheadline.w(FontWeight.SemiBold),
+                color = IosColors.spendOrange,
+            )
         }
     }
 }
@@ -212,11 +212,10 @@ private fun ReportsEmptyReviewCard() {
 private fun MonthlyReviewCard(
     data: com.spenditos.android.data.model.DashboardData,
     currency: String,
-    month: LocalDate,
-    locale: Locale,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     activeRecurringCount: Int,
+    onReviewTransactions: () -> Unit,
 ) {
     val finance = LocalFinanceColors.current
     val summary = data.summary ?: return
@@ -227,7 +226,7 @@ private fun MonthlyReviewCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text("Monthly review", style = IosText.headline, color = IosColors.textPrimary)
                     Text(
-                        data.dateRange?.startDate?.toString() ?: month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        data.dateRange?.startDate?.toString() ?: "This month",
                         style = IosText.subheadline,
                         color = IosColors.textSecondary,
                     )
@@ -283,6 +282,28 @@ private fun MonthlyReviewCard(
                     } else {
                         "Review your bills and income to keep projected cash flow trustworthy."
                     },
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.m))
+                    .background(IosColors.spendOrange)
+                    .clickable(onClick = onReviewTransactions)
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Review recent transactions",
+                    modifier = Modifier.weight(1f),
+                    style = IosText.callout.w(FontWeight.SemiBold),
+                    color = Color.White,
+                )
+                Icon(
+                    SfSymbols.icon("arrow.right"),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -410,7 +431,3 @@ private fun ReportNavigationCard(
     }
 }
 
-private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
-}
