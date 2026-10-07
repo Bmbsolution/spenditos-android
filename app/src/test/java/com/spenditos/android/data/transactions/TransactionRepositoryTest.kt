@@ -90,7 +90,7 @@ class TransactionRepositoryTest {
     @Test
     fun `online create goes through bulk with an idempotency key and replaces the local row`() = runTest {
         server.enqueue(created())
-        assertEquals(CreateResult.Saved, repo.create(draft))
+        assertEquals(CreateResult.Saved("srv-1"), repo.create(draft))
 
         val request = server.takeRequest()
         assertEquals("/transactions/bulk", request.url.encodedPath)
@@ -218,5 +218,34 @@ class TransactionRepositoryTest {
         db.mutations().release(id, MutationStatus.FAILED, FailureCode.AUTHENTICATION, "expired")
         repo.requeueAuthFailures("user-1")
         assertEquals(MutationStatus.PENDING, queue().single().status)
+    }
+
+    @Test
+    fun `deleting a queued create drops it locally without a request, unless it is being sent`() = runTest {
+        online.value = false
+        repo.create(draft)
+        repo.create(draft.copy(description = "Dinner"))
+        val (first, second) = queue().sortedBy { it.createdAt }.let { it[0] to it[1] }
+
+        repo.delete(first.localTransactionId)
+        assertEquals(listOf(second.id), queue().map { it.id })
+        assertEquals(listOf(second.localTransactionId), rows().map { it.id })
+
+        db.mutations().claim(second.id, System.currentTimeMillis())
+        val busy = runCatching { repo.delete(second.localTransactionId) }.exceptionOrNull()
+        assertTrue(busy is TransactionBusyException)
+        assertEquals(1, rows().size)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `deleting a synced row calls the server and a 404 still removes it here`() = runTest {
+        server.enqueue(created())
+        repo.create(draft)
+        server.takeRequest()
+        server.enqueue(MockResponse(code = 404, body = """{"error":"Transaction not found"}"""))
+        repo.delete("srv-1")
+        assertEquals("DELETE", server.takeRequest().method)
+        assertTrue(rows().isEmpty())
     }
 }

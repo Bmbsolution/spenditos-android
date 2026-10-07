@@ -65,6 +65,10 @@ interface MutationDao {
     @Query("SELECT * FROM pending_mutations WHERE userId = :userId ORDER BY createdAt")
     fun observeAll(userId: String): Flow<List<PendingMutationEntity>>
 
+    /** Deletes a queued create unless a sender holds it; returns 1 when it was deleted. */
+    @Query("DELETE FROM pending_mutations WHERE id = :id AND status != 'IN_FLIGHT'")
+    suspend fun deleteUnlessInFlight(id: String): Int
+
     /** Atomic claim; returns 1 only for the caller that won it. */
     @Query("UPDATE pending_mutations SET status = 'IN_FLIGHT', attemptCount = attemptCount + 1, lastAttemptAt = :now WHERE id = :id AND status = 'PENDING'")
     suspend fun claim(id: String, now: Long): Int

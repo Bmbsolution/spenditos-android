@@ -65,6 +65,10 @@ class AddTransactionPrefillTest {
             transactions,
             CategoryRepository(unusedApi<CategoriesApi>(), db.categories(), session, bus),
             UserSettingsRepository(ApplicationProvider.getApplicationContext(), unusedApi<UserApi>(), session),
+            com.spenditos.android.testing.FakeRecurring(),
+            com.spenditos.android.testing.FakeMerchantMappings(),
+            com.spenditos.android.testing.FakeLastUsed(),
+            object : ConnectivityStatus { override val isOnline = MutableStateFlow(true) },
         )
     }
 

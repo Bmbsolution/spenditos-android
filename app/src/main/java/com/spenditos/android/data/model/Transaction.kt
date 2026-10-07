@@ -81,3 +81,18 @@ data class BulkTransactionResult(val index: Int? = null, val transaction: Transa
 
 @Serializable
 data class BulkTransactionFailure(val index: Int, val reason: String)
+
+/**
+ * `UpdateTransactionRequest` packages/types/src/api/index.ts:422. Android sends the full edited
+ * form like iOS: `mood` and `templateId` go out as explicit nulls when cleared, so they are
+ * JSON elements; null Kotlin fields are left out (`explicitNulls = false`).
+ */
+@Serializable
+data class UpdateTransactionRequest(
+    val amount: Double? = null,
+    val date: String? = null,
+    val categoryId: String? = null,
+    val description: String? = null,
+    val mood: kotlinx.serialization.json.JsonElement? = null,
+    val templateId: kotlinx.serialization.json.JsonElement? = null,
+)

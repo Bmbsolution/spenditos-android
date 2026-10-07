@@ -13,6 +13,7 @@ import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.network.apiCall
+import com.spenditos.android.core.network.apiCallUnit
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FailureClassifier
 import com.spenditos.android.core.sync.FinanceInvalidationBus
@@ -22,6 +23,10 @@ import com.spenditos.android.data.model.BulkCreateRequest
 import com.spenditos.android.data.model.BulkTransactionItem
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.TransactionMood
+import com.spenditos.android.data.model.UpdateTransactionRequest
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -37,10 +42,13 @@ data class NewTransaction(
     val description: String,
     val date: LocalDate,
     val mood: TransactionMood? = null,
+    /** Links the payment to an existing bill ("Use existing bill"). */
+    val templateId: String? = null,
 )
 
 sealed interface CreateResult {
-    data object Saved : CreateResult
+    /** [transactionId] is the server id, or null when the server reported a duplicate without one. */
+    data class Saved(val transactionId: String? = null) : CreateResult
 
     /** Stored on the device and queued; the worker will send it. */
     data object SavedOffline : CreateResult
@@ -48,6 +56,9 @@ sealed interface CreateResult {
     /** The server refused it for a reason a retry won't fix; nothing was kept. */
     data class Rejected(val code: FailureCode, val message: String) : CreateResult
 }
+
+/** A device-only transaction is being sent right now; try again once it lands. */
+class TransactionBusyException : IllegalStateException("This transaction is saving right now. Try again in a moment.")
 
 enum class DrainResult { DONE, RETRY_LATER }
 
@@ -99,13 +110,14 @@ class TransactionRepository @Inject constructor(
     suspend fun create(draft: NewTransaction): CreateResult {
         val userId = session.currentUserId ?: throw ApiError.Unauthorized
         val mutationId = UUID.randomUUID().toString()
-        val localId = "local-$mutationId"
+        val localId = "$LOCAL_PREFIX$mutationId"
         val item = BulkTransactionItem(
             amount = draft.amount,
             date = draft.date.toString(),
             categoryId = draft.categoryId,
             description = draft.description.trim(),
             mood = draft.mood,
+            templateId = draft.templateId,
             idempotencyKeyId = mutationId,
         )
         val now = System.currentTimeMillis()
@@ -114,7 +126,7 @@ class TransactionRepository @Inject constructor(
                 listOf(
                     TransactionEntity(
                         id = localId, userId = userId, amount = item.amount, categoryId = item.categoryId,
-                        description = item.description, date = item.date, mood = draft.mood?.name, templateId = null,
+                        description = item.description, date = item.date, mood = draft.mood?.name, templateId = draft.templateId,
                         source = "manual", createdAt = null, updatedAt = null, syncStatus = SyncStatus.PENDING,
                         clientMutationId = mutationId,
                     ),
@@ -136,7 +148,8 @@ class TransactionRepository @Inject constructor(
         }
         return when (val outcome = send(mutationId)) {
             null -> CreateResult.SavedOffline // the worker claimed it first
-            is SendOutcome.Created, SendOutcome.AlreadySaved -> CreateResult.Saved
+            is SendOutcome.Created -> CreateResult.Saved(outcome.transaction.id)
+            SendOutcome.AlreadySaved -> CreateResult.Saved(null)
             is SendOutcome.Failed -> if (outcome.code.isRetryable) {
                 sync.requestSync()
                 CreateResult.SavedOffline
@@ -147,6 +160,88 @@ class TransactionRepository @Inject constructor(
             }
         }
     }
+
+    /**
+     * `PUT /transactions/{id}` with the whole edited form, online only like iOS (an edit is never
+     * queued). Rows that only exist on this device are edited by discarding and re-adding, which
+     * the form does not offer, so they are refused here.
+     */
+    suspend fun update(id: String, draft: NewTransaction): Transaction {
+        val userId = session.currentUserId ?: throw ApiError.Unauthorized
+        require(!id.startsWith(LOCAL_PREFIX)) { "Not synced yet" }
+        val updated = apiCall {
+            api.update(
+                id,
+                UpdateTransactionRequest(
+                    amount = draft.amount,
+                    date = draft.date.toString(),
+                    categoryId = draft.categoryId,
+                    description = draft.description.trim(),
+                    mood = moodJson(draft.mood),
+                ),
+            )
+        }
+        if (updated.userId == userId) transactions.upsert(listOf(updated.toEntity()))
+        invalidation.invalidate(Aggregate.TRANSACTION)
+        return updated
+    }
+
+    /**
+     * Pays a generated bill entry: its estimate is replaced by the real amount and date, so the
+     * bill isn't counted twice (iOS `billEntryToReplace`).
+     */
+    suspend fun payBillEntry(entry: Transaction, draft: NewTransaction): Transaction {
+        val userId = session.currentUserId ?: throw ApiError.Unauthorized
+        val updated = apiCall {
+            api.update(
+                entry.id,
+                UpdateTransactionRequest(
+                    amount = draft.amount,
+                    date = draft.date.toString(),
+                    categoryId = draft.categoryId,
+                    description = draft.description.trim(),
+                    mood = moodJson(draft.mood),
+                    templateId = entry.templateId?.let(::JsonPrimitive) ?: JsonNull,
+                ),
+            )
+        }
+        if (updated.userId == userId) transactions.upsert(listOf(updated.toEntity()))
+        invalidation.invalidate(Aggregate.TRANSACTION)
+        return updated
+    }
+
+    /**
+     * Deletes a transaction. A row that only exists on this device drops its queued create
+     * instead; a synced row needs the server (`DELETE /transactions/{id}`), then leaves the cache.
+     */
+    suspend fun delete(id: String) {
+        val userId = session.currentUserId ?: throw ApiError.Unauthorized
+        if (id.startsWith(LOCAL_PREFIX)) {
+            val mutationId = id.removePrefix(LOCAL_PREFIX)
+            val removed = db.withTransaction {
+                // 0 also when the send already landed: the row then has a server id to delete by.
+                val deleted = mutations.deleteUnlessInFlight(mutationId) == 1
+                if (deleted) transactions.delete(userId, id)
+                deleted
+            }
+            // Mid-send (or just sent): deleting here would leave the server copy behind.
+            if (!removed) throw TransactionBusyException()
+            invalidation.invalidate(Aggregate.TRANSACTION)
+            return
+        }
+        try {
+            apiCallUnit { api.delete(id) }
+        } catch (e: ApiError.Server) {
+            // Already gone on the server: removing it here is the outcome the user asked for.
+            if (e.status != 404) throw e
+        }
+        transactions.delete(userId, id)
+        invalidation.invalidate(Aggregate.TRANSACTION)
+    }
+
+    /** One server page of [start]..[end] for the bill duplicate check; not cached. */
+    suspend fun fetchRange(start: LocalDate, end: LocalDate): List<Transaction> =
+        apiCall { api.list(start.toString(), end.toString()) }.transactions
 
     /** Sends queued creates oldest first until the queue is empty or the network/server fails. */
     suspend fun drainQueue(userId: String): DrainResult {
@@ -218,6 +313,9 @@ class TransactionRepository @Inject constructor(
         return outcome
     }
 
+    private fun moodJson(mood: TransactionMood?) =
+        SpenditosJson.encodeToJsonElement(TransactionMood.serializer().nullable, mood)
+
     private fun Transaction.toEntity() = TransactionEntity(
         id = id, userId = userId, amount = amount, categoryId = categoryId, description = description,
         date = date, mood = mood?.name, templateId = templateId, source = source, createdAt = createdAt,
@@ -226,6 +324,7 @@ class TransactionRepository @Inject constructor(
 
     private companion object {
         const val MAX_PAGES = 25
+        const val LOCAL_PREFIX = "local-"
         const val STALE_CLAIM_MS = 2 * 60 * 1000L
     }
 }
