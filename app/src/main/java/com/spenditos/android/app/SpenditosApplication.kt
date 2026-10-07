@@ -2,6 +2,7 @@ package com.spenditos.android.app
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
+import kotlinx.coroutines.launch
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -22,5 +23,14 @@ class SpenditosApplication : Application(), Configuration.Provider {
         sessionLifecycle.start()
         appLock.start()
         realtime.start()
+        com.spenditos.android.feature.widget.WidgetRefreshWorker.schedule(this)
+        // Leaving the foreground is when the cache is freshest: push it to the widget.
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+                    runCatching { com.spenditos.android.feature.widget.WidgetUpdater.refresh(this@SpenditosApplication) }
+                }
+            }
+        })
     }
 }
