@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
@@ -101,7 +103,8 @@ fun GlassCard(
 @Composable
 fun LargeTitle(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
     Row(
-        modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = 28.dp, bottom = 12.dp),
+        // iOS keeps a 44pt navigation bar above the large title.
+        modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = 52.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -173,7 +176,10 @@ fun CategorySymbolBadge(icon: String?, name: String, colorHex: String?, modifier
     }
 }
 
-/** One settings-style row: tinted chip, title (+ subtitle), trailing value or chevron, inset divider. */
+/**
+ * iOS `SettingsRowLabel` in an inset-grouped list: 32dp tinted circle (15% fill) with a 15pt semibold symbol,
+ * callout title with caption subtitle, subheadline value, light chevron, divider inset to the text.
+ */
 @Composable
 fun IosRow(
     title: String,
@@ -190,22 +196,33 @@ fun IosRow(
 ) {
     Column(modifier) {
         Row(
-            Modifier.fillMaxWidth()
+            Modifier.fillMaxWidth().heightIn(min = 60.dp)
                 .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
-                .padding(horizontal = Spacing.m, vertical = 14.dp),
+                .padding(horizontal = Spacing.m, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            if (icon != null) IconChip(icon, iconTint)
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, color = titleColor)
-                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (icon != null) {
+                Box(Modifier.size(32.dp).clip(CircleShape).background(iconTint.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
+                }
             }
-            if (value != null) Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = IosText.callout, color = titleColor)
+                if (subtitle != null) Text(subtitle, style = IosText.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (value != null) Text(value, style = IosText.subheadline, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             trailing?.invoke()
-            if (chevron) Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+            if (chevron) {
+                Icon(
+                    SfSymbols.icon("chevron.right"),
+                    contentDescription = null,
+                    tint = IosColors.textTertiary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
-        if (divider) HorizontalDivider(Modifier.padding(start = if (icon != null) 66.dp else Spacing.m), color = MaterialTheme.colorScheme.outlineVariant)
+        if (divider) HorizontalDivider(Modifier.padding(start = if (icon != null) 64.dp else Spacing.m), color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

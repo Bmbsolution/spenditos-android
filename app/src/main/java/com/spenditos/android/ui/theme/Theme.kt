@@ -177,9 +177,12 @@ object IosText {
     /** `.system(size:weight:)`. */
     fun system(size: Int, weight: FontWeight = FontWeight.Normal): TextStyle = ios(size, (size * 1.2f).toInt(), weight)
 
+    /** Inter draws ~6% larger than SF Pro at the same size (taller x-height, wider glyphs); match SF's apparent size. */
+    private const val INTER_TO_SF = 0.94f
+
     private fun ios(size: Int, lineHeight: Int, weight: FontWeight = FontWeight.Normal) = TextStyle(
         fontFamily = Inter,
-        fontSize = size.sp,
+        fontSize = (size * INTER_TO_SF).sp,
         lineHeight = lineHeight.sp,
         fontWeight = weight,
         letterSpacing = interTracking(size).em,

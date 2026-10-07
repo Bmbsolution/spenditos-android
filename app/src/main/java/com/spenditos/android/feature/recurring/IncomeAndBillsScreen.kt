@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -217,7 +218,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             }
             }
             if (state.templates.isNotEmpty()) {
-                Box(Modifier.align(Alignment.BottomEnd).padding(end = Spacing.screen, bottom = Spacing.l)) {
+                // Same spot as the app's add button: 10dp above the floating tab bar (63dp tall, 10dp off the bottom).
+                Box(Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = Spacing.screen, bottom = 83.dp)) {
                     Box(
                         Modifier.size(56.dp)
                             .dropShadow(CircleShape, Shadow(radius = 16.dp, color = IosColors.spendOrange, offset = DpOffset(0.dp, 4.dp), alpha = 0.4f))

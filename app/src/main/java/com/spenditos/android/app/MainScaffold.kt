@@ -207,7 +207,8 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.End,
                 ) {
-                    if (currentRoute != Tab.SETTINGS.route) {
+                    // iOS: Home and Transactions own the add-transaction button; Plan has its own add menu.
+                    if (currentRoute == Tab.HOME.route || currentRoute == Tab.TRANSACTIONS.route) {
                         GradientFab(
                             onClick = { showAdd = true },
                             glyph = Icons.Filled.Add,
