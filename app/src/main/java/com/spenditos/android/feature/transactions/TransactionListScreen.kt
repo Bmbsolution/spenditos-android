@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,8 +45,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -57,11 +58,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.core.db.SyncStatus
 import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.FloatingTabBarHeight
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosScreen
@@ -69,7 +72,9 @@ import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.glassCardModifier
 import com.spenditos.android.ui.components.subtleGlassModifier
+import com.spenditos.android.ui.components.tabBarBottomPadding
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
@@ -90,6 +95,9 @@ fun TransactionListScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var deleteTarget by remember { mutableStateOf<TransactionRowUi?>(null) }
+    var isEditMode by rememberSaveable { mutableStateOf(false) }
+    var selectedIds by rememberSaveable { mutableStateOf<Set<String>>(emptySet()) }
+    var showBulkDeleteAlert by rememberSaveable { mutableStateOf(false) }
     val rowActions = RowActions(
         onEdit = { row -> row.edit?.let(onEdit) },
         onDuplicate = { row ->
@@ -112,6 +120,38 @@ fun TransactionListScreen(
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
         )
     }
+    if (showBulkDeleteAlert) {
+        val selectedCount = selectedIds.size
+        AlertDialog(
+            onDismissRequest = { showBulkDeleteAlert = false },
+            title = { Text("Delete $selectedCount Transactions") },
+            text = {
+                Text(
+                    if (selectedCount == 1) {
+                        "Are you sure you want to delete this transaction? This action cannot be undone."
+                    } else {
+                        "Are you sure you want to delete these $selectedCount transactions? This action cannot be undone."
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBulkDeleteAlert = false
+                        viewModel.bulkDelete(selectedIds) {
+                            isEditMode = false
+                            selectedIds = emptySet()
+                        }
+                    },
+                ) {
+                    Text("Delete", color = IosColors.expense)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkDeleteAlert = false }) { Text("Cancel") }
+            },
+        )
+    }
     state.actionError?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissActionError,
@@ -121,12 +161,6 @@ fun TransactionListScreen(
         )
     }
     val locale = LocalConfiguration.current.locales[0]
-    val monthLabel = if (state.dateRange == DateRangeFilter.CUSTOM) {
-        val dayFormat = DateTimeFormatter.ofPattern("MMM d", locale)
-        "${state.customStart.format(dayFormat)} – ${state.customEnd.format(dayFormat)}"
-    } else {
-        state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
-    }
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
@@ -150,19 +184,50 @@ fun TransactionListScreen(
                 modifier = Modifier.fillMaxSize().testTag("transactions.list"),
             ) {
                 item(key = "title") {
-                    LargeTitle("Transactions", trailing = {
-                        TransactionsToolbarCapsule(
-                            isSearchActive = isSearchActive,
-                            filtersActive = state.hasActiveFilters,
-                            onToggleSearch = {
-                                // Closing search also clears it, so no hidden filter stays on the list.
-                                if (isSearchActive) searchText = ""
-                                isSearchActive = !isSearchActive
-                            },
-                            onOpenFilter = { showFilterSheet = true },
-                            onOpenExport = onOpenExport,
+                    Box {
+                        LargeTitle(
+                            "Transactions",
+                            trailing = if (isEditMode) null else ({
+                                TransactionsToolbarCapsule(
+                                    isSearchActive = isSearchActive,
+                                    filtersActive = state.hasActiveFilters,
+                                    onToggleSearch = {
+                                        // Closing search also clears it, so no hidden filter stays on the list.
+                                        if (isSearchActive) searchText = ""
+                                        isSearchActive = !isSearchActive
+                                    },
+                                    onOpenFilter = { showFilterSheet = true },
+                                    onOpenExport = onOpenExport,
+                                )
+                            }),
                         )
-                    })
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = Spacing.screen, top = 8.dp)
+                                .height(44.dp)
+                                .then(glassCardModifier(CircleShape, shadowAlpha = 0.08f))
+                                .clickable(role = Role.Button) {
+                                    if (isEditMode) {
+                                        isEditMode = false
+                                        selectedIds = emptySet()
+                                    } else {
+                                        isEditMode = true
+                                    }
+                                }
+                                .testTag("transaction-edit")
+                                .padding(horizontal = Spacing.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                if (isEditMode) "Done" else "Edit",
+                                style = IosText.body.w(FontWeight.SemiBold),
+                                color = IosColors.spendOrange,
+                            )
+                        }
+                        // Keep the existing selector stable after removing the month switcher UI.
+                        Box(Modifier.size(0.dp).testTag("transactions.month"))
+                    }
                 }
 
                 if (isSearchActive) {
@@ -199,16 +264,6 @@ fun TransactionListScreen(
                     }
                 }
 
-                item(key = "month") {
-                    MonthNavigator(
-                        monthLabel = monthLabel,
-                        showArrows = state.dateRange != DateRangeFilter.CUSTOM,
-                        onPrevious = viewModel::previousMonth,
-                        onNext = viewModel::nextMonth,
-                        modifier = Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.s),
-                    )
-                }
-
                 if (!state.isOnline || state.waitingCount > 0 || state.failedCount > 0 || state.loadError != null) {
                     item(key = "sync") {
                         SyncBanner(
@@ -237,6 +292,11 @@ fun TransactionListScreen(
                                 locale = locale,
                                 upcoming = true,
                                 actions = rowActions,
+                                isEditMode = isEditMode,
+                                selectedIds = selectedIds,
+                                onToggleSelection = { id ->
+                                    selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+                                },
                             )
                         }
                     }
@@ -258,6 +318,11 @@ fun TransactionListScreen(
                                 locale = locale,
                                 upcoming = false,
                                 actions = rowActions,
+                                isEditMode = isEditMode,
+                                selectedIds = selectedIds,
+                                onToggleSelection = { id ->
+                                    selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+                                },
                             )
                         }
                     }
@@ -283,6 +348,16 @@ fun TransactionListScreen(
                         }
                     }
                 }
+            }
+
+            if (isEditMode && selectedIds.isNotEmpty()) {
+                BulkDeleteButton(
+                    selectedCount = selectedIds.size,
+                    onClick = { showBulkDeleteAlert = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = tabBarBottomPadding() + FloatingTabBarHeight + 10.dp),
+                )
             }
         }
     }
@@ -476,50 +551,21 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
 }
 
 @Composable
-private fun MonthNavigator(
-    monthLabel: String,
-    showArrows: Boolean,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    GlassCard(modifier = modifier) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-        ) {
-            if (showArrows) MonthNavigationButton("chevron.left", "Previous month", onPrevious)
-            Text(
-                monthLabel,
-                modifier = Modifier.weight(1f).testTag("transactions.month"),
-                style = IosText.system(16, FontWeight.SemiBold),
-                color = IosColors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-            )
-            if (showArrows) MonthNavigationButton("chevron.right", "Next month", onNext)
-        }
-    }
-}
-
-@Composable
-private fun MonthNavigationButton(symbol: String, description: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.05f))
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
+private fun BulkDeleteButton(selectedCount: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(Radius.m)
+    Row(
+        modifier = modifier
+            .dropShadow(shape, Shadow(radius = 16.dp, color = IosColors.expense, offset = DpOffset(0.dp, 4.dp), alpha = 0.4f))
+            .clip(shape)
+            .background(IosColors.expense)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .testTag("transaction-bulk-delete"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Icon(
-            SfSymbols.icon(symbol),
-            contentDescription = description,
-            tint = IosColors.textSecondary,
-            modifier = Modifier.size(16.8.dp),
-        )
+        Icon(SfSymbols.icon("trash"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
+        Text("Delete ($selectedCount)", style = IosText.body.w(FontWeight.SemiBold), color = Color.White)
     }
 }
 
@@ -569,13 +615,24 @@ private fun TransactionDaysCard(
     locale: java.util.Locale,
     upcoming: Boolean,
     actions: RowActions,
+    isEditMode: Boolean,
+    selectedIds: Set<String>,
+    onToggleSelection: (String) -> Unit,
 ) {
     GroupedCard(modifier = Modifier.padding(bottom = Spacing.m)) {
         days.forEachIndexed { groupIndex, (day, rows) ->
             androidx.compose.runtime.key("day-$day") {
             DayHeader(day = day, count = rows.size, locale = locale)
             rows.forEachIndexed { rowIndex, row ->
-                TransactionRow(row = row, currency = currency, locale = locale, actions = actions)
+                TransactionRow(
+                    row = row,
+                    currency = currency,
+                    locale = locale,
+                    actions = actions,
+                    isEditMode = isEditMode,
+                    isSelected = row.id in selectedIds,
+                    onToggleSelection = onToggleSelection,
+                )
                 if (rowIndex < rows.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 72.dp),
@@ -652,7 +709,15 @@ private fun DayHeader(day: LocalDate, count: Int, locale: java.util.Locale) {
 }
 
 @Composable
-private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java.util.Locale, actions: RowActions) {
+private fun TransactionRow(
+    row: TransactionRowUi,
+    currency: String,
+    locale: java.util.Locale,
+    actions: RowActions,
+    isEditMode: Boolean,
+    isSelected: Boolean,
+    onToggleSelection: (String) -> Unit,
+) {
     var showMenu by remember { mutableStateOf(false) }
     val tint = categoryColor(row.categoryColor)
     val hasCategory = row.categoryName != "Uncategorized" || row.categoryColor != null
@@ -676,61 +741,78 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
 
     // iOS: tap edits; the context menu (long press) has Edit, Duplicate and Delete.
     Box {
-    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-        DropdownMenuItem(
-            text = { Text("Edit") },
-            leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
-            onClick = { showMenu = false; actions.onEdit(row) },
-        )
-        DropdownMenuItem(
-            text = { Text("Duplicate") },
-            leadingIcon = { Icon(SfSymbols.icon("plus.square.on.square"), contentDescription = null) },
-            onClick = { showMenu = false; actions.onDuplicate(row) },
-        )
-        DropdownMenuItem(
-            text = { Text("Delete", color = IosColors.expense) },
-            leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
-            onClick = { showMenu = false; actions.onDelete(row) },
-        )
-    }
-    Row(
-        Modifier.fillMaxWidth()
-            .combinedClickable(
-                role = Role.Button,
-                onClickLabel = "Edit",
-                onLongClickLabel = "More actions",
-                onClick = { actions.onEdit(row) },
-                onLongClick = { showMenu = true },
-            )
-            .padding(horizontal = Spacing.m, vertical = Spacing.m).testTag("transaction.row"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-    ) {
-        Box(Modifier.size(12.dp).background(tint, CircleShape))
-        RowCategoryBadge(icon = row.categoryIcon, name = row.categoryName, tint = tint)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        if (!isEditMode) {
+            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
+                    onClick = { showMenu = false; actions.onEdit(row) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Duplicate") },
+                    leadingIcon = { Icon(SfSymbols.icon("plus.square.on.square"), contentDescription = null) },
+                    onClick = { showMenu = false; actions.onDuplicate(row) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete", color = IosColors.expense) },
+                    leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
+                    onClick = { showMenu = false; actions.onDelete(row) },
+                )
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth()
+                .combinedClickable(
+                    role = Role.Button,
+                    onClickLabel = if (isEditMode) "Select transaction" else "Edit",
+                    onLongClickLabel = if (isEditMode) null else "More actions",
+                    onClick = { if (isEditMode) onToggleSelection(row.id) else actions.onEdit(row) },
+                    onLongClick = if (isEditMode) null else ({ showMenu = true }),
+                )
+                .padding(horizontal = Spacing.m, vertical = Spacing.m)
+                .testTag("transaction.row"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            if (isEditMode) {
+                Box(
+                    Modifier.size(24.dp).testTag("transaction-select.${row.id}"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        SfSymbols.icon(if (isSelected) "checkmark.circle.fill" else "circle"),
+                        contentDescription = null,
+                        tint = IosColors.spendOrange,
+                        modifier = Modifier.size(20.4.dp),
+                    )
+                }
+            } else {
+                Box(Modifier.size(12.dp).background(tint, CircleShape))
+            }
+            RowCategoryBadge(icon = row.categoryIcon, name = row.categoryName, tint = tint)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(
+                    displayTitle,
+                    style = IosText.callout.w(FontWeight.SemiBold),
+                    color = IosColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle,
+                    style = IosText.subheadline,
+                    color = if (row.syncStatus == SyncStatus.FAILED) IosColors.expense else IosColors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
-                displayTitle,
-                style = IosText.callout.w(FontWeight.SemiBold),
-                color = IosColors.textPrimary,
+                amount,
+                style = IosText.rounded(17, FontWeight.Medium),
+                color = if (signedAmount >= 0) IosColors.income else IosColors.expense,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                subtitle,
-                style = IosText.subheadline,
-                color = if (row.syncStatus == SyncStatus.FAILED) IosColors.expense else IosColors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            amount,
-            style = IosText.rounded(17, FontWeight.Medium),
-            color = if (signedAmount >= 0) IosColors.income else IosColors.expense,
-            maxLines = 1,
-        )
-    }
     }
 }
 
