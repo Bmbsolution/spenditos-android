@@ -81,6 +81,20 @@ android {
         }
     }
 
+    // Release signing comes only from the environment (never committed): see docs/RELEASE.md.
+    // Without SPENDITOS_KEYSTORE_PATH the release APK/AAB stays unsigned.
+    signingConfigs {
+        val keystorePath = providers.environmentVariable("SPENDITOS_KEYSTORE_PATH").orNull
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = providers.environmentVariable("SPENDITOS_KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("SPENDITOS_KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("SPENDITOS_KEY_PASSWORD").orNull
+            }
+        }
+    }
+
     buildTypes {
         debug {
             // -Pspenditos.minifyDebug exercises the release R8 rules on a debug-signed build.
@@ -91,6 +105,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
