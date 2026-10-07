@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +51,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -115,18 +121,17 @@ fun TransactionListScreen(
         )
     }
     val locale = LocalConfiguration.current.locales[0]
-    val monthLabel = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+    val monthLabel = if (state.dateRange == DateRangeFilter.CUSTOM) {
+        val dayFormat = DateTimeFormatter.ofPattern("MMM d", locale)
+        "${state.customStart.format(dayFormat)} – ${state.customEnd.format(dayFormat)}"
+    } else {
+        state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+    }
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
-    val visibleDays = remember(state.days, searchText) {
-        state.days.mapNotNull { (day, rows) ->
-            val matchingRows = if (searchText.isBlank()) rows else rows.filter { row ->
-                row.title.contains(searchText, ignoreCase = true) ||
-                    row.categoryName.contains(searchText, ignoreCase = true)
-            }
-            matchingRows.takeIf { it.isNotEmpty() }?.let { day to it }
-        }
-    }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(searchText) { viewModel.setSearch(searchText) }
+    val visibleDays = state.days
     val today = LocalDate.now()
     val upcomingDays = visibleDays.filter { (day, _) -> day.isAfter(today) }.sortedBy { it.first }
     val historyDays = visibleDays.filter { (day, _) -> !day.isAfter(today) }
@@ -148,11 +153,13 @@ fun TransactionListScreen(
                     LargeTitle("Transactions", trailing = {
                         TransactionsToolbarCapsule(
                             isSearchActive = isSearchActive,
+                            filtersActive = state.hasActiveFilters,
                             onToggleSearch = {
                                 // Closing search also clears it, so no hidden filter stays on the list.
                                 if (isSearchActive) searchText = ""
                                 isSearchActive = !isSearchActive
                             },
+                            onOpenFilter = { showFilterSheet = true },
                             onOpenExport = onOpenExport,
                         )
                     })
@@ -168,9 +175,34 @@ fun TransactionListScreen(
                     }
                 }
 
+                if (state.hasActiveFilters) {
+                    item(key = "filters") {
+                        val filters = state.filters
+                        val removals = buildList {
+                            if (filters.dateRange != DateRangeFilter.THIS_MONTH) add(viewModel::removeDateFilter)
+                            if (filters.selectedType != null) add(viewModel::removeTypeFilter)
+                            if (filters.selectedCategoryIds.isNotEmpty()) add(viewModel::removeCategoryFilter)
+                            if (filters.minAmount != null || filters.maxAmount != null) add(viewModel::removeAmountFilter)
+                        }
+                        ActiveFilterPills(
+                            labels = activeFilterPillLabels(
+                                filters = filters,
+                                categoryNames = state.categories.associate { it.id to it.name },
+                                currency = state.currency,
+                                locale = locale,
+                            ),
+                            onRemove = { index ->
+                                removals.getOrNull(index)?.invoke()
+                                viewModel.refresh()
+                            },
+                        )
+                    }
+                }
+
                 item(key = "month") {
                     MonthNavigator(
                         monthLabel = monthLabel,
+                        showArrows = state.dateRange != DateRangeFilter.CUSTOM,
                         onPrevious = viewModel::previousMonth,
                         onNext = viewModel::nextMonth,
                         modifier = Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.s),
@@ -229,7 +261,7 @@ fun TransactionListScreen(
                             )
                         }
                     }
-                } else if (state.isEmpty && state.isRefreshing && searchText.isBlank()) {
+                } else if (state.sourceEmpty && state.isRefreshing && searchText.isBlank()) {
                     item(key = "loading") {
                         Box(
                             Modifier.fillMaxWidth().heightIn(min = 320.dp).testTag("transactions.summary"),
@@ -254,12 +286,44 @@ fun TransactionListScreen(
             }
         }
     }
+    if (showFilterSheet) {
+        FilterSheet(
+            state = state,
+            onDismiss = { showFilterSheet = false },
+            onSelectDateRange = viewModel::selectDateRange,
+            onCustomStart = viewModel::setCustomStart,
+            onCustomEnd = viewModel::setCustomEnd,
+            onQuickToday = viewModel::applyQuickToday,
+            onQuickThisWeek = { viewModel.applyQuickThisWeek(locale) },
+            onQuickThisMonth = viewModel::applyQuickThisMonth,
+            onQuickLastDays = viewModel::applyQuickLastDays,
+            onType = viewModel::setType,
+            onToggleCategory = viewModel::toggleCategory,
+            onClearCategories = viewModel::clearCategories,
+            onMinAmount = viewModel::setMinAmount,
+            onMaxAmount = viewModel::setMaxAmount,
+            onSavePreset = viewModel::savePreset,
+            onLoadPreset = viewModel::loadPreset,
+            onDeletePreset = viewModel::deletePreset,
+            onApply = {
+                viewModel.refresh()
+                showFilterSheet = false
+            },
+            onReset = {
+                viewModel.resetFilters()
+                viewModel.refresh()
+                showFilterSheet = false
+            },
+        )
+    }
 }
 
 @Composable
 private fun TransactionsToolbarCapsule(
     isSearchActive: Boolean,
+    filtersActive: Boolean,
     onToggleSearch: () -> Unit,
+    onOpenFilter: () -> Unit,
     onOpenExport: () -> Unit,
 ) {
     val capsule = CircleShape
@@ -299,6 +363,65 @@ private fun TransactionsToolbarCapsule(
                 tint = IosColors.textPrimary,
                 modifier = Modifier.size(20.4.dp),
             )
+        }
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onOpenFilter)
+                .testTag("transaction-filter")
+                .semantics { if (filtersActive) stateDescription = "Filters active" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box {
+                Icon(
+                    SfSymbols.icon("line.3.horizontal.decrease.circle"),
+                    contentDescription = "Filter transactions",
+                    tint = IosColors.textPrimary,
+                    modifier = Modifier.size(20.4.dp),
+                )
+                if (filtersActive) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 2.dp, y = (-2).dp)
+                            .size(8.dp)
+                            .background(IosColors.spendOrange, CircleShape),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActiveFilterPills(labels: List<String>, onRemove: (Int) -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(top = Spacing.s)
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.screen),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        labels.forEachIndexed { index, label ->
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.l))
+                    .background(IosColors.spendOrange.copy(alpha = 0.12f))
+                    .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                Text(label, style = IosText.caption.w(FontWeight.Medium), color = IosColors.spendOrange)
+                Icon(
+                    SfSymbols.icon("xmark.circle.fill"),
+                    contentDescription = "Remove filter",
+                    tint = IosColors.spendOrange.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .size(14.4.dp)
+                        .clickable(role = Role.Button) { onRemove(index) },
+                )
+            }
         }
     }
 }
@@ -355,6 +478,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
 @Composable
 private fun MonthNavigator(
     monthLabel: String,
+    showArrows: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
@@ -365,7 +489,7 @@ private fun MonthNavigator(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            MonthNavigationButton("chevron.left", "Previous month", onPrevious)
+            if (showArrows) MonthNavigationButton("chevron.left", "Previous month", onPrevious)
             Text(
                 monthLabel,
                 modifier = Modifier.weight(1f).testTag("transactions.month"),
@@ -375,7 +499,7 @@ private fun MonthNavigator(
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
-            MonthNavigationButton("chevron.right", "Next month", onNext)
+            if (showArrows) MonthNavigationButton("chevron.right", "Next month", onNext)
         }
     }
 }
