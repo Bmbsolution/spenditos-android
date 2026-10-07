@@ -573,7 +573,7 @@ private fun EmptyState(onAdd: () -> Unit) {
             modifier = Modifier.size(56.dp),
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("No transactions yet", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
+            Text("No transactions yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Text(
                 "Start tracking your spending by adding your first transaction.",
                 style = IosText.callout,

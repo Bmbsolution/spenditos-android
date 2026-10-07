@@ -145,7 +145,13 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         },
                     )
                 }
-                composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
+                composable(Tab.TRANSACTIONS.route) {
+                    TransactionListScreen(
+                        onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) },
+                        onOpenExport = { nav.navigate(EXPORT_ROUTE) },
+                        onAdd = { showAdd = true },
+                    )
+                }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
                 composable(CAPTURE_ROUTE) {
                     CaptureScreen(
