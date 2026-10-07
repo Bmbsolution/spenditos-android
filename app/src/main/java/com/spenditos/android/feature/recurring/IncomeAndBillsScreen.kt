@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -467,7 +469,9 @@ private fun IncomeBillRow(
                     Spacer(Modifier.weight(1f))
                     if (isIncome && (isMain || canEdit)) {
                         Box(
-                            Modifier.size(24.dp).testTag("recurring.mainIncome.${template.id}")
+                            // 24dp in the layout like iOS, but a 48dp touch target that overflows it.
+                            Modifier.size(24.dp).wrapContentSize(unbounded = true).requiredSize(48.dp)
+                                .testTag("recurring.mainIncome.${template.id}")
                                 .clickable(enabled = isMain || (canEdit && template.isActive), role = Role.Button, onClick = onMainIncome),
                             contentAlignment = Alignment.Center,
                         ) {
