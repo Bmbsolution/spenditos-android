@@ -359,7 +359,8 @@ class CaptureViewModelTest {
         runCurrent()
         vm.stopRecording()
         advanceUntilIdle()
-        assertEquals("You've used this month's free voice captures.", vm.state.value.error)
+        assertTrue(vm.state.value.quotaExceeded) // the iOS Monthly Limit screen, not an error line
+        assertNull(vm.state.value.error)
         assertEquals(CaptureStep.Input, vm.state.value.step)
         assertFalse(vm.state.value.offline)
     }
