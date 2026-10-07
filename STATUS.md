@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
+Last updated: 2026-10-07. Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
@@ -90,6 +90,14 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 - Screens restyled to the SwiftUI layouts: Home (greeting, ambient weather wash, hero, River, 2x2 tiles, Recent activity), Transactions (+ add sheet, sync, receipt, capture), Plan (segmented, action card, rows, Month plan), Reports + Progress, Settings (profile card + inset-grouped sections) and its sub-screens (profile, categories, merchant names, export, Pro, statement import), sign-in/register/verify/forgot, onboarding, app lock. Codex wrote the screen restyles from the SwiftUI sources; I wrote the kit, Home and the shell and fixed their compile errors.
 - Font: Inter (SIL OFL, `docs/licenses/Inter-OFL.txt`, one variable TTF in `res/font/inter.ttf`, 0.9 MB) is the app-wide font as the closest free match to SF Pro, which cannot be redistributed.
 - Known remaining differences: SF Symbols vs Material icons (closest matches used), iOS 26 "liquid glass" blur (approximated with an opaque capsule), per-category icons (iOS maps the server icon name to an SF Symbol; Android shows a letter/generic glyph when the category has no icon), exact vertical rhythm on a few secondary screens (not pixel-compared).
+
+## Wave K: exact iOS visual parity (2026-10-07, merged)
+- Owner said the Wave J look was "far away from iOS". Every screen was re-ported from its SwiftUI source value by value (fonts, paddings, radii, colors, icons, copy). Rules for any future port: `docs/IOS-PORTING.md` (SwiftUI → Compose mapping table).
+- Shared kit (mine): `IosText` (SwiftUI text styles; Inter scaled ×0.94 to SF Pro's apparent size), `IosColors` (iOS label colors), exact `glassCardModifier` (dropShadow r24 y4 6%), iOS `IconChip`, `CategorySymbolBadge`, `CategoryIcons.sfSymbolName` (port of IconMapper: categories show the monochrome symbol, not the emoji), `SfSymbols` (every SF Symbol the iOS app uses → closest Material icon), iOS settings rows, iOS 26 section headers, large titles under a 44dp nav strip with toolbar items in a glass capsule, `ErrorBanner`, tab bar at iOS 26 metrics, add button only on Home/Transactions (Plan has its own add menu, like iOS).
+- Pipeline (owner-set): Codex + Grok wrote the screen ports (Codex hit its usage limit; Grok finished from Codex's checkpoints; Grok vs Codex head-to-head on Home and Transactions), GLM reviewed every port against the Swift, the lead curated findings, verified side by side on emulator vs the iOS simulator, merged; one fresh Opus agent reviewed the whole diff at the end.
+- Bug found on the way: Reports takeaway was hard-coded "Recurring obligations are not mapped"; it now counts active non-legacy items like iOS (`activeRecurringCount`, unit-tested).
+- Product gaps NOT built (need data/features, owner decision): transaction edit/duplicate/delete and filters; Month plan "Everyday spending" and "More tools"; Settings Delete account and Restore purchases; live camera viewfinder for receipts; voice quota screen and editable item type in capture review; widget streak / spent-today / sparkline / top categories (WidgetSnapshot lacks them); iOS hides Import/Export behind DEBUG, Android ships them.
+- Emulator: run it with `-cores 4 -memory 4096` (`scripts/play.sh` does); the AVD's 1 core / 1.5 GB froze system_server.
 
 ## Play with it
 `scripts/play.sh` starts the backend harness (needs Docker), the sidecar, an emulator window, installs the `local` flavor and opens it; `scripts/play.sh stop` shuts them down. Accounts: `tools/e2e-sidecar/README.md`. Data resets when the harness/sidecar restart.

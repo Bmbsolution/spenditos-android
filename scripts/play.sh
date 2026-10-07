@@ -34,8 +34,9 @@ if ! up http://127.0.0.1:4311/__sidecar/health; then
 fi
 
 if ! "$adb" get-state >/dev/null 2>&1; then
+  # The AVD defaults to 1 core / 1.5 GB, which freezes system_server under the software GPU.
   echo "starting emulator window…"
-  (nohup "$sdk/emulator/emulator" -avd "$avd" -gpu swiftshader_indirect -no-audio -no-boot-anim -no-snapshot-save >"$log/emulator.log" 2>&1 &)
+  (nohup "$sdk/emulator/emulator" -avd "$avd" -gpu swiftshader_indirect -cores 4 -memory 4096 -no-audio -no-boot-anim -no-snapshot-save >"$log/emulator.log" 2>&1 &)
   "$adb" wait-for-device
   until [[ "$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; do sleep 3; done
 fi
