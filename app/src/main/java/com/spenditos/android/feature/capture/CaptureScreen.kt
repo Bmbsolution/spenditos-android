@@ -8,12 +8,26 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.MicOff
+import androidx.compose.material.icons.outlined.WifiOff
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,18 +35,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,9 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -57,9 +71,15 @@ import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.PillButton
-import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.subtleGlassModifier
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
+import java.text.NumberFormat
+import java.util.Currency
 
 @Composable
 fun CaptureScreen(
@@ -96,151 +116,213 @@ fun CaptureScreen(
     }
 
     IosScreen {
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
-        ) {
-            Row(Modifier.fillMaxWidth().testTag("capture.header").padding(start = Spacing.xs, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { viewModel.cancel(); onBack() }, modifier = Modifier.testTag("capture.back")) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    Text("Back", modifier = Modifier.padding(start = Spacing.xs))
-                }
-            }
-            LargeTitle("Describe it", modifier = Modifier.padding(top = 0.dp, bottom = 0.dp))
-            CaptureModeSelector(
-                selected = state.mode,
-                enabled = state.step == CaptureStep.Input && !state.isRecording,
-                onSelect = viewModel::onModeChange,
-                modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.mode.row"),
-            )
-
-            if (state.categoriesLoading) {
-                GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.m)) {
-                    Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                        Text("Loading categories…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("capture.categories.loading"))
+        Column(Modifier.fillMaxSize().padding(bottom = 120.dp)) {
+            Column(
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().testTag("capture.header")
+                        .padding(start = Spacing.xs, top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        Modifier.clickable(role = Role.Button) { viewModel.cancel(); onBack() }
+                            .testTag("capture.back").heightIn(min = 44.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(SfSymbols.icon("chevron.left"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                        Text("Back", style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary, modifier = Modifier.padding(start = Spacing.xs))
                     }
                 }
-            }
+                LargeTitle("Describe it", modifier = Modifier.padding(top = 0.dp, bottom = 0.dp))
+                CaptureModeSelector(
+                    selected = state.mode,
+                    enabled = state.step == CaptureStep.Input && !state.isRecording,
+                    onSelect = viewModel::onModeChange,
+                    modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.mode.row"),
+                )
 
-            if (state.offline) {
-                CaptureMessage("You're offline. Try again when you're connected.", true, Modifier.testTag("capture.offline"))
-            } else if (state.error != null) {
-                CaptureMessage(state.error!!, true, Modifier.testTag("capture.error"))
-            }
+                if (state.categoriesLoading) {
+                    GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.m)) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(Spacing.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        ) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = IosColors.spendOrange)
+                            Text("Loading categories…", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("capture.categories.loading"))
+                        }
+                    }
+                }
 
-            when (val step = state.step) {
-                CaptureStep.Input -> when (state.mode) {
-                    CaptureMode.TYPE -> {
-                        Text(
-                            "Describe one or more transactions.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = Spacing.screen),
-                        )
-                        CaptureTextInput(
-                            value = state.text,
-                            onValueChange = viewModel::onTextChange,
-                            label = "What happened?",
-                            modifier = Modifier.padding(horizontal = Spacing.screen),
-                            fieldModifier = Modifier.testTag("capture.text"),
+                if (state.offline) {
+                    CaptureMessage("You're offline. Try again when you're connected.", warning = true, Modifier.testTag("capture.offline"))
+                } else if (state.error != null) {
+                    CaptureMessage(state.error!!, warning = false, Modifier.testTag("capture.error"))
+                }
+
+                when (val step = state.step) {
+                    CaptureStep.Input -> when (state.mode) {
+                        CaptureMode.TYPE -> {
+                            Column(
+                                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                            ) {
+                                Text("Describe the transaction", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                                Text(
+                                    "Enter the amount, merchant, and any details. Spenditos will turn it into a transaction.",
+                                    style = IosText.subheadline,
+                                    color = IosColors.textSecondary,
+                                )
+                            }
+                            CaptureTextInput(
+                                value = state.text,
+                                onValueChange = viewModel::onTextChange,
+                                modifier = Modifier.padding(horizontal = Spacing.screen),
+                                fieldModifier = Modifier.testTag("capture.text"),
+                            )
+                            PillButton(
+                                text = "Use text",
+                                onClick = viewModel::parseTypedText,
+                                enabled = state.text.isNotBlank(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parse"),
+                            )
+                        }
+                        CaptureMode.SPEAK -> when {
+                            state.permissionDenied -> {
+                                PermissionContent(
+                                    onOpenSettings = {
+                                        returningFromSettings = true
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                                        context.startActivity(intent)
+                                    },
+                                )
+                            }
+                            state.isRecording -> {
+                                RecordingContent(
+                                    time = formatRecordingTime(state.recordingMillis),
+                                    onStop = viewModel::stopRecording,
+                                )
+                                ExamplePrompts()
+                            }
+                            else -> {
+                                VoiceIdleContent(
+                                    onRecord = {
+                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                            viewModel.onRecordPermissionResult(true)
+                                        } else {
+                                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    },
+                                )
+                                ExamplePrompts()
+                            }
+                        }
+                    }
+                    is CaptureStep.Analyzing -> {
+                        val transcribing = step.phase == CaptureAnalysisPhase.TRANSCRIBE
+                        CaptureProgress(
+                            title = if (transcribing) "Transcribing…" else "Finding transactions…",
+                            detail = if (transcribing) "Turning your recording into editable text" else "Turning your words into transaction drafts",
+                            modifier = Modifier.testTag("capture.loading"),
                         )
                         PillButton(
-                            text = "Parse transactions",
-                            onClick = viewModel::parseTypedText,
-                            enabled = state.text.isNotBlank(),
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parse"),
+                            text = "Cancel",
+                            onClick = { viewModel.cancel(); onBack() },
+                            filled = false,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.cancel"),
                         )
                     }
-                    CaptureMode.SPEAK -> when {
-                        state.permissionDenied -> {
-                            Text("Microphone access is needed for voice capture.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = Spacing.screen))
-                            PillButton(
-                                text = "Open Settings",
-                                onClick = {
-                                    returningFromSettings = true
-                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-                                    context.startActivity(intent)
-                                },
-                                filled = false,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.openSettings"),
-                            )
+                    CaptureStep.CheckTranscript -> {
+                        Column(
+                            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                        ) {
+                            Text("Check what we heard", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                            Text("Edit the transcript, then review the transactions it finds.", style = IosText.subheadline, color = IosColors.textSecondary)
                         }
-                        state.isRecording -> {
+                        CaptureTextInput(
+                            value = state.transcript,
+                            onValueChange = viewModel::onTranscriptChange,
+                            modifier = Modifier.padding(horizontal = Spacing.screen),
+                            fieldModifier = Modifier.testTag("capture.transcript"),
+                        )
+                        PillButton(
+                            text = "Find transactions",
+                            onClick = viewModel::parseTranscript,
+                            enabled = state.transcript.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parseTranscript"),
+                        )
+                    }
+                    CaptureStep.Review -> {
+                        if (state.transcript.isNotBlank()) TranscriptBanner(state.transcript)
+                        Text(
+                            "Review transactions",
+                            style = IosText.title3.w(FontWeight.SemiBold),
+                            color = IosColors.textPrimary,
+                            modifier = Modifier.padding(horizontal = Spacing.screen),
+                        )
+                        if (state.items.isEmpty()) {
                             GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
-                                Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                    Icon(Icons.Filled.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
-                                    Text("Recording · ${formatRecordingTime(state.recordingMillis)}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("capture.timer"))
-                                    Text("Speak clearly. Recording stops after 60 seconds.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Column(
+                                    Modifier.fillMaxWidth().padding(Spacing.l),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                                ) {
+                                    Icon(Icons.Outlined.GridView, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+                                    Text("We couldn't find any transactions in that. Try rephrasing.", modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                                 }
                             }
-                            PillButton(
-                                text = "Stop",
-                                onClick = viewModel::stopRecording,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.stop"),
+                            PillButton(text = "Try again", onClick = viewModel::retryEmptyAnalysis, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.tryAgain"))
+                        } else {
+                            CaptureReviewStep(
+                                items = state.items,
+                                categories = state.categories,
+                                currency = state.currency,
+                                onIncludeChange = viewModel::toggleInclude,
+                                onAmountChange = viewModel::onAmountChange,
+                                onDescriptionChange = viewModel::onDescriptionChange,
+                                onDateChange = viewModel::onDateChange,
+                                onCategoryChange = viewModel::onCategoryChange,
                             )
-                        }
-                        else -> {
-                            CapturePrompt(icon = Icons.Filled.Mic, title = "Record up to 60 seconds.")
+                            if (!state.canSave && state.includedItems.isNotEmpty()) {
+                                Text(
+                                    "Check each included amount and description.",
+                                    style = IosText.footnote,
+                                    color = IosColors.textSecondary,
+                                    modifier = Modifier.padding(horizontal = Spacing.screen),
+                                )
+                            }
                             PillButton(
-                                text = "Record",
-                                onClick = {
-                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                        viewModel.onRecordPermissionResult(true)
-                                    } else {
-                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.record"),
+                                text = "Start over",
+                                onClick = viewModel::restart,
+                                filled = false,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.restart"),
                             )
                         }
                     }
-                }
-                is CaptureStep.Analyzing -> {
-                    CaptureProgress("Reading that...", Modifier.testTag("capture.loading"))
-                    PillButton(text = "Cancel", onClick = { viewModel.cancel(); onBack() }, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.cancel"))
-                }
-                CaptureStep.CheckTranscript -> {
-                    Text("Check what we heard", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = Spacing.screen))
-                    CaptureTextInput(
-                        value = state.transcript,
-                        onValueChange = viewModel::onTranscriptChange,
-                        label = "Check what we heard",
-                        modifier = Modifier.padding(horizontal = Spacing.screen),
-                        fieldModifier = Modifier.testTag("capture.transcript"),
-                    )
-                    PillButton(text = "Parse", onClick = viewModel::parseTranscript, enabled = state.transcript.isNotBlank(), modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parseTranscript"))
-                }
-                CaptureStep.Review -> {
-                    Text("Review transactions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = Spacing.screen))
-                    if (state.items.isEmpty()) {
-                        GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
-                            Text("We couldn't find any transactions in that. Try rephrasing.", modifier = Modifier.padding(Spacing.m).testTag("capture.empty"), style = MaterialTheme.typography.bodyMedium)
-                        }
-                        PillButton(text = "Try again", onClick = viewModel::retryEmptyAnalysis, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.tryAgain"))
-                    } else {
-                        CaptureReviewStep(
-                            items = state.items,
-                            categories = state.categories,
-                            currency = state.currency,
-                            onIncludeChange = viewModel::toggleInclude,
-                            onAmountChange = viewModel::onAmountChange,
-                            onDescriptionChange = viewModel::onDescriptionChange,
-                            onDateChange = viewModel::onDateChange,
-                            onCategoryChange = viewModel::onCategoryChange,
+                    CaptureStep.Saving -> CaptureProgress(title = "Saving transactions…", modifier = Modifier.testTag("capture.saving"))
+                    CaptureStep.Done -> {
+                        DoneContent(
+                            savedCount = state.savedCount,
+                            onDone = onBack,
+                            modifier = Modifier.testTag("capture.done"),
+                            buttonModifier = Modifier.testTag("capture.done.back"),
                         )
-                        if (!state.canSave && state.includedItems.isNotEmpty()) {
-                            Text("Check each included amount and description.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = Spacing.screen))
-                        }
-                        PillButton(text = "Save ${state.includedItems.size} transactions", onClick = viewModel::save, enabled = state.canSave, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.save"))
-                        PillButton(text = "Start over", onClick = viewModel::restart, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.restart"))
                     }
                 }
-                CaptureStep.Saving -> CaptureProgress("Saving transactions…", Modifier.testTag("capture.saving"))
-                CaptureStep.Done -> {
-                    CapturePrompt(icon = Icons.Filled.TextFields, title = "Transactions saved", textModifier = Modifier.testTag("capture.done"))
-                    PillButton(text = "Done", onClick = onBack, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.done.back"))
-                }
+                Spacer(Modifier.height(Spacing.l))
+            }
+
+            if (state.step == CaptureStep.Review && state.items.isNotEmpty()) {
+                CaptureReviewFooter(
+                    items = state.includedItems,
+                    currency = state.currency,
+                    enabled = state.canSave,
+                    onSave = viewModel::save,
+                    modifier = Modifier.testTag("capture.save"),
+                )
             }
         }
     }
@@ -249,70 +331,277 @@ fun CaptureScreen(
 @Composable
 private fun CaptureModeSelector(selected: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)).padding(3.dp),
+        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
+            .background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         CaptureMode.entries.forEach { mode ->
             val isSelected = selected == mode
             val label = if (mode == CaptureMode.TYPE) "Type" else "Speak"
             Box(
-                Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(13.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.surfaceContainerLowest else androidx.compose.ui.graphics.Color.Transparent)
+                Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
+                    .background(if (isSelected) MaterialTheme.colorScheme.surfaceContainerLowest else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.Tab) { onSelect(mode) }
                     .testTag("capture.mode.${mode.name.lowercase()}"),
                 contentAlignment = Alignment.Center,
-            ) { Text(label, style = MaterialTheme.typography.labelLarge, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
+            ) {
+                Text(
+                    label,
+                    style = IosText.subheadline,
+                    color = IosColors.textPrimary,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CaptureTextInput(value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, fieldModifier: Modifier = Modifier) {
-    GlassCard(modifier, shape = RoundedCornerShape(Radius.m)) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).then(fieldModifier),
+private fun CaptureTextInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    fieldModifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(Radius.m)
+    Box(
+        modifier.fillMaxWidth().clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer, shape)
+            .border(1.dp, IosColors.separator.copy(alpha = 0.55f), shape),
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = IosText.callout.copy(color = IosColors.textPrimary),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.m).heightIn(min = 128.dp).then(fieldModifier),
+        )
+    }
+}
+
+@Composable
+private fun VoiceIdleContent(onRecord: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
+    ) {
+        Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(67.dp).padding(bottom = Spacing.s))
+        Text("Tap and speak", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text("Record up to 60 seconds. Recording stops automatically at 60 seconds.", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        VoiceActionButton(
+            text = "Start Recording",
+            onClick = onRecord,
+            modifier = Modifier.padding(top = Spacing.m).testTag("capture.record"),
+        )
+    }
+}
+
+@Composable
+private fun RecordingContent(time: String, onStop: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "captureMicPulse")
+    val scale by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(tween(1_000), repeatMode = RepeatMode.Reverse),
+        label = "captureMicPulseScale",
+    )
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
+    ) {
+        Text(time, style = IosText.rounded(22, FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.testTag("capture.timer"))
+        Spacer(Modifier.fillMaxWidth().height(60.dp))
+        Box(Modifier.size(100.dp), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(100.dp).graphicsLayer(scaleX = scale, scaleY = scale)
+                    .clip(CircleShape).background(IosColors.expense.copy(alpha = 0.2f)),
+            )
+            Box(Modifier.size(72.dp).clip(CircleShape).background(IosColors.expense.copy(alpha = 0.4f)), contentAlignment = Alignment.Center) {
+                Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
+            }
+        }
+        Text("Auto-stops after 60 seconds", style = IosText.subheadline, color = IosColors.neutral, textAlign = TextAlign.Center)
+        VoiceActionButton(
+            text = "Stop & Transcribe",
+            onClick = onStop,
+            modifier = Modifier.testTag("capture.stop"),
+            fill = IosColors.expense,
+            textColor = Color.White,
+            icon = Icons.Filled.Stop,
+        )
+    }
+}
+
+@Composable
+private fun PermissionContent(onOpenSettings: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
+    ) {
+        Icon(Icons.Outlined.MicOff, contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(67.dp))
+        Text("Microphone Access Required", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text("Allow microphone access in Settings to use voice entry.", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        VoiceActionButton(
+            text = "Open Settings",
+            onClick = onOpenSettings,
+            cornerRadius = Radius.m,
+            modifier = Modifier.testTag("capture.openSettings"),
+        )
+    }
+}
+
+@Composable
+private fun VoiceActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    fill: Color = IosColors.spendOrange,
+    textColor: Color = Color.Black,
+    cornerRadius: androidx.compose.ui.unit.Dp = Radius.l,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Row(
+        modifier.clip(shape).background(fill).clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 32.dp, vertical = Spacing.m).then(modifier),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        if (icon != null) Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(18.dp))
+        Text(text, style = IosText.headline, color = textColor)
+    }
+}
+
+@Composable
+private fun ExamplePrompts() {
+    val shape = RoundedCornerShape(Radius.m)
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).then(subtleGlassModifier(shape)).padding(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Text("Try saying:", style = IosText.subheadline, color = IosColors.neutral)
+        listOf(
+            "Spent \$25 at Starbucks for coffee",
+            "Received \$500 salary deposit",
+            "Paid \$12.50 for lunch today",
+        ).forEach { text ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.FormatQuote, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
+                Text(text, style = IosText.subheadline, color = IosColors.textSecondary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaptureMessage(text: String, warning: Boolean, modifier: Modifier = Modifier) {
+    val tint = if (warning) IosColors.warning else IosColors.expense
+    GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.m)) {
+        Row(
+            Modifier.fillMaxWidth().padding(Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Icon(if (warning) Icons.Outlined.WifiOff else SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+            Text(text, style = IosText.body, color = IosColors.textPrimary, modifier = modifier)
+        }
+    }
+}
+
+@Composable
+private fun CaptureProgress(title: String, detail: String? = null, modifier: Modifier = Modifier) {
+    GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
+        Column(
+            Modifier.fillMaxWidth().padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
+        ) {
+            CircularProgressIndicator(modifier = modifier.size(36.dp), color = IosColors.spendOrange, strokeWidth = 3.dp)
+            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            if (detail != null) Text(detail, style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun TranscriptBanner(transcript: String) {
+    val shape = RoundedCornerShape(Radius.m)
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.m).clip(shape)
+            .background(IosColors.spendOrange.copy(alpha = 0.08f)).padding(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
+            Text("Transcript", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+        }
+        Text(transcript, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 3, modifier = Modifier.testTag("review-transcript"))
+    }
+}
+
+@Composable
+private fun CaptureReviewFooter(
+    items: List<CaptureReviewItem>,
+    currency: String,
+    enabled: Boolean,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val net = items.sumOf { item ->
+        val amount = item.amountText.trim().replace(',', '.').toDoubleOrNull() ?: 0.0
+        if (item.transactionType.equals("income", ignoreCase = true)) amount else -amount
+    }
+    val count = items.size
+    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)) {
+        androidx.compose.material3.HorizontalDivider(color = IosColors.separator)
+        Row(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("$count ${if (count == 1) "transaction" else "transactions"}", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(
+                    formatCurrency(kotlin.math.abs(net), currency),
+                    style = IosText.rounded(20, FontWeight.SemiBold),
+                    color = if (net < 0) IosColors.expense else IosColors.income,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            PillButton(
+                text = "Add $count",
+                onClick = onSave,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).then(modifier).testTag("capture.save"),
             )
         }
     }
 }
 
 @Composable
-private fun CaptureMessage(text: String, isError: Boolean, modifier: Modifier = Modifier) {
-    val finance = LocalFinanceColors.current
-    GlassCard(
-        modifier = Modifier.padding(horizontal = Spacing.screen),
-        shape = RoundedCornerShape(Radius.m),
+private fun DoneContent(savedCount: Int, onDone: () -> Unit, modifier: Modifier = Modifier, buttonModifier: Modifier = Modifier) {
+    Column(
+        Modifier.fillMaxWidth().padding(Spacing.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = if (isError) finance.expense else MaterialTheme.colorScheme.onSurface, modifier = modifier.padding(Spacing.m))
-    }
-}
-
-@Composable
-private fun CapturePrompt(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, modifier: Modifier = Modifier, textModifier: Modifier = Modifier) {
-    GlassCard(modifier = modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(42.dp))
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = textModifier)
-        }
-    }
-}
-
-@Composable
-private fun CaptureProgress(text: String, modifier: Modifier = Modifier) {
-    GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-            CircularProgressIndicator(modifier = modifier, color = MaterialTheme.colorScheme.primary)
-            Text(text, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-        }
+        Spacer(Modifier.height(32.dp))
+        Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(67.dp))
+        Text("Transactions added", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = modifier)
+        Text("$savedCount transactions", style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+        Spacer(Modifier.weight(1f))
+        PillButton("Done", onClick = onDone, modifier = Modifier.fillMaxWidth().then(buttonModifier))
     }
 }
 
 private fun formatRecordingTime(milliseconds: Long): String {
     val totalSeconds = (milliseconds / 1_000).coerceAtMost(60)
-    return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
+    val tenths = ((milliseconds % 1_000) / 100).toInt()
+    return "%d:%02d.%d".format(totalSeconds / 60, totalSeconds % 60, tenths)
 }
+
+private fun formatCurrency(value: Double, currencyCode: String): String = runCatching {
+    NumberFormat.getCurrencyInstance().apply { currency = Currency.getInstance(currencyCode.uppercase()) }.format(value)
+}.getOrDefault("${currencyCode.uppercase()} ${"%.2f".format(value)}")
