@@ -31,6 +31,7 @@ data class SettingsUiState(
     val lockEnabled: Boolean = false,
     val lockMessage: String? = null,
     val pushEnabled: Boolean = false,
+    val currency: String = "",
 )
 
 @HiltViewModel
@@ -42,17 +43,19 @@ class SettingsViewModel @Inject constructor(
     private val lockSettings: AppLockSettings,
     private val authenticator: BiometricAuthenticator,
     private val push: com.spenditos.android.data.push.PushRegistrar,
+    private val userSettings: com.spenditos.android.data.user.UserSettingsActions,
 ) : ViewModel() {
     private val lockMessage = MutableStateFlow<String?>(null)
     private val email = (session.state.value as? SessionState.SignedIn)?.email
 
-    val state: StateFlow<SettingsUiState> = combine(transactions.observeQueue(), lockSettings.enabled, lockMessage, push.enabled) { queue, lockOn, message, pushOn ->
+    val state: StateFlow<SettingsUiState> = combine(transactions.observeQueue(), lockSettings.enabled, lockMessage, push.enabled, userSettings.currency()) { queue, lockOn, message, pushOn, currency ->
         SettingsUiState(
             email, queue.size, environment.displayName, environment.stage,
             lockAvailable = authenticator.availability() == LockAvailability.AVAILABLE,
             lockEnabled = lockOn,
             lockMessage = message,
             pushEnabled = pushOn,
+            currency = currency,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState(email, 0, environment.displayName, environment.stage))
 

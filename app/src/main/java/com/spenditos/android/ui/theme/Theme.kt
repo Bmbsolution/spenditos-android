@@ -1,13 +1,20 @@
 package com.spenditos.android.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 // Brand and semantic colors from iOS Shared/Extensions/Color+Theme.swift.
 private val Terracotta = Color(0xFFB85F42)
@@ -64,10 +71,53 @@ private val DarkColors = darkColorScheme(
     surfaceContainerHighest = Color(0xFF2C2C2E),
 )
 
+/** iOS `AppTheme` corner radii (10 / 16 / 24 / 32) so every Material surface rounds like the iOS app. */
+object Radius {
+    val s = 10.dp
+    val m = 16.dp
+    val l = 24.dp
+    val xl = 32.dp
+}
+
+private val IosShapes = Shapes(
+    extraSmall = RoundedCornerShape(Radius.s),
+    small = RoundedCornerShape(Radius.s),
+    medium = RoundedCornerShape(Radius.m),
+    large = RoundedCornerShape(Radius.l),
+    extraLarge = RoundedCornerShape(Radius.xl),
+)
+
+/**
+ * iOS text styles (Typography.swift): largeTitle black 34, title2 bold 22, title3 semibold 20, headline
+ * semibold 17, body 17, callout 16, subheadline 15, footnote 13. System sans, tight tracking like SF.
+ */
+private val IosTypography = Typography(
+    displayLarge = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.4).sp),
+    displayMedium = TextStyle(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
+    displaySmall = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold),
+    headlineLarge = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold),
+    headlineMedium = TextStyle(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold),
+    headlineSmall = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+    titleLarge = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+    titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold),
+    titleSmall = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+    bodyLarge = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal),
+    bodyMedium = TextStyle(fontSize = 16.sp, lineHeight = 21.sp, fontWeight = FontWeight.Normal),
+    bodySmall = TextStyle(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Normal),
+    labelLarge = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+    labelMedium = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+    labelSmall = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium),
+)
+
 @Composable
 fun SpenditosTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(LocalFinanceColors provides if (darkTheme) DarkFinance else LightFinance) {
-        MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, content = content)
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColors else LightColors,
+            shapes = IosShapes,
+            typography = IosTypography,
+            content = content,
+        )
     }
 }
 

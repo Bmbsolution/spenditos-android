@@ -60,6 +60,13 @@ import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.feature.transactions.AddTransactionSheet
 import com.spenditos.android.feature.transactions.TransactionListScreen
 import com.spenditos.android.ui.components.EnvBadge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.spenditos.android.ui.components.TabItem
+import com.spenditos.android.ui.components.GradientFab
+import com.spenditos.android.ui.components.FloatingTabBar
 import com.spenditos.android.ui.components.ScopedViewModels
 import kotlinx.coroutines.launch
 
@@ -109,55 +116,12 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = {
-            if (onTab && backStack?.destination?.route != Tab.SETTINGS.route) {
-                FloatingActionButton(
-                    onClick = { showAdd = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.testTag("fab.add"),
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add transaction")
-                }
-            }
-        },
-        bottomBar = {
-            if (onTab) {
-                NavigationBar {
-                    Tab.entries.forEach { tab ->
-                        NavigationBarItem(
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                            ),
-                            selected = backStack?.destination?.hierarchy?.any { it.route == tab.route } == true,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            // Tab labels stay on one line, so cap their font scale (system bar pattern) instead of clipping them.
-                            label = {
-                                val density = LocalDensity.current
-                                CompositionLocalProvider(LocalDensity provides Density(density.density, minOf(density.fontScale, 1.0f))) {
-                                    Text(tab.label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                                }
-                            },
-                            modifier = Modifier.testTag("tab.${tab.route}"),
-                        )
-                    }
-                }
-            }
-        },
     ) { padding ->
-        Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
+        Box(Modifier.fillMaxSize()) {
             androidx.compose.runtime.CompositionLocalProvider(
                 com.spenditos.android.feature.pro.LocalOpenPro provides (if (proAvailable) ({ nav.navigate(PRO_ROUTE) }) else null),
             ) {
-            NavHost(nav, startDestination = Tab.TRANSACTIONS.route) {
+            NavHost(nav, startDestination = Tab.HOME.route) {
                 composable(Tab.HOME.route) {
                     val toPlan = {
                         nav.navigate(Tab.PLAN.route) {
@@ -223,7 +187,35 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
             }
             }
-            envName?.let { EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp)) }
+            if (onTab) {
+                val currentRoute = Tab.entries.firstOrNull { tab -> backStack?.destination?.hierarchy?.any { it.route == tab.route } == true }?.route
+                Column(
+                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    if (currentRoute != Tab.SETTINGS.route) {
+                        GradientFab(
+                            onClick = { showAdd = true },
+                            glyph = Icons.Filled.Add,
+                            contentDescription = "Add transaction",
+                            modifier = Modifier.padding(end = 20.dp).testTag("fab.add"),
+                        )
+                    }
+                    FloatingTabBar(
+                        items = Tab.entries.map { TabItem(it.route, it.label, it.icon) },
+                        selectedRoute = currentRoute,
+                        onSelect = { item ->
+                            nav.navigate(item.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+            envName?.let { EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = if (onTab) 112.dp else 12.dp)) }
         }
     }
 
