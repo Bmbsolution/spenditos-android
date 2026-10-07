@@ -12,13 +12,14 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.alignByBaseline
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FormatAlignLeft
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -333,7 +335,7 @@ fun AddTransactionSheet(
 private fun EntryTypeSelector(selected: EntryType, onSelect: (EntryType) -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)).padding(4.dp),
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         EntryType.entries.forEach { type ->
@@ -423,7 +425,7 @@ private fun HeroAmountField(
                 symbol,
                 style = IosText.rounded(34, FontWeight.Bold),
                 color = IosColors.textSecondary,
-                modifier = Modifier.alignByBaseline(),
+                modifier = Modifier.alignBy(FirstBaseline),
             )
             Spacer(Modifier.width(Spacing.s))
             BasicTextField(
@@ -433,7 +435,7 @@ private fun HeroAmountField(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 interactionSource = interactionSource,
                 textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = IosColors.textPrimary),
-                modifier = Modifier.weight(1f).alignByBaseline(),
+                modifier = Modifier.weight(1f).alignBy(FirstBaseline),
                 decorationBox = { innerTextField ->
                     Box {
                         if (value.isEmpty()) Text("0", style = IosText.rounded(46, FontWeight.ExtraBold), color = IosColors.textTertiary.copy(alpha = 0.55f))
@@ -463,11 +465,14 @@ private fun QuickCategoryChip(
     Row(
         modifier.clip(shape)
             .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f), shape)
+            .border(
+                if (selected) 1.5.dp else 1.dp,
+                if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f),
+                shape,
+            )
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 44.dp)
-            .padding(horizontal = Spacing.m, vertical = Spacing.s)
-            .then(modifier),
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
@@ -511,7 +516,7 @@ private fun CategoryGridCell(category: Category, selected: Boolean, onClick: () 
                     SfSymbols.icon("checkmark.circle.fill"),
                     contentDescription = null,
                     tint = IosColors.spendOrange,
-                    modifier = Modifier.align(Alignment.TopEnd).size(14.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).offset(4.dp, (-4).dp).size(14.dp)
                         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
                 )
             }
@@ -567,7 +572,7 @@ private fun DescriptionField(value: String, onValueChange: (String) -> Unit, mod
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Icon(SfSymbols.icon("list.bullet"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
+            Icon(Icons.Outlined.FormatAlignLeft, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -610,7 +615,11 @@ private fun DateChip(title: String, selected: Boolean, onClick: () -> Unit, symb
     Row(
         Modifier.clip(shape)
             .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f), shape)
+            .border(
+                if (selected) 1.5.dp else 1.dp,
+                if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f),
+                shape,
+            )
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 44.dp)
             .padding(horizontal = Spacing.m, vertical = Spacing.s),
@@ -624,29 +633,37 @@ private fun DateChip(title: String, selected: Boolean, onClick: () -> Unit, symb
 
 @Composable
 private fun AddErrorBanner(message: String, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(Radius.m)
+    val shape = RoundedCornerShape(12.dp)
     Row(
         Modifier.fillMaxWidth().clip(shape)
             .background(IosColors.expense.copy(alpha = 0.12f))
             .border(1.dp, IosColors.expense.copy(alpha = 0.45f), shape)
             .padding(Spacing.m),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
-        Icon(SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.padding(end = Spacing.s))
-        Text(message, style = IosText.body, color = IosColors.textPrimary, modifier = modifier)
+        Icon(SfSymbols.icon("exclamationmark.circle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.padding(end = Spacing.s))
+        Text(message, style = IosText.callout, color = IosColors.textPrimary, modifier = modifier.weight(1f))
     }
 }
 
 @Composable
 private fun SavePill(saving: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(Radius.m)
+    val background = when {
+        saving -> IosColors.spendOrange.copy(alpha = 0.72f)
+        enabled -> IosColors.spendOrange
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+    }
     Box(
-        modifier.height(52.dp).clip(CircleShape)
-            .background(if (enabled || saving) IosColors.spendOrange else IosColors.textPrimary.copy(alpha = 0.12f))
+        modifier.height(52.dp).clip(shape).background(background)
+            .then(if (enabled) Modifier else Modifier.border(1.dp, IosColors.separator.copy(alpha = 0.4f), shape))
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (saving) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-        else Text("Save", style = IosText.headline, color = if (enabled) Color.White else IosColors.textPrimary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (saving) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+            Text("Save", style = IosText.headline, color = if (enabled || saving) Color.White else IosColors.textTertiary)
+        }
     }
 }
 

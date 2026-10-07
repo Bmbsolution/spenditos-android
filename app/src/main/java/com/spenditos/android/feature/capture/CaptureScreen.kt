@@ -43,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -69,7 +70,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
@@ -121,27 +121,18 @@ fun CaptureScreen(
                 Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
-                Row(
-                    Modifier.fillMaxWidth().testTag("capture.header")
-                        .padding(start = Spacing.xs, top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        Modifier.clickable(role = Role.Button) { viewModel.cancel(); onBack() }
-                            .testTag("capture.back").heightIn(min = 44.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(SfSymbols.icon("chevron.left"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
-                        Text("Back", style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary, modifier = Modifier.padding(start = Spacing.xs))
-                    }
-                }
-                LargeTitle("Describe it", modifier = Modifier.padding(top = 0.dp, bottom = 0.dp))
-                CaptureModeSelector(
-                    selected = state.mode,
-                    enabled = state.step == CaptureStep.Input && !state.isRecording,
-                    onSelect = viewModel::onModeChange,
-                    modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.mode.row"),
+                CaptureHeader(
+                    title = captureTitle(state.step, state.mode),
+                    onBack = { viewModel.cancel(); onBack() },
                 )
+                if (state.step == CaptureStep.Input) {
+                    CaptureModeSelector(
+                        selected = state.mode,
+                        enabled = !state.isRecording,
+                        onSelect = viewModel::onModeChange,
+                        modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.mode.row"),
+                    )
+                }
 
                 if (state.categoriesLoading) {
                     GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.m)) {
@@ -239,7 +230,6 @@ fun CaptureScreen(
                             Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
                             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                         ) {
-                            Text("Check what we heard", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                             Text("Edit the transcript, then review the transactions it finds.", style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                         CaptureTextInput(
@@ -257,12 +247,6 @@ fun CaptureScreen(
                     }
                     CaptureStep.Review -> {
                         if (state.transcript.isNotBlank()) TranscriptBanner(state.transcript)
-                        Text(
-                            "Review transactions",
-                            style = IosText.title3.w(FontWeight.SemiBold),
-                            color = IosColors.textPrimary,
-                            modifier = Modifier.padding(horizontal = Spacing.screen),
-                        )
                         if (state.items.isEmpty()) {
                             GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
                                 Column(
@@ -329,18 +313,47 @@ fun CaptureScreen(
 }
 
 @Composable
+private fun CaptureHeader(title: String?, onBack: () -> Unit) {
+    Box(
+        Modifier.fillMaxWidth().testTag("capture.header").padding(horizontal = Spacing.screen).heightIn(min = 44.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (title != null) {
+            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        }
+        Row(
+            Modifier.align(Alignment.CenterStart).clickable(role = Role.Button, onClick = onBack)
+                .testTag("capture.back").heightIn(min = 44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
+            Text("Back", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary, modifier = Modifier.padding(start = Spacing.xs))
+        }
+    }
+}
+
+private fun captureTitle(step: CaptureStep, mode: CaptureMode): String? = when (step) {
+    CaptureStep.Input -> if (mode == CaptureMode.SPEAK) "Voice Entry" else null
+    CaptureStep.CheckTranscript -> "Check what we heard"
+    CaptureStep.Review -> "Review transactions"
+    is CaptureStep.Analyzing -> if (step.phase == CaptureAnalysisPhase.TRANSCRIBE) "Voice Entry" else null
+    else -> null
+}
+
+@Composable
 private fun CaptureModeSelector(selected: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) -> Unit, modifier: Modifier = Modifier) {
+    val dark = isSystemInDarkTheme()
+    val track = if (dark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+    val thumb = if (dark) Color(0xFF636366) else Color.White
     Row(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
-            .background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(track).padding(3.dp),
     ) {
         CaptureMode.entries.forEach { mode ->
             val isSelected = selected == mode
             val label = if (mode == CaptureMode.TYPE) "Type" else "Speak"
             Box(
                 Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.surfaceContainerLowest else Color.Transparent)
+                    .background(if (isSelected) thumb else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.Tab) { onSelect(mode) }
                     .testTag("capture.mode.${mode.name.lowercase()}"),
                 contentAlignment = Alignment.Center,
@@ -373,7 +386,7 @@ private fun CaptureTextInput(
             value = value,
             onValueChange = onValueChange,
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
-            modifier = Modifier.fillMaxWidth().padding(Spacing.m).heightIn(min = 128.dp).then(fieldModifier),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.m).heightIn(min = 160.dp).then(fieldModifier),
         )
     }
 }
@@ -411,7 +424,9 @@ private fun RecordingContent(time: String, onStop: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Text(time, style = IosText.rounded(22, FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.testTag("capture.timer"))
-        Spacer(Modifier.fillMaxWidth().height(60.dp))
+        Box(Modifier.fillMaxWidth().height(60.dp).padding(horizontal = Spacing.m), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+        }
         Box(Modifier.size(100.dp), contentAlignment = Alignment.Center) {
             Box(
                 Modifier.size(100.dp).graphicsLayer(scaleX = scale, scaleY = scale)

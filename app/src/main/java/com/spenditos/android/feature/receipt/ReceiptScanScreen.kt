@@ -125,7 +125,7 @@ fun ReceiptScanScreen(
                         viewModel.cancel()
                         onBack()
                     }, modifier = Modifier.fillMaxWidth().testTag("receipt.cancel")) {
-                        Text("Cancel", style = IosText.body, color = IosColors.textSecondary)
+                        Text("Cancel", style = IosText.body, color = IosColors.neutral)
                     }
                 }
                 ReceiptScanStep.PREPARING -> ProgressState("Preparing photo...", onCancel = { viewModel.cancel(); onBack() })
