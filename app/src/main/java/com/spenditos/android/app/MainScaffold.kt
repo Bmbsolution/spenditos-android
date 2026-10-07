@@ -83,6 +83,7 @@ private const val CHANGE_PASSWORD_ROUTE = "settings/change-password"
 private const val STATEMENT_IMPORT_ROUTE = "settings/import-statement"
 private const val PROGRESS_ROUTE = "settings/progress"
 private const val EXPORT_ROUTE = "settings/export"
+private const val MERCHANTS_ROUTE = "settings/merchant-names"
 
 /** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
 @Composable
@@ -203,11 +204,13 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         onOpenStatementImport = { nav.navigate(STATEMENT_IMPORT_ROUTE) },
                         onOpenProgress = { nav.navigate(PROGRESS_ROUTE) },
                         onOpenExport = { nav.navigate(EXPORT_ROUTE) },
+                        onOpenMerchants = { nav.navigate(MERCHANTS_ROUTE) },
                     )
                 }
                 composable(PROFILE_ROUTE) { ProfileScreen(onBack = { nav.popBackStack() }) }
                 composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
+                composable(MERCHANTS_ROUTE) { com.spenditos.android.feature.settings.merchants.MerchantMappingsScreen(onBack = { nav.popBackStack() }) }
                 composable(EXPORT_ROUTE) { com.spenditos.android.feature.export.ExportScreen(onBack = { nav.popBackStack() }) }
                 composable(PROGRESS_ROUTE) { ProgressScreen(onBack = { nav.popBackStack() }) }
                 composable(STATEMENT_IMPORT_ROUTE) { StatementImportScreen(onBack = { nav.popBackStack() }) }

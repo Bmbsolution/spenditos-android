@@ -301,6 +301,34 @@ function captureDate(referenceDate, relative) {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+const merchantStore = new Map();
+async function merchantMappings(req, res, account, id) {
+  const list = merchantStore.get(account.id) ?? merchantStore.set(account.id, []).get(account.id);
+  const now = new Date().toISOString();
+  if (req.method === 'GET' && !id) return json(res, 200, { data: list });
+  if (req.method === 'DELETE' && id) {
+    const index = list.findIndex(m => m.id === id);
+    if (index >= 0) list.splice(index, 1);
+    res.writeHead(204); return res.end();
+  }
+  if ((req.method === 'POST' && !id) || (req.method === 'PUT' && id)) {
+    const body = await readJson(req);
+    const bad = field => apiError(res, 400, `${field} is required`, 'ValidationError');
+    if (req.method === 'POST' && (!body?.rawPattern || typeof body.rawPattern !== 'string')) return bad('rawPattern');
+    if (req.method === 'POST' && (!body?.cleanMerchantName || typeof body.cleanMerchantName !== 'string')) return bad('cleanMerchantName');
+    if (req.method === 'POST') {
+      const created = { id: randomUUID(), userId: account.id, rawPattern: body.rawPattern, cleanMerchantName: body.cleanMerchantName, categoryId: body.categoryId, confidence: 1, source: 'user', isRegex: !!body.isRegex, createdAt: now, updatedAt: now };
+      list.push(created);
+      return json(res, 201, { data: created });
+    }
+    const existing = list.find(m => m.id === id);
+    if (!existing) return apiError(res, 404, 'Merchant mapping not found', 'NotFound');
+    Object.assign(existing, { ...body, updatedAt: now });
+    return json(res, 200, { data: existing });
+  }
+  return apiError(res, 405, 'Method not allowed', 'MethodNotAllowed');
+}
+
 async function exportCsv(req, res, account) {
   const url = new URL(req.url, 'http://local');
   const start = url.searchParams.get('startDate'), end = url.searchParams.get('endDate');
@@ -514,6 +542,9 @@ async function handleRequest(req, res, server) {
     await readJson(req);
     return json(res, 200, { data: { registered: req.method === "POST" } });
   }
+  // Merchant names: the harness has no route, keep them in memory per account.
+  const merchantMatch = /^\/settings\/merchant-mappings(?:\/([^/]+))?$/.exec(path);
+  if (merchantMatch) return merchantMappings(req, res, account, merchantMatch[1]);
   // The harness has no export route: build a CSV like the real handler from its transaction + category lists.
   if (path === '/transactions/export' && req.method === 'GET') return exportCsv(req, res, account);
   if (path === '/transactions/upload-url' && req.method === 'POST') return uploadUrl(req, res, account, server);
