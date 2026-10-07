@@ -1,0 +1,1 @@
+{"data":[{"id":"first_transaction","name":"Just Getting Started","description":"Log your first transaction","icon":"🎉","points":50,"category":"tracking","requirement":{"type":"transaction_count","value":1},"repeatable":false,"minimumLevel":1}]}
