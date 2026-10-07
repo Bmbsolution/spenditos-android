@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,8 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,39 +29,54 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IconChip
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
-import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
+import java.util.Currency
 import java.util.Locale
 
+private val OutColor = Color(0xFFD9643A)
+
 @Composable
-fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
-    val finance = LocalFinanceColors.current
-    val axisColor = MaterialTheme.colorScheme.onSurfaceVariant
+fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale: Locale) {
+    val inColor = IosColors.income
     val signedGap = signedAmount(insights.monthEndGap, currency, locale)
     val shortfall = insights.shortfall
     val upcoming = insights.pins.filterNot { it.isPast }.take(4)
-    com.spenditos.android.ui.components.GlassCard(modifier = Modifier.testTag("home.river")) {
+    GlassCard(modifier = Modifier.testTag("home.river")) {
         Column(
             Modifier.fillMaxWidth().padding(Spacing.m),
-            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            Text("Your month", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Text(
-                "Money coming in and going out, with bills and income ahead",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                "$signedGap left at month end",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (insights.monthEndGap.signum() >= 0) finance.income else finance.expense,
-            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Your month", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(
+                        "Money coming in and going out, with bills and income ahead",
+                        style = IosText.caption,
+                        color = IosColors.textSecondary,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        signedGap,
+                        style = IosText.rounded(17, FontWeight.Bold),
+                        color = if (insights.monthEndGap.signum() >= 0) inColor else IosColors.expense,
+                    )
+                    Text("left at month end", style = IosText.caption2, color = IosColors.textSecondary)
+                }
+            }
 
             val description = riverDescription(insights, currency, locale)
             Canvas(
@@ -70,7 +85,7 @@ fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
             ) {
                 if (insights.points.isEmpty() || size.width <= 0f || size.height <= 0f) return@Canvas
                 val horizontalInset = 8.dp.toPx()
-                val topInset = 8.dp.toPx()
+                val topInset = 26.dp.toPx()
                 val bottomInset = 8.dp.toPx()
                 val dayCount = (insights.monthEnd.toEpochDay() - insights.monthStart.toEpochDay() + 1).toFloat().coerceAtLeast(1f)
                 val plotWidth = (size.width - horizontalInset * 2).coerceAtLeast(1f)
@@ -83,21 +98,6 @@ fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
                         (dayCount - 1f).coerceAtLeast(1f) * plotWidth
 
                 fun y(amount: BigDecimal): Float = topInset + plotHeight - (amount.toDouble() / maximum).toFloat().coerceIn(0f, 1f) * plotHeight
-
-                shortfall?.let { span ->
-                    val areaPoints = insights.points
-                        .filter { it.date in span.start..span.end && (it.isProjected || it.date == insights.today) }
-                        .distinctBy { it.date }
-                    if (areaPoints.size > 1) {
-                        val area = Path().apply {
-                            moveTo(x(areaPoints.first().date), y(areaPoints.first().moneyOut))
-                            areaPoints.drop(1).forEach { lineTo(x(it.date), y(it.moneyOut)) }
-                            areaPoints.asReversed().forEach { lineTo(x(it.date), y(it.moneyIn)) }
-                            close()
-                        }
-                        drawPath(area, finance.expense.copy(alpha = 0.12f))
-                    }
-                }
 
                 fun drawSeries(projected: Boolean, income: Boolean, color: Color) {
                     val series = insights.points.filter { it.isProjected == projected }
@@ -115,73 +115,85 @@ fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
                     }
                     drawPath(
                         path = path,
-                        color = color.copy(alpha = if (projected) 0.68f else 1f),
+                        color = color.copy(alpha = if (projected) 0.6f else 1f),
                         style = Stroke(
-                            width = if (projected) 2.dp.toPx() else 3.dp.toPx(),
-                            pathEffect = if (projected) PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())) else null,
+                            width = if (projected) 2.5.dp.toPx() else 3.dp.toPx(),
+                            pathEffect = if (projected) PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())) else null,
                         ),
                     )
                 }
 
-                drawSeries(projected = false, income = true, color = finance.income)
-                drawSeries(projected = false, income = false, color = finance.expense)
-                drawSeries(projected = true, income = true, color = finance.income)
-                drawSeries(projected = true, income = false, color = finance.expense)
+                drawSeries(projected = false, income = true, color = inColor)
+                drawSeries(projected = false, income = false, color = OutColor)
+                drawSeries(projected = true, income = true, color = inColor)
+                drawSeries(projected = true, income = false, color = OutColor)
 
                 val todayX = x(insights.today)
                 drawLine(
-                    color = axisColor.copy(alpha = 0.5f),
+                    color = Color.Gray.copy(alpha = 0.5f),
                     start = Offset(todayX, topInset),
                     end = Offset(todayX, size.height - bottomInset),
                     strokeWidth = 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx())),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
                 )
                 insights.pins.forEach { pin ->
                     val levelY = y(pin.level)
-                    val pinColor = if (pin.isIncome) finance.income else categoryColor(pin.colorHex)
+                    val pinColor = if (pin.isIncome) inColor else categoryColor(pin.colorHex)
                     drawCircle(Color.White, 6.dp.toPx(), Offset(x(pin.date), levelY))
-                    drawCircle(pinColor, 4.dp.toPx(), Offset(x(pin.date), levelY))
+                    drawCircle(pinColor.copy(alpha = if (pin.isPast) 1f else 0.75f), 4.dp.toPx(), Offset(x(pin.date), levelY))
                 }
             }
 
             Row(Modifier.fillMaxWidth().testTag("home.river.axis"), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(insights.monthStart.format(dayFormatter(locale)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Today", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(insights.monthEnd.format(dayFormatter(locale)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(insights.monthStart.format(dayFormatter(locale)), style = IosText.caption2, color = IosColors.textSecondary)
+                Text("Today", style = IosText.caption2.w(FontWeight.Bold), color = Color.White, modifier = Modifier.clip(CircleShape).background(tint).padding(horizontal = 7.dp, vertical = 2.dp))
+                Text(insights.monthEnd.format(dayFormatter(locale)), style = IosText.caption2, color = IosColors.textSecondary)
             }
 
-            RiverLegend("In", insights.monthIn, finance.income, currency, locale)
-            RiverLegend("Out", insights.monthOut, finance.expense, currency, locale)
-            Text("Dashed lines show future amounts", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
+                RiverLegend("In", insights.monthIn, inColor, currency, locale)
+                RiverLegend("Out", insights.monthOut, OutColor, currency, locale)
+                Spacer(Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.width(14.dp).height(2.dp).background(IosColors.textTertiary))
+                    Text("scheduled", style = IosText.caption2, color = IosColors.textTertiary)
+                }
+            }
 
             if (shortfall != null) {
                 val until = if (shortfall.end == insights.monthEnd) "through month end" else "until ${shortfall.end.plusDays(1).format(dayFormatter(locale))}"
-                Text(
-                    "Out is ahead of in $until, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}. That part comes from savings or what’s already in your account.",
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(finance.expense.copy(alpha = 0.08f)).padding(Spacing.s),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(OutColor.copy(alpha = 0.08f)).padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    IconChip(SfSymbols.icon("exclamationmark.triangle.fill"), OutColor, size = 32.dp)
+                    Text(
+                        "Out is ahead of in $until, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}. That part comes from savings or what’s already in your account.",
+                        style = IosText.caption,
+                        color = IosColors.textPrimary,
+                    )
+                }
             }
 
-            if (upcoming.isEmpty()) {
-                Text("No more bills or income this month", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                Text("Coming up", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                upcoming.forEach { pin ->
-                    Row(
-                        Modifier.fillMaxWidth().testTag("home.river.pin.${pin.id}"),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(Modifier.size(12.dp).clip(CircleShape).background(if (pin.isIncome) finance.income else categoryColor(pin.colorHex)))
-                        Text(
-                            "${pin.name} · ${pin.date.format(dayFormatter(locale))} · ${Money.format(pin.amount.toDouble(), currency, locale)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (upcoming.isEmpty()) {
+                    Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.4.dp))
+                    Text("No more bills or income this month", style = IosText.caption, color = IosColors.textSecondary)
+                } else {
+                    Text("Coming up", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    upcoming.forEach { pin ->
+                        Row(
+                            Modifier.testTag("home.river.pin.${pin.id}").clip(CircleShape).background(IosColors.textTertiary.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            PinBadge(pin, 16.dp)
+                            Text(pin.date.dayOfMonth.toString(), style = IosText.caption2.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                        }
                     }
                 }
+                Spacer(Modifier.weight(1f))
             }
         }
     }
@@ -189,13 +201,23 @@ fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
 
 @Composable
 private fun RiverLegend(label: String, amount: BigDecimal, color: Color, currency: String, locale: Locale) {
+    val format = NumberFormat.getCurrencyInstance(locale)
+    runCatching { format.currency = Currency.getInstance(currency) }
+    format.maximumFractionDigits = 0
+    format.minimumFractionDigits = 0
     Row(
         Modifier.testTag("home.river.legend.${label.lowercase()}"),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(14.dp).height(4.dp).clip(CircleShape).background(color))
-        Text("$label ${Money.format(amount.toDouble(), currency, locale)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            "$label ${format.format(amount)}",
+            style = IosText.caption.w(FontWeight.SemiBold),
+            color = IosColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

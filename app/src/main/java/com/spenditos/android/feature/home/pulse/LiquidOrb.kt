@@ -23,6 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -81,6 +84,7 @@ fun LiquidOrb(
 
     Box(
         modifier = modifier.size(size)
+            .dropShadow(CircleShape, Shadow(radius = 44.dp, color = tint, offset = DpOffset(0.dp, 8.dp), alpha = 0.55f))
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.1f))
             .border(2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.7f), Color.White.copy(alpha = 0.15f))), CircleShape)

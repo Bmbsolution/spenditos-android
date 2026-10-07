@@ -1,105 +1,138 @@
 package com.spenditos.android.feature.home.insights
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IconChip
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
-import com.spenditos.android.ui.theme.LocalFinanceColors
-import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
+import com.spenditos.android.ui.theme.w
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
+private fun BentoTile(
+    title: String,
+    icon: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    GlassCard(modifier = modifier) {
+        Column(
+            Modifier.fillMaxWidth().fillMaxHeight().padding(14.dp).heightIn(min = 156.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(SfSymbols.icon(icon), contentDescription = null, tint = tint, modifier = Modifier.size(14.4.dp))
+                Text(title, style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+            }
+            content()
+            Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
 fun NextBillTile(pin: HomeInsights.Pin?, today: LocalDate, currency: String, locale: Locale, modifier: Modifier = Modifier) {
-    val finance = LocalFinanceColors.current
-    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.nextBill")) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Next bill", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (pin == null) {
-                Text("No more bills this month", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-            } else {
-                Text(pin.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                Text(
-                    Money.format(pin.amount.toDouble(), currency, locale),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = finance.expense,
-                )
-                val days = (pin.date.toEpochDay() - today.toEpochDay()).toInt()
-                val whenText = when (days) {
-                    0 -> "Today"
-                    1 -> "Tomorrow"
-                    else -> "In $days days · ${pin.date.format(monthDayFormatter(locale))}"
+    BentoTile("Next bill", "calendar.badge.clock", IosColors.spendOrange, modifier.testTag("home.nextBill")) {
+        if (pin == null) {
+            Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(36.dp))
+            Text("No more bills this month", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+        } else {
+            val days = (pin.date.toEpochDay() - today.toEpochDay()).toInt()
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PinBadge(pin, 34.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(pin.name, style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(Money.format(pin.amount.toDouble(), currency, locale), style = IosText.rounded(15, FontWeight.Bold), color = IosColors.textPrimary)
                 }
-                Text(whenText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    if (days <= 1) (if (days == 1) "Tomorrow" else "Today") else "$days",
+                    style = IosText.rounded(if (days <= 1) 22 else 30, FontWeight.ExtraBold),
+                    color = IosColors.spendOrange,
+                )
+                if (days > 1) {
+                    Text(
+                        "days · ${pin.date.format(monthDayFormatter(locale))}",
+                        style = IosText.caption.w(FontWeight.Medium),
+                        color = IosColors.textSecondary,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun WeekTile(week: List<HomeInsights.WeekDay>, currency: String, locale: Locale, modifier: Modifier = Modifier) {
-    val finance = LocalFinanceColors.current
-    val neutralBar = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
+fun WeekTile(week: List<HomeInsights.WeekDay>, tint: Color, currency: String, locale: Locale, modifier: Modifier = Modifier) {
     val total = week.fold(java.math.BigDecimal.ZERO) { sum, day -> sum + day.amount }
     val description = "Everyday spending in the last 7 days: ${Money.format(total.toDouble(), currency, locale)}"
-    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.week")) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Last 7 days", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(Money.format(total.toDouble(), currency, locale), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Canvas(
-                Modifier.fillMaxWidth().height(68.dp).semantics { contentDescription = description },
-            ) {
-                if (week.isEmpty()) return@Canvas
-                val maximum = week.maxOfOrNull { it.amount.toDouble() }?.coerceAtLeast(1.0) ?: 1.0
-                val slot = size.width / week.size
-                val barWidth = (slot * 0.56f).coerceAtLeast(3.dp.toPx())
-                val baseline = size.height - 2.dp.toPx()
-                val financeColor = finance.expense
-                week.forEachIndexed { index, day ->
-                    val centerX = slot * index + slot / 2f
-                    val barHeight = (size.height - 8.dp.toPx()) * (day.amount.toDouble() / maximum).toFloat()
-                    drawRoundRect(
-                        color = if (day.isToday) financeColor else neutralBar,
-                        topLeft = Offset(centerX - barWidth / 2f, baseline - barHeight.coerceAtLeast(3.dp.toPx())),
-                        size = androidx.compose.ui.geometry.Size(barWidth, barHeight.coerceAtLeast(3.dp.toPx())),
-                        cornerRadius = CornerRadius(4.dp.toPx()),
+    val maxAmount = week.maxOfOrNull { it.amount.toDouble() }?.coerceAtLeast(1.0) ?: 1.0
+    BentoTile("Last 7 days", "chart.bar.fill", tint, modifier.testTag("home.week")) {
+        Text(
+            Money.format(total.toDouble(), currency, locale),
+            style = IosText.rounded(20, FontWeight.Bold),
+            color = IosColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Row(
+            Modifier.fillMaxWidth().height(66.dp).semantics { contentDescription = description }.testTag("home.week.days"),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            week.forEach { day ->
+                Column(
+                    Modifier.weight(1f).testTag("home.week.day.${day.date}"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val fraction = (day.amount.toDouble() / maxAmount).toFloat().coerceIn(0f, 1f)
+                    Box(
+                        Modifier.fillMaxWidth().height((4f + 50f * fraction).dp).clip(RoundedCornerShape(4.dp)).background(
+                            if (day.isToday) Brush.verticalGradient(listOf(tint, tint.copy(alpha = 0.65f)))
+                            else Brush.verticalGradient(listOf(IosColors.textTertiary.copy(alpha = 0.28f), IosColors.textTertiary.copy(alpha = 0.28f))),
+                        ),
                     )
-                }
-            }
-            Row(Modifier.fillMaxWidth().testTag("home.week.days"), horizontalArrangement = Arrangement.SpaceBetween) {
-                week.forEach { day ->
                     Text(
                         day.date.format(weekdayFormatter(locale)),
-                        modifier = Modifier.testTag("home.week.day.${day.date}"),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.Normal,
-                        color = if (day.isToday) finance.expense else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = IosText.system(10, if (day.isToday) FontWeight.Bold else FontWeight.Medium),
+                        color = if (day.isToday) tint else IosColors.textTertiary,
                     )
                 }
             }
@@ -108,33 +141,50 @@ fun WeekTile(week: List<HomeInsights.WeekDay>, currency: String, locale: Locale,
 }
 
 @Composable
-fun TopCategoryTile(top: HomeInsights.TopCategory, currency: String, locale: Locale, modifier: Modifier = Modifier) {
-    val color = categoryColor(top.colorHex)
-    val sharePercent = top.share.multiply(java.math.BigDecimal(100)).setScale(0, java.math.RoundingMode.HALF_UP)
-    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.topCategory")) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Most spent on", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Locale, modifier: Modifier = Modifier) {
+    BentoTile("Most spent on", "crown.fill", IosColors.spendGold, modifier.testTag("home.topCategory")) {
+        if (top == null) {
+            Text("Log a few expenses to see where your money goes.", style = IosText.subheadline, color = IosColors.textSecondary)
+        } else {
+            val color = categoryColor(top.colorHex)
+            val sharePercent = top.share.multiply(java.math.BigDecimal(100)).setScale(0, java.math.RoundingMode.HALF_UP)
             Row(
                 Modifier.fillMaxWidth().testTag("home.topCategory.summary"),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(top.name.take(1).uppercase(locale), color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(top.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                    Text(Money.format(top.amount.toDouble(), currency, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                IconChip(com.spenditos.android.ui.components.CategoryIcons.symbol(top.symbol, top.name), color, size = 38.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(top.name, style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(Money.format(top.amount.toDouble(), currency, locale), style = IosText.rounded(15, FontWeight.Bold), color = IosColors.textPrimary)
                 }
             }
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(color.copy(alpha = 0.15f))) {
-                Box(Modifier.fillMaxWidth(top.share.toFloat().coerceIn(0f, 1f)).height(8.dp).clip(CircleShape).background(color))
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(Modifier.fillMaxWidth().height(7.dp).clip(CircleShape).background(color.copy(alpha = 0.15f))) {
+                    Box(
+                        Modifier.fillMaxWidth(top.share.toFloat().coerceIn(0f, 1f)).height(7.dp).clip(CircleShape)
+                            .background(Brush.horizontalGradient(listOf(color.copy(alpha = 0.7f), color))),
+                    )
+                }
+                Text("$sharePercent% of everyday spending", style = IosText.caption2, color = IosColors.textSecondary)
             }
-            Text("$sharePercent% of everyday spending", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable
+internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp = 22.dp) {
+    val color = if (pin.isIncome) IosColors.income else categoryColor(pin.colorHex)
+    Box(
+        Modifier.size(size).clip(CircleShape).background(color.copy(alpha = if (pin.isPast) 1f else 0.75f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            SfSymbols.icon(if (pin.isIncome) "arrow.down" else pin.symbol),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(size * 0.45f),
+        )
     }
 }
 
