@@ -62,6 +62,7 @@ data class RecentActivity(
     val amount: Double,
     val isIncome: Boolean,
     val colorHex: String?,
+    val icon: String? = null,
 )
 
 private data class HomeData(val transactions: List<TransactionEntity>, val week: List<TransactionEntity>, val categories: List<Category>)
@@ -169,6 +170,6 @@ internal fun recentActivity(transactions: List<Transaction>, categories: List<Ca
         .take(limit)
         .map { (tx, date) ->
             val category = byId[tx.categoryId]
-            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: "Transaction" }, category?.name ?: "Uncategorized", date, tx.amount, category?.isIncome == true, category?.color)
+            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: "Transaction" }, category?.name ?: "Uncategorized", date, tx.amount, category?.isIncome == true, category?.color, category?.icon)
         }
 }

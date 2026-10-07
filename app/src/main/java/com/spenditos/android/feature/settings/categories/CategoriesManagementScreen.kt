@@ -269,7 +269,7 @@ private fun CategoryManagementRow(category: Category, index: Int, onOpen: () -> 
                 Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(tint.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(category.icon?.takeIf { it.isNotBlank() } ?: "🏷️", style = MaterialTheme.typography.titleMedium)
+                Text(com.spenditos.android.ui.components.CategoryIcons.resolve(category.icon), style = MaterialTheme.typography.titleMedium)
             }
             Text(category.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
             if (category.isSystemSuggestion) {

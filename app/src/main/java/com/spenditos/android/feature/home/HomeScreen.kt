@@ -254,7 +254,7 @@ private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, 
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(color.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                        Text(row.category.take(1).uppercase(locale), color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(com.spenditos.android.ui.components.CategoryIcons.resolve(row.icon), style = MaterialTheme.typography.titleLarge)
                     }
                     Column(Modifier.weight(1f)) {
                         Text(row.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
