@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -55,7 +54,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
+import com.spenditos.android.ui.components.FloatingTabBarHeight
 import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.tabBarBottomPadding
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.categoryColor
 import com.spenditos.android.ui.components.CategoryIcons
@@ -220,8 +221,13 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             }
             }
             if (state.templates.isNotEmpty()) {
-                // Same spot as the app's add button: 10dp above the floating tab bar (63dp tall, 10dp off the bottom).
-                Box(Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = Spacing.screen, bottom = 83.dp)) {
+                // Same spot as the Home add button: 10dp above the floating tab bar.
+                Box(
+                    Modifier.align(Alignment.BottomEnd).padding(
+                        end = Spacing.screen,
+                        bottom = tabBarBottomPadding() + FloatingTabBarHeight + 10.dp,
+                    ),
+                ) {
                     Box(
                         Modifier.size(56.dp)
                             .dropShadow(CircleShape, Shadow(radius = 16.dp, color = IosColors.spendOrange, offset = DpOffset(0.dp, 4.dp), alpha = 0.4f))

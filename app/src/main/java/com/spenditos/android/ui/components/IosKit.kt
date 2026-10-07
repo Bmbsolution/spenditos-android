@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.tappableElement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -36,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -247,6 +250,34 @@ fun GradientFab(onClick: () -> Unit, modifier: Modifier = Modifier, glyph: Image
 }
 
 data class TabItem(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector = icon)
+
+/**
+ * Bottom of the iOS 26 capsule on the iPhone reference shots: about 22pt of
+ * page shows under it, and the home indicator sits in that strip.
+ */
+internal val IosTabBarBottomGap = 22.dp
+
+/** Row padding, icon, label, and the inner item padding of [FloatingTabBar]. */
+internal val FloatingTabBarHeight = 63.dp
+
+/**
+ * Gesture navigation reports a full bar (often 48dp) even though the pill is a
+ * thin mark at the bottom of that band. Button navigation has to be cleared in full.
+ */
+internal fun tabBarBottomPadding(buttonBar: Dp, navigationBar: Dp): Dp {
+    if (buttonBar > 0.dp) return buttonBar + 10.dp
+    if (navigationBar <= 0.dp) return IosTabBarBottomGap
+    return minOf(IosTabBarBottomGap, navigationBar)
+}
+
+@Composable
+fun tabBarBottomPadding(): Dp {
+    val density = LocalDensity.current
+    return tabBarBottomPadding(
+        buttonBar = with(density) { WindowInsets.tappableElement.getBottom(this).toDp() },
+        navigationBar = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() },
+    )
+}
 
 /** The floating capsule tab bar of iOS 26: translucent surface, selected tab in a soft pill, brand tint. */
 @Composable

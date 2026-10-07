@@ -63,10 +63,11 @@ import com.spenditos.android.ui.components.EnvBadge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.navigationBarsPadding
 import com.spenditos.android.ui.components.TabItem
 import com.spenditos.android.ui.components.GradientFab
 import com.spenditos.android.ui.components.FloatingTabBar
+import com.spenditos.android.ui.components.FloatingTabBarHeight
+import com.spenditos.android.ui.components.tabBarBottomPadding
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.ScopedViewModels
 import kotlinx.coroutines.launch
@@ -219,10 +220,11 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
             }
             }
+            val tabBarBottom = tabBarBottomPadding()
             if (onTab) {
                 val currentRoute = Tab.entries.firstOrNull { tab -> backStack?.destination?.hierarchy?.any { it.route == tab.route } == true }?.route
                 Column(
-                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 10.dp),
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = tabBarBottom),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.End,
                 ) {
@@ -248,7 +250,10 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     )
                 }
             }
-            envName?.let { EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = if (onTab) 112.dp else 12.dp)) }
+            envName?.let {
+                val aboveBar = if (onTab) tabBarBottom + FloatingTabBarHeight + 8.dp else 12.dp
+                EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = aboveBar))
+            }
         }
     }
 
