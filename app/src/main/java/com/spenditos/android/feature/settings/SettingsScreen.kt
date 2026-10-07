@@ -2,30 +2,17 @@ package com.spenditos.android.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Sell
-import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -38,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -51,10 +39,14 @@ import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 
-/** iOS SettingsView: profile card, then Money / Notifications / Preferences / Your data / Subscription / About. */
+/** iOS SettingsView: profile card, then grouped settings sections. */
 @Composable
 fun SettingsScreen(
     onOpenNotSynced: () -> Unit,
@@ -71,28 +63,48 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
     val finance = LocalFinanceColors.current
-    val brand = MaterialTheme.colorScheme.primary
-    val mint = Color(0xFF1BAF84)
-    val slate = Color(0xFF6B7A90)
+    val slate = Color(0xFF64748B)
+    val emerald = Color(0xFF10B981)
 
     IosScreen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp)) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+        ) {
             item { LargeTitle("Settings") }
             item {
-                // Profile card.
                 GlassCard(
                     Modifier.padding(horizontal = Spacing.screen).testTag("settings.profile"),
                     onClick = onOpenProfile,
                 ) {
-                    Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Box(Modifier.size(64.dp).clip64().background(brand.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
-                            Text(initials(state.email), style = MaterialTheme.typography.titleLarge, color = brand, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    ) {
+                        Box(
+                            Modifier.size(56.dp).clip(CircleShape)
+                                .background(IosColors.spendOrange.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                initials(state.email),
+                                style = IosText.title3.w(FontWeight.SemiBold),
+                                color = IosColors.spendOrange,
+                            )
                         }
-                        androidx.compose.foundation.layout.Column(Modifier.weight(1f).testTag("settings.account")) {
-                            Text(state.email ?: "Signed in", style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                            Text("Name and currency", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(Modifier.weight(1f).testTag("settings.account"), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                            Text(
+                                "Spenditos User",
+                                style = IosText.title3.w(FontWeight.SemiBold),
+                                color = IosColors.textPrimary,
+                                maxLines = 1,
+                            )
+                            state.email?.takeIf(String::isNotBlank)?.let {
+                                Text(it, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1)
+                            }
                         }
-                        Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                        Text("›", style = IosText.title, color = IosColors.textTertiary)
                     }
                 }
             }
@@ -100,9 +112,9 @@ fun SettingsScreen(
             item { SectionHeader("Money") }
             item {
                 GroupedCard {
-                    IosRow("Currency", icon = Icons.Filled.AttachMoney, iconTint = finance.income, value = state.currency.ifBlank { null }, chevron = false, onClick = onOpenProfile)
-                    IosRow("Categories", icon = Icons.Filled.Sell, iconTint = mint, onClick = onOpenCategories, modifier = Modifier.testTag("settings.categories"))
-                    IosRow("Merchant names", icon = Icons.Filled.Storefront, iconTint = brand, onClick = onOpenMerchants, divider = false, modifier = Modifier.testTag("settings.merchants"))
+                    IosRow("Currency", icon = SfSymbols.icon("dollarsign.circle.fill"), iconTint = finance.income, value = state.currency.ifBlank { null }, chevron = false, onClick = onOpenProfile)
+                    IosRow("Categories", icon = SfSymbols.icon("tag.fill"), iconTint = emerald, onClick = onOpenCategories, modifier = Modifier.testTag("settings.categories"))
+                    IosRow("Merchant rules", icon = SfSymbols.icon("storefront.fill"), iconTint = IosColors.spendOrange, onClick = onOpenMerchants, divider = false, modifier = Modifier.testTag("settings.merchants"))
                 }
             }
 
@@ -115,12 +127,12 @@ fun SettingsScreen(
                 GroupedCard {
                     IosRow(
                         "Enable notifications",
-                        subtitle = if (state.pushEnabled) "Reminders and progress updates" else "Notifications are turned off",
-                        icon = Icons.Filled.Notifications,
-                        iconTint = slate,
+                        subtitle = if (state.pushEnabled) "A daily nudge to log your spending" else "Notifications are turned off",
+                        icon = SfSymbols.icon(if (state.pushEnabled) "bell.badge.fill" else "bell.slash.fill"),
+                        iconTint = if (state.pushEnabled) IosColors.spendOrange else IosColors.neutral,
                         chevron = false,
                         divider = false,
-                        modifier = Modifier.testTag("settings.notifications"),
+                            modifier = Modifier.testTag("settings.notifications"),
                         trailing = {
                             Switch(
                                 checked = state.pushEnabled,
@@ -130,6 +142,7 @@ fun SettingsScreen(
                                         android.content.pm.PackageManager.PERMISSION_GRANTED
                                     if (needsPermission) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else viewModel.setPush(wanted)
                                 },
+                                colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF34C759)),
                                 modifier = Modifier.testTag("settings.notifications.switch"),
                             )
                         },
@@ -140,14 +153,27 @@ fun SettingsScreen(
             item { SectionHeader("Preferences") }
             item {
                 GroupedCard {
-                    IosRow("Progress", subtitle = "Streak, level and achievements", icon = Icons.Filled.EmojiEvents, iconTint = Color(0xFFFF6B35), onClick = onOpenProgress, divider = state.lockAvailable, modifier = Modifier.testTag("settings.progress"))
+                    IosRow(
+                        "Progress",
+                        subtitle = "Streak, level and achievements",
+                        icon = SfSymbols.icon("flame.fill"),
+                        iconTint = Color(0xFFFF6B35),
+                        onClick = onOpenProgress,
+                        divider = state.lockAvailable,
+                        modifier = Modifier.testTag("settings.progress"),
+                    )
                     if (state.lockAvailable) {
-                        val activity = androidx.compose.ui.platform.LocalContext.current.let { generateSequence(it) { c -> (c as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<androidx.fragment.app.FragmentActivity>().firstOrNull() }
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        val activity = remember(context) {
+                            generateSequence(context) { current ->
+                                (current as? android.content.ContextWrapper)?.baseContext
+                            }.filterIsInstance<androidx.fragment.app.FragmentActivity>().firstOrNull()
+                        }
                         IosRow(
                             "App lock",
                             subtitle = state.lockMessage ?: "Ask for your fingerprint, face or screen lock",
-                            icon = Icons.Filled.Fingerprint,
-                            iconTint = slate,
+                            icon = SfSymbols.icon("lock.fill"),
+                            iconTint = IosColors.info,
                             chevron = false,
                             divider = false,
                             modifier = Modifier.testTag("settings.appLock"),
@@ -155,6 +181,7 @@ fun SettingsScreen(
                                 Switch(
                                     checked = state.lockEnabled,
                                     onCheckedChange = { wanted -> activity?.let { viewModel.setLock(it, wanted) } },
+                                    colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF34C759)),
                                     modifier = Modifier.testTag("settings.appLock.switch"),
                                 )
                             },
@@ -166,47 +193,64 @@ fun SettingsScreen(
             item { SectionHeader("Your data") }
             item {
                 GroupedCard {
-                    IosRow("Import", subtitle = "Bank statement or CSV", icon = Icons.Filled.FileDownload, iconTint = brand, onClick = onOpenStatementImport, modifier = Modifier.testTag("settings.importStatement"))
-                    IosRow("Export", subtitle = "Download your transactions", icon = Icons.Filled.FileUpload, iconTint = brand, onClick = onOpenExport, modifier = Modifier.testTag("settings.export"))
+                    IosRow("Import", subtitle = "Bank statement or CSV", icon = SfSymbols.icon("square.and.arrow.down"), iconTint = finance.income, onClick = onOpenStatementImport, modifier = Modifier.testTag("settings.importStatement"))
+                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF4F8AC9), onClick = onOpenExport, modifier = Modifier.testTag("settings.export"))
                     IosRow(
                         if (state.unsyncedCount == 0) "Everything is synced" else "Waiting to sync (${state.unsyncedCount})",
-                        icon = Icons.Filled.CloudSync,
-                        iconTint = if (state.unsyncedCount == 0) slate else brand,
+                        icon = SfSymbols.icon(if (state.unsyncedCount > 0) "arrow.triangle.2.circlepath.icloud" else "checkmark.icloud"),
+                        iconTint = if (state.unsyncedCount > 0) IosColors.spendOrange else slate,
                         onClick = onOpenNotSynced,
                         divider = false,
                         modifier = Modifier.testTag("settings.notSynced"),
                     )
                 }
+                Text(
+                    if (state.unsyncedCount > 0) "Saved on this phone. They upload when you're back online."
+                    else "Everything is synced. Changes saved offline show up here until they upload.",
+                    style = IosText.footnote,
+                    color = IosColors.textSecondary,
+                    modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                )
             }
 
             item { SectionHeader("Subscription") }
             item {
                 GroupedCard {
-                    IosRow("Spenditos Pro", subtitle = "Paycheck periods, statement import and more", icon = Icons.Filled.AutoAwesome, iconTint = Color(0xFFD6A215), onClick = onOpenPro, divider = false, modifier = Modifier.testTag("settings.pro"))
+                    IosRow(
+                        "Upgrade to Pro",
+                        subtitle = "See how voice, receipt scan & insights can help",
+                        icon = SfSymbols.icon("sparkles"),
+                        iconTint = IosColors.spendGold,
+                        onClick = onOpenPro,
+                        divider = false,
+                        modifier = Modifier.testTag("settings.pro"),
+                    )
                 }
             }
 
             item { SectionHeader("Account") }
             item {
                 GroupedCard {
-                    IosRow("Change password", icon = Icons.Filled.Lock, iconTint = slate, onClick = onOpenChangePassword, divider = false, modifier = Modifier.testTag("settings.changePassword"))
+                    IosRow("Change Password", icon = SfSymbols.icon("lock.fill"), iconTint = IosColors.info, onClick = onOpenChangePassword, divider = false, modifier = Modifier.testTag("settings.changePassword"))
                 }
             }
 
             item { SectionHeader("About") }
             item {
                 GroupedCard {
-                    IosRow("Version", icon = Icons.Filled.Info, iconTint = slate, value = com.spenditos.android.BuildConfig.VERSION_NAME, chevron = false)
-                    IosRow("Environment", icon = Icons.Filled.Dns, iconTint = slate, value = "${state.envName} (${state.stage})", chevron = false, divider = false, modifier = Modifier.testTag("settings.environment"))
+                    IosRow("Version", icon = SfSymbols.icon("info.circle.fill"), iconTint = slate, value = com.spenditos.android.BuildConfig.VERSION_NAME, chevron = false)
+                    IosRow("Environment", icon = SfSymbols.icon("server.rack"), iconTint = slate, value = "${state.envName} (${state.stage})", chevron = false, divider = false, modifier = Modifier.testTag("settings.environment"))
                 }
             }
 
             item {
                 GroupedCard(Modifier.padding(top = Spacing.l)) {
                     Box(
-                        Modifier.fillMaxWidth().clickable(role = Role.Button) { confirmSignOut = true }.padding(vertical = 16.dp).testTag("settings.signOut"),
+                        Modifier.fillMaxWidth().clickable(role = Role.Button) { confirmSignOut = true }.padding(vertical = Spacing.m).testTag("settings.signOut"),
                         contentAlignment = Alignment.Center,
-                    ) { Text("Sign out", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error) }
+                    ) {
+                        Text("Sign Out", style = IosText.body, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }
@@ -215,10 +259,10 @@ fun SettingsScreen(
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
-            title = { Text("Sign out") },
-            text = { Text(viewModel.signOutMessage()) },
+            title = { Text("Sign Out", style = IosText.headline) },
+            text = { Text(viewModel.signOutMessage(), style = IosText.body) },
             confirmButton = {
-                TextButton(onClick = { confirmSignOut = false; viewModel.signOut() }, modifier = Modifier.testTag("settings.signOut.confirm")) { Text("Sign out") }
+                TextButton(onClick = { confirmSignOut = false; viewModel.signOut() }, modifier = Modifier.testTag("settings.signOut.confirm")) { Text("Sign Out", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmSignOut = false }, modifier = Modifier.testTag("settings.signOut.cancel")) { Text("Cancel") }
@@ -226,8 +270,6 @@ fun SettingsScreen(
         )
     }
 }
-
-private fun Modifier.clip64(): Modifier = this.then(Modifier.clip(CircleShape))
 
 private fun initials(email: String?): String {
     val local = email?.substringBefore('@').orEmpty()

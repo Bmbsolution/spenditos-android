@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -49,17 +48,22 @@ import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
+import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-/** Settings > Export transactions: pick a range, download the CSV, hand it to the share sheet. */
+/** Settings > Export transactions: pick a range, download the CSV, then share it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel()) {
@@ -86,16 +90,10 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             ExportHeader(onBack = { viewModel.cancel(); onBack() })
-            Text(
-                "Download your transactions as a CSV file you can open in a spreadsheet.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
-            )
 
-            SectionHeader("Transactions", Modifier.padding(top = Spacing.s))
-            GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
-                Text("Date range", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = Spacing.m, top = Spacing.m))
+            SectionHeader("Transactions", Modifier.padding(top = Spacing.s).testTag("export.section.transactions"))
+            GroupedCard {
+                Text("Date range", style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.m, top = Spacing.m))
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.m, vertical = Spacing.s),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -103,59 +101,67 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
                     ExportRange.entries.forEach { range ->
                         val selected = state.range == range
                         Box(
-                            Modifier.clip(RoundedCornerShape(20.dp))
-                                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                            Modifier.clip(RoundedCornerShape(50.dp))
+                                .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickable(role = Role.Tab) { viewModel.selectRange(range) }
                                 .semantics { this.selected = selected }
                                 .testTag("export.range.${range.name.lowercase()}")
-                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                                .padding(horizontal = Spacing.m, vertical = Spacing.s),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(range.label, style = MaterialTheme.typography.labelMedium, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                            Text(range.label, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
                         }
                     }
                 }
                 IosRow(
-                    title = "From ${state.start.format(dateFormat)}",
-                    icon = Icons.Filled.CalendarMonth,
+                    title = "Start Date",
+                    value = state.start.format(dateFormat),
+                    icon = SfSymbols.icon("calendar"),
+                    iconTint = IosColors.spendOrange,
                     onClick = { picking = DateTarget.START },
                     modifier = Modifier.testTag("export.start"),
                 )
                 IosRow(
-                    title = "To ${state.end.format(dateFormat)}",
-                    icon = Icons.Filled.CalendarMonth,
+                    title = "End Date",
+                    value = state.end.format(dateFormat),
+                    icon = SfSymbols.icon("calendar"),
+                    iconTint = IosColors.spendOrange,
                     onClick = { picking = DateTarget.END },
                     divider = false,
                     modifier = Modifier.testTag("export.end"),
                 )
+                androidx.compose.material3.HorizontalDivider(color = IosColors.separator)
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PillButton(
+                        text = "Export Transactions",
+                        onClick = viewModel::export,
+                        enabled = state.canExport && !state.isExporting,
+                        modifier = Modifier.testTag("export.run"),
+                    )
+                }
             }
 
             (state.validationError ?: state.error)?.let {
                 GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(Spacing.m).testTag("export.error"))
+                    Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(Spacing.m).testTag("export.error"))
                 }
             }
-
             if (state.isExporting) {
                 GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
                     Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        CircularProgressIndicator(Modifier.size(22.dp).testTag("export.progress"), strokeWidth = 2.dp)
-                        Text("Preparing your file…", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        CircularProgressIndicator(Modifier.size(22.dp).testTag("export.progress"), strokeWidth = 2.dp, color = IosColors.spendOrange)
+                        Text("Preparing your file…", style = IosText.body, modifier = Modifier.weight(1f))
                         TextButton(onClick = viewModel::cancel) { Text("Cancel") }
                     }
                 }
-            } else {
-                PillButton(
-                    text = if (state.error != null) "Try again" else "Export CSV",
-                    onClick = viewModel::export,
-                    enabled = state.canExport,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m).testTag("export.run"),
-                )
             }
             Text(
                 "The file is only kept long enough to share it.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = IosText.footnote,
+                color = IosColors.textSecondary,
                 modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
             )
         }
@@ -169,7 +175,6 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
             confirmButton = {
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { millis ->
-                        // The picker works in UTC midnight; read the calendar date back without a zone shift.
                         val date = Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate()
                         if (target == DateTarget.START) viewModel.setStart(date) else viewModel.setEnd(date)
                     }
@@ -185,9 +190,9 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
 private fun ExportHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("export.back")) {
-            androidx.compose.material3.Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+            androidx.compose.material3.Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
         }
-        Text("Export transactions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
+        Text("Export Data", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }
 }
 

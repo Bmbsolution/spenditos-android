@@ -1,6 +1,7 @@
 package com.spenditos.android.feature.settings.categories
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,13 +15,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -50,16 +50,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.Category
+import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
-import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 
 @Composable
 fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManagementViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedIncome by remember { mutableStateOf(false) }
+    var searchText by remember { mutableStateOf("") }
     var showEditor by remember { mutableStateOf(false) }
     var categoryToEdit by remember { mutableStateOf<Category?>(null) }
     var categoryToDelete by remember { mutableStateOf<Category?>(null) }
@@ -77,27 +82,27 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
     }
 
     val visible = state.categories.filter { it.isIncome == selectedIncome }
+        .filter { searchText.trim().isEmpty() || it.name.contains(searchText.trim(), ignoreCase = true) }
+
     IosScreen {
         LazyColumn(
             Modifier.fillMaxSize().navigationBarsPadding(),
-            contentPadding = PaddingValues(bottom = Spacing.l),
+            contentPadding = PaddingValues(bottom = 120.dp),
         ) {
-            item { CategoriesHeader(onBack) {
-                categoryToEdit = null
-                showEditor = true
-            } }
+            item { CategoriesHeader(onBack) { categoryToEdit = null; showEditor = true } }
             item {
-                CategoryTypeSegment(
+                CategoryTypePicker(
                     selectedIncome = selectedIncome,
-                    onSelectIncome = { selectedIncome = it },
-                    modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
+                    onSelectIncome = { selectedIncome = it; searchText = "" },
                 )
             }
+            item { CategorySearchBar(searchText, { searchText = it }) }
+
             state.error?.let { message ->
                 item {
                     GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.s)) {
                         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                            Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("categories.error"))
+                            Text(message, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.error"))
                             TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("categories.retry")) { Text("Try again") }
                         }
                     }
@@ -107,8 +112,8 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                 item {
                     Text(
                         "Check your connection and try again.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = IosText.footnote,
+                        color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("categories.offline"),
                     )
                 }
@@ -116,46 +121,30 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             when {
                 state.isLoading && state.categories.isEmpty() -> item {
                     Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.testTag("categories.loading"), color = MaterialTheme.colorScheme.primary)
+                        CircularProgressIndicator(Modifier.testTag("categories.loading"), color = IosColors.spendOrange)
                     }
                 }
                 visible.isEmpty() -> item {
-                    GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.l)) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(Spacing.l),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                        ) {
-                            Box(Modifier.size(60.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                            }
-                            Text("No ${if (selectedIncome) "income" else "expense"} categories yet.", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("categories.empty"))
-                            Text("Add a category to get started.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            PillButton(
-                                text = "Add category",
-                                onClick = { categoryToEdit = null; showEditor = true },
-                                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("categories.empty.add"),
-                            )
-                        }
-                    }
+                    EmptyCategories(selectedIncome, onAdd = { categoryToEdit = null; showEditor = true })
                 }
                 else -> {
                     item {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            SectionHeader(
+                        Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
                                 if (selectedIncome) "Income categories" else "Expense categories",
+                                style = IosText.subheadline.w(FontWeight.SemiBold),
+                                color = IosColors.textSecondary,
                                 modifier = Modifier.weight(1f).testTag("categories.section"),
                             )
-                            Text(
-                                visible.size.toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = Spacing.screen, top = Spacing.l),
-                            )
+                            Text(visible.size.toString(), style = IosText.caption, color = IosColors.textTertiary)
                         }
                     }
                     item {
-                        GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
+                        Column(
+                            Modifier.padding(horizontal = Spacing.screen).clip(RoundedCornerShape(Spacing.m))
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(Spacing.m)),
+                        ) {
                             visible.forEachIndexed { index, category ->
                                 CategoryManagementRow(
                                     category = category,
@@ -164,9 +153,16 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                                     onEdit = { categoryToEdit = category; showEditor = true },
                                     onDelete = { categoryToDelete = category },
                                 )
-                                if (index < visible.lastIndex) {
-                                    HorizontalDivider(Modifier.padding(start = 66.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                                }
+                                if (index < visible.lastIndex) HorizontalDivider(Modifier.padding(start = 72.dp), color = IosColors.separator)
+                            }
+                            Row(
+                                Modifier.fillMaxWidth().clickable(role = Role.Button) { categoryToEdit = null; showEditor = true }
+                                    .padding(horizontal = Spacing.m, vertical = Spacing.m).testTag("categories.add.inline"),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                            ) {
+                                Icon(SfSymbols.icon("plus"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
+                                Text("Add category", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                             }
                         }
                     }
@@ -189,20 +185,16 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
     categoryToDelete?.let { category ->
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
-            title = { Text("Delete category") },
+            title = { Text("Delete Category", style = IosText.headline) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Delete \"${category.name}\"? This can't be undone.")
-                    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.delete.error")) }
-                    if (state.isOffline) Text("Check your connection and try again.", modifier = Modifier.testTag("categories.delete.offline"))
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text("Are you sure you want to delete \"${category.name}\"? This action cannot be undone.", style = IosText.body)
+                    state.error?.let { Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.delete.error")) }
+                    if (state.isOffline) Text("Check your connection and try again.", style = IosText.footnote, modifier = Modifier.testTag("categories.delete.offline"))
                 }
             },
             confirmButton = {
-                TextButton(
-                    onClick = { viewModel.deleteCategory(category.id) },
-                    enabled = !state.isSaving,
-                    modifier = Modifier.testTag("categories.confirmDelete"),
-                ) { Text("Delete") }
+                TextButton(onClick = { viewModel.deleteCategory(category.id) }, enabled = !state.isSaving, modifier = Modifier.testTag("categories.confirmDelete")) { Text("Delete") }
             },
             dismissButton = { TextButton(onClick = { categoryToDelete = null }, modifier = Modifier.testTag("categories.cancelDelete")) { Text("Cancel") } },
         )
@@ -213,46 +205,84 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
 private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
         }
-        Text("Categories", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
+        Text("Categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
-            Icon(Icons.Filled.AddCircle, contentDescription = "Add category", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+            Icon(Icons.Filled.AddCircle, contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(28.dp))
         }
     }
 }
 
 @Composable
-private fun CategoryTypeSegment(selectedIncome: Boolean, onSelectIncome: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
     Row(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(4.dp),
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(bottom = Spacing.s)
+            .clip(RoundedCornerShape(Spacing.m)).background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(Spacing.m))
+            .padding(Spacing.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        CategoryTypeTab(
-            label = "Expenses",
-            selected = !selectedIncome,
-            onClick = { onSelectIncome(false) },
-            modifier = Modifier.weight(1f).testTag("categories.tab.expenses"),
+        Icon(SfSymbols.icon("magnifyingglass"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp))
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = IosText.body.copy(color = IosColors.textPrimary),
+            modifier = Modifier.weight(1f).testTag("categories.search"),
+            decorationBox = { inner ->
+                Box {
+                    if (value.isEmpty()) Text("Search categories", style = IosText.body, color = IosColors.textTertiary)
+                    inner()
+                }
+            },
         )
-        CategoryTypeTab(
-            label = "Income",
-            selected = selectedIncome,
-            onClick = { onSelectIncome(true) },
-            modifier = Modifier.weight(1f).testTag("categories.tab.income"),
-        )
+        if (value.isNotEmpty()) {
+            TextButton(onClick = { onValueChange("") }, modifier = Modifier.size(28.dp).testTag("categories.search.clear")) {
+                Icon(SfSymbols.icon("xmark.circle.fill"), contentDescription = "Clear category search", tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
+            }
+        }
     }
 }
 
 @Composable
-private fun CategoryTypeTab(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier.clip(RoundedCornerShape(13.dp))
-            .background(if (selected) MaterialTheme.colorScheme.surfaceContainerLowest else Color.Transparent)
-            .clickable(role = Role.Tab, onClick = onClick)
-            .semantics { this.selected = selected }
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center,
+private fun EmptyCategories(isIncome: Boolean, onAdd: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(vertical = Spacing.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium)
+        Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(40.dp))
+        Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
+        Text("Add a category to get started", style = IosText.subheadline, color = IosColors.textSecondary)
+        PillButton("Add category", onAdd, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("categories.empty.add"))
+    }
+}
+
+@Composable
+private fun CategoryTypePicker(selectedIncome: Boolean, onSelectIncome: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.s)
+            .clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        listOf(false to "Expenses", true to "Income").forEach { (income, label) ->
+            val selected = selectedIncome == income
+            Row(
+                Modifier.weight(1f).clip(CircleShape)
+                    .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
+                    .clickable(role = Role.Tab) { onSelectIncome(income) }
+                    .semantics { this.selected = selected }
+                    .testTag(if (income) "categories.tab.income" else "categories.tab.expenses")
+                    .padding(vertical = Spacing.s + 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(SfSymbols.icon(if (income) "arrow.up" else "arrow.down"), contentDescription = null, modifier = Modifier.size(13.dp))
+                Text(label, style = IosText.body.w(FontWeight.SemiBold), color = if (selected) IosColors.textPrimary else IosColors.textSecondary)
+            }
+        }
     }
 }
 
@@ -260,33 +290,28 @@ private fun CategoryTypeTab(label: String, selected: Boolean, onClick: () -> Uni
 private fun CategoryManagementRow(category: Category, index: Int, onOpen: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     Row(Modifier.fillMaxWidth().testTag("categories.row.${category.id}"), verticalAlignment = Alignment.CenterVertically) {
         Row(
-            Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen).testTag("categories.item.${category.id}").padding(horizontal = Spacing.m, vertical = 13.dp),
+            Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen).testTag("categories.item.${category.id}")
+                .padding(horizontal = Spacing.m, vertical = Spacing.s),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            val tint = com.spenditos.android.ui.components.categoryColor(category.color)
-            Box(
-                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(tint.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(com.spenditos.android.ui.components.CategoryIcons.resolve(category.icon), style = MaterialTheme.typography.titleMedium)
-            }
-            Text(category.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+            CategorySymbolBadge(category.icon, category.name, category.color, size = 40.dp)
+            Text(category.name, style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
             if (category.isSystemSuggestion) {
                 Text(
                     "Default",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 5.dp),
+                    style = IosText.caption,
+                    color = IosColors.textSecondary,
+                    modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(horizontal = Spacing.s, vertical = Spacing.xs),
                 )
             }
-            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+            Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
         }
         IconButton(onClick = onEdit, modifier = Modifier.size(40.dp).testTag("categories.edit.${category.id}")) {
-            Icon(Icons.Filled.Edit, contentDescription = "Edit ${category.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
+            Icon(Icons.Filled.Edit, contentDescription = "Edit ${category.name}", tint = IosColors.textSecondary, modifier = Modifier.size(19.dp))
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(40.dp).testTag("categories.delete.${category.id}")) {
-            Icon(Icons.Filled.DeleteOutline, contentDescription = "Delete ${category.name}", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
+            Icon(Icons.Filled.DeleteOutline, contentDescription = "Delete ${category.name}", tint = IosColors.expense.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
         }
     }
 }
