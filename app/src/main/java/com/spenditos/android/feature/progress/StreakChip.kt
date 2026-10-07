@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.gamification.GamificationDataSource
+import com.spenditos.android.ui.theme.IosText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,8 +60,8 @@ fun StreakChip(modifier: Modifier = Modifier) {
             Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("${days}d", style = MaterialTheme.typography.labelLarge)
-            Text("streak", style = MaterialTheme.typography.labelMedium)
+            Text("${days}d", style = IosText.caption)
+            Text("streak", style = IosText.caption2)
         }
     }
 }
@@ -73,13 +74,13 @@ fun StreakTile(modifier: Modifier = Modifier) {
     val days = streak ?: return
     com.spenditos.android.ui.components.GlassCard(modifier.testTag("progress.streakTile")) {
         androidx.compose.foundation.layout.Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Streak", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Streak", style = IosText.subheadline, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("🔥", style = MaterialTheme.typography.headlineMedium)
-                Text("$days", style = MaterialTheme.typography.displayLarge)
-                Text(if (days == 1) "day" else "days", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("🔥", style = IosText.system(24))
+                Text("$days", style = IosText.largeTitle, color = MaterialTheme.colorScheme.onSurface)
+                Text(if (days == 1) "day" else "days", style = IosText.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("Keep logging to build it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Keep logging to build it", style = IosText.footnote, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,22 +18,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,22 +42,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.IconChip
-import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.PillButton
-import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
+
+private val SystemBlue = Color(0xFF007AFF)
+
+@Composable
+private fun secondarySystemBackgroundColor(): Color = if (isSystemInDarkTheme()) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
 
 /** Settings > Spenditos Pro: what Pro unlocks and how to subscribe, restore or manage it. */
 @Composable
@@ -66,129 +73,231 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val featureRows = listOf(
-        Triple(Icons.Filled.ReceiptLong, "Paycheck periods: see how each paycheck covers what is due.", Color(0xFF3478F6)),
-        Triple(Icons.Filled.ShowChart, "Statement import: bring in a bank CSV or Excel file with the columns mapped for you.", Color(0xFF2D8B57)),
-        Triple(Icons.Filled.Mic, "More receipt scans and voice captures each month.", Color(0xFF8A63B2)),
+        Feature(SfSymbols.icon("doc.text.viewfinder"), "Unlimited AI Receipt Scanning", "Snap photos of receipts and let AI extract all details", SystemBlue),
+        Feature(Icons.Outlined.GraphicEq, "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category", SystemBlue),
+        Feature(SfSymbols.icon("chart.line.uptrend.xyaxis"), "Advanced Analytics", "Daily trends, income analysis, and detailed reports", SystemBlue),
+        Feature(SfSymbols.icon("arrow.triangle.2.circlepath"), "Unlimited income items and bills", "Add as many income items and bills as you need", SystemBlue),
+        // Android-only Pro features remain available with the same feature-row styling.
+        Feature(SfSymbols.icon("calendar.badge.clock"), "Paycheck periods", "See how each paycheck covers what is due.", Color(0xFF3478F6)),
+        Feature(SfSymbols.icon("doc.text"), "Statement import", "Bring in a bank CSV or Excel file with the columns mapped for you.", Color(0xFF2D8B57)),
+        Feature(Icons.Outlined.Mic, "More receipt scans and voice captures", "More receipt scans and voice captures each month.", Color(0xFF8A63B2)),
     )
 
-    IosScreen {
-        Column(
-            Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = Spacing.l),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
-        ) {
+    Box(Modifier.fillMaxSize().background(if (isSystemInDarkTheme()) Color.Black else Color.White).statusBarsPadding()) {
+        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             ProHeader(onBack)
-
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Box(Modifier.size(88.dp).clip(CircleShape).background(Color(0xFFFFD95A).copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = Color(0xFFD69C00), modifier = Modifier.size(50.dp))
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = Color(0xFFFFCC00), modifier = Modifier.size(72.dp))
+                    Text("Upgrade to Pro", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+                    Text("Unlock the full power of AI expense tracking", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                 }
-                Text("Upgrade to Pro", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.onBackground)
-                Text("Go further with your money.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
 
-            SectionHeader("What’s included", Modifier.padding(top = Spacing.s))
-            GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
-                featureRows.forEachIndexed { index, (icon, description, tint) ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                        IconChip(icon, tint, size = 40.dp, shape = RoundedCornerShape(Radius.s))
-                        Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                    }
-                    if (index < featureRows.lastIndex) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 70.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    featureRows.forEach { feature -> FeatureRow(feature) }
                 }
-            }
 
-            state.error?.let {
-                GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
-                    Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("pro.error"))
+                state.error?.let {
+                    Column(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = IosText.footnote, modifier = Modifier.testTag("pro.error"))
                         if (!state.isLoading && state.packages.isEmpty() && state.isAvailable) {
-                            TextButton(onClick = viewModel::load, modifier = Modifier.testTag("pro.retry")) { Text("Try again") }
+                            TextButton(onClick = viewModel::load, modifier = Modifier.testTag("pro.retry")) { Text("Retry", style = IosText.headline, color = SystemBlue) }
                         }
                     }
                 }
-            }
 
-            when {
-                state.isLoading -> Box(Modifier.fillMaxWidth().height(90.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(Modifier.testTag("pro.loading"), color = MaterialTheme.colorScheme.primary)
-                }
-                state.isPro -> {
-                    GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
-                        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                            Text("You have Pro", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("pro.active"))
-                            PillButton(
-                                text = "Manage subscription",
+                when {
+                    state.isLoading -> Box(Modifier.fillMaxWidth().height(90.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(Modifier.size(24.dp).testTag("pro.loading"), color = SystemBlue)
+                    }
+                    state.isPro -> {
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                        ) {
+                            Text("You have Pro", style = IosText.headline, color = SystemBlue, modifier = Modifier.testTag("pro.active"))
+                            SystemButton(
+                                "Manage subscription",
+                                null,
                                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))) },
-                                filled = false,
                                 modifier = Modifier.fillMaxWidth().testTag("pro.manage"),
                             )
                         }
                     }
-                }
-                !state.isAvailable -> {
-                    GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
-                        Text(
-                            "Subscriptions aren't available in this build.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(Spacing.m).testTag("pro.unavailable"),
-                        )
+                    !state.isAvailable -> {
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(SecondarySystemBackground).padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                        ) {
+                            Text("Subscriptions aren't available in this build.", style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))
+                        }
                     }
-                }
-                else -> {
-                    SectionHeader("Choose a plan", Modifier.padding(top = Spacing.s))
-                    Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        state.packages.forEach { pkg ->
-                            val selected = pkg.id == state.selectedId
-                            Box(
-                                Modifier.fillMaxWidth().testTag("pro.package.${pkg.id}")
-                                    .selectable(selected = selected, role = Role.RadioButton, onClick = { viewModel.select(pkg.id) })
-                                    .semantics { this.selected = selected },
-                            ) {
-                                GlassCard {
-                                    Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                                        Box(
-                                            Modifier.size(22.dp).clip(CircleShape)
-                                                .border(2.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape),
-                                            contentAlignment = Alignment.Center,
+                    state.packages.isEmpty() -> OfferingsUnavailable(onRetry = viewModel::load, hasError = state.error != null)
+                    else -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            state.packages.forEach { pkg ->
+                                val selected = pkg.id == state.selectedId
+                                Box(
+                                    Modifier.fillMaxWidth().testTag("pro.package.${pkg.id}")
+                                        .selectable(selected = selected, role = Role.RadioButton, onClick = { viewModel.select(pkg.id) })
+                                        .semantics { this.selected = selected },
+                                ) {
+                                    val packageShape = RoundedCornerShape(12.dp)
+                                    Box(
+                                        Modifier.fillMaxWidth().clip(packageShape)
+                                            .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
+                                            .border(2.dp, SystemBlue, packageShape),
+                                    ) {
+                                        Row(
+                                            Modifier.fillMaxWidth().padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                                         ) {
-                                            if (selected) Box(Modifier.size(11.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                                                Text(pkg.title, style = IosText.headline, color = IosColors.textPrimary)
+                                                Text(pkg.price + (pkg.period?.let { " / $it" } ?: ""), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
+                                                if (pkg.isBestValue) Text("Best value", style = IosText.caption, color = SystemBlue)
+                                            }
+                                            Box(
+                                                Modifier.size(24.dp).clip(CircleShape)
+                                                    .background(if (selected) SystemBlue else Color.Transparent)
+                                                    .border(2.dp, SystemBlue, CircleShape),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                if (selected) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                            }
                                         }
-                                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                            Text(pkg.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                                            if (pkg.isBestValue) Text("Best value", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                        }
-                                        Text(pkg.price + (pkg.period?.let { " / $it" } ?: ""), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
-                                if (selected) Box(Modifier.matchParentSize().clip(RoundedCornerShape(Radius.l)).border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(Radius.l)))
                             }
-                        }
-                        PillButton(
-                            text = if (state.isBusy) "Working…" else "Subscribe",
-                            onClick = { context.findActivity()?.let(viewModel::buy) },
-                            enabled = state.selectedId != null && !state.isBusy,
-                            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("pro.subscribe"),
-                        )
-                        TextButton(onClick = viewModel::restore, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth().testTag("pro.restore")) {
-                            Text("Restore purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            SystemButton(
+                                if (state.isBusy) "Working…" else "Subscribe",
+                                null,
+                                enabled = state.selectedId != null && !state.isBusy,
+                                onClick = { context.findActivity()?.let(viewModel::buy) },
+                                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("pro.subscribe"),
+                            )
                         }
                     }
-                    Text(
-                        "Payment is charged to your Google Play account and the subscription renews automatically each period until you cancel. " +
-                            "Cancel anytime in Google Play > Payments & subscriptions.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = Spacing.screen),
-                    )
                 }
+
+                if (!state.isPro && state.isAvailable) {
+                    TextButton(onClick = viewModel::restore, enabled = !state.isLoading && !state.isBusy, modifier = Modifier.fillMaxWidth().testTag("pro.restore")) {
+                        Text("Restore Purchases", style = IosText.subheadline, color = IosColors.textSecondary)
+                    }
+                }
+
+                if (!state.isPro && state.isAvailable) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Payment will be charged to your Google Play account at the confirmation of purchase.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text("Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text("Your account will be charged for renewal within 24 hours prior to the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text("Payment is charged to your Google Play account and the subscription renews automatically each period until you cancel. Cancel anytime in Google Play > Payments & subscriptions.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            LegalLink("Privacy Policy", "https://spenditos.com/privacy", context)
+                            LegalLink("Terms of Use", "https://spenditos.com/terms", context)
+                        }
+                    }
+                }
+
+                state.notice?.let { Text(it, style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.notice")) }
             }
-            state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = Spacing.screen).testTag("pro.notice")) }
         }
+    }
+}
+
+private data class Feature(val icon: ImageVector, val title: String, val description: String, val tint: Color)
+
+@Composable
+private fun FeatureRow(feature: Feature) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+            Icon(feature.icon, contentDescription = null, tint = feature.tint, modifier = Modifier.size(28.8.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(feature.title, style = IosText.headline, color = IosColors.textPrimary)
+            Text(feature.description, style = IosText.subheadline, color = IosColors.textSecondary)
+        }
+    }
+}
+
+@Composable
+private fun OfferingsUnavailable(onRetry: () -> Unit, hasError: Boolean) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Box(Modifier.size(43.2.dp)) {
+            Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.fillMaxSize())
+            Icon(Icons.Rounded.Error, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp).align(Alignment.BottomEnd))
+        }
+        Text("Prices Unavailable", style = IosText.headline, color = IosColors.textPrimary)
+        Text("We couldn't load subscription options. Check your connection and try again.", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+        SystemButton(
+            "Retry",
+            Icons.Filled.Refresh,
+            onRetry,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).then(if (hasError) Modifier else Modifier.testTag("pro.retry")),
+        )
+    }
+}
+
+@Composable
+private fun SystemButton(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier.height(54.dp).clip(RoundedCornerShape(12.dp))
+            .background(if (enabled) SystemBlue else SystemBlue.copy(alpha = 0.45f))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick).padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
+        Text(text, style = IosText.headline, color = Color.White)
+    }
+}
+
+@Composable
+private fun LegalLink(label: String, url: String, context: Context) {
+    Text(
+        label,
+        style = IosText.caption,
+        color = SystemBlue,
+        modifier = Modifier.clickable(role = Role.Button) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
+    )
+}
+
+@Composable
+private fun ProHeader(onBack: () -> Unit) {
+    Box(Modifier.fillMaxWidth().height(44.dp)) {
+        Text("Spenditos Pro", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(
+            "Close",
+            style = IosText.body,
+            color = SystemBlue,
+            modifier = Modifier.align(Alignment.CenterEnd).clickable(role = Role.Button, onClick = onBack)
+                .semantics { contentDescription = "Back" }
+                .padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("pro.back"),
+        )
     }
 }
 
@@ -197,20 +306,12 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
 fun ProUpsellCard(message: String, onSeePro: () -> Unit, modifier: Modifier = Modifier) {
     GlassCard(modifier = modifier.testTag("pro.upsell")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Pro feature", style = MaterialTheme.typography.titleMedium)
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            PillButton(text = "See Spenditos Pro", onClick = onSeePro, filled = false, modifier = Modifier.testTag("pro.upsell.see"))
+            Text("Pro feature", style = IosText.headline)
+            Text(message, style = IosText.body, color = IosColors.textSecondary)
+            androidx.compose.material3.TextButton(onClick = onSeePro, modifier = Modifier.testTag("pro.upsell.see")) {
+                Text("See Spenditos Pro", style = IosText.headline, color = SystemBlue)
+            }
         }
-    }
-}
-
-@Composable
-private fun ProHeader(onBack: () -> Unit) {
-    Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
-        IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("pro.back")) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
-        }
-        Text("Spenditos Pro", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
     }
 }
 
