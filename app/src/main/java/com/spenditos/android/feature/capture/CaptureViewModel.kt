@@ -495,21 +495,26 @@ class CaptureViewModel @Inject constructor(
     private companion object {
         const val KEY_STATE = "capture.state"
         const val KEY_OWNER = "capture.owner"
+        const val KEY_MODE_ARG = "mode"
         const val MAX_TEXT_LENGTH = 4_000
         const val RECORD_SAMPLE_MILLIS = 100L
         const val MAX_RECORDING_MILLIS = 60_000L
         const val SPEECH_AMPLITUDE_THRESHOLD = 80
+
+        /** The add form's method bar opens capture as Voice (`mode=speak`) or Sentence (`mode=type`). */
+        fun requestedMode(handle: SavedStateHandle): CaptureMode =
+            if (handle.get<String>(KEY_MODE_ARG) == "speak") CaptureMode.SPEAK else CaptureMode.TYPE
 
         fun restoreState(handle: SavedStateHandle, owner: String?): CaptureUiState {
             // A saved capture belongs to the account that started it; another account starts clean.
             if (handle.get<String>(KEY_OWNER) != owner) {
                 handle.remove<Any>(KEY_STATE)
                 handle[KEY_OWNER] = owner
-                return CaptureUiState()
+                return CaptureUiState(mode = requestedMode(handle))
             }
             val data = runCatching {
                 handle.get<String>(KEY_STATE)?.let { SpenditosJson.decodeFromString(PersistedCapture.serializer(), it) }
-            }.getOrNull() ?: return CaptureUiState()
+            }.getOrNull() ?: return CaptureUiState(mode = requestedMode(handle))
             val step = when (data.step) {
                 "CHECK_TRANSCRIPT" -> CaptureStep.CheckTranscript
                 "REVIEW" -> CaptureStep.Review

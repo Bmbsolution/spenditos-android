@@ -43,6 +43,8 @@ data class TransactionRowUi(
     val isIncome: Boolean,
     val date: LocalDate,
     val syncStatus: SyncStatus,
+    /** The row as the edit form opens it. */
+    val edit: EditTarget? = null,
 )
 
 data class TransactionListUiState(
@@ -56,11 +58,13 @@ data class TransactionListUiState(
     val isOnline: Boolean = true,
     val isRefreshing: Boolean = false,
     val loadError: String? = null,
+    /** A list delete that failed; shown until dismissed. */
+    val actionError: String? = null,
 ) {
     val isEmpty: Boolean get() = days.isEmpty()
 }
 
-private data class RefreshState(val isRefreshing: Boolean = false, val error: String? = null)
+private data class RefreshState(val isRefreshing: Boolean = false, val error: String? = null, val actionError: String? = null)
 
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -95,6 +99,7 @@ class TransactionListViewModel @Inject constructor(
             isOnline = online,
             isRefreshing = refreshState.isRefreshing,
             loadError = refreshState.error,
+            actionError = refreshState.actionError,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionListUiState())
 
@@ -117,6 +122,27 @@ class TransactionListViewModel @Inject constructor(
         refresh()
     }
 
+    /** The long-press Delete (iOS row context menu), after the user confirmed. */
+    fun delete(id: String) {
+        viewModelScope.launch {
+            try {
+                transactions.delete(id)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val message = when (e) {
+                    is com.spenditos.android.data.transactions.TransactionBusyException -> e.message.orEmpty()
+                    is ApiError.Network -> "You're offline. Check your connection and try again."
+                    is ApiError.Unauthorized -> "Sign in again to delete."
+                    else -> "Couldn't delete. Please try again."
+                }
+                refresh.update { it.copy(actionError = message) }
+            }
+        }
+    }
+
+    fun dismissActionError() = refresh.update { it.copy(actionError = null) }
+
     fun refresh(includeCategories: Boolean = false) {
         val m = month.value
         viewModelScope.launch {
@@ -125,7 +151,7 @@ class TransactionListViewModel @Inject constructor(
                 if (includeCategories) categories.refresh()
                 transactions.refreshRange(m.atDay(1), m.atEndOfMonth())
             }.exceptionOrNull()
-            refresh.value = RefreshState(isRefreshing = false, error = error?.let(::messageFor))
+            refresh.update { it.copy(isRefreshing = false, error = error?.let(::messageFor)) }
         }
     }
 
@@ -144,6 +170,7 @@ class TransactionListViewModel @Inject constructor(
         isIncome = category?.isIncome == true,
         date = LocalDate.parse(date),
         syncStatus = syncStatus,
+        edit = toEditTarget(),
     )
 }
 

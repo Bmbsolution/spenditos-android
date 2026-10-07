@@ -79,7 +79,8 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
 private const val RECEIPT_SCAN_ROUTE = "receipt-scan"
-private const val CAPTURE_ROUTE = "capture"
+private const val CAPTURE_ROUTE = "capture?mode={mode}"
+private fun captureRoute(mode: String) = "capture?mode=$mode"
 private const val REPORTS_DAILY_ROUTE = "reports/daily"
 private const val REPORTS_COMPARISON_ROUTE = "reports/comparison"
 private const val REPORTS_PAYCHECK_ROUTE = "reports/paycheck-periods"
@@ -150,7 +151,10 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     )
                 }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
-                composable(CAPTURE_ROUTE) {
+                composable(
+                    CAPTURE_ROUTE,
+                    arguments = listOf(androidx.navigation.navArgument("mode") { type = androidx.navigation.NavType.StringType; defaultValue = "type" }),
+                ) {
                     CaptureScreen(
                         onBack = { nav.popBackStack() },
                         onSaved = { message ->
@@ -271,7 +275,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 },
                 onCapture = {
                     showAdd = false
-                    nav.navigate(CAPTURE_ROUTE)
+                    nav.navigate(captureRoute("type"))
                 },
                 prefill = receiptPrefill,
             )

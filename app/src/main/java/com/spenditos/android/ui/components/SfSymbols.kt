@@ -224,6 +224,8 @@ object SfSymbols {
         "party.popper" to "confetti",
         "pawprint" to "paw-print",
         "pencil" to "pencil-simple",
+        "plus.square.on.square" to "copy",
+        "link" to "link",
         "pencil.circle" to "pencil-circle",
         "person" to "user",
         "person.2" to "users",

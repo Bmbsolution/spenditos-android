@@ -2,6 +2,11 @@ package com.spenditos.android.feature.transactions
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,9 +78,42 @@ fun TransactionListScreen(
     onOpenNotSynced: () -> Unit,
     onOpenExport: () -> Unit = {},
     onAdd: () -> Unit = {},
+    onEdit: (EditTarget) -> Unit = {},
+    onDuplicate: (AddTransactionPrefill) -> Unit = {},
     viewModel: TransactionListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var deleteTarget by remember { mutableStateOf<TransactionRowUi?>(null) }
+    val rowActions = RowActions(
+        onEdit = { row -> row.edit?.let(onEdit) },
+        onDuplicate = { row ->
+            row.edit?.let { e ->
+                onDuplicate(AddTransactionPrefill(amount = e.amount, description = e.description, date = e.date.toString(), categoryId = e.categoryId))
+            }
+        },
+        onDelete = { row -> deleteTarget = row },
+    )
+    deleteTarget?.let { row ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete Transaction?") },
+            text = { Text("This action cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.delete(row.id); deleteTarget = null }, modifier = Modifier.testTag("transaction.delete.confirm")) {
+                    Text("Delete", color = IosColors.expense)
+                }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
+        )
+    }
+    state.actionError?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissActionError,
+            title = { Text("Couldn't delete") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = viewModel::dismissActionError) { Text("OK") } },
+        )
+    }
     val locale = LocalConfiguration.current.locales[0]
     val monthLabel = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
@@ -166,6 +204,7 @@ fun TransactionListScreen(
                                 currency = state.currency,
                                 locale = locale,
                                 upcoming = true,
+                                actions = rowActions,
                             )
                         }
                     }
@@ -186,6 +225,7 @@ fun TransactionListScreen(
                                 currency = state.currency,
                                 locale = locale,
                                 upcoming = false,
+                                actions = rowActions,
                             )
                         }
                     }
@@ -404,13 +444,14 @@ private fun TransactionDaysCard(
     currency: String,
     locale: java.util.Locale,
     upcoming: Boolean,
+    actions: RowActions,
 ) {
     GroupedCard(modifier = Modifier.padding(bottom = Spacing.m)) {
         days.forEachIndexed { groupIndex, (day, rows) ->
             androidx.compose.runtime.key("day-$day") {
             DayHeader(day = day, count = rows.size, locale = locale)
             rows.forEachIndexed { rowIndex, row ->
-                TransactionRow(row = row, currency = currency, locale = locale)
+                TransactionRow(row = row, currency = currency, locale = locale, actions = actions)
                 if (rowIndex < rows.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 72.dp),
@@ -487,7 +528,8 @@ private fun DayHeader(day: LocalDate, count: Int, locale: java.util.Locale) {
 }
 
 @Composable
-private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java.util.Locale) {
+private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java.util.Locale, actions: RowActions) {
+    var showMenu by remember { mutableStateOf(false) }
     val tint = categoryColor(row.categoryColor)
     val hasCategory = row.categoryName != "Uncategorized" || row.categoryColor != null
     val displayTitle = if (row.title == "Transaction" && !hasCategory) "Untitled" else row.title
@@ -508,8 +550,35 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
     val signedAmount = if (row.isIncome) row.amount else -row.amount
     val amount = Money.format(signedAmount, currency, locale)
 
+    // iOS: tap edits; the context menu (long press) has Edit, Duplicate and Delete.
+    Box {
+    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+        DropdownMenuItem(
+            text = { Text("Edit") },
+            leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
+            onClick = { showMenu = false; actions.onEdit(row) },
+        )
+        DropdownMenuItem(
+            text = { Text("Duplicate") },
+            leadingIcon = { Icon(SfSymbols.icon("plus.square.on.square"), contentDescription = null) },
+            onClick = { showMenu = false; actions.onDuplicate(row) },
+        )
+        DropdownMenuItem(
+            text = { Text("Delete", color = IosColors.expense) },
+            leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
+            onClick = { showMenu = false; actions.onDelete(row) },
+        )
+    }
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.m).testTag("transaction.row"),
+        Modifier.fillMaxWidth()
+            .combinedClickable(
+                role = Role.Button,
+                onClickLabel = "Edit",
+                onLongClickLabel = "More actions",
+                onClick = { actions.onEdit(row) },
+                onLongClick = { showMenu = true },
+            )
+            .padding(horizontal = Spacing.m, vertical = Spacing.m).testTag("transaction.row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
@@ -538,7 +607,14 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
             maxLines = 1,
         )
     }
+    }
 }
+
+private class RowActions(
+    val onEdit: (TransactionRowUi) -> Unit,
+    val onDuplicate: (TransactionRowUi) -> Unit,
+    val onDelete: (TransactionRowUi) -> Unit,
+)
 
 @Composable
 private fun RowCategoryBadge(icon: String?, name: String, tint: Color) {
