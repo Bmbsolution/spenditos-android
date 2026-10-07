@@ -1,0 +1,1 @@
+{"type":"gamification.update","data":{"points":{"total":123,"change":5},"streak":{"current":4,"frozen":false},"level":{"current":2,"progress":0.5},"newAchievements":[{"id":"ach-fake-001","name":"First","description":"Fake achievement","points":10}],"challengeProgress":[]}}

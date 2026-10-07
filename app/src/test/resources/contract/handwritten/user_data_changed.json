@@ -1,0 +1,1 @@
+{"type":"user.data_changed","data":{"eventId":"evt-fake-001","aggregateType":"transaction","aggregateId":"txn-fake-001","mutationType":"updated","occurredAt":"2026-10-07T12:00:00Z","version":1}}
