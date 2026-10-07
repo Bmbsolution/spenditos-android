@@ -1,6 +1,10 @@
 package com.spenditos.android.app
 
 import androidx.compose.foundation.layout.Box
+import com.spenditos.android.feature.lock.AppLockScreen
+import com.spenditos.android.core.lock.LockState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHostState
@@ -17,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
 import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
@@ -46,6 +51,8 @@ class RootViewModel @Inject constructor(
     val session: SessionManager,
     val environment: AppEnvironment,
     val onboarding: OnboardingActions,
+    val lock: com.spenditos.android.core.lock.AppLockController,
+    val authenticator: com.spenditos.android.core.lock.BiometricAuthenticator,
 ) : ViewModel() {
     /** ViewModels of the signed-out steps: kept across rotation, dropped when the step changes. */
     internal val authSteps = StepViewModelStores()
@@ -89,6 +96,7 @@ private enum class Gate { Checking, Onboarding, Ready }
 @Composable
 fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
     val state by viewModel.session.state.collectAsStateWithLifecycle()
+    val lockState by viewModel.lock.state.collectAsStateWithLifecycle()
     val envName = viewModel.environment.displayName.takeIf { viewModel.environment.showBadge }
     val loginSnackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -97,7 +105,11 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
     when (val session = state) {
         SessionState.SignedOut -> SignedOutFlow(envName, loginSnackbar, viewModel.authSteps)
         // Keyed by user: every screen and ViewModel below is rebuilt for a different account.
-        is SessionState.SignedIn -> key(session.userId) {
+        is SessionState.SignedIn -> Box(Modifier.fillMaxSize()) {
+            // While the lock is up the content below must not be reachable by accessibility
+            // services either (TalkBack, uiautomator), not just covered visually.
+            Box(Modifier.fillMaxSize().then(if (lockState != LockState.UNLOCKED) Modifier.clearAndSetSemantics { } else Modifier)) {
+            key(session.userId) {
             LaunchedEffect(Unit) { viewModel.authSteps.clearAll() }
             var gate by rememberSaveable { mutableStateOf(Gate.Checking) }
             LaunchedEffect(Unit) {
@@ -112,6 +124,16 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
                     viewModel = hiltViewModel(key = "onboarding:${session.userId}"),
                 )
                 Gate.Ready -> MainScaffold(envName = envName)
+            }
+        }
+            }
+            // Opaque and on top: the lock never reveals content while it is up or coming up.
+            if (lockState != LockState.UNLOCKED) {
+                if (lockState == LockState.LOCKED) {
+                    AppLockScreen(authenticator = viewModel.authenticator, onUnlocked = viewModel.lock::unlock)
+                } else {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                }
             }
         }
     }

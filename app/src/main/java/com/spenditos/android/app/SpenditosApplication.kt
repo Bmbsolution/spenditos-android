@@ -11,6 +11,7 @@ class SpenditosApplication : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
 
     @Inject lateinit var sessionLifecycle: SessionLifecycle
+    @Inject lateinit var appLock: com.spenditos.android.core.lock.AppLockController
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -18,5 +19,6 @@ class SpenditosApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         sessionLifecycle.start()
+        appLock.start()
     }
 }

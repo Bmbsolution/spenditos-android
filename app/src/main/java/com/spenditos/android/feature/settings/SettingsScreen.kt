@@ -68,6 +68,24 @@ fun SettingsScreen(
                 )
             }
             item { HorizontalDivider() }
+            if (state.lockAvailable) {
+                item {
+                    val activity = androidx.compose.ui.platform.LocalContext.current.let { generateSequence(it) { c -> (c as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<androidx.fragment.app.FragmentActivity>().firstOrNull() }
+                    ListItem(
+                        headlineContent = { Text("App lock") },
+                        supportingContent = { Text(state.lockMessage ?: "Ask for your fingerprint, face or screen lock when you return") },
+                        trailingContent = {
+                            androidx.compose.material3.Switch(
+                                checked = state.lockEnabled,
+                                onCheckedChange = { wanted -> activity?.let { viewModel.setLock(it, wanted) } },
+                                modifier = Modifier.testTag("settings.appLock.switch"),
+                            )
+                        },
+                        modifier = Modifier.testTag("settings.appLock"),
+                    )
+                }
+                item { HorizontalDivider() }
+            }
             item {
                 ListItem(
                     headlineContent = { Text("Change password") },
