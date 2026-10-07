@@ -30,6 +30,7 @@ fun SettingsScreen(
     onOpenCategories: () -> Unit,
     onOpenChangePassword: () -> Unit,
     onOpenStatementImport: () -> Unit,
+    onOpenProgress: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -57,6 +58,14 @@ fun SettingsScreen(
                     headlineContent = { Text("Categories") },
                     supportingContent = { Text("Manage income and expense categories") },
                     modifier = Modifier.clickable(role = Role.Button, onClick = onOpenCategories).testTag("settings.categories"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Progress") },
+                    supportingContent = { Text("Streak, level and achievements") },
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenProgress).testTag("settings.progress"),
                 )
             }
             item { HorizontalDivider() }

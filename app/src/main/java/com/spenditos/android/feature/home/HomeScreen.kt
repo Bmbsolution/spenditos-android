@@ -96,6 +96,8 @@ fun HomeScreen() {
                     )
                 }
 
+                com.spenditos.android.feature.progress.StreakChip()
+
                 if (state.isEmpty) EmptyHomeState()
 
                 Text("Coming up", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)

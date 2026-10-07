@@ -10,6 +10,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -52,7 +53,15 @@ object NetworkModule {
     @Provides
     @Singleton
     @PublicApi
-    fun publicRetrofit(base: OkHttpClient, environment: AppEnvironment): Retrofit = retrofit(base, environment)
+    fun publicRetrofit(base: OkHttpClient, environment: AppEnvironment): Retrofit = retrofit(publicClient(base), environment)
+
+    /**
+     * The refresh call must never queue behind the requests that are waiting for it. OkHttp allows
+     * 5 concurrent calls per host per dispatcher, and [AuthInterceptor] blocks its dispatcher thread
+     * while a refresh runs: sharing the dispatcher let 5+ simultaneous requests with a stale token
+     * deadlock the app (the Progress screen fires 8 at once).
+     */
+    internal fun publicClient(base: OkHttpClient): OkHttpClient = base.newBuilder().dispatcher(Dispatcher()).build()
 
     @Provides
     @Singleton

@@ -48,6 +48,7 @@ import com.spenditos.android.feature.reports.MonthComparisonScreen
 import com.spenditos.android.feature.reports.PaycheckPeriodsScreen
 import com.spenditos.android.feature.reports.ReportsHubScreen
 import com.spenditos.android.feature.capture.CaptureScreen
+import com.spenditos.android.feature.progress.ProgressScreen
 import com.spenditos.android.feature.settings.ChangePasswordScreen
 import com.spenditos.android.feature.settings.ProfileScreen
 import com.spenditos.android.feature.settings.SettingsScreen
@@ -79,6 +80,7 @@ private const val PROFILE_ROUTE = "settings/profile"
 private const val CATEGORIES_ROUTE = "settings/categories"
 private const val CHANGE_PASSWORD_ROUTE = "settings/change-password"
 private const val STATEMENT_IMPORT_ROUTE = "settings/import-statement"
+private const val PROGRESS_ROUTE = "settings/progress"
 
 /** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
 @Composable
@@ -179,11 +181,13 @@ fun MainScaffold(envName: String?) {
                         onOpenCategories = { nav.navigate(CATEGORIES_ROUTE) },
                         onOpenChangePassword = { nav.navigate(CHANGE_PASSWORD_ROUTE) },
                         onOpenStatementImport = { nav.navigate(STATEMENT_IMPORT_ROUTE) },
+                        onOpenProgress = { nav.navigate(PROGRESS_ROUTE) },
                     )
                 }
                 composable(PROFILE_ROUTE) { ProfileScreen(onBack = { nav.popBackStack() }) }
                 composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
+                composable(PROGRESS_ROUTE) { ProgressScreen(onBack = { nav.popBackStack() }) }
                 composable(STATEMENT_IMPORT_ROUTE) { StatementImportScreen(onBack = { nav.popBackStack() }) }
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
             }
