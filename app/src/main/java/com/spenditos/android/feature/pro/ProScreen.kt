@@ -139,7 +139,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                     }
                     !state.isAvailable -> {
                         Column(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(SecondarySystemBackground).padding(16.dp),
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
                             Text("Subscriptions aren't available in this build.", style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))

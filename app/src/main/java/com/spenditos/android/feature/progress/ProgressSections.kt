@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -60,11 +61,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import com.spenditos.android.data.model.GamificationChallenge
 import com.spenditos.android.data.model.PointsTransaction
 import com.spenditos.android.data.model.UserAchievement
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
@@ -87,7 +91,7 @@ internal fun ProgressLoadingState() {
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.size(24.dp))
-        Text("Loading progress...", style = IosText.body, color = IosColors.textTertiary)
+        Text("Loading progress...", style = IosText.callout, color = IosColors.textTertiary)
     }
 }
 
@@ -192,14 +196,20 @@ private fun StreakDay(
     modifier: Modifier,
     locale: java.util.Locale,
 ) {
-    val today = date == java.time.LocalDate.now()
+    val today = date == LocalDate.now()
+    val pulse by rememberInfiniteTransition(label = "today pulse").animateFloat(
+        initialValue = 1f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "today pulse opacity",
+    )
     val fill = when {
         active -> IosColors.income
         freezeUsed -> FreezeBlue
         else -> Color.Transparent
     }
     val outline = when {
-        today -> IosColors.spendOrange
+        today -> IosColors.spendOrange.copy(alpha = pulse)
         active || freezeUsed -> Color.Transparent
         else -> Color.Black.copy(alpha = 0.08f)
     }
@@ -478,10 +488,19 @@ private fun AchievementCard(achievement: UserAchievement, modifier: Modifier, on
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-            Text(achievement.icon, style = IosText.system(36), modifier = Modifier.align(Alignment.Center).graphicsLayer(alpha = if (unlocked) 1f else 0.4f))
+        Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+            Text(
+                achievement.icon,
+                style = IosText.system(36),
+                modifier = Modifier.graphicsLayer(alpha = if (unlocked) 1f else 0.4f),
+            )
             if (!unlocked && !inProgress) {
-                Icon(Icons.Filled.Lock, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(19.2.dp).align(Alignment.BottomEnd).offset(16.dp, 16.dp))
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = IosColors.textTertiary,
+                    modifier = Modifier.size(19.2.dp).offset(16.dp, 16.dp),
+                )
             }
         }
         Text(
@@ -521,7 +540,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.size(24.dp))
-                    Text("Loading history...", style = IosText.body, color = IosColors.textTertiary)
+                    Text("Loading history...", style = IosText.callout, color = IosColors.textTertiary)
                 }
             }
             state.pointsHistoryFailed && state.pointsHistory.isEmpty() -> {
@@ -541,7 +560,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     Icon(SfSymbols.icon("clock.arrow.circlepath"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-                    Text("No points history yet", style = IosText.body, color = IosColors.textTertiary)
+                    Text("No points history yet", style = IosText.callout, color = IosColors.textTertiary)
                     Text("Earn XP to see your history here!", style = IosText.subheadline, color = IosColors.textTertiary)
                 }
             }
@@ -561,14 +580,14 @@ private fun PointsHistoryRow(entry: PointsTransaction) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 entry.action.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
-                style = IosText.body,
+                style = IosText.callout,
                 color = IosColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
             val amount = entry.amount.toInt()
-            Text("+${amount} XP", style = IosText.rounded(15), color = XpGold, maxLines = 1, softWrap = false)
+            Text("+${amount} XP", style = IosText.rounded(15), color = IosColors.spendGold, maxLines = 1, softWrap = false)
         }
         Text(entry.timestamp.take(10), style = IosText.subheadline, color = IosColors.textTertiary)
     }
@@ -581,20 +600,19 @@ internal fun ProgressChallengeHistorySection(state: ProgressUiState) {
         when {
             !state.challengeHistoryLoaded && state.challengeHistory.isEmpty() && !state.challengeHistoryFailed -> QuietLine("Loading…", "progress.challengeHistory.loading")
             state.challengeHistoryFailed && state.challengeHistory.isEmpty() -> QuietLine("Couldn't load", "progress.challengeHistory.error")
-            state.challengeHistory.isEmpty() -> QuietLine("No challenge history yet", "progress.challengeHistory.empty")
+            state.challengeHistory.isEmpty() -> Column(
+                Modifier.fillMaxWidth().testTag("progress.challengeHistory.empty"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(57.6.dp))
+                Text("No challenge history yet", style = IosText.headline, color = IosColors.textTertiary)
+                Text("Complete challenges to see them here", style = IosText.callout, color = IosColors.textTertiary)
+            }
             else -> {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.l)) {
                     state.challengeHistory.take(10).forEach { challenge ->
-                        GlassCard(modifier = Modifier.fillMaxWidth().testTag("progress.challengeHistory.${challenge.id}")) {
-                            Row(
-                                Modifier.padding(Spacing.m),
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(challenge.title, modifier = Modifier.weight(1f), style = IosText.body)
-                                Text(if (challenge.completed) "Completed" else "In progress", style = IosText.subheadline, color = IosColors.textSecondary)
-                            }
-                        }
+                        ChallengeHistoryCard(challenge)
                     }
                 }
                 if (state.challengeHistoryFailed) QuietLine("Couldn't refresh", "progress.challengeHistory.refreshError")
@@ -604,41 +622,156 @@ internal fun ProgressChallengeHistorySection(state: ProgressUiState) {
 }
 
 @Composable
+private fun ChallengeHistoryCard(challenge: GamificationChallenge) {
+    val diff = challenge.difficulty?.replaceFirstChar { it.uppercase() }
+    val diffColor = when (challenge.difficulty?.lowercase()) {
+        "easy" -> Color(0xFF34C759)
+        "hard" -> Color(0xFFFF3B30)
+        else -> Color(0xFFFF9500)
+    }
+    GlassCard(modifier = Modifier.fillMaxWidth().testTag("progress.challengeHistory.${challenge.id}")) {
+        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            SfSymbols.icon(if (challenge.completed) "checkmark.circle.fill" else "xmark.circle.fill"),
+                            contentDescription = null,
+                            tint = if (challenge.completed) IosColors.income else Color(0xFFFF3B30),
+                            modifier = Modifier.size(20.4.dp),
+                        )
+                        Text(challenge.title, style = IosText.headline, color = IosColors.textPrimary)
+                    }
+                    Text(challenge.description, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    if (diff != null) {
+                        Text(
+                            diff,
+                            style = IosText.caption.w(FontWeight.Bold),
+                            color = diffColor,
+                            modifier = Modifier.clip(CircleShape).background(diffColor.copy(alpha = 0.15f)).padding(horizontal = Spacing.s, vertical = 2.dp),
+                        )
+                    }
+                    PointsBadge(challenge.reward)
+                }
+            }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(challengeHistoryDate(challenge), style = IosText.caption, color = IosColors.textTertiary)
+                Spacer(Modifier.weight(1f))
+                if (challenge.completed) {
+                    Text("+${challenge.reward} XP", style = IosText.caption.w(FontWeight.Bold), color = XpGold)
+                }
+            }
+        }
+    }
+}
+
+private fun challengeHistoryDate(challenge: GamificationChallenge): String {
+    val raw = if (challenge.completed) challenge.completedAt ?: challenge.expiresAt else challenge.expiresAt
+    val instant = try {
+        raw?.let { Instant.parse(it) }
+    } catch (_: DateTimeParseException) {
+        null
+    }
+    if (instant != null) {
+        return DateTimeFormatter.ofPattern("MMM d, h:mm a", Locale.getDefault()).format(instant.atZone(ZoneId.systemDefault()))
+    }
+    return challenge.date?.toString() ?: raw.orEmpty()
+}
+
+@Composable
 internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Unit) {
     val achievement = state.selectedAchievement ?: return
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
+    val unlocked = achievement.unlockedAt != null || state.achievementDetail?.isUnlocked == true
+    val progressValue = state.achievementDetail?.progress ?: achievement.progress
+    val ratio = if (achievement.target > 0) (progressValue.toFloat() / achievement.target).coerceIn(0f, 1f) else 0f
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background, dragHandle = null) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(bottom = Spacing.l),
+            Modifier.fillMaxWidth().padding(Spacing.screen),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
-            Text(achievement.icon, style = IosText.system(64))
-            Text(achievement.name, style = IosText.title2.w(FontWeight.Bold), textAlign = TextAlign.Center)
-            Text(achievement.description, style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Box(Modifier.padding(top = Spacing.s).size(36.dp, 5.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.08f)))
+            Text(achievement.icon, style = IosText.system(72))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(achievement.name, style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+                Text(achievement.description, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            }
+            Text(
+                achievement.category.replaceFirstChar { it.uppercase() },
+                style = IosText.subheadline.w(FontWeight.Bold),
+                color = IosColors.spendOrange,
+                modifier = Modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.s))).padding(horizontal = Spacing.m, vertical = Spacing.xs),
+            )
             when {
                 state.isLoadingAchievementDetail -> QuietLine("Loading…", "progress.achievementDetail.loading")
                 state.achievementDetailFailed -> QuietLine("Couldn't load", "progress.achievementDetail.error")
-                state.achievementDetail != null -> {
-                    val detail = requireNotNull(state.achievementDetail)
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                            Text(if (detail.isUnlocked) "Unlocked" else "${detail.progress} / ${achievement.target}", style = IosText.body)
-                            if (!detail.isUnlocked && achievement.target > 0) {
-                                val progress = (detail.progress.toFloat() / achievement.target).coerceIn(0f, 1f)
-                                Box(
-                                    Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.06f))
-                                        .testTag("progress.achievementDetail.bar"),
-                                ) {
-                                    Box(Modifier.fillMaxWidth(progress).fillMaxHeight().clip(CircleShape).background(IosColors.spendOrange))
-                                }
-                            }
-                        }
+            }
+            if (unlocked) {
+                Column(
+                    Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(28.8.dp))
+                    val whenUnlocked = state.achievementDetail?.unlockedAt ?: achievement.unlockedAt
+                    if (whenUnlocked != null) {
+                        Text("Unlocked ${formatUnlocked(whenUnlocked)}", style = IosText.subheadline, color = IosColors.textTertiary)
                     }
                 }
+            } else {
+                Column(
+                    Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Progress", style = IosText.callout, color = IosColors.textSecondary)
+                        Spacer(Modifier.weight(1f))
+                        Text("$progressValue / ${achievement.target}", style = IosText.callout.w(FontWeight.Bold), color = IosColors.textPrimary)
+                    }
+                    Box(
+                        Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.06f))
+                            .testTag("progress.achievementDetail.bar"),
+                    ) {
+                        Box(
+                            Modifier.fillMaxWidth(ratio).fillMaxHeight().clip(CircleShape)
+                                .background(Brush.horizontalGradient(listOf(IosColors.spendOrange, XpGold))),
+                        )
+                    }
+                    Text("${(ratio * 100).toInt()}% complete", style = IosText.subheadline, color = IosColors.textTertiary)
+                }
             }
-            PillButton("Close", onDismiss, modifier = Modifier.fillMaxWidth().testTag("progress.achievementDetail.close"))
+            Row(
+                Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Reward", style = IosText.callout, color = IosColors.textSecondary)
+                Spacer(Modifier.weight(1f))
+                PointsBadge(achievement.target)
+            }
+            val doneShape = RoundedCornerShape(Radius.m)
+            Box(
+                Modifier.fillMaxWidth().clip(doneShape).background(IosColors.spendOrange)
+                    .clickable(role = Role.Button, onClick = onDismiss)
+                    .padding(16.dp)
+                    .testTag("progress.achievementDetail.close"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Done", style = IosText.headline, color = Color.White)
+            }
         }
     }
+}
+
+private fun formatUnlocked(raw: String): String {
+    val instant = try {
+        Instant.parse(raw)
+    } catch (_: DateTimeParseException) {
+        return raw
+    }
+    return DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(Locale.getDefault())
+        .format(instant.atZone(ZoneId.systemDefault()))
 }
 
 @Composable

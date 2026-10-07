@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,7 +29,6 @@ import com.spenditos.android.data.model.StatementAnalysisResult
 import com.spenditos.android.data.model.StatementColumnMapping
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosRow
-import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.SectionHeader
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -79,7 +81,12 @@ fun ColumnMappingStep(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            androidx.compose.material3.Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = SystemBlue)
+            androidx.compose.material3.Icon(
+                Icons.Outlined.AutoFixHigh,
+                contentDescription = null,
+                tint = SystemBlue,
+                modifier = Modifier.size(18.dp),
+            )
             Text("AI Confidence: ${"%.0f".format(mapping.confidence * 100)}%", style = IosText.subheadline, color = IosColors.textPrimary)
         }
         Text(

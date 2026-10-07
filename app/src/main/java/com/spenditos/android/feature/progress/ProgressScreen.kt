@@ -61,7 +61,7 @@ fun ProgressScreen(onBack: () -> Unit) {
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag("progress.list"),
-                    contentPadding = PaddingValues(horizontal = Spacing.screen, top = Spacing.m, bottom = 32.dp),
+                    contentPadding = PaddingValues(start = Spacing.screen, top = Spacing.m, end = Spacing.screen, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
                     item { ProgressStreakSection(state, locale) }
