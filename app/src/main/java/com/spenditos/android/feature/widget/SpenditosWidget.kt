@@ -131,9 +131,8 @@ private object SpenditosWidgetSizes {
 private fun SmallWidget(snapshot: WidgetSnapshot, root: GlanceModifier) {
     // SmallWidgetView: padding 16, stack spacing 8, flexible spacers, caption / title2 / caption2.
     Column(modifier = root.padding(16.dp)) {
-        StatusRow(snapshot, fontSize = 12, weight = FontWeight.Bold)
         Spacer(GlanceModifier.defaultWeight())
-        AmountBlock(snapshot, amountSize = 22)
+        AmountBlock(snapshot, amountSize = 22, gap = 4)
         Spacer(GlanceModifier.defaultWeight())
         DaysLine(snapshot)
     }
@@ -146,9 +145,9 @@ private fun MediumWidget(snapshot: WidgetSnapshot, root: GlanceModifier) {
         modifier = root.padding(16.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
-        StatusRow(snapshot, fontSize = 15, weight = FontWeight.Bold)
+        StatusRow(snapshot, fontSize = 12, weight = FontWeight.Bold)
         Spacer(GlanceModifier.height(6.dp))
-        AmountBlock(snapshot, labelSize = 11, amountSize = 22)
+        AmountBlock(snapshot, labelSize = 11, amountSize = 22, gap = 2)
         snapshot.daysLeft?.let {
             Spacer(GlanceModifier.height(6.dp))
             DaysLine(snapshot)
@@ -160,14 +159,14 @@ private fun MediumWidget(snapshot: WidgetSnapshot, root: GlanceModifier) {
 private fun LargeWidget(snapshot: WidgetSnapshot, root: GlanceModifier) {
     // LargeWidgetView: padding 16, section spacing 12, headline header, budget card (radius 12).
     Column(modifier = root.padding(16.dp)) {
-        StatusRow(snapshot, fontSize = 17, weight = FontWeight.Bold)
+        StatusRow(snapshot, fontSize = 12, weight = FontWeight.Bold)
         Spacer(GlanceModifier.height(12.dp))
         val tint = amountColor(snapshot)
         Column(
             modifier = GlanceModifier.fillMaxWidth()
                 .background(androidx.glance.unit.ColorProvider(tint.copy(alpha = 0.1f)))
                 .cornerRadius(12.dp)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(vertical = 8.dp),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
         ) {
             Text(
@@ -214,14 +213,14 @@ private fun StatusRow(snapshot: WidgetSnapshot, fontSize: Int, weight: FontWeigh
 }
 
 @Composable
-private fun AmountBlock(snapshot: WidgetSnapshot, labelSize: Int = 12, amountSize: Int) {
+private fun AmountBlock(snapshot: WidgetSnapshot, labelSize: Int = 12, amountSize: Int, gap: Int = 4) {
     Column {
         Text(
             "Left after bills",
             style = TextStyle(color = TextSecondary, fontSize = labelSize.sp),
             maxLines = 1,
         )
-        Spacer(GlanceModifier.height(4.dp))
+        Spacer(GlanceModifier.height(gap.dp))
         Text(
             snapshot.formattedLeftAfterBills().orEmpty(),
             style = TextStyle(
