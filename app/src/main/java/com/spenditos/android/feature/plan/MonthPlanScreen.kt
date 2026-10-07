@@ -308,7 +308,7 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text(
-                if (hasDraft) "Left at month end · with this draft" else "Left at month end",
+                if (hasDraft) "After bills · with this draft" else "After bills",
                 style = IosText.caption.w(FontWeight.Bold),
                 color = IosColors.textSecondary,
             )

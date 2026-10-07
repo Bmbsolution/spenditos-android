@@ -225,7 +225,7 @@ fun AddEditRecurringSheet(
                     ) {
                         Icon(SfSymbols.icon("lightbulb"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
                         Text(
-                            "Logging each purchase yourself? Skip this bill. What you log shows up as everyday spending in Month plan.",
+                            "Logging each purchase yourself? Skip this bill. What you log shows up in Transactions and Reports.",
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                         )
