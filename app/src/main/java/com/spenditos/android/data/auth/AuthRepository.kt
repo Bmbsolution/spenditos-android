@@ -17,6 +17,7 @@ class AuthRepository @Inject constructor(
     private val api: AuthApi,
     private val session: SessionManager,
     private val push: com.spenditos.android.data.push.PushRegistrar,
+    private val purchases: com.spenditos.android.data.purchases.PurchasesService,
 ) {
     /** Throws ApiError.Server(401) for wrong credentials, Server(403) for an unconfirmed email. */
     suspend fun login(email: String, password: String) {
@@ -28,6 +29,7 @@ class AuthRepository @Inject constructor(
     suspend fun signOut() {
         // While the access token still works: stop pushes for this user on this device.
         runCatching { push.unregister() }
+        runCatching { purchases.logOut() }
         session.refreshTokenOrNull()?.let { token ->
             runCatching { apiCallUnit { api.logout(LogoutRequest(token)) } }
         }

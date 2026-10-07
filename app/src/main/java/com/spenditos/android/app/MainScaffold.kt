@@ -84,10 +84,11 @@ private const val STATEMENT_IMPORT_ROUTE = "settings/import-statement"
 private const val PROGRESS_ROUTE = "settings/progress"
 private const val EXPORT_ROUTE = "settings/export"
 private const val MERCHANTS_ROUTE = "settings/merchant-names"
+private const val PRO_ROUTE = "settings/pro"
 
 /** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
 @Composable
-fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.DeepLinkHandler) {
+fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.DeepLinkHandler, proAvailable: Boolean = false) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val snackbar = remember { SnackbarHostState() }
@@ -153,6 +154,9 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
         },
     ) { padding ->
         Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.spenditos.android.feature.pro.LocalOpenPro provides (if (proAvailable) ({ nav.navigate(PRO_ROUTE) }) else null),
+            ) {
             NavHost(nav, startDestination = Tab.TRANSACTIONS.route) {
                 composable(Tab.HOME.route) {
                     val toPlan = {
@@ -205,16 +209,19 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         onOpenProgress = { nav.navigate(PROGRESS_ROUTE) },
                         onOpenExport = { nav.navigate(EXPORT_ROUTE) },
                         onOpenMerchants = { nav.navigate(MERCHANTS_ROUTE) },
+                        onOpenPro = { nav.navigate(PRO_ROUTE) },
                     )
                 }
                 composable(PROFILE_ROUTE) { ProfileScreen(onBack = { nav.popBackStack() }) }
                 composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
+                composable(PRO_ROUTE) { com.spenditos.android.feature.pro.ProScreen(onBack = { nav.popBackStack() }) }
                 composable(MERCHANTS_ROUTE) { com.spenditos.android.feature.settings.merchants.MerchantMappingsScreen(onBack = { nav.popBackStack() }) }
                 composable(EXPORT_ROUTE) { com.spenditos.android.feature.export.ExportScreen(onBack = { nav.popBackStack() }) }
                 composable(PROGRESS_ROUTE) { ProgressScreen(onBack = { nav.popBackStack() }) }
                 composable(STATEMENT_IMPORT_ROUTE) { StatementImportScreen(onBack = { nav.popBackStack() }) }
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
+            }
             }
             envName?.let { EnvBadge(it, Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp)) }
         }

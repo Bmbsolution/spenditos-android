@@ -43,11 +43,21 @@ Use Play App Signing (upload the AAB signed with the upload key; Google holds th
    `deploy.yml`; a task for whoever owns that workflow).
 5. Deploy the backend support first for anything new the app requires; Android never relies on undeployed server behavior.
 
+## Owner inputs that switch features on (the code is built, inert until you supply them)
+
+- **Push notifications:** create a Firebase project, add Android apps for the ids you ship (`com.asaklex.spenditos`,
+  `com.asaklex.spenditos.staging`; local/harness need none), and put `google-services.json` in `app/`. The Google Services
+  plugin is applied automatically when the file exists. The app then registers its FCM token (Settings > Notifications)
+  with `POST /user/device-token` (platform android). A backend sender does not exist yet: nothing will arrive until
+  one is built (tap targets already map the iOS types to Home add / Progress).
+- **Pro purchases:** create the Android app in RevenueCat, attach the Play subscriptions to the `pro` entitlement and an
+  offering, then set the Android public SDK key as `REVENUECAT_API_KEY` in `config/prod.properties` /
+  `config/staging.properties` (it is a public key). Without it the Pro screen says subscriptions are unavailable and no
+  upsell button is shown. Backend follow-up (not done here): `revenuecat-events.ts` labels every non-Stripe store as
+  source `rc_ios`; add an Android/Play source so entitlement reconciliation can tell stores apart.
+
 ## Not done (needs the owner)
 
 - Play Console app, store listing, privacy/data-safety forms, signing enrollment.
-- Push notifications: needs a Firebase project (`google-services.json`) and a backend sender; `POST /user/device-token`
-  already accepts `platform: "android"`.
-- Pro purchases: Play Billing plus a backend webhook change (DECISIONS D12 keeps purchases out of v1).
 - CI: `.github/workflows/android.yml` is a template (verify on every push/PR; a signed prod bundle on `v*` tags from
   secrets). It has never run because this repo has no remote; treat the first run as a test.

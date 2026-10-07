@@ -96,6 +96,11 @@ internal fun ReportsStatusCard(
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(reportStatusMessage(status), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (status == ReportLoadStatus.PRO_REQUIRED) {
+                com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
+                    androidx.compose.material3.OutlinedButton(onClick = openPro, modifier = Modifier.testTag("reports.seePro")) { Text("See Spenditos Pro") }
+                }
+            }
             if (onRetry != null && status != ReportLoadStatus.PRO_REQUIRED) {
                 Button(onClick = onRetry, modifier = Modifier.testTag("reports.retry")) { Text("Try again") }
             }

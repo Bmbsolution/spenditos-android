@@ -183,6 +183,9 @@ private fun ProFeatureCard() {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text("Pro feature", style = MaterialTheme.typography.titleMedium)
             Text("Statement import with column detection is available with Pro.", style = MaterialTheme.typography.bodyMedium)
+            com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
+                androidx.compose.material3.OutlinedButton(onClick = openPro, modifier = Modifier.testTag("statementImport.seePro")) { Text("See Spenditos Pro") }
+            }
         }
     }
 }

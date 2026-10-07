@@ -33,6 +33,7 @@ fun SettingsScreen(
     onOpenProgress: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenMerchants: () -> Unit,
+    onOpenPro: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -68,6 +69,14 @@ fun SettingsScreen(
                     headlineContent = { Text("Progress") },
                     supportingContent = { Text("Streak, level and achievements") },
                     modifier = Modifier.clickable(role = Role.Button, onClick = onOpenProgress).testTag("settings.progress"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Spenditos Pro") },
+                    supportingContent = { Text("Paycheck periods, statement import and more") },
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenPro).testTag("settings.pro"),
                 )
             }
             item { HorizontalDivider() }
