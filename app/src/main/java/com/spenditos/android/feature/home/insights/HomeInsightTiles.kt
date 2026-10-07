@@ -177,10 +177,10 @@ fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Lo
 }
 
 @Composable
-internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp = 22.dp) {
+internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp = 22.dp, modifier: Modifier = Modifier) {
     val color = if (pin.isIncome) IosColors.income else categoryColor(pin.colorHex)
     Box(
-        Modifier
+        modifier
             .dropShadow(CircleShape, Shadow(radius = 6.dp, color = color, offset = DpOffset(0.dp, 1.dp), alpha = 0.4f))
             .size(size)
             .clip(CircleShape)

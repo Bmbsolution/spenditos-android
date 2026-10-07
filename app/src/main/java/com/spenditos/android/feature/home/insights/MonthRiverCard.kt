@@ -167,12 +167,31 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                     strokeWidth = 1.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
                 )
-                insights.pins.forEach { pin ->
-                    val levelY = y(pin.level)
-                    val pinColor = if (pin.isIncome) inColor else categoryColor(pin.colorHex)
-                    drawCircle(Color.White, 6.dp.toPx(), Offset(x(pin.date), levelY))
-                    drawCircle(pinColor.copy(alpha = if (pin.isPast) 1f else 0.75f), 4.dp.toPx(), Offset(x(pin.date), levelY))
-                }
+            }
+            // iOS draws each bill and paycheck as a PinBadge (category symbol on its color, arrow for income) at
+            // its point, using the same plot geometry as the Canvas above.
+            val pinDensity = LocalDensity.current
+            insights.pins.forEach { pin ->
+                PinBadge(
+                    pin,
+                    size = 22.dp,
+                    modifier = Modifier.offset {
+                        with(pinDensity) {
+                            val inset = 8.dp.toPx()
+                            val gutter = 40.dp.toPx()
+                            val top = 26.dp.toPx()
+                            val bottom = 8.dp.toPx()
+                            val dayCount = (insights.monthEnd.toEpochDay() - insights.monthStart.toEpochDay() + 1).toFloat().coerceAtLeast(1f)
+                            val plotWidth = (constraints.maxWidth - inset - gutter).coerceAtLeast(1f)
+                            val plotHeight = (constraints.maxHeight - top - bottom).coerceAtLeast(1f)
+                            val px = inset + (pin.date.toEpochDay() - insights.monthStart.toEpochDay()).toFloat() /
+                                (dayCount - 1f).coerceAtLeast(1f) * plotWidth
+                            val py = top + plotHeight - (pin.level.toDouble() / maximum).toFloat().coerceIn(0f, 1f) * plotHeight
+                            val half = 11.dp.toPx()
+                            IntOffset((px - half).roundToInt(), (py - half).roundToInt())
+                        }
+                    },
+                )
             }
             Column(
                 Modifier.align(Alignment.TopEnd).padding(top = 26.dp, bottom = 8.dp, end = 2.dp).width(36.dp).fillMaxHeight(),

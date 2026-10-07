@@ -3,6 +3,7 @@ package com.spenditos.android.feature.home.insights
 import com.spenditos.android.feature.home.CashFlowStatus
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
+import com.spenditos.android.ui.components.CategoryIcons
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -115,7 +116,8 @@ data class HomeInsights(
                         amount = CashFlowStatus.cashAmount(transaction.amount),
                         isIncome = income,
                         isPast = transactionDay <= today,
-                        symbol = category?.icon ?: DEFAULT_SYMBOL,
+                        // The iOS symbol name for the category (IconMapper.sfSymbolName), not the stored emoji.
+                        symbol = CategoryIcons.sfSymbolName(category?.icon, category?.name),
                         colorHex = category?.color,
                         level = (if (income) inByDay else outByDay)[transactionDay] ?: BigDecimal.ZERO,
                     )
@@ -149,7 +151,7 @@ data class HomeInsights(
                 val category = sampleByCategory[largest.key]?.let { categoryById[it.categoryId] }
                 TopCategory(
                     name = category?.name ?: "Other",
-                    symbol = category?.icon ?: DEFAULT_SYMBOL,
+                    symbol = CategoryIcons.sfSymbolName(category?.icon, category?.name),
                     colorHex = category?.color,
                     amount = largest.value,
                     share = largest.value.divide(everydayTotal, SHARE_SCALE, RoundingMode.HALF_UP),
@@ -170,6 +172,5 @@ data class HomeInsights(
             )
         }
 
-        private const val DEFAULT_SYMBOL = "circle.fill"
     }
 }
