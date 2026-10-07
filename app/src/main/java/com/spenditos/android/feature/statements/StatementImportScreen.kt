@@ -147,7 +147,7 @@ fun StatementImportScreen(onBack: () -> Unit) {
                                 Text("Try again to rebuild the preview.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("statementImport.preview.waiting"))
                             }
                         }
-                        StatementImportStep.IMPORTING -> ImportingStep(showBackHint = state.backBlockedHint, modifier = Modifier.weight(1f))
+                        StatementImportStep.IMPORTING -> ImportingStep(modifier = Modifier.weight(1f))
                         StatementImportStep.COMPLETE -> CompleteStep(state = state, onDone = onBack, modifier = Modifier.weight(1f))
                     }
                 }
@@ -225,7 +225,6 @@ private fun ChooseFileStep(
         }
         if (offline) OfflineMessage()
         if (error != null) Text(error, color = MaterialTheme.colorScheme.error, style = IosText.footnote, modifier = Modifier.testTag("statementImport.choose.error"))
-        Text("Files must be 25 MB or smaller.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Spacer(Modifier.weight(1f))
         if (proEnabled || onUpgrade != null) {
             StatementActionButton(
@@ -235,7 +234,7 @@ private fun ChooseFileStep(
                 modifier = Modifier.fillMaxWidth().testTag(if (proEnabled) "statementImport.chooseFile" else "statementImport.seePro"),
             )
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(32.dp))
     }
 }
 
@@ -289,19 +288,12 @@ private fun ProgressCard(
 }
 
 @Composable
-private fun ImportingStep(showBackHint: Boolean, modifier: Modifier = Modifier) {
+private fun ImportingStep(modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        CircularProgressIndicator(Modifier.size(30.dp).testTag("statementImport.importing.progress"), color = SystemBlue)
+            CircularProgressIndicator(Modifier.size(30.dp).testTag("statementImport.importing.progress"), color = SystemBlue)
             Text("Importing transactions...", style = IosText.headline, color = IosColors.textPrimary)
-            Text("This can take a minute.", style = IosText.subheadline, color = IosColors.textSecondary)
-            Text(
-                if (showBackHint) "Please wait for the import to finish before leaving." else "Keep this screen open while the import finishes.",
-                style = IosText.footnote,
-                color = IosColors.textSecondary,
-                modifier = Modifier.testTag("statementImport.importing.backHint"),
-            )
         }
         Spacer(Modifier.weight(1f))
     }
@@ -310,7 +302,6 @@ private fun ImportingStep(showBackHint: Boolean, modifier: Modifier = Modifier) 
 @Composable
 private fun CompleteStep(state: StatementImportUiState, onDone: () -> Unit, modifier: Modifier = Modifier) {
     val result = state.result
-    val stats = result?.stats
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
@@ -318,21 +309,10 @@ private fun CompleteStep(state: StatementImportUiState, onDone: () -> Unit, modi
             Text("Import Complete!", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             if (result != null) {
                 Text(result.message, style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
-                ImportStatRow("Created", stats?.created ?: result.count, Modifier.testTag("statementImport.complete.created"))
-                ImportStatRow("Updated", stats?.updated ?: 0, Modifier.testTag("statementImport.complete.updated"))
-                ImportStatRow("Skipped", stats?.skipped ?: 0, Modifier.testTag("statementImport.complete.skipped"))
             }
         }
         StatementActionButton("Done", null, onDone, Modifier.testTag("statementImport.complete.done"), height = 44.dp)
         Spacer(Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun ImportStatRow(label: String, value: Int, valueModifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = IosText.subheadline, color = IosColors.textSecondary)
-        Text(value.toString(), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = valueModifier)
     }
 }
 

@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosColors
@@ -78,9 +79,9 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
         Feature(SfSymbols.icon("chart.line.uptrend.xyaxis"), "Advanced Analytics", "Daily trends, income analysis, and detailed reports", SystemBlue),
         Feature(SfSymbols.icon("arrow.triangle.2.circlepath"), "Unlimited income items and bills", "Add as many income items and bills as you need", SystemBlue),
         // Android-only Pro features remain available with the same feature-row styling.
-        Feature(SfSymbols.icon("calendar.badge.clock"), "Paycheck periods", "See how each paycheck covers what is due.", Color(0xFF3478F6)),
-        Feature(SfSymbols.icon("doc.text"), "Statement import", "Bring in a bank CSV or Excel file with the columns mapped for you.", Color(0xFF2D8B57)),
-        Feature(Icons.Outlined.Mic, "More receipt scans and voice captures", "More receipt scans and voice captures each month.", Color(0xFF8A63B2)),
+        Feature(SfSymbols.icon("calendar.badge.clock"), "Paycheck periods", "See how each paycheck covers what is due.", SystemBlue),
+        Feature(SfSymbols.icon("doc.text"), "Statement import", "Bring in a bank CSV or Excel file with the columns mapped for you.", SystemBlue),
+        Feature(Icons.Outlined.Mic, "More receipt scans and voice captures", "More receipt scans and voice captures each month.", SystemBlue),
     )
 
     Box(Modifier.fillMaxSize().background(if (isSystemInDarkTheme()) Color.Black else Color.White).statusBarsPadding()) {
@@ -108,15 +109,12 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                 }
 
                 state.error?.let {
-                    Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                    ) {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = IosText.footnote, modifier = Modifier.testTag("pro.error"))
-                        if (!state.isLoading && state.packages.isEmpty() && state.isAvailable) {
-                            TextButton(onClick = viewModel::load, modifier = Modifier.testTag("pro.retry")) { Text("Retry", style = IosText.headline, color = SystemBlue) }
-                        }
-                    }
+                    val canRetry = !state.isLoading && state.packages.isEmpty() && state.isAvailable
+                    ErrorBanner(
+                        message = it,
+                        modifier = Modifier.testTag("pro.error"),
+                        onRetry = if (canRetry) viewModel::load else null,
+                    )
                 }
 
                 when {
@@ -201,7 +199,11 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                 }
 
                 if (!state.isPro && state.isAvailable) {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        Modifier.padding(bottom = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         Text("Payment will be charged to your Google Play account at the confirmation of purchase.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                         Text("Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                         Text("Your account will be charged for renewal within 24 hours prior to the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
