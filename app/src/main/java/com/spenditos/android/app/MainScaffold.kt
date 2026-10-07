@@ -67,15 +67,17 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import com.spenditos.android.ui.components.TabItem
 import com.spenditos.android.ui.components.GradientFab
 import com.spenditos.android.ui.components.FloatingTabBar
+import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.ScopedViewModels
 import kotlinx.coroutines.launch
 
-private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
-    HOME("home", "Home", Icons.Filled.Home),
-    TRANSACTIONS("transactions", "Transactions", Icons.AutoMirrored.Filled.List),
-    PLAN("plan", "Plan", Icons.Filled.CalendarMonth),
-    REPORTS("reports", "Reports", Icons.AutoMirrored.Filled.ShowChart),
-    SETTINGS("settings", "Settings", Icons.Filled.Settings),
+/** iOS MainTabView symbols: outline when idle, filled when selected. */
+private enum class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector = icon) {
+    HOME("home", "Home", SfSymbols.icon("house"), SfSymbols.icon("house.fill")),
+    TRANSACTIONS("transactions", "Transactions", SfSymbols.icon("list.bullet"), SfSymbols.icon("list.bullet.rectangle.fill")),
+    PLAN("plan", "Plan", SfSymbols.icon("calendar"), SfSymbols.icon("calendar.badge.checkmark")),
+    REPORTS("reports", "Reports", SfSymbols.icon("chart.line.uptrend.xyaxis")),
+    SETTINGS("settings", "Settings", SfSymbols.icon("gearshape"), SfSymbols.icon("gearshape.fill")),
 }
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
@@ -201,7 +203,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 val currentRoute = Tab.entries.firstOrNull { tab -> backStack?.destination?.hierarchy?.any { it.route == tab.route } == true }?.route
                 Column(
                     Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.End,
                 ) {
                     if (currentRoute != Tab.SETTINGS.route) {
@@ -213,7 +215,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         )
                     }
                     FloatingTabBar(
-                        items = Tab.entries.map { TabItem(it.route, it.label, it.icon) },
+                        items = Tab.entries.map { TabItem(it.route, it.label, it.icon, it.selectedIcon) },
                         selectedRoute = currentRoute,
                         onSelect = { item ->
                             nav.navigate(item.route) {

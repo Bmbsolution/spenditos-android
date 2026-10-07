@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 
@@ -221,7 +222,7 @@ fun GradientFab(onClick: () -> Unit, modifier: Modifier = Modifier, glyph: Image
     ) { Icon(glyph, contentDescription = contentDescription, tint = Color.White, modifier = Modifier.size(26.dp)) }
 }
 
-data class TabItem(val route: String, val label: String, val icon: ImageVector)
+data class TabItem(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector = icon)
 
 /** The floating capsule tab bar of iOS 26: translucent surface, selected tab in a soft pill, brand tint. */
 @Composable
@@ -237,9 +238,9 @@ fun FloatingTabBar(
         modifier.fillMaxWidth().padding(horizontal = 21.dp)
             .shadow(16.dp, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.10f))
             .clip(shape)
-            .background(if (dark) Color(0xFF1C1C1E).copy(alpha = 0.985f) else Color(0xFFFBFAFE).copy(alpha = 0.985f))
+            .background(if (dark) Color(0xFF1C1C1E).copy(alpha = 0.92f) else Color(0xFFFBFAFE).copy(alpha = 0.95f))
             .border(BorderStroke(1.dp, if (dark) Color(0xFF38383A) else Color.White.copy(alpha = 0.7f)), shape)
-            .padding(horizontal = 6.dp, vertical = 6.dp),
+            .padding(horizontal = 4.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -252,13 +253,14 @@ fun FloatingTabBar(
                     .background(if (selected) (if (dark) Color(0xFF3A3A3C) else Color(0xFFE8E8ED)) else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(item) }
                     .semantics { this.selected = selected }
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 6.dp)
                     .testTag("tab.${item.route}"),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-                Text(item.label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = (-0.1).sp), color = tint, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
+                // iOS 26 tab bar: ~27pt symbols (filled when selected), 10pt semibold labels.
+                Icon(if (selected) item.selectedIcon else item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
+                Text(item.label, style = IosText.system(10, FontWeight.Medium).copy(letterSpacing = (-0.15).sp), color = tint, maxLines = 1, softWrap = false)
             }
         }
     }

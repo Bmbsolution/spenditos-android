@@ -318,7 +318,7 @@ object SfSymbols {
         "face.smiling" to Icons.Outlined.Face,
 
         // Interface symbols used across the iOS screens.
-        "calendar" to Icons.Outlined.CalendarToday,
+        "calendar" to Icons.Outlined.CalendarMonth,
         "calendar.badge.clock" to Icons.Outlined.CalendarMonth,
         "calendar.badge.checkmark" to Icons.Rounded.CalendarMonth,
         "chart.bar.fill" to Icons.Rounded.BarChart,
