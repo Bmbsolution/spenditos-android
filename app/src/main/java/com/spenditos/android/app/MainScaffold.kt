@@ -195,7 +195,12 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         onOpenPro = { nav.navigate(PRO_ROUTE) },
                     )
                 }
-                composable(PROFILE_ROUTE) { ProfileScreen(onBack = { nav.popBackStack() }) }
+                composable(PROFILE_ROUTE) {
+                    ProfileScreen(
+                        onBack = { nav.popBackStack() },
+                        onOpenChangePassword = { nav.navigate(CHANGE_PASSWORD_ROUTE) },
+                    )
+                }
                 composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
                 composable(PRO_ROUTE) { com.spenditos.android.feature.pro.ProScreen(onBack = { nav.popBackStack() }) }

@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
@@ -45,6 +48,7 @@ import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 
 @Composable
@@ -69,7 +73,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
                     state.error?.let { message ->
-                        Text(message, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("changePassword.error"))
+                        ErrorBanner(message, Modifier.testTag("changePassword.error"))
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -126,7 +130,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             ) {
                                 Icon(
-                                    SfSymbols.icon(if (requirement.isMet) "checkmark.circle.fill" else "circle"),
+                                    if (requirement.isMet) SfSymbols.icon("checkmark.circle.fill") else Icons.Outlined.Circle,
                                     contentDescription = null,
                                     tint = if (requirement.isMet) finance.income else IosColors.textTertiary,
                                     modifier = Modifier.size(18.dp),
@@ -142,17 +146,14 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     }
 
                     if (state.isOffline) Text("Check your connection and try again.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("changePassword.offline"))
-                    Box(Modifier.fillMaxWidth().padding(top = Spacing.s)) {
+                    if (state.isSaving) {
+                        SavingPill("Update Password", Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("changePassword.save"))
+                    } else {
                         PillButton(
                             text = "Update Password",
                             onClick = viewModel::changePassword,
                             enabled = state.canSave,
-                            modifier = Modifier.fillMaxWidth().testTag("changePassword.save"),
-                        )
-                        if (state.isSaving) CircularProgressIndicator(
-                            Modifier.align(Alignment.CenterStart).padding(start = 18.dp).size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("changePassword.save"),
                         )
                     }
                 }
@@ -170,6 +171,18 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
 }
 
 private data class PasswordStrengthPresentation(val label: String, val level: Int, val color: Color)
+
+@Composable
+private fun SavingPill(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier.height(52.dp).clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange.copy(alpha = 0.72f)),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+        Text(text, style = IosText.headline, color = Color.White, modifier = Modifier.padding(start = Spacing.s))
+    }
+}
 
 @Composable
 private fun PasswordLabel(text: String, style: androidx.compose.ui.text.TextStyle = IosText.subheadline, modifier: Modifier = Modifier) {
