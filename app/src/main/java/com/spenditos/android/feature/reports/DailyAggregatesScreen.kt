@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.reports
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
@@ -19,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.DailyAggregate
+import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SectionHeader
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
 import java.math.BigDecimal
@@ -43,7 +48,7 @@ fun DailyAggregatesScreen(
     val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(topBar = { ReportsBackBar("Daily spending", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Daily Spending", onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -51,7 +56,7 @@ fun DailyAggregatesScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag("reports.daily.list"),
-                contentPadding = PaddingValues(horizontal = Spacing.screen, vertical = Spacing.m),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 item {
@@ -74,20 +79,30 @@ fun DailyAggregatesScreen(
                     } else if (!state.isEmpty) {
                         item { DailySummaryCard(state, locale) }
                         item {
-                            Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                    Text("Daily trend", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                    Text("Spending Trend", style = MaterialTheme.typography.titleLarge)
                                     DailyExpenseChart(
                                         state.aggregates,
                                         state.aggregates.indices.map(viewModel::movingAverageAt),
                                         state.summary.averageDailyExpense ?: BigDecimal.ZERO,
+                                        state.currency,
                                     )
                                 }
                             }
                         }
-                        item { Text("Daily breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) }
-                        state.aggregates.forEach { aggregate ->
-                            item(key = aggregate.date.toString()) { DailyAggregateRow(aggregate, state, locale) }
+                        item {
+                            Column {
+                                SectionHeader("Daily Breakdown", Modifier.offset(x = -Spacing.screen))
+                                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                    state.aggregates.forEachIndexed { index, aggregate ->
+                                        DailyAggregateRow(aggregate, state, locale)
+                                        if (index != state.aggregates.lastIndex) {
+                                            HorizontalDivider(Modifier.padding(start = 66.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -100,16 +115,15 @@ fun DailyAggregatesScreen(
 private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
     val finance = LocalFinanceColors.current
     val summary = state.summary
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("reports.daily.summary")) {
+    GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.daily.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(Modifier.testTag("reports.daily.summary.incomeExpenses"), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                 SummaryValue("Income", Money.format(summary.totalIncome.toDouble(), state.currency), finance.income, Modifier.weight(1f))
                 SummaryValue("Expenses", Money.format(summary.totalExpenses.toDouble(), state.currency), finance.expense, Modifier.weight(1f))
             }
             Row(Modifier.testTag("reports.daily.summary.highLow"), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                SummaryValue("Avg/day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                SummaryValue("Avg/Day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
                 SummaryValue("Highest day", summary.highestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—", finance.expense, Modifier.weight(1f))
-                SummaryValue("Lowest day", summary.lowestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—", finance.income, Modifier.weight(1f))
             }
         }
     }
@@ -118,8 +132,8 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
 @Composable
 private fun SummaryValue(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
     Column(modifier) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
     }
 }
 
@@ -131,9 +145,9 @@ private fun DailyAggregateRow(aggregate: DailyAggregate, state: DailyAggregatesU
     val dayLabel = aggregate.date.format(DateTimeFormatter.ofPattern("EEE", locale))
     val dateLabel = aggregate.date.format(DateTimeFormatter.ofPattern("MMM d", locale))
     val net = BigDecimal.valueOf(aggregate.income).subtract(BigDecimal.valueOf(aggregate.expenses))
-    Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().testTag("reports.daily.row.${aggregate.date}")) {
+    Column(Modifier.fillMaxWidth().testTag("reports.daily.row.${aggregate.date}")) {
         Row(
-            Modifier.fillMaxWidth().padding(Spacing.m),
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -157,7 +171,14 @@ private fun DailyAggregateRow(aggregate: DailyAggregate, state: DailyAggregatesU
 
 @Composable
 private fun DayBadge(label: String, color: androidx.compose.ui.graphics.Color) {
-    Text(label, modifier = Modifier.testTag("reports.daily.badge.${label.lowercase()}"), style = MaterialTheme.typography.labelSmall, color = color)
+            Text(
+                label,
+                modifier = Modifier.testTag("reports.daily.badge.${label.lowercase()}")
+                    .clip(RoundedCornerShape(4.dp)).background(color.copy(alpha = 0.14f))
+                    .padding(horizontal = 5.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+            )
 }
 
 private fun signedMoney(value: BigDecimal, currency: String): String {

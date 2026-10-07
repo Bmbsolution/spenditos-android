@@ -12,8 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.PaycheckPeriod
+import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
@@ -49,7 +49,7 @@ fun PaycheckPeriodsScreen(
     val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(topBar = { ReportsBackBar("Paycheck periods", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Paycheck Periods", onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -57,7 +57,7 @@ fun PaycheckPeriodsScreen(
         ) {
             androidx.compose.foundation.lazy.LazyColumn(
                 modifier = Modifier.fillMaxSize().testTag("reports.paycheck.list"),
-                contentPadding = PaddingValues(horizontal = Spacing.screen, vertical = Spacing.m),
+                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 item {
@@ -94,7 +94,7 @@ fun PaycheckPeriodsScreen(
 
 @Composable
 private fun PaycheckSummaryCard(summary: PaycheckPeriodsSummary, currency: String) {
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.summary")) {
+    GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text("Period summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
@@ -132,10 +132,7 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
         isCovered -> finance.income
         else -> finance.expense
     }
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.${period.id}"),
-    ) {
+    GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.${period.id}")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(Modifier.testTag("reports.paycheck.period.heading.${period.id}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -148,16 +145,16 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
                 }
                 Text(
                     text = statusText,
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(statusColor.copy(alpha = 0.14f)).padding(horizontal = Spacing.s, vertical = Spacing.xs),
+                    modifier = Modifier.clip(CircleShape).background(statusColor.copy(alpha = 0.14f)).padding(horizontal = Spacing.m, vertical = Spacing.xs),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = statusColor,
                 )
             }
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(finance.income.copy(alpha = 0.22f))) {
+            Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(finance.income.copy(alpha = 0.22f))) {
                 Box(
                     Modifier.fillMaxWidth(viewModel.expenseRatio(period)).height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)).background(if (isCovered) finance.income else finance.expense),
+                        .clip(CircleShape).background(if (isCovered) finance.income else finance.expense),
                 )
             }
             FlowRow(horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.amounts.${period.id}")) {
