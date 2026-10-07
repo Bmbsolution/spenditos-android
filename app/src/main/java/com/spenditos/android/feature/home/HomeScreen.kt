@@ -88,7 +88,7 @@ fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSe
                     .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 130.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
-                GreetingHeader(state.today)
+                GreetingHeader(state.today, locale)
                 if (state.isLoading) {
                     Box(Modifier.fillMaxWidth().padding(vertical = 56.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(Modifier.testTag("home.loading"))
@@ -213,7 +213,7 @@ private fun EmptyHomeState() {
 
 /** "THURSDAY, OCTOBER 1" over a large "Good morning" (iOS Home header). */
 @Composable
-private fun GreetingHeader(today: LocalDate) {
+private fun GreetingHeader(today: LocalDate, locale: Locale) {
     val hour = java.time.LocalTime.now().hour
     val greeting = when {
         hour < 12 -> "Good morning"
@@ -222,7 +222,7 @@ private fun GreetingHeader(today: LocalDate) {
     }
     Column(Modifier.fillMaxWidth().padding(top = Spacing.s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())).uppercase(),
+            today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale)).uppercase(),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp,
