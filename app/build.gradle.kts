@@ -78,6 +78,8 @@ android {
                 buildConfigField("String", "CLIENT_CONFIG_VERSION", quoted(cfg.getProperty("CLIENT_CONFIG_VERSION", "unset")))
                 buildConfigField("boolean", "SHOW_ENV_BADGE", cfg.getProperty("SHOW_ENV_BADGE", "true"))
                 buildConfigField("boolean", "IS_HARNESS", harness.toString())
+                // RevenueCat public SDK key for Android (Play); blank keeps purchases off (owner-provided).
+                buildConfigField("String", "REVENUECAT_API_KEY", quoted(cfg.getProperty("REVENUECAT_API_KEY", "")))
                 buildConfigField("String", "HARNESS_AUTH_TOKEN", quoted(if (harness) cfg.getProperty("HARNESS_AUTH_TOKEN", "") else ""))
                 if (env != "prod") applicationIdSuffix = ".$env"
                 resValue("string", "app_name", if (env == "prod") "Spenditos" else "Spenditos ${cfg.getProperty("APP_ENV_NAME", env)}")
@@ -161,6 +163,7 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.revenuecat.purchases)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
