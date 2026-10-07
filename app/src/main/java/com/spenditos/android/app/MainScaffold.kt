@@ -135,6 +135,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     HomeScreen(
                         onReviewPlan = toPlan,
                         onAddIncome = toPlan,
+                        onLogFirst = { showAdd = true },
                         onSeeAll = {
                             nav.navigate(Tab.TRANSACTIONS.route) {
                                 popUpTo(nav.graph.findStartDestination().id) { saveState = true }

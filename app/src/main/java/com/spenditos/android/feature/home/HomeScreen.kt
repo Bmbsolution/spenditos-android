@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,12 +32,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,7 +73,12 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 @Composable
-fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSeeAll: () -> Unit = {}) {
+fun HomeScreen(
+    onReviewPlan: () -> Unit = {},
+    onAddIncome: () -> Unit = {},
+    onSeeAll: () -> Unit = {},
+    onLogFirst: () -> Unit = {},
+) {
     val viewModel: HomeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val locale = LocalConfiguration.current.locales[0]
@@ -72,13 +87,17 @@ fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSe
 
     val hero = state.status?.let { FinancialWeather.from(it.state) }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        val wash = (hero?.glow ?: IosColors.spendOrange).copy(alpha = 0.26f)
         Box(
-            Modifier.fillMaxWidth().height(480.dp).background(
-                Brush.radialGradient(
-                    colors = listOf((hero?.glow ?: IosColors.spendOrange).copy(alpha = 0.26f), Color.Transparent),
-                    radius = 420f,
-                ),
-            ),
+            Modifier.fillMaxWidth().height(480.dp).drawWithContent {
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(wash, Color.Transparent),
+                        center = Offset(size.width / 2f, 0f),
+                        radius = 420f,
+                    ),
+                )
+            },
         )
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
@@ -90,12 +109,27 @@ fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSe
                     .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 130.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.l),
             ) {
-                GreetingHeader(state.today, locale)
                 if (state.isLoading) {
+                    GreetingHeader(state.today, locale)
                     Box(Modifier.fillMaxWidth().padding(vertical = 56.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(Modifier.testTag("home.loading"))
                     }
                 } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        GreetingHeader(state.today, locale)
+                        state.status?.let { status ->
+                            PulseHero(
+                                status = status,
+                                history = state.history,
+                                currency = state.currency,
+                                locale = locale,
+                                onSeeMath = { showMath = true },
+                                onOpenHealth = { showHealth = true },
+                                onReviewPlan = onReviewPlan,
+                                onAddIncome = onAddIncome,
+                            )
+                        }
+                    }
                     if (state.showingSavedData) {
                         Text(
                             "Showing saved data",
@@ -113,34 +147,23 @@ fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSe
                         )
                     }
 
-                    state.status?.let { status ->
-                        PulseHero(
-                            status = status,
-                            history = state.history,
-                            currency = state.currency,
-                            locale = locale,
-                            onSeeMath = { showMath = true },
-                            onOpenHealth = { showHealth = true },
-                            onReviewPlan = onReviewPlan,
-                            onAddIncome = onAddIncome,
-                        )
-                    }
-
                     attentionBill(state)?.let { bill ->
                         AttentionRow(bill, state.today, state.currency, locale, onReviewPlan)
                     }
 
-                    if (state.isEmpty) EmptyHomeState()
+                    if (state.isEmpty) EmptyHomeState(onLogFirst)
 
                     state.insights?.let { insights ->
                         MonthRiverCard(insights, hero?.gradient?.getOrNull(1) ?: IosColors.spendOrange, state.currency, locale)
-                        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            NextBillTile(insights.nextBill, state.today, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
-                            WeekTile(insights.week, hero?.glow ?: IosColors.spendOrange, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
-                        }
-                        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            TopCategoryTile(insights.topCategory, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
-                            com.spenditos.android.feature.progress.StreakTile(Modifier.weight(1f).fillMaxHeight())
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                NextBillTile(insights.nextBill, state.today, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                                WeekTile(insights.week, hero?.gradient?.getOrNull(1) ?: IosColors.spendOrange, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                            }
+                            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                TopCategoryTile(insights.topCategory, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                                com.spenditos.android.feature.progress.StreakTile(Modifier.weight(1f).fillMaxHeight())
+                            }
                         }
                     }
 
@@ -211,11 +234,11 @@ private fun AttentionRow(
 }
 
 @Composable
-private fun EmptyHomeState() {
+private fun EmptyHomeState(onLogFirst: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(vertical = Spacing.s).testTag("home.empty"),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Icon(
             SfSymbols.icon("chart.line.uptrend"),
@@ -223,12 +246,35 @@ private fun EmptyHomeState() {
             tint = IosColors.spendOrange.copy(alpha = 0.75f),
             modifier = Modifier.size(67.dp),
         )
-        Text("Build your financial picture", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
-        Text(
-            "Add your first transaction to see cash flow, category signals, and habit progress in one place.",
-            style = IosText.callout,
-            color = IosColors.textSecondary,
-        )
+        Column(
+            Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Text(
+                "Build your financial picture",
+                style = IosText.title2.w(FontWeight.Bold),
+                color = IosColors.textPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                "Add your first transaction to see cash flow, category signals, and habit progress in one place.",
+                style = IosText.callout,
+                color = IosColors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Row(
+            Modifier.clip(RoundedCornerShape(16.dp)).background(IosColors.spendOrange)
+                .clickable(role = Role.Button, onClick = onLogFirst)
+                .padding(horizontal = 32.dp, vertical = 16.dp)
+                .testTag("home.empty.log"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Icon(Icons.Rounded.AddCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
+            Text("Log First Transaction", style = IosText.headline, color = Color.White)
+        }
     }
 }
 
@@ -250,8 +296,14 @@ private fun GreetingHeader(today: LocalDate, locale: Locale) {
             Icon(
                 SfSymbols.icon(symbol),
                 contentDescription = null,
-                tint = colors.first(),
-                modifier = Modifier.size((22 * 1.2 * 0.75).dp),
+                tint = Color.Unspecified,
+                modifier = Modifier.size((22 * 1.2 * 0.75).dp)
+                    // SrcIn needs its own layer, or the gradient fills the whole box.
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                    drawContent()
+                    drawRect(Brush.linearGradient(colors), blendMode = BlendMode.SrcIn)
+                },
             )
             Text(
                 today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale)).uppercase(locale),

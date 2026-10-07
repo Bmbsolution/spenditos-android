@@ -1,6 +1,7 @@
 package com.spenditos.android.feature.home.insights
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -176,7 +180,12 @@ fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Lo
 internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp = 22.dp) {
     val color = if (pin.isIncome) IosColors.income else categoryColor(pin.colorHex)
     Box(
-        Modifier.size(size).clip(CircleShape).background(color.copy(alpha = if (pin.isPast) 1f else 0.75f)),
+        Modifier
+            .dropShadow(CircleShape, Shadow(radius = 6.dp, color = color, offset = DpOffset(0.dp, 1.dp), alpha = 0.4f))
+            .size(size)
+            .clip(CircleShape)
+            .background(color.copy(alpha = if (pin.isPast) 1f else 0.75f))
+            .border(if (size > 18.dp) 2.dp else 1.5.dp, Color.White, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

@@ -15,8 +15,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.NorthEast
+import androidx.compose.material.icons.outlined.SouthEast
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -65,9 +69,9 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
         else -> "Critical"
     }
     val (trendIcon, trendColor, trendLabel) = when (breakdown.trend) {
-        SpendingTrend.INCREASING -> Triple("arrow.up.right", IosColors.expense, "Increasing")
-        SpendingTrend.STABLE -> Triple("minus", IosColors.warning, "Stable")
-        SpendingTrend.DECREASING -> Triple("arrow.down.right", IosColors.income, "Decreasing")
+        SpendingTrend.INCREASING -> Triple<ImageVector, Color, String>(Icons.Outlined.NorthEast, IosColors.expense, "Increasing")
+        SpendingTrend.STABLE -> Triple(SfSymbols.icon("minus"), IosColors.warning, "Stable")
+        SpendingTrend.DECREASING -> Triple(Icons.Outlined.SouthEast, IosColors.income, "Decreasing")
     }
     val trendScore = when (breakdown.trend) {
         SpendingTrend.DECREASING -> 1.0
@@ -84,7 +88,7 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
             Text("Health Score", style = IosText.headline, color = IosColors.textPrimary)
 
             Column(
-                Modifier.fillMaxWidth().then(glassCardModifier(shadowAlpha = 0.12f)).padding(vertical = Spacing.l),
+                Modifier.fillMaxWidth().then(glassCardModifier(shadowAlpha = 0.12f)).padding(vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
@@ -114,7 +118,7 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
                 Text("Score Breakdown", style = IosText.headline, color = IosColors.textPrimary)
-                FactorCard("Savings Rate", "Income left after expenses", "80%", breakdown.savingsRate, null, "banknote", IosColors.income)
+                FactorCard("Savings Rate", "Income left after expenses", "80%", breakdown.savingsRate, null, SfSymbols.icon("banknote"), IosColors.income)
                 FactorCard("Spending Trend", "Recent spending direction", "20%", trendScore, trendLabel, trendIcon, trendColor)
             }
 
@@ -149,7 +153,7 @@ private fun FactorCard(
     weight: String,
     value: Double,
     displayValue: String?,
-    icon: String,
+    icon: ImageVector,
     iconColor: Color,
 ) {
     Column(
@@ -161,7 +165,7 @@ private fun FactorCard(
                 Modifier.size(34.dp).clip(RoundedCornerShape(Radius.s)).background(iconColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(SfSymbols.icon(icon), contentDescription = null, tint = iconColor, modifier = Modifier.size(19.2.dp))
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(19.2.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -177,8 +181,8 @@ private fun FactorCard(
             }
             Text(displayValue ?: "${(value * 100).roundToInt()}%", style = IosText.callout.w(FontWeight.Bold), color = iconColor)
         }
-        Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.06f))) {
-            Box(Modifier.fillMaxWidth(value.toFloat().coerceIn(0f, 1f)).height(6.dp).clip(CircleShape).background(iconColor))
+        Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.06f))) {
+            Box(Modifier.fillMaxWidth(value.toFloat().coerceIn(0f, 1f)).height(8.dp).clip(CircleShape).background(iconColor))
         }
     }
 }

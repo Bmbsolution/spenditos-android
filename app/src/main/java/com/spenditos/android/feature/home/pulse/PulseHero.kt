@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.outlined.ContentCut
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +36,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -42,6 +48,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Shadow as TextShadow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -152,9 +159,13 @@ fun PulseHero(
                         letterSpacing = 0.8.sp,
                     )
                     val headline = money(status.leftAfterBills.abs())
+                    val shadowBlur = with(LocalDensity.current) { 8.dp.toPx() }
+                    val shadowY = with(LocalDensity.current) { 4.dp.toPx() }
                     Text(
                         if (short) "−$headline" else headline,
-                        style = IosText.rounded(40, FontWeight.ExtraBold),
+                        style = IosText.rounded(40, FontWeight.ExtraBold).copy(
+                            shadow = TextShadow(Color.Black.copy(alpha = 0.18f), Offset(0f, shadowY), shadowBlur),
+                        ),
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -172,7 +183,7 @@ fun PulseHero(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(
-                            SfSymbols.icon(if (short) "scissors" else "sparkles"),
+                            if (short) Icons.Outlined.ContentCut else SfSymbols.icon("sparkles"),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(14.4.dp),
@@ -209,14 +220,14 @@ fun PulseHero(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(SfSymbols.icon("list.bullet.rectangle.fill"), contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
+            Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
             Spacer(Modifier.width(6.dp))
             Text("See the math", style = IosText.caption.w(FontWeight.Bold), color = Color.White.copy(alpha = 0.95f))
         }
 
         when (status.state) {
-            CashFlowStatus.State.OVER -> HeroButton("Review your plan", "slider.horizontal.3", onReviewPlan, "home.reviewPlan", weather.gradient.last())
-            CashFlowStatus.State.SETUP -> HeroButton("Add income", "plus", onAddIncome, "home.addIncome", weather.gradient.last())
+            CashFlowStatus.State.OVER -> HeroButton("Review your plan", Icons.Outlined.Tune, onReviewPlan, "home.reviewPlan", weather.gradient.last())
+            CashFlowStatus.State.SETUP -> HeroButton("Add income", SfSymbols.icon("plus"), onAddIncome, "home.addIncome", weather.gradient.last())
             else -> Unit
         }
 
@@ -286,14 +297,14 @@ private fun StatsStrip(items: List<Triple<String, String, String>>) {
 }
 
 @Composable
-private fun HeroButton(label: String, icon: String, onClick: () -> Unit, tag: String, ink: Color) {
+private fun HeroButton(label: String, icon: ImageVector, onClick: () -> Unit, tag: String, ink: Color) {
     Row(
         Modifier.clip(CircleShape).background(Color.White).clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = Spacing.m).height(40.dp).testTag(tag),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(SfSymbols.icon(icon), contentDescription = null, tint = ink, modifier = Modifier.size(19.2.dp))
+        Icon(icon, contentDescription = null, tint = ink, modifier = Modifier.size(19.2.dp))
         Text(label, style = IosText.callout.w(FontWeight.SemiBold), color = ink)
     }
 }
