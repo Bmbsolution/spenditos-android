@@ -56,8 +56,11 @@ class ReceiptImageProcessor(
     override fun process(uri: Uri, destination: File) {
         try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            // decodeStream returns null when only bounds are requested, so the open check must not
+            // depend on its result (on a real device this made every image "unopenable").
+            val boundsStream = context.contentResolver.openInputStream(uri)
                 ?: throw IllegalArgumentException("Receipt image could not be opened")
+            boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
             require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Receipt image could not be decoded" }
 
             val orientation = context.contentResolver.openInputStream(uri)?.use { ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL) }

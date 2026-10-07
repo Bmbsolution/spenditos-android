@@ -21,7 +21,6 @@ import com.spenditos.android.data.model.StatementPreviewResult
 import com.spenditos.android.data.model.categoryNameFor
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
-import java.math.BigDecimal
 
 @Composable
 fun PreviewStep(
@@ -29,6 +28,7 @@ fun PreviewStep(
     isWorking: Boolean,
     onImport: () -> Unit,
     modifier: Modifier = Modifier,
+    currency: String = "USD",
 ) {
     val finance = LocalFinanceColors.current
     val incomeCount = preview.transactions.count { it.amount > 0 }
@@ -55,7 +55,7 @@ fun PreviewStep(
                     Column(Modifier.fillMaxWidth().testTag("statementImport.preview.row.$index").padding(vertical = Spacing.xs)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(row.importDescription, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                            Text(formatStatementAmount(row.amount), color = color, style = MaterialTheme.typography.titleSmall)
+                            Text(formatStatementAmount(row.amount, currency), color = color, style = MaterialTheme.typography.titleSmall)
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(row.date.toString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -83,5 +83,6 @@ private fun SummaryCard(label: String, count: Int, modifier: Modifier = Modifier
     }
 }
 
-private fun formatStatementAmount(amount: Double): String =
-    BigDecimal.valueOf(amount).stripTrailingZeros().toPlainString()
+/** Signed money in the account currency (positive = income, negative = expense). */
+private fun formatStatementAmount(amount: Double, currency: String): String =
+    com.spenditos.android.ui.components.Money.signed(kotlin.math.abs(amount), isIncome = amount > 0, currencyCode = currency)

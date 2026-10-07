@@ -123,7 +123,7 @@ fun StatementImportScreen(onBack: () -> Unit) {
                         ErrorCardIfNeeded(state.error, state.isOffline, state.canRetry, viewModel::retry)
                         val preview = state.preview
                         if (preview != null) {
-                            PreviewStep(preview, state.isWorking, { showImportConfirmation = true }, Modifier.weight(1f))
+                            PreviewStep(preview, state.isWorking, { showImportConfirmation = true }, Modifier.weight(1f), state.currency)
                         } else if (state.isWorking) {
                             LoadingCard("Preparing preview…", "statementImport.preview.loading")
                         } else {

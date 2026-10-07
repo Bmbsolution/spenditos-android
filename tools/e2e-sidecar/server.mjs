@@ -502,6 +502,14 @@ async function handleRequest(req, res, server) {
   const analysisMatch = /^\/transactions\/analysis\/([^/]+)$/.exec(path);
   if (analysisMatch && req.method === 'GET') return analysisStatus(res, decodeURIComponent(analysisMatch[1]), account);
 
+  // The harness has no analysis log, so a bulk save that references a sidecar analysisId would
+  // fail there; drop the link (the real server only uses it for audit) and forward the rest.
+  if (path === '/transactions/bulk' && req.method === 'POST') {
+    const payload = await readJson(req);
+    if (payload && !Array.isArray(payload) && 'analysisId' in payload) delete payload.analysisId;
+    return sendProxyJson(res, await proxyJson(reqFromBody(req, payload), account.id));
+  }
+
   return proxyToHarness(req, res, account.id);
 }
 

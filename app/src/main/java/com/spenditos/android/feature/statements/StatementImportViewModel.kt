@@ -52,6 +52,7 @@ data class StatementImportUiState(
     val importRequestSent: Boolean = false,
     val backBlockedHint: Boolean = false,
     val canRetry: Boolean = false,
+    val currency: String = "USD",
 )
 
 /** Applies the iOS picker rule: one amount column or the debit/credit pair. */
@@ -102,6 +103,7 @@ class StatementImportViewModel @Inject constructor(
             _state.value = StatementImportUiState()
             savedStateHandle[KEY_USER] = owner
         }
+        viewModelScope.launch { settings.currency().collect { code -> _state.update { it.copy(currency = code) } } }
         checkSettings()
     }
 

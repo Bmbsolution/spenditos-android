@@ -131,6 +131,8 @@ class ReceiptScanViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
+                // Class name only: no image, URL or server text reaches the log.
+                android.util.Log.w("ReceiptScan", "scan failed: ${error::class.java.simpleName}")
                 val quotaUsed = error is ApiError.Server && error.status == 403 && error.serverMessage == QUOTA_EXHAUSTED
                 val offline = error is ApiError.Network
                 _state.value = ReceiptScanUiState(
