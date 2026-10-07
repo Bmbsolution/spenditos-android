@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.model.CategorySummary
 import com.spenditos.android.data.model.DashboardData
+import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.data.recurring.RecurringActions
 import com.spenditos.android.data.reports.ReportsDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -41,6 +43,8 @@ data class ReportsHubUiState(
     val currency: String = "USD",
     val isRefreshing: Boolean = false,
     val loadStatus: ReportLoadStatus? = null,
+    /** Active income and bills, excluding legacy "variable" estimates (iOS activeRecurringTemplatesCount). */
+    val activeRecurringCount: Int = 0,
 ) {
     val isLoading: Boolean get() = dashboard == null && loadStatus == null
     val isEmpty: Boolean get() = dashboard != null && dashboard.totalTransactionCount == 0
@@ -62,9 +66,13 @@ internal fun categorySlices(categories: List<CategorySummary>): List<ReportCateg
     return if (rest.signum() > 0) top + ReportCategorySlice("everything-else", "Everything else", rest, true) else top
 }
 
+internal fun activeRecurringCount(templates: List<RecurringTemplate>): Int =
+    templates.count { it.isActive && !it.type.equals("variable", ignoreCase = true) }
+
 @HiltViewModel
 class ReportsHubViewModel @Inject constructor(
     private val reports: ReportsDataSource,
+    private val recurring: RecurringActions? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ReportsHubUiState())
     val state: StateFlow<ReportsHubUiState> = _state.asStateFlow()
@@ -72,6 +80,13 @@ class ReportsHubViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             reports.currency().collect { currency -> _state.update { it.copy(currency = currency) } }
+        }
+        recurring?.let { source ->
+            viewModelScope.launch {
+                source.observe().collect { templates ->
+                    _state.update { state -> state.copy(activeRecurringCount = activeRecurringCount(templates)) }
+                }
+            }
         }
     }
 
@@ -83,6 +98,8 @@ class ReportsHubViewModel @Inject constructor(
         _state.update { it.copy(isRefreshing = true, loadStatus = null) }
         viewModelScope.launch {
             try {
+                // Best effort: the takeaway count only; the report itself does not depend on it.
+                recurring?.let { source -> runCatching { source.refresh() }.onFailure { if (it is CancellationException) throw it } }
                 val result = reports.getDashboard(month, month.withDayOfMonth(month.lengthOfMonth()))
                 _state.update { it.copy(dashboard = result, isRefreshing = false, loadStatus = null) }
             } catch (error: CancellationException) {

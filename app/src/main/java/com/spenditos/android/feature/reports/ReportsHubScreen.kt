@@ -118,6 +118,7 @@ fun ReportsHubScreen(
                                     locale,
                                     viewModel::previousMonth,
                                     viewModel::nextMonth,
+                                    state.activeRecurringCount,
                                 )
                             }
                         } else {
@@ -128,6 +129,7 @@ fun ReportsHubScreen(
                                 locale,
                                 viewModel::previousMonth,
                                 viewModel::nextMonth,
+                                state.activeRecurringCount,
                             )
                         }
                     }
@@ -214,6 +216,7 @@ private fun MonthlyReviewCard(
     locale: Locale,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    activeRecurringCount: Int,
 ) {
     val finance = LocalFinanceColors.current
     val summary = data.summary ?: return
@@ -270,8 +273,16 @@ private fun MonthlyReviewCard(
                 ReportTakeawayRow(
                     symbol = "arrow.triangle.2.circlepath",
                     tint = IosColors.spendOrange,
-                    title = "Recurring obligations are not mapped",
-                    detail = "Add regular bills or income to improve forecasts.",
+                    title = if (activeRecurringCount == 0) {
+                        "Recurring obligations are not mapped"
+                    } else {
+                        "$activeRecurringCount recurring obligation${if (activeRecurringCount == 1) "" else "s"} mapped"
+                    },
+                    detail = if (activeRecurringCount == 0) {
+                        "Add regular bills or income to improve forecasts."
+                    } else {
+                        "Review your bills and income to keep projected cash flow trustworthy."
+                    },
                 )
             }
         }
