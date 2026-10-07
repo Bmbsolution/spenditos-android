@@ -38,6 +38,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -99,6 +100,36 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `insights use the same Room month and agree with the status total`() = runTest {
+        db.categories().insert(
+            listOf(
+                category("income", "Income", isIncome = true),
+                category("housing", "Housing"),
+                category("food", "Food"),
+            ),
+        )
+        server.enqueue(
+            MockResponse(body = page(
+                tx("pay", "income", "Income", "2026-10-01", 2_000.0, "income-template"),
+                tx("rent", "housing", "Rent", "2026-10-01", 1_000.0, "rent-template"),
+                tx("coffee", "food", "Coffee", "2026-10-01", 30.0),
+                tx("dentist", "food", "Dentist", "2026-10-12", 120.0),
+                tx("pay-2", "income", "Income", "2026-10-15", 2_000.0, "income-template"),
+            )),
+        )
+        viewModel = createViewModel()
+
+        val state = viewModel.state.first { it.hasLoaded && it.transactionCount == 5 && it.insights != null }
+        val insights = state.insights!!
+
+        assertEquals("dentist", insights.nextBill?.id)
+        assertEquals("Food", insights.topCategory?.name)
+        assertEquals(30.0, insights.weekTotal.toDouble(), 0.0)
+        assertEquals(state.status!!.leftAfterBills.toDouble(), insights.monthEndGap.toDouble(), 0.0)
+        assertEquals("/transactions", server.takeRequest().url.encodedPath)
+    }
+
+    @Test
     fun `client error shows a refresh error after Room remains available`() = runTest {
         db.categories().insert(listOf(category("food", "Food")))
         server.enqueue(MockResponse(code = 400, body = """{"error":"Invalid query"}"""))
@@ -109,6 +140,7 @@ class HomeViewModelTest {
         assertEquals("Couldn't refresh Home. Pull down to try again.", state.refreshError)
         assertFalse(state.showingSavedData)
         assertTrue(state.status != null)
+        assertNull(state.insights)
         assertEquals("/transactions", server.takeRequest().url.encodedPath)
     }
 
@@ -131,6 +163,7 @@ class HomeViewModelTest {
 
         assertTrue(state.isOffline)
         assertEquals(4.5, state.status!!.everyday.toDouble(), 0.0)
+        assertEquals(4.5, state.insights!!.monthOut.toDouble(), 0.0)
         assertEquals(0, server.requestCount)
     }
 

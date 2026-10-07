@@ -39,6 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.feature.home.insights.MonthRiverCard
+import com.spenditos.android.feature.home.insights.NextBillTile
+import com.spenditos.android.feature.home.insights.TopCategoryTile
+import com.spenditos.android.feature.home.insights.WeekTile
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
 import java.math.RoundingMode
@@ -94,6 +98,13 @@ fun HomeScreen() {
                         locale = locale,
                         onSeeMath = { showMath = true },
                     )
+                }
+
+                state.insights?.let { insights ->
+                    MonthRiverCard(insights, state.currency, locale)
+                    NextBillTile(insights.nextBill, state.today, state.currency, locale)
+                    if (insights.weekTotal.signum() > 0) WeekTile(insights.week, state.currency, locale)
+                    insights.topCategory?.let { TopCategoryTile(it, state.currency, locale) }
                 }
 
                 com.spenditos.android.feature.progress.StreakChip()

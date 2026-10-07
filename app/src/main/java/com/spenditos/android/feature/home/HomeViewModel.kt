@@ -11,6 +11,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.transactions.TransactionRepository
 import com.spenditos.android.data.user.UserSettingsActions
+import com.spenditos.android.feature.home.insights.HomeInsights
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,7 @@ data class HomeUiState(
     val transactionCount: Int = 0,
     val status: CashFlowStatus? = null,
     val breakdown: CashFlowBreakdown? = null,
+    val insights: HomeInsights? = null,
     val isRefreshing: Boolean = false,
     val hasLoaded: Boolean = false,
     val isOffline: Boolean = false,
@@ -83,6 +85,7 @@ class HomeViewModel @Inject constructor(
             transactionCount = models.size,
             status = status,
             breakdown = CashFlowBreakdown.make(models, data.categories, today),
+            insights = models.takeIf { it.isNotEmpty() }?.let { HomeInsights.make(it, data.categories, today) },
             isRefreshing = settingsState.refresh.isRefreshing,
             hasLoaded = settingsState.refresh.hasLoaded,
             isOffline = settingsState.refresh.isOffline,
