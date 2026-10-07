@@ -189,9 +189,10 @@ class TransactionListViewModel @Inject constructor(
         }
     }
 
-    fun setCustomStart(date: LocalDate) = criteria.update { it.copy(customStart = date) }
+    /** A start after the end moves the end with it (and the reverse), so the range is never empty by accident. */
+    fun setCustomStart(date: LocalDate) = criteria.update { it.copy(customStart = date, customEnd = maxOf(it.customEnd, date)) }
 
-    fun setCustomEnd(date: LocalDate) = criteria.update { it.copy(customEnd = date) }
+    fun setCustomEnd(date: LocalDate) = criteria.update { it.copy(customEnd = date, customStart = minOf(it.customStart, date)) }
 
     fun applyQuickToday() {
         val today = LocalDate.now()
