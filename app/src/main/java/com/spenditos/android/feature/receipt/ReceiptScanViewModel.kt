@@ -44,6 +44,7 @@ fun ReceiptResult.toPrefill() = AddTransactionPrefill(
     date = date,
     categoryId = categoryId,
     categoryHint = categoryHint,
+    source = "Receipt scan",
 )
 
 @HiltViewModel

@@ -112,6 +112,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
     }
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
+    var editTarget by remember { mutableStateOf<com.spenditos.android.feature.transactions.EditTarget?>(null) }
     val onTab = backStack?.destination?.route in Tab.entries.map { it.route }
 
     Scaffold(
@@ -148,6 +149,16 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) },
                         onOpenExport = { nav.navigate(EXPORT_ROUTE) },
                         onAdd = { showAdd = true },
+                        onEdit = { target ->
+                            receiptPrefill = null
+                            editTarget = target
+                            showAdd = true
+                        },
+                        onDuplicate = { copy ->
+                            editTarget = null
+                            receiptPrefill = copy
+                            showAdd = true
+                        },
                     )
                 }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
@@ -167,6 +178,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     ReceiptScanScreen(
                         onResult = { values ->
                             receiptPrefill = values
+                            editTarget = null
                             nav.popBackStack()
                             showAdd = true
                         },
@@ -263,21 +275,28 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 onDismiss = {
                     showAdd = false
                     receiptPrefill = null
+                    editTarget = null
                 },
                 onDone = { message ->
                     showAdd = false
                     receiptPrefill = null
+                    editTarget = null
                     scope.launch { snackbar.showSnackbar(message) }
                 },
                 onScanReceipt = {
                     showAdd = false
                     nav.navigate(RECEIPT_SCAN_ROUTE)
                 },
-                onCapture = {
+                onVoice = {
+                    showAdd = false
+                    nav.navigate(captureRoute("speak"))
+                },
+                onSentence = {
                     showAdd = false
                     nav.navigate(captureRoute("type"))
                 },
                 prefill = receiptPrefill,
+                editTarget = editTarget,
             )
         }
     }
