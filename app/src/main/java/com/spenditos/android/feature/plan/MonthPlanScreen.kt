@@ -109,7 +109,8 @@ private fun MonthPlanContent(
     LaunchedEffect(viewModel) { viewModel.load() }
     LaunchedEffect(addOneTimeRequest) {
         if (addOneTimeRequest > 0) {
-            addingOneTime = true
+            // A past month can't take new entries; drop the request instead of opening the sheet later.
+            if (!state.isPast) addingOneTime = true
             onAddOneTimeRequestHandled(addOneTimeRequest)
         }
     }

@@ -114,7 +114,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                 }
                 item {
                     Text(
-                        "Retryable connection failures also retry automatically when you reconnect. Session errors offer Sign In to Sync; validation and category errors stay here until you fix or discard them.",
+                        "Retryable connection failures also retry automatically when you reconnect. Validation and category errors stay here until you fix or discard them.",
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),

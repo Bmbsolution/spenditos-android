@@ -55,6 +55,7 @@ data class ProgressUiState(
     val challengeActionFailed: Boolean = false,
     val isUsingStreakFreeze: Boolean = false,
     val streakFreezeUsed: Boolean = false,
+    val streakFreezeFailed: Boolean = false,
     val selectedAchievement: UserAchievement? = null,
     val achievementDetail: AchievementProgressDetail? = null,
     val isLoadingAchievementDetail: Boolean = false,
@@ -164,7 +165,7 @@ class ProgressViewModel @Inject constructor(
         val streak = state.value.streak ?: return
         if (streak.streakFreezes <= 0 || state.value.isUsingStreakFreeze || state.value.streakFreezeUsed) return
         // Mark busy before launching so a double tap cannot spend two freezes.
-        _state.update { it.copy(isUsingStreakFreeze = true) }
+        _state.update { it.copy(isUsingStreakFreeze = true, streakFreezeFailed = false) }
         viewModelScope.launch {
             try {
                 val updated = repository.useStreakFreeze()
@@ -172,7 +173,8 @@ class ProgressViewModel @Inject constructor(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                // Best effort: leave the current streak in place.
+                // Leave the current streak in place and say it did not work (iOS shows the error).
+                _state.update { it.copy(streakFreezeFailed = true) }
             } finally {
                 _state.update { it.copy(isUsingStreakFreeze = false) }
             }

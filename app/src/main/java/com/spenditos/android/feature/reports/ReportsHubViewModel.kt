@@ -96,10 +96,20 @@ class ReportsHubViewModel @Inject constructor(
         if (_state.value.isRefreshing) return
         val month = _state.value.month
         _state.update { it.copy(isRefreshing = true, loadStatus = null) }
+        // Best effort and in parallel: it only feeds the takeaway count, so it must not delay the report.
+        recurring?.let { source ->
+            viewModelScope.launch {
+                try {
+                    source.refresh()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    // The count keeps its last value.
+                }
+            }
+        }
         viewModelScope.launch {
             try {
-                // Best effort: the takeaway count only; the report itself does not depend on it.
-                recurring?.let { source -> runCatching { source.refresh() }.onFailure { if (it is CancellationException) throw it } }
                 val result = reports.getDashboard(month, month.withDayOfMonth(month.lengthOfMonth()))
                 _state.update { it.copy(dashboard = result, isRefreshing = false, loadStatus = null) }
             } catch (error: CancellationException) {

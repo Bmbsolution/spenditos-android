@@ -139,7 +139,8 @@ fun ReceiptScanScreen(
                         offline = state.offline,
                         message = state.error ?: "Couldn't read that receipt. You can enter it yourself.",
                         onRetry = viewModel::retry,
-                        onManual = { viewModel.cancel(); onBack() },
+                        // iOS "Fill Manually" opens the empty add form rather than just leaving.
+                        onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
                     )
                 }
             }

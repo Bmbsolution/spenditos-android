@@ -128,6 +128,14 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                 StreakCalendarContent(state, locale, insideStreakCard = true)
                 if (streak.streakFreezes > 0) {
                     StreakFreezeButton(state.isUsingStreakFreeze, state.streakFreezeUsed, onUseFreeze)
+                    if (state.streakFreezeFailed) {
+                        Text(
+                            "Couldn't use a streak freeze. Try again.",
+                            style = IosText.footnote,
+                            color = IosColors.expense,
+                            modifier = Modifier.testTag("progress.streakFreeze.error"),
+                        )
+                    }
                 }
                 if (state.streakFailed) InlineQuietLine("Couldn't load", "progress.streak.error")
             }
