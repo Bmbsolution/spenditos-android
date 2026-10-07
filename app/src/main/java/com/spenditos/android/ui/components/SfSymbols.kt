@@ -169,6 +169,80 @@ import androidx.compose.material.icons.rounded.WbCloudy
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowCircleDown
+import androidx.compose.material.icons.outlined.ArrowCircleUp
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CallSplit
+import androidx.compose.material.icons.outlined.CenterFocusWeak
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CloudDone
+import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.ContentCut
+import androidx.compose.material.icons.outlined.CreditCardOff
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.DocumentScanner
+import androidx.compose.material.icons.outlined.DragHandle
+import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.FindInPage
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material.icons.outlined.LabelOff
+import androidx.compose.material.icons.outlined.LockReset
+import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
+import androidx.compose.material.icons.outlined.RemoveShoppingCart
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.TableChart
+import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material.icons.rounded.AcUnit
+import androidx.compose.material.icons.rounded.AddCircle
+import androidx.compose.material.icons.rounded.ArrowCircleRight
+import androidx.compose.material.icons.rounded.ArrowCircleUp
+import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.LocalOffer
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.MarkEmailUnread
+import androidx.compose.material.icons.rounded.MicOff
+import androidx.compose.material.icons.rounded.MonetizationOn
+import androidx.compose.material.icons.rounded.NorthEast
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.OfflineBolt
+import androidx.compose.material.icons.rounded.PanTool
+import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.SettingsSuggest
+import androidx.compose.material.icons.rounded.SouthEast
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Storefront
+import androidx.compose.material.icons.rounded.Tag
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -376,5 +450,82 @@ object SfSymbols {
         "cart.fill" to Icons.Rounded.ShoppingCart,
         "arrow.forward" to Icons.AutoMirrored.Outlined.ArrowForward,
         "chart.line.uptrend" to Icons.AutoMirrored.Rounded.TrendingUp,
+        "arrow.clockwise" to Icons.Rounded.Refresh,
+        "arrow.down.circle" to Icons.Outlined.ArrowCircleDown,
+        "arrow.down.doc" to Icons.Outlined.FileDownload,
+        "arrow.right.circle.fill" to Icons.Rounded.ArrowCircleRight,
+        "arrow.triangle.branch" to Icons.Outlined.CallSplit,
+        "arrow.up.circle" to Icons.Outlined.ArrowCircleUp,
+        "arrow.up.circle.fill" to Icons.Rounded.ArrowCircleUp,
+        "arrow.up.forward" to Icons.Rounded.NorthEast,
+        "arrow.down.forward" to Icons.Rounded.SouthEast,
+        "bell.badge.fill" to Icons.Rounded.NotificationsActive,
+        "bell.slash.fill" to Icons.Rounded.NotificationsOff,
+        "bolt.circle.fill" to Icons.Rounded.OfflineBolt,
+        "bookmark" to Icons.Outlined.BookmarkBorder,
+        "bookmark.fill" to Icons.Rounded.Bookmark,
+        "calendar.badge.exclamationmark" to Icons.Outlined.EventBusy,
+        "calendar.badge.plus" to Icons.Outlined.EditCalendar,
+        "camera.viewfinder" to Icons.Outlined.CenterFocusWeak,
+        "cart.badge.exclamationmark" to Icons.Outlined.RemoveShoppingCart,
+        "checkmark.circle" to Icons.Outlined.CheckCircle,
+        "checkmark.icloud" to Icons.Outlined.CloudDone,
+        "checkmark.shield" to Icons.Outlined.VerifiedUser,
+        "clock" to Icons.Outlined.Schedule,
+        "clock.fill" to Icons.Rounded.Schedule,
+        "clock.badge.exclamationmark" to Icons.Outlined.PendingActions,
+        "clock.badge.questionmark" to Icons.Outlined.PendingActions,
+        "creditcard.trianglebadge.exclamationmark" to Icons.Outlined.CreditCardOff,
+        "doc.on.doc" to Icons.Outlined.ContentCopy,
+        "doc.text.magnifyingglass" to Icons.Outlined.FindInPage,
+        "doc.viewfinder" to Icons.Outlined.DocumentScanner,
+        "envelope.badge.fill" to Icons.Rounded.MarkEmailUnread,
+        "equal.circle" to Icons.Outlined.DragHandle,
+        "exclamationmark.circle" to Icons.Outlined.ErrorOutline,
+        "exclamationmark.triangle" to Icons.Outlined.WarningAmber,
+        "gearshape.2.fill" to Icons.Rounded.SettingsSuggest,
+        "hand.raised.fill" to Icons.Rounded.PanTool,
+        "ladybug.fill" to Icons.Rounded.BugReport,
+        "line.3.horizontal.decrease.circle" to Icons.Outlined.FilterList,
+        "list.bullet.rectangle.portrait" to Icons.AutoMirrored.Outlined.ListAlt,
+        "location.fill" to Icons.Rounded.LocationOn,
+        "lock.open.fill" to Icons.Rounded.LockOpen,
+        "lock.rotation" to Icons.Outlined.LockReset,
+        "mic.slash.fill" to Icons.Rounded.MicOff,
+        "minus.circle" to Icons.Outlined.RemoveCircleOutline,
+        "network" to Icons.Outlined.Hub,
+        "number" to Icons.Rounded.Tag,
+        "pencil.circle" to Icons.Outlined.Edit,
+        "photo" to Icons.Outlined.Image,
+        "photo.on.rectangle" to Icons.Outlined.PhotoLibrary,
+        "plus.circle" to Icons.Outlined.AddCircleOutline,
+        "plus.circle.fill" to Icons.Rounded.AddCircle,
+        "power" to Icons.Rounded.PowerSettingsNew,
+        "quote.opening" to Icons.Rounded.FormatQuote,
+        "server.rack" to Icons.Outlined.Dns,
+        "slider.horizontal.3" to Icons.Rounded.Tune,
+        "snowflake" to Icons.Rounded.AcUnit,
+        "square.and.pencil" to Icons.Outlined.EditNote,
+        "square.grid.2x2" to Icons.Outlined.GridView,
+        "square.grid.3x3" to Icons.Outlined.Apps,
+        "stop.fill" to Icons.Rounded.Stop,
+        "storefront.fill" to Icons.Rounded.Storefront,
+        "tablecells" to Icons.Outlined.TableChart,
+        "tag.slash" to Icons.Outlined.LabelOff,
+        "text.alignleft" to Icons.AutoMirrored.Rounded.Notes,
+        "tray" to Icons.Outlined.Inbox,
+        "wand.and.stars" to Icons.Rounded.AutoFixHigh,
+        "waveform" to Icons.Rounded.GraphicEq,
+        "wifi.slash" to Icons.Rounded.WifiOff,
+        "scissors" to Icons.Outlined.ContentCut,
+        "arrow.triangle.2.circlepath.icloud" to Icons.Outlined.CloudSync,
+        "person.fill" to Icons.Rounded.Person,
+        "doc.text.fill" to Icons.Rounded.Description,
+        "banknote.fill" to Icons.Rounded.Payments,
+        "lock.fill" to Icons.Rounded.Lock,
+        "dollarsign.circle.fill" to Icons.Rounded.MonetizationOn,
+        "tag.fill" to Icons.Rounded.LocalOffer,
+        "heart.fill" to Icons.Rounded.Favorite,
+        "bell.fill" to Icons.Rounded.Notifications,
     )
 }

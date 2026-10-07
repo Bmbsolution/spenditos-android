@@ -51,6 +51,7 @@ import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 
 /*
  * The iOS look, as reusable pieces (iOS: Shared/Theme, Shared/Extensions/View+Glassmorphism.swift, MainTabView).
@@ -125,14 +126,14 @@ fun IosScreen(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) { content() }
 }
 
-/** Gray section label above a card ("Money", "Notifications"). */
+/** Gray section label above an inset-grouped card ("Money", "Notifications"): iOS 26 title-case, 15pt semibold. */
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
-        style = MaterialTheme.typography.titleMedium,
+        style = IosText.subheadline.w(FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(start = Spacing.m + 4.dp, top = Spacing.l, bottom = Spacing.s),
+        modifier = modifier.padding(start = Spacing.screen + 4.dp, top = Spacing.l, bottom = Spacing.s),
     )
 }
 
@@ -315,13 +316,14 @@ fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         else -> if (dark) Color(0xFF2C2C2E) else Color(0xFFF1F1F4)
     }
     Box(
-        modifier.height(52.dp).clip(RoundedCornerShape(26.dp)).background(bg)
+        // iOS LoadingButton: 52pt tall, radius M (16).
+        modifier.height(52.dp).clip(RoundedCornerShape(Radius.m)).background(bg)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            style = MaterialTheme.typography.titleMedium,
+            style = IosText.headline,
             color = if (filled && enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
