@@ -1,25 +1,29 @@
 package com.spenditos.android.feature.export
 
 import android.content.Intent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -31,11 +35,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IosRow
+import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.PillButton
+import com.spenditos.android.ui.components.SectionHeader
 import com.spenditos.android.ui.theme.Spacing
 import java.time.Instant
 import java.time.ZoneOffset
@@ -43,7 +60,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** Settings > Export transactions: pick a range, download the CSV, hand it to the share sheet. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -63,56 +80,85 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
         viewModel.shared()
     }
 
-    Column(
-        Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(Spacing.screen),
-        verticalArrangement = Arrangement.spacedBy(Spacing.m),
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { viewModel.cancel(); onBack() }, modifier = Modifier.testTag("export.back")) { Text("Back") }
-            Text("Export transactions", style = MaterialTheme.typography.titleLarge)
-        }
-        Text(
-            "Download your transactions as a CSV file you can open in a spreadsheet.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            ExportRange.entries.forEach { range ->
-                FilterChip(
-                    selected = state.range == range,
-                    onClick = { viewModel.selectRange(range) },
-                    label = { Text(range.label) },
-                    modifier = Modifier.testTag("export.range.${range.name.lowercase()}"),
+    IosScreen {
+        Column(
+            Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = Spacing.l),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            ExportHeader(onBack = { viewModel.cancel(); onBack() })
+            Text(
+                "Download your transactions as a CSV file you can open in a spreadsheet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
+            )
+
+            SectionHeader("Transactions", Modifier.padding(top = Spacing.s))
+            GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
+                Text("Date range", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = Spacing.m, top = Spacing.m))
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.m, vertical = Spacing.s),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    ExportRange.entries.forEach { range ->
+                        val selected = state.range == range
+                        Box(
+                            Modifier.clip(RoundedCornerShape(20.dp))
+                                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable(role = Role.Tab) { viewModel.selectRange(range) }
+                                .semantics { this.selected = selected }
+                                .testTag("export.range.${range.name.lowercase()}")
+                                .padding(horizontal = 14.dp, vertical = 9.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(range.label, style = MaterialTheme.typography.labelMedium, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+                IosRow(
+                    title = "From ${state.start.format(dateFormat)}",
+                    icon = Icons.Filled.CalendarMonth,
+                    onClick = { picking = DateTarget.START },
+                    modifier = Modifier.testTag("export.start"),
+                )
+                IosRow(
+                    title = "To ${state.end.format(dateFormat)}",
+                    icon = Icons.Filled.CalendarMonth,
+                    onClick = { picking = DateTarget.END },
+                    divider = false,
+                    modifier = Modifier.testTag("export.end"),
                 )
             }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            OutlinedButton(onClick = { picking = DateTarget.START }, modifier = Modifier.weight(1f).testTag("export.start")) {
-                Text("From ${state.start.format(dateFormat)}")
+
+            (state.validationError ?: state.error)?.let {
+                GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(Spacing.m).testTag("export.error"))
+                }
             }
-            OutlinedButton(onClick = { picking = DateTarget.END }, modifier = Modifier.weight(1f).testTag("export.end")) {
-                Text("To ${state.end.format(dateFormat)}")
+
+            if (state.isExporting) {
+                GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
+                    Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                        CircularProgressIndicator(Modifier.size(22.dp).testTag("export.progress"), strokeWidth = 2.dp)
+                        Text("Preparing your file…", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        TextButton(onClick = viewModel::cancel) { Text("Cancel") }
+                    }
+                }
+            } else {
+                PillButton(
+                    text = if (state.error != null) "Try again" else "Export CSV",
+                    onClick = viewModel::export,
+                    enabled = state.canExport,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m).testTag("export.run"),
+                )
             }
+            Text(
+                "The file is only kept long enough to share it.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
+            )
         }
-        (state.validationError ?: state.error)?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("export.error"))
-        }
-        if (state.isExporting) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                CircularProgressIndicator(Modifier.testTag("export.progress"))
-                Text("Preparing your file…")
-                TextButton(onClick = viewModel::cancel) { Text("Cancel") }
-            }
-        } else {
-            Button(onClick = viewModel::export, enabled = state.canExport, modifier = Modifier.fillMaxWidth().testTag("export.run")) {
-                Text(if (state.error != null) "Try again" else "Export CSV")
-            }
-        }
-        Text(
-            "The file is only kept long enough to share it.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 
     picking?.let { target ->
@@ -135,5 +181,14 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
     }
 }
 
-private enum class DateTarget { START, END }
+@Composable
+private fun ExportHeader(onBack: () -> Unit) {
+    Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
+        androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("export.back")) {
+            androidx.compose.material3.Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+        }
+        Text("Export transactions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
+    }
+}
 
+private enum class DateTarget { START, END }
