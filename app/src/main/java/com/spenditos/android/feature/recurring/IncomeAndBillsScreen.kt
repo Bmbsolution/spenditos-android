@@ -15,27 +15,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.PhoneIphone
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -52,11 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,14 +53,17 @@ import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.GroupedCard
-import com.spenditos.android.ui.components.IconChip
-import com.spenditos.android.ui.components.SectionHeader
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.subtleGlassModifier
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
+import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
@@ -86,6 +78,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     var templateToDelete by remember { mutableStateOf<RecurringTemplate?>(null) }
     var showGenerate by remember { mutableStateOf(false) }
     var generateMonth by remember { mutableStateOf(YearMonth.now()) }
+    var showAddMenu by remember { mutableStateOf(false) }
+    var addPresetIncome by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -101,11 +95,12 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-        LazyColumn(
-            Modifier.fillMaxSize().padding(padding).testTag("recurring.list"),
-            contentPadding = PaddingValues(top = Spacing.s, bottom = 124.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.s),
-        ) {
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(
+                Modifier.fillMaxSize().testTag("recurring.list"),
+                contentPadding = PaddingValues(top = 0.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
             if (state.isLoading && state.templates.isEmpty()) {
                 item("loading") {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
@@ -142,23 +137,34 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             if (state.isEmpty) {
                 item("empty") {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                    GlassCard(Modifier.padding(horizontal = Spacing.screen).testTag("recurring.empty")) {
                         Column(
-                            Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                            Modifier.fillMaxWidth().testTag("recurring.empty").padding(vertical = 32.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.l),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Icon(Icons.Filled.Receipt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(42.dp))
-                            Text("No income or bills yet.", style = MaterialTheme.typography.titleMedium)
-                            Text("Add a recurring item to get started.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            TextButton(onClick = { templateToEdit = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text("Add") }
-                            PillButton(
-                                "Add",
-                                onClick = { templateToEdit = null; showEditor = true },
-                                modifier = Modifier.fillMaxWidth().testTag("recurring.empty.add"),
-                            )
+                            Icon(SfSymbols.icon("arrow.triangle.2.circlepath"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(56.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("No income or bills yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                                Text(
+                                    "Everything that comes in or goes out on a schedule. Each one is logged on its date.",
+                                    style = IosText.body,
+                                    color = IosColors.textSecondary,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = Spacing.l),
+                                )
+                            }
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen)
+                                    .clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange)
+                                    .clickable(role = Role.Button) { addPresetIncome = true; templateToEdit = null; showEditor = true }
+                                    .testTag("recurring.empty.add").padding(horizontal = Spacing.l, vertical = Spacing.m),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Filled.AddCircle, contentDescription = null, tint = IosColors.textPrimary)
+                                Text("Add income", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                            }
                         }
-                    }
                     }
                 }
             } else {
@@ -166,8 +172,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
 
                 item("bills.header") {
                     Row(Modifier.fillMaxWidth().padding(end = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
-                        SectionHeader("Bills", Modifier.weight(1f).testTag("recurring.section.bills"))
-                        TextButton(onClick = { templateToEdit = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text("Add") }
+                        RecurringSectionHeader("Bills", Modifier.weight(1f).testTag("recurring.section.bills"))
+                        TextButton(onClick = { addPresetIncome = false; templateToEdit = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text("Add") }
                     }
                 }
                 if (!state.isLoading && state.billTemplates.isEmpty() && state.templates.isNotEmpty()) {
@@ -189,7 +195,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     )
                 }
 
-                item("income.header") { SectionHeader("Income", Modifier.testTag("recurring.section.income")) }
+                item("income.header") { RecurringSectionHeader("Income", Modifier.testTag("recurring.section.income")) }
                 if (!state.isLoading && state.incomeTemplates.isEmpty() && state.templates.isNotEmpty()) {
                     item("income.empty") { SectionEmptyMessage("No income yet.", Modifier.testTag("recurring.income.empty")) }
                 }
@@ -209,6 +215,31 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     )
                 }
             }
+            if (state.templates.isNotEmpty()) {
+                Box(Modifier.align(Alignment.BottomEnd).padding(end = Spacing.screen, bottom = Spacing.l)) {
+                    Box(
+                        Modifier.size(56.dp).shadow(16.dp, CircleShape, ambientColor = IosColors.spendOrange.copy(alpha = 0.4f), spotColor = IosColors.spendOrange.copy(alpha = 0.4f))
+                            .clip(CircleShape).background(IosColors.spendOrange)
+                            .clickable(role = Role.Button) { showAddMenu = true }
+                            .testTag("recurring.fab"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(SfSymbols.icon("plus"), contentDescription = "Add income or bill", tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                    }
+                    DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }, offset = DpOffset(0.dp, (-8).dp)) {
+                        DropdownMenuItem(
+                            text = { Text("Add income", style = IosText.subheadline) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.down.circle.fill"), contentDescription = null) },
+                            onClick = { showAddMenu = false; addPresetIncome = true; templateToEdit = null; showEditor = true },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add bill", style = IosText.subheadline) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.up"), contentDescription = null) },
+                            onClick = { showAddMenu = false; addPresetIncome = false; templateToEdit = null; showEditor = true },
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -217,6 +248,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             template = templateToEdit,
             categories = state.categories,
             currency = state.currency,
+            initialIsIncome = addPresetIncome,
             isSaving = state.isWriting,
             error = state.error,
             onDismiss = { showEditor = false; templateToEdit = null },
@@ -228,12 +260,13 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     }
 
     templateToDelete?.let { template ->
+        val deletingIncome = state.categories.firstOrNull { it.id == template.categoryId }?.isIncome == true
         AlertDialog(
             onDismissRequest = { templateToDelete = null },
-            title = { Text("Delete recurring item") },
+            title = { Text(if (deletingIncome) "Delete this income?" else "Delete this bill?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text("Delete ${template.description}?")
+                    Text("Are you sure you want to delete this income or bill? This action cannot be undone.")
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("recurring.delete.error")) }
                 }
             },
@@ -261,14 +294,14 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
 
 @Composable
 private fun RecurringToolsCard(onGenerate: () -> Unit) {
-    GlassCard(Modifier.padding(horizontal = Spacing.screen)) {
+    GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(bottom = Spacing.s)) {
         Row(
             Modifier.fillMaxWidth().padding(Spacing.m),
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RecurringToolPill(
-                icon = Icons.Filled.DateRange,
+                icon = SfSymbols.icon("calendar.badge.clock"),
                 text = "Generate Month",
                 onClick = onGenerate,
                 modifier = Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.open"),
@@ -276,7 +309,7 @@ private fun RecurringToolsCard(onGenerate: () -> Unit) {
                 enabled = true,
             )
             RecurringToolPill(
-                icon = Icons.Filled.AccountBalance,
+                icon = SfSymbols.icon("banknote"),
                 text = "Pay periods",
                 onClick = {},
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -296,27 +329,38 @@ private fun RecurringToolPill(
     filled: Boolean,
     enabled: Boolean,
 ) {
-    val shape = RoundedCornerShape(26.dp)
-    val background = if (filled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    val foreground = if (filled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val shape = RoundedCornerShape(Radius.m)
+    val background = IosColors.spendOrange
+    val foreground = if (filled) androidx.compose.ui.graphics.Color.White else IosColors.textPrimary
     Row(
-        modifier.height(52.dp).clip(shape).background(background)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        modifier.then(if (filled) Modifier.clip(shape).background(background) else subtleGlassModifier(shape))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(vertical = Spacing.s),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(20.dp))
-        Text(text, modifier = Modifier.padding(start = 6.dp, end = 12.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = foreground, maxLines = 1)
+        Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(17.dp))
+        Text(text, modifier = Modifier.padding(start = 6.dp, end = 12.dp), style = IosText.subheadline.w(FontWeight.SemiBold), color = foreground, maxLines = 1)
     }
+}
+
+@Composable
+private fun RecurringSectionHeader(title: String, modifier: Modifier = Modifier) {
+    Text(
+        title,
+        style = IosText.title3.w(FontWeight.SemiBold),
+        color = IosColors.textSecondary,
+        modifier = modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s),
+    )
 }
 
 @Composable
 private fun SectionEmptyMessage(message: String, modifier: Modifier = Modifier) {
     Text(
         message,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(horizontal = Spacing.screen),
+        style = IosText.subheadline,
+        color = IosColors.textSecondary,
+        modifier = modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
     )
 }
 
@@ -339,71 +383,108 @@ private fun IncomeBillRow(
     val canEdit = template.type == "fixed"
     val isMain = template.id == mainIncomeTemplateId
 
-    GroupedCard(Modifier.testTag("recurring.row.${template.id}")) {
+    var showActions by remember(template.id) { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.xs)) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 12.dp),
+            Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                .combinedClickable(
+                    enabled = canEdit,
+                    role = Role.Button,
+                    onClick = onEdit,
+                    onLongClick = { showActions = true },
+                )
+                .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                .testTag("recurring.row.${template.id}"),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            IconChip(recurringIcon(categoryIcon, categoryName, template.description), tint, size = 44.dp)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(tint.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    CategoryIcons.symbol(categoryIcon, categoryName),
+                    contentDescription = null,
+                    tint = IosColors.textPrimary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(template.description, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, modifier = Modifier.weight(1f))
-                    if (isMain) Text("Main income", color = finance.income, style = MaterialTheme.typography.labelSmall, modifier = Modifier.testTag("recurring.mainIncome.badge.${template.id}"))
-                    if (!template.isActive) Text("Paused", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, modifier = Modifier.testTag("recurring.paused.${template.id}"))
+                    Text(template.description, style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text(
+                        "${if (template.amountVaries) "≈ " else ""}$amount",
+                        color = if (isIncome) finance.income else finance.expense,
+                        style = IosText.body.w(FontWeight.SemiBold),
+                        maxLines = 1,
+                    )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(frequencyText(template), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    Text("  ·", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(frequencyText(template), style = IosText.caption.w(FontWeight.Medium), color = IosColors.spendOrange)
+                    Text("·", style = IosText.caption, color = IosColors.neutral)
+                    if (!canEdit) {
+                        Text(
+                            "Old estimate · not logged",
+                            Modifier.background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                            style = IosText.caption2.w(FontWeight.SemiBold),
+                            color = IosColors.textSecondary,
+                        )
+                    }
+                    if (isMain) {
+                        Text(
+                            "Main Income",
+                            Modifier.testTag("recurring.mainIncome.badge.${template.id}")
+                                .background(finance.income.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                            color = finance.income,
+                            style = IosText.caption2.w(FontWeight.SemiBold),
+                        )
+                    }
+                    if (!template.isActive) {
+                        Text(
+                            "Paused",
+                            Modifier.testTag("recurring.paused.${template.id}")
+                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                            color = IosColors.textSecondary,
+                            style = IosText.caption2.w(FontWeight.Medium),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (isIncome && (isMain || canEdit)) {
+                        Box(
+                            Modifier.size(24.dp).testTag("recurring.mainIncome.${template.id}")
+                                .clickable(enabled = isMain || (canEdit && template.isActive), role = Role.Button, onClick = onMainIncome),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                SfSymbols.icon(if (isMain) "star.fill" else "star"),
+                                contentDescription = if (isMain) "Main income" else "Set as main income",
+                                tint = if (isMain) IosColors.spendGold else IosColors.neutral,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    }
                 }
             }
-            Text(
-                "${if (template.amountVaries) "≈ " else ""}$amount",
-                color = if (isIncome) finance.income else finance.expense,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+        }
+        DropdownMenu(expanded = showActions, onDismissRequest = { showActions = false }) {
+            if (canEdit) {
+                DropdownMenuItem(
+                    text = { Text("Edit", style = IosText.subheadline) },
+                    leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
+                    onClick = { showActions = false; onEdit() },
+                    modifier = Modifier.testTag("recurring.edit.${template.id}"),
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("Delete", style = IosText.subheadline, color = IosColors.expense) },
+                leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
+                onClick = { showActions = false; onDelete() },
+                modifier = Modifier.testTag("recurring.delete.${template.id}"),
             )
         }
-        Row(
-            Modifier.fillMaxWidth().padding(start = 74.dp, end = Spacing.s, bottom = 2.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (isIncome && (isMain || canEdit)) {
-                TextButton(
-                    onClick = onMainIncome,
-                    enabled = isMain || (canEdit && template.isActive),
-                    modifier = Modifier.testTag("recurring.mainIncome.${template.id}"),
-                ) { Text(if (isMain) "★ Main income" else "☆ Set as main", style = MaterialTheme.typography.labelSmall) }
-            }
-            if (canEdit) TextButton(onClick = onEdit, modifier = Modifier.testTag("recurring.edit.${template.id}")) { Text("Edit", style = MaterialTheme.typography.labelSmall) }
-            TextButton(onClick = onDelete, modifier = Modifier.testTag("recurring.delete.${template.id}")) { Text("Delete", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) }
-        }
-    }
-}
-
-@Composable
-private fun recurringIcon(icon: String?, categoryName: String?, description: String) = run {
-    val key = "${icon.orEmpty()} ${categoryName.orEmpty()} $description".lowercase()
-    when {
-        "🏠" in key || "home" in key || "rent" in key || "house" in key || "housing" in key -> Icons.Filled.Home
-        "🚗" in key || "car" in key || "auto" in key || "vehicle" in key || "daycare" in key -> Icons.Filled.DirectionsCar
-        "credit" in key || "card" in key || "loan" in key -> Icons.Filled.CreditCard
-        "🌐" in key || "internet" in key || "wifi" in key || "web" in key -> Icons.Filled.Language
-        "📱" in key || "phone" in key || "mobile" in key -> Icons.Filled.PhoneIphone
-        "gym" in key || "fitness" in key -> Icons.Filled.FitnessCenter
-        "🍽" in key || "food" in key || "dining" in key || "restaurant" in key || "grocer" in key -> Icons.Filled.Restaurant
-        "🛒" in key || "shop" in key || "store" in key -> Icons.Filled.ShoppingCart
-        "✈" in key || "travel" in key || "flight" in key -> Icons.Filled.Flight
-        "🐾" in key || "pet" in key -> Icons.Filled.Pets
-        "❤️" in key || "health" in key || "medical" in key -> Icons.Filled.Favorite
-        "📚" in key || "school" in key || "education" in key -> Icons.Filled.School
-        "💼" in key || "work" in key || "salary" in key || "job" in key -> Icons.Filled.Work
-        "bank" in key || "saving" in key -> Icons.Filled.AccountBalance
-        "🏷" in key || "🎁" in key || "tag" in key || "subscription" in key -> Icons.Filled.LocalOffer
-        "💰" in key || "income" in key || "pay" in key -> Icons.Filled.AttachMoney
-        else -> Icons.Filled.Receipt
     }
 }
 
