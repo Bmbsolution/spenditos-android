@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
@@ -34,12 +36,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun MonthComparisonScreen(
@@ -60,46 +68,64 @@ fun MonthComparisonScreen(
             onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().testTag("reports.comparison.list"),
-                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
-                verticalArrangement = Arrangement.spacedBy(Spacing.m),
-            ) {
-                item {
-                    ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                        subtitle = "${previousMonth.format(DateTimeFormatter.ofPattern("MMM d", locale))} – ${state.month.withDayOfMonth(state.month.lengthOfMonth()).format(DateTimeFormatter.ofPattern("MMM d", locale))}",
-                        tag = "reports.comparison.month",
-                        onPrevious = viewModel::previousMonth,
-                        onNext = viewModel::nextMonth,
+            when {
+                state.isLoading -> ReportLoadingState(
+                    "Loading comparison data...",
+                    Color(0xFFAF52DE),
+                    Modifier.fillMaxSize().testTag("reports.comparison.list"),
+                )
+                state.isEmpty && state.loadStatus == null -> Box(Modifier.fillMaxSize().testTag("reports.comparison.list")) {
+                    ReportEmptyState(
+                        icon = "calendar.badge.clock",
+                        title = "No Data",
+                        subtitle = "No daily aggregates found for comparison.",
+                        modifier = Modifier.fillMaxSize().testTag("reports.empty"),
                     )
                 }
-                if (state.isLoading) {
-                    item { ReportLoadingCard("Loading comparison…") }
-                } else if (state.loadStatus != null && !state.hasLoaded) {
-                    item { ReportsStatusCard(requireNotNull(state.loadStatus), viewModel::refresh) }
-                } else if (state.isEmpty && state.loadStatus == null) {
-                    item { ReportEmptyCard("No comparison data", "No activity was found for these months.") }
-                } else if (state.hasLoaded) {
-                    state.loadStatus?.let { status -> item { ReportInlineStatus(status, viewModel::refresh, "reports.comparison.status") } }
-                    item { ComparisonSummaryCards(state, viewModel) }
-                    item { ComparisonMetricSelector(showIncome, { showIncome = it }) }
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("reports.comparison.list"),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
+                ) {
                     item {
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                Text("Weekly ${if (showIncome) "Income" else "Expenses"}", style = MaterialTheme.typography.titleLarge)
-                                WeeklyComparisonChart(weekly, maxValue, showIncome)
-                                Row(Modifier.testTag("reports.comparison.legend"), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                                    val metricColor = if (showIncome) LocalFinanceColors.current.income else LocalFinanceColors.current.expense
-                                    ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMM", locale)))
-                                    ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMM", locale)))
-                                }
-                                weekly.forEach { item ->
-                                    WeeklyValueRow(item, state.currency, item.week)
+                        ReportMonthSelector(
+                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            subtitle = monthRangeLabel(state.month, locale),
+                            tag = "reports.comparison.month",
+                            onPrevious = viewModel::previousMonth,
+                            onNext = viewModel::nextMonth,
+                        )
+                    }
+                    if (state.loadStatus != null && !state.hasLoaded) {
+                        item { ReportsStatusCard(requireNotNull(state.loadStatus), viewModel::refresh) }
+                    } else if (state.hasLoaded) {
+                        state.loadStatus?.let { status ->
+                            item { ReportInlineStatus(status, viewModel::refresh, "reports.comparison.status") }
+                        }
+                        item { ComparisonSummaryCards(state, viewModel) }
+                        item { ComparisonMetricSelector(showIncome, { showIncome = it }) }
+                        item {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                                    Text(
+                                        "Weekly ${if (showIncome) "Income" else "Expenses"}",
+                                        style = IosText.headline,
+                                        color = IosColors.textPrimary,
+                                    )
+                                    WeeklyComparisonChart(weekly, maxValue, showIncome, state.currency)
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(top = Spacing.xs).testTag("reports.comparison.legend"),
+                                        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                                    ) {
+                                        val metricColor = if (showIncome) LocalFinanceColors.current.income else LocalFinanceColors.current.expense
+                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMM", locale)))
+                                        ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMM", locale)))
+                                    }
                                 }
                             }
                         }
                     }
+                    item { Spacer(Modifier.height(32.dp)) }
                 }
             }
         }
@@ -108,32 +134,24 @@ fun MonthComparisonScreen(
 
 @Composable
 private fun ComparisonSummaryCards(state: MonthComparisonUiState, viewModel: MonthComparisonViewModel) {
-    val finance = LocalFinanceColors.current
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Row(Modifier.testTag("reports.comparison.metrics"), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+        Row(
+            Modifier.testTag("reports.comparison.metrics"),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
             ComparisonMetricCard(
                 "Total Spending", state.currentTotalExpenses, state.previousTotalExpenses, true,
-                state.currency, viewModel, Modifier.weight(1f),
+                state.currency, viewModel, Modifier.weight(1f).testTag("reports.comparison.metric.expenses"),
             )
             ComparisonMetricCard(
-                "Total income", state.currentTotalIncome, state.previousTotalIncome, false,
-                state.currency, viewModel, Modifier.weight(1f),
+                "Total Income", state.currentTotalIncome, state.previousTotalIncome, false,
+                state.currency, viewModel, Modifier.weight(1f).testTag("reports.comparison.metric.income"),
             )
         }
-        GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.comparison.net")) {
-            Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Net", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(Money.format(state.currentNet.toDouble(), state.currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                }
-                Text(
-                    viewModel.percentageChange(state.currentNet, state.previousNet),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (viewModel.changeIsPositive(state.currentNet, state.previousNet, false)) finance.income else finance.expense,
-                )
-            }
-        }
+        ComparisonMetricCard(
+            "Net Change", state.currentNet, state.previousNet, false,
+            state.currency, viewModel, Modifier.fillMaxWidth().testTag("reports.comparison.net"),
+        )
     }
 }
 
@@ -148,60 +166,61 @@ private fun ComparisonMetricCard(
     modifier: Modifier,
 ) {
     val finance = LocalFinanceColors.current
-    GlassCard(modifier = modifier.testTag("reports.comparison.metric.${if (isExpense) "expenses" else "income"}")) {
-        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(Money.format(current.toDouble(), currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                viewModel.percentageChange(current, previous),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = if (viewModel.changeIsPositive(current, previous, isExpense)) finance.income else finance.expense,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boolean) -> Unit) {
-    val dark = androidx.compose.foundation.isSystemInDarkTheme()
-    val track = if (dark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
-    val selectedSurface = if (dark) Color(0xFF636366) else Color.White
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(track).padding(3.dp)
-            .testTag("reports.comparison.metricSelector"),
-    ) {
-        listOf("Expenses", "Income").forEachIndexed { index, label ->
-            val selected = (index == 1) == showIncome
-            val controlModifier = Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
-                .background(if (selected) selectedSurface else Color.Transparent)
-                .clickable(role = Role.Tab) { onSelectIncome(index == 1) }
-            Box(
-                modifier = if (index == 0) controlModifier.testTag("reports.comparison.metric.expenses")
-                else controlModifier.testTag("reports.comparison.metric.income"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+    val changeColor = if (viewModel.changeIsPositive(current, previous, isExpense)) finance.income else finance.expense
+    GlassCard(modifier = modifier) {
+        Column(
+            Modifier.fillMaxWidth().padding(Spacing.m),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            Text(title, style = IosText.subheadline, color = IosColors.neutral)
+            Text(Money.format(current.toDouble(), currency), style = IosText.rounded(17, FontWeight.Medium), color = IosColors.textPrimary)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    SfSymbols.icon(if (current >= previous) "arrow.up" else "arrow.down"),
+                    contentDescription = null,
+                    tint = changeColor,
+                    modifier = Modifier.size(14.dp),
                 )
+                Text(viewModel.percentageChange(current, previous), style = IosText.subheadline.w(FontWeight.SemiBold), color = changeColor)
             }
         }
     }
 }
 
 @Composable
-private fun WeeklyValueRow(item: WeeklyComparison, currency: String, week: Int) {
-    Row(
-        Modifier.fillMaxWidth().testTag("reports.comparison.week.$week"),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Week $week", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Column(horizontalAlignment = Alignment.End) {
-            Text(Money.format(item.current.toDouble(), currency), style = MaterialTheme.typography.bodyMedium)
-            Text(Money.format(item.previous.toDouble(), currency), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boolean) -> Unit) {
+    Box(Modifier.fillMaxWidth().testTag("reports.comparison.metricSelector"), contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.06f)).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            listOf("Expenses", "Income").forEachIndexed { index, label ->
+                val selected = (index == 1) == showIncome
+                val tag = if (index == 0) "reports.comparison.metric.expenses" else "reports.comparison.metric.income"
+                Box(
+                    Modifier.clip(CircleShape)
+                        .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
+                        .clickable(role = Role.Tab) {
+                            onSelectIncome(index == 1)
+                            HapticFeedback.light()
+                        }
+                        .testTag(tag)
+                        .padding(horizontal = Spacing.m, vertical = Spacing.xs),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label,
+                        style = IosText.subheadline.w(FontWeight.SemiBold),
+                        color = if (selected) IosColors.textPrimary else IosColors.textSecondary,
+                    )
+                }
+            }
         }
     }
+}
+
+private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
+    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

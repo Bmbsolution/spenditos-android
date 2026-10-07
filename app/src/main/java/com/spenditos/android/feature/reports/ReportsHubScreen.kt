@@ -3,6 +3,7 @@ package com.spenditos.android.feature.reports
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,21 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.ShowChart
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -46,10 +39,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.CategorySummary
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.IconChip
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -71,7 +68,7 @@ fun ReportsHubScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Reports", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Reports", style = IosText.headline, color = IosColors.textPrimary) },
                 colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -103,56 +100,68 @@ fun ReportsHubScreen(
                 } else if (state.loadStatus != null && state.dashboard == null) {
                     val status = requireNotNull(state.loadStatus)
                     item { ReportsStatusCard(status, viewModel::refresh) }
-                } else if (state.isEmpty && state.loadStatus == null) {
-                    item {
-                        ReportEmptyCard(
-                            "No activity this month",
-                            "Add an entry to see your income and spending here.",
-                        )
-                    }
-                } else if (state.dashboard != null) {
+                } else if (state.dashboard == null) {
+                    item { ReportsEmptyReviewCard() }
+                } else {
                     val dashboard = requireNotNull(state.dashboard)
-                    state.loadStatus?.let { status -> item { ReportInlineStatus(status, viewModel::refresh, "reports.hub.status") } }
-                    item {
-                        MonthlyReviewCard(
-                            dashboard,
-                            state.currency,
-                            state.month,
-                            locale,
-                            viewModel::previousMonth,
-                            viewModel::nextMonth,
-                        )
+                    state.loadStatus?.let { status ->
+                        item { ReportInlineStatus(status, viewModel::refresh, "reports.hub.status") }
                     }
-                    item { WhereMoneyWentCard(dashboard.categoryBreakdown, state.currency) }
+                    item {
+                        if (state.isEmpty) {
+                            Box(Modifier.testTag("reports.empty")) {
+                                MonthlyReviewCard(
+                                    dashboard,
+                                    state.currency,
+                                    state.month,
+                                    locale,
+                                    viewModel::previousMonth,
+                                    viewModel::nextMonth,
+                                )
+                            }
+                        } else {
+                            MonthlyReviewCard(
+                                dashboard,
+                                state.currency,
+                                state.month,
+                                locale,
+                                viewModel::previousMonth,
+                                viewModel::nextMonth,
+                            )
+                        }
+                    }
+                    if (dashboard.categoryBreakdown.isNotEmpty()) {
+                        item { WhereMoneyWentCard(dashboard.categoryBreakdown, state.currency) }
+                    }
                 }
                 item {
                     ReportNavigationCard(
                         title = "Daily Spending Trends",
-                        detail = "Track daily spending patterns and identify high-spend days.",
-                        icon = Icons.AutoMirrored.Filled.ShowChart,
-                        iconTint = LocalFinanceColors.current.expense,
+                        detail = "Track your daily spending patterns and identify high-spend days.",
+                        symbol = "chart.bar.fill",
+                        iconTint = IosColors.spendOrange,
                         tag = "reports.hub.daily",
                         onClick = onOpenDaily,
                     )
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Month Comparison",
-                        detail = "Compare this month's spending to last month.",
-                        icon = Icons.Filled.CalendarMonth,
-                        iconTint = Color(0xFF8E67B2),
-                        tag = "reports.hub.comparison",
-                        onClick = onOpenComparison,
+                        title = "Paycheck Periods",
+                        detail = "See how your income covers expenses across pay periods.",
+                        symbol = "banknote.fill",
+                        iconTint = IosColors.income,
+                        tag = "reports.hub.paycheck",
+                        onClick = onOpenPaycheckPeriods,
                     )
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Paycheck Periods",
-                        detail = "See how your income covers expenses across pay periods.",
-                        icon = Icons.Filled.AccountBalance,
-                        iconTint = LocalFinanceColors.current.income,
-                        tag = "reports.hub.paycheck",
-                        onClick = onOpenPaycheckPeriods,
+                        title = "Month Comparison",
+                        detail = "Compare this month's spending to last month.",
+                        symbol = "calendar.badge.clock",
+                        iconTint = Color(0xFFAF52DE),
+                        tag = "reports.hub.comparison",
+                        onClick = onOpenComparison,
                     )
                 }
             }
@@ -164,20 +173,33 @@ fun ReportsHubScreen(
 private fun ReportsHeroCard() {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text(
-                "REPORTING",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("REPORTING", style = IosText.subheadline, color = IosColors.textSecondary)
             Text(
                 "Insights and planning tools for your month",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = IosText.title3.w(FontWeight.SemiBold),
+                color = IosColors.textPrimary,
             )
             Text(
                 "Track day-to-day trends and income coverage from one place.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = IosText.body,
+                color = IosColors.textSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReportsEmptyReviewCard() {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                Icon(SfSymbols.icon("chart.line.uptrend.xyaxis"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                Text("Your review starts with one entry", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            }
+            Text(
+                "Log a transaction to see spending and recurring obligations together.",
+                style = IosText.body,
+                color = IosColors.textSecondary,
             )
         }
     }
@@ -198,30 +220,26 @@ private fun MonthlyReviewCard(
     GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.hub.review")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Monthly review", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Monthly review", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                     Text(
                         data.dateRange?.startDate?.toString() ?: month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = IosText.subheadline,
+                        color = IosColors.textSecondary,
                     )
                 }
-                IconButton(onClick = onPreviousMonth, modifier = Modifier.testTag("reports.hub.month.previous")) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
-                }
-                IconButton(onClick = onNextMonth, modifier = Modifier.testTag("reports.hub.month.next")) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
-                }
+                ReportScopeButton("chevron.left", "Previous month", "reports.hub.month.previous", onPreviousMonth)
+                ReportScopeButton("chevron.right", "Next month", "reports.hub.month.next", onNextMonth)
             }
             Column(
                 Modifier.fillMaxWidth().testTag("reports.hub.review.metrics"),
-                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     ReviewMetric("Income", Money.format(summary.totalIncome, currency), finance.income, Modifier.weight(1f))
                     ReviewMetric("Spending", Money.format(summary.totalExpenses, currency), finance.expense, Modifier.weight(1f))
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     ReviewMetric(
                         "Net",
                         Money.format(summary.netAmount, currency),
@@ -232,26 +250,26 @@ private fun MonthlyReviewCard(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text("Takeaways", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Takeaways", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
                 if (topCategory == null) {
                     ReportTakeawayRow(
-                        icon = Icons.Filled.BarChart,
-                        tint = finance.neutral,
+                        symbol = "chart.bar.fill",
+                        tint = finance.expense,
                         title = "No spending pattern yet",
                         detail = "Log activity to make this takeaway useful.",
                     )
                 } else {
                     ReportTakeawayRow(
-                        icon = Icons.Filled.BarChart,
+                        symbol = "chart.bar.fill",
                         tint = finance.expense,
                         title = "${topCategory.name} leads spending",
-                        detail = "Largest category · ${Money.format(topCategory.amount.toDouble(), currency)}",
+                        detail = "Review the transaction log to confirm your largest category (${Money.format(topCategory.amount.toDouble(), currency)}).",
                     )
                 }
                 ReportTakeawayRow(
-                    icon = Icons.Filled.Repeat,
-                    tint = MaterialTheme.colorScheme.primary,
-                    title = "Review recurring obligations",
+                    symbol = "arrow.triangle.2.circlepath",
+                    tint = IosColors.spendOrange,
+                    title = "Recurring obligations are not mapped",
                     detail = "Add regular bills or income to improve forecasts.",
                 )
             }
@@ -260,25 +278,30 @@ private fun MonthlyReviewCard(
 }
 
 @Composable
-private fun ReportTakeawayRow(icon: ImageVector, tint: Color, title: String, detail: String) {
+private fun ReportTakeawayRow(symbol: String, tint: Color, title: String, detail: String) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+        Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.Top,
     ) {
-        IconChip(icon, tint, size = 30.dp)
+        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = tint, modifier = Modifier.width(24.dp).size(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(detail, style = IosText.caption, color = IosColors.textSecondary)
         }
     }
 }
 
 @Composable
 private fun ReviewMetric(label: String, amount: String, color: Color, modifier: Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(amount, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+    Column(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.s))
+            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f))
+            .padding(Spacing.s),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text(label, style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(amount, style = IosText.rounded(17, FontWeight.Medium), color = color, maxLines = 1)
     }
 }
 
@@ -293,35 +316,38 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                 Text(
                     "Where your money went",
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = IosText.title3.w(FontWeight.SemiBold),
+                    color = IosColors.textPrimary,
                 )
-                Text("This month", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("This month", style = IosText.subheadline, color = IosColors.textSecondary)
             }
             if (total.signum() <= 0) {
-                Text("No spending logged this month yet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No spending logged this month yet.", style = IosText.subheadline, color = IosColors.textSecondary)
             } else {
-                Row(
-                    Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    slices.forEachIndexed { index, slice ->
-                        val fraction = slice.amount.divide(total, 6, RoundingMode.HALF_UP).toFloat().coerceAtLeast(0.01f)
-                        Box(Modifier.weight(fraction).fillMaxHeight().background(palette[index % palette.size]))
+                BoxWithConstraints(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape)) {
+                    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val barWidth = maxWidth - 2.dp * (slices.size - 1)
+                        slices.forEachIndexed { index, slice ->
+                            val fraction = slice.amount.divide(total, 6, RoundingMode.HALF_UP).toFloat()
+                            Box(
+                                Modifier.width((barWidth * fraction).coerceAtLeast(2.dp)).fillMaxHeight()
+                                    .background(palette[index]),
+                            )
+                        }
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     slices.forEachIndexed { index, slice ->
                         Row(
-                            Modifier.fillMaxWidth().testTag("reports.category.${slice.id}"),
+                            Modifier.fillMaxWidth().testTag("reports.category.${slice.id}").padding(vertical = Spacing.s),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
-                            Box(Modifier.width(10.dp).height(10.dp).clip(CircleShape).background(palette[index % palette.size]))
-                            Text(slice.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                            Text(Money.format(slice.amount.toDouble(), currency), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Box(Modifier.size(10.dp).clip(CircleShape).background(palette[index]))
+                            Text(slice.name, modifier = Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
+                            Text(Money.format(slice.amount.toDouble(), currency), style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary)
                             val percent = slice.amount.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).toInt()
-                            Text("$percent%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("$percent%", modifier = Modifier.widthIn(min = 36.dp), style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                     }
                 }
@@ -334,7 +360,7 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
 private fun ReportNavigationCard(
     title: String,
     detail: String,
-    icon: ImageVector,
+    symbol: String,
     iconTint: Color,
     tag: String,
     onClick: () -> Unit,
@@ -345,12 +371,17 @@ private fun ReportNavigationCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            IconChip(icon, iconTint, size = 44.dp, shape = RoundedCornerShape(Spacing.m))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box(
+                Modifier.size(44.dp).clip(RoundedCornerShape(Radius.m)).background(iconTint.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(SfSymbols.icon(symbol), contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             }
-            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(detail, style = IosText.subheadline, color = IosColors.neutral, maxLines = 2)
+            }
+            Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(18.dp))
         }
     }
 }
