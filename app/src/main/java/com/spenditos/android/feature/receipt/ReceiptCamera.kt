@@ -96,6 +96,11 @@ internal fun ReceiptCamera(
         permissionGranted = granted
     }
     val onCaptureErrorState by rememberUpdatedState(onCaptureError)
+    // A photo taken but not used (Back from the preview) must not stay in the cache.
+    var handedOver by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        onDispose { if (!handedOver) capturedFile?.delete() }
+    }
 
     LaunchedEffect(Unit) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -119,7 +124,10 @@ internal fun ReceiptCamera(
                     capturedFile = null
                     bound = null
                 },
-                onUse = { onUsePhoto(photo) },
+                onUse = {
+                    handedOver = true
+                    onUsePhoto(photo)
+                },
             )
             showDenied -> ReceiptPermissionDenied(
                 onOpenSettings = {
