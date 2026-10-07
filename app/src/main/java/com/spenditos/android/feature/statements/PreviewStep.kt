@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.statements
 
+import com.spenditos.android.data.model.categoryNameFor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -85,8 +86,10 @@ fun PreviewStep(
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(row.importDescription, style = IosText.headline, color = IosColors.textPrimary)
                                 Text(row.date.toString(), style = IosText.caption, color = IosColors.textSecondary)
+                                // The category the import will use, so a wrong mapping is visible before confirming.
+                                Text(preview.categoryNameFor(row), style = IosText.caption, color = IosColors.textSecondary)
                             }
-                            Text(formatStatementAmount(row.amount, currency), color = if (row.amount > 0) SystemGreen else SystemRed, style = IosText.headline)
+                            Text(formatStatementAmount(row.amount, currency), color = if (row.amount > 0) IosColors.income else IosColors.expense, style = IosText.headline)
                         }
                         if (index < preview.transactions.lastIndex) {
                             HorizontalDivider(Modifier.padding(start = Spacing.m), color = IosColors.separator)
@@ -114,4 +117,5 @@ private fun SummaryStat(label: String, count: Int, color: Color) {
 }
 
 /** Signed money in the account currency (positive = income, negative = expense). */
-private fun formatStatementAmount(amount: Double, @Suppress("UNUSED_PARAMETER") currency: String): String = "%.2f".format(amount)
+private fun formatStatementAmount(amount: Double, currency: String): String =
+    com.spenditos.android.ui.components.Money.signed(kotlin.math.abs(amount), isIncome = amount > 0, currencyCode = currency)

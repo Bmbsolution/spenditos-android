@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -211,7 +212,7 @@ private fun ReportsEmptyReviewCard(onLogTransaction: () -> Unit) {
             )
             Text(
                 "Log a transaction",
-                modifier = Modifier.clickable(onClick = onLogTransaction),
+                modifier = Modifier.clickable(role = Role.Button, onClick = onLogTransaction),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.spendOrange,
             )
@@ -278,6 +279,7 @@ private fun MonthlyReviewCard(
                         tint = finance.expense,
                         title = "${topCategory.name} leads spending",
                         detail = "Review the transaction log to confirm your largest category (${Money.format(topCategory.amount.toDouble(), currency)}).",
+                        onClick = onReviewTransactions,
                     )
                 }
                 ReportTakeawayRow(
@@ -300,7 +302,7 @@ private fun MonthlyReviewCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.m))
                     .background(IosColors.spendOrange)
-                    .clickable(onClick = onReviewTransactions)
+                    .clickable(role = Role.Button, onClick = onReviewTransactions)
                     .padding(horizontal = 16.dp, vertical = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -322,9 +324,10 @@ private fun MonthlyReviewCard(
 }
 
 @Composable
-private fun ReportTakeawayRow(symbol: String, tint: Color, title: String, detail: String) {
+private fun ReportTakeawayRow(symbol: String, tint: Color, title: String, detail: String, onClick: (() -> Unit)? = null) {
     Row(
-        Modifier.fillMaxWidth(),
+        // The chevron only appears on rows that go somewhere.
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.Top,
     ) {
@@ -333,12 +336,14 @@ private fun ReportTakeawayRow(symbol: String, tint: Color, title: String, detail
             Text(title, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Text(detail, style = IosText.caption, color = IosColors.textSecondary)
         }
-        Icon(
-            SfSymbols.icon("chevron.right"),
-            contentDescription = null,
-            tint = IosColors.textTertiary,
-            modifier = Modifier.size(14.dp),
-        )
+        if (onClick != null) {
+            Icon(
+                SfSymbols.icon("chevron.right"),
+                contentDescription = null,
+                tint = IosColors.textTertiary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
     }
 }
 

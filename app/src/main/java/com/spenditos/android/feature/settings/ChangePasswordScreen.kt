@@ -138,7 +138,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                                 Text(
                                     requirement.label,
                                     style = IosText.subheadline,
-                                    color = if (requirement.isMet) Color.White else Color.Gray,
+                                    color = if (requirement.isMet) IosColors.textPrimary else IosColors.textSecondary,
                                     modifier = Modifier.testTag("changePassword.requirement.$index"),
                                 )
                             }

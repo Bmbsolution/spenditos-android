@@ -255,7 +255,7 @@ fun AddEditRecurringSheet(
                                         .padding(vertical = Spacing.m),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(frequencyLabel(frequency), style = IosText.callout, color = if (selected) Color.White else Color.Gray)
+                                    Text(frequencyLabel(frequency), style = IosText.callout, color = if (selected) IosColors.textPrimary else IosColors.textSecondary)
                                 }
                             }
                         }
@@ -531,7 +531,7 @@ private fun RecurringCategoryPickerSheet(
                             Text(
                                 category.name,
                                 style = IosText.callout,
-                                color = if (selected) Color.White else Color.Gray,
+                                color = if (selected) IosColors.textPrimary else IosColors.textSecondary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center,

@@ -105,7 +105,7 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
                             val selected = state.range == range
                             Box(
                                 Modifier.clip(RoundedCornerShape(50.dp))
-                                    .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else Color(0xFFE5E5EA))
+                                    .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else IosColors.textTertiary.copy(alpha = 0.18f))
                                     .clickable(role = Role.Tab) { viewModel.selectRange(range) }
                                     .semantics { this.selected = selected }
                                     .testTag("export.range.${range.name.lowercase()}")

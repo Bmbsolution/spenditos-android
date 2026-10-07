@@ -147,7 +147,7 @@ fun StatementImportScreen(onBack: () -> Unit) {
                                 Text("Try again to rebuild the preview.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("statementImport.preview.waiting"))
                             }
                         }
-                        StatementImportStep.IMPORTING -> ImportingStep(modifier = Modifier.weight(1f))
+                        StatementImportStep.IMPORTING -> ImportingStep(showBackHint = state.backBlockedHint, modifier = Modifier.weight(1f))
                         StatementImportStep.COMPLETE -> CompleteStep(state = state, onDone = onBack, modifier = Modifier.weight(1f))
                     }
                 }
@@ -288,12 +288,21 @@ private fun ProgressCard(
 }
 
 @Composable
-private fun ImportingStep(modifier: Modifier = Modifier) {
+private fun ImportingStep(showBackHint: Boolean, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             CircularProgressIndicator(Modifier.size(30.dp).testTag("statementImport.importing.progress"), color = SystemBlue)
             Text("Importing transactions...", style = IosText.headline, color = IosColors.textPrimary)
+            // Back is blocked while importing; say why when the user tries.
+            if (showBackHint) {
+                Text(
+                    "Please wait for the import to finish before leaving.",
+                    style = IosText.footnote,
+                    color = IosColors.textSecondary,
+                    modifier = Modifier.testTag("statementImport.importing.backHint"),
+                )
+            }
         }
         Spacer(Modifier.weight(1f))
     }
@@ -309,6 +318,12 @@ private fun CompleteStep(state: StatementImportUiState, onDone: () -> Unit, modi
             Text("Import Complete!", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             if (result != null) {
                 Text(result.message, style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
+                val stats = result.stats
+                Column(Modifier.padding(horizontal = Spacing.screen).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    ImportStatRow("Created", stats?.created ?: result.count, Modifier.testTag("statementImport.complete.created"))
+                    ImportStatRow("Updated", stats?.updated ?: 0, Modifier.testTag("statementImport.complete.updated"))
+                    ImportStatRow("Skipped", stats?.skipped ?: 0, Modifier.testTag("statementImport.complete.skipped"))
+                }
             }
         }
         StatementActionButton("Done", null, onDone, Modifier.testTag("statementImport.complete.done"), height = 44.dp)
@@ -356,4 +371,12 @@ private fun ErrorCardIfNeeded(error: String?, offline: Boolean, canRetry: Boolea
 @Composable
 private fun OfflineMessage() {
     Text("You're offline. Check your connection and try again.", color = MaterialTheme.colorScheme.error, style = IosText.footnote, modifier = Modifier.testTag("statementImport.offline"))
+}
+
+@Composable
+private fun ImportStatRow(label: String, value: Int, valueModifier: Modifier = Modifier) {
+    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(value.toString(), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = valueModifier)
+    }
 }

@@ -115,7 +115,11 @@ fun TransactionListScreen(
                     LargeTitle("Transactions", trailing = {
                         TransactionsToolbarCapsule(
                             isSearchActive = isSearchActive,
-                            onToggleSearch = { isSearchActive = !isSearchActive },
+                            onToggleSearch = {
+                                // Closing search also clears it, so no hidden filter stays on the list.
+                                if (isSearchActive) searchText = ""
+                                isSearchActive = !isSearchActive
+                            },
                             onOpenExport = onOpenExport,
                         )
                     })
