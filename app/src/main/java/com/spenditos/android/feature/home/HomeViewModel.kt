@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.TransactionEntity
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.sync.Aggregate
+import com.spenditos.android.feature.home.pulse.CashFlowHistory
+import com.spenditos.android.feature.home.pulse.DayFlow
 import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.Category
@@ -38,6 +40,7 @@ data class HomeUiState(
     val status: CashFlowStatus? = null,
     val breakdown: CashFlowBreakdown? = null,
     val insights: HomeInsights? = null,
+    val history: List<DayFlow> = emptyList(),
     val isRefreshing: Boolean = false,
     val hasLoaded: Boolean = false,
     val isOffline: Boolean = false,
@@ -49,7 +52,7 @@ data class HomeUiState(
     val upcomingBills: List<CashFlowBreakdown.Line> get() = breakdown?.billsLeft?.take(5).orEmpty()
 }
 
-private data class HomeData(val transactions: List<TransactionEntity>, val categories: List<Category>)
+private data class HomeData(val transactions: List<TransactionEntity>, val week: List<TransactionEntity>, val categories: List<Category>)
 private data class HomeSettings(val currency: String, val refresh: HomeRefreshState)
 private data class HomeRefreshState(
     val isRefreshing: Boolean = true,
@@ -71,12 +74,15 @@ class HomeViewModel @Inject constructor(
     private val month = YearMonth.from(today)
     private val refreshState = MutableStateFlow(HomeRefreshState())
     private val monthRows = transactions.observeRange(month.atDay(1), month.atEndOfMonth())
+    // The last seven days can start in the previous month; the sparkline reads them from the same cache.
+    private val weekRows = transactions.observeRange(today.minusDays(6), today)
 
     val state: StateFlow<HomeUiState> = combine(
-        combine(monthRows, categories.observe()) { rows, categoryRows -> HomeData(rows, categoryRows) },
+        combine(monthRows, weekRows, categories.observe()) { rows, week, categoryRows -> HomeData(rows, week, categoryRows) },
         combine(settings.currency(), refreshState) { currency, refresh -> HomeSettings(currency, refresh) },
     ) { data, settingsState ->
         val models = data.transactions.map { it.toModel() }
+        val weekModels = data.week.map { it.toModel() }
         val status = CashFlowStatus.make(models, data.categories, today)
         HomeUiState(
             today = today,
@@ -85,6 +91,7 @@ class HomeViewModel @Inject constructor(
             transactionCount = models.size,
             status = status,
             breakdown = CashFlowBreakdown.make(models, data.categories, today),
+            history = CashFlowHistory.make(weekModels, data.categories, today),
             insights = models.takeIf { it.isNotEmpty() }?.let { HomeInsights.make(it, data.categories, today) },
             isRefreshing = settingsState.refresh.isRefreshing,
             hasLoaded = settingsState.refresh.hasLoaded,
@@ -113,6 +120,10 @@ class HomeViewModel @Inject constructor(
             val error = runCatching {
                 transactions.refreshRange(month.atDay(1), month.atEndOfMonth())
             }.exceptionOrNull()
+            // Early in a month the sparkline's week starts in the previous one; best effort only.
+            if (error == null && today.minusDays(6) < month.atDay(1)) {
+                runCatching { transactions.refreshRange(today.minusDays(6), month.atDay(1).minusDays(1)) }
+            }
             refreshState.value = HomeRefreshState(
                 isRefreshing = false,
                 hasLoaded = true,

@@ -142,7 +142,16 @@ fun MainScaffold(envName: String?) {
     ) { padding ->
         Box(Modifier.padding(bottom = padding.calculateBottomPadding())) {
             NavHost(nav, startDestination = Tab.TRANSACTIONS.route) {
-                composable(Tab.HOME.route) { HomeScreen() }
+                composable(Tab.HOME.route) {
+                    val toPlan = {
+                        nav.navigate(Tab.PLAN.route) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    HomeScreen(onReviewPlan = toPlan, onAddIncome = toPlan)
+                }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
                 composable(CAPTURE_ROUTE) {
