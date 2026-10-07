@@ -25,14 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.outlined.AccessTime
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.AcUnit
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -156,7 +148,7 @@ private fun FreezeBadge(freezes: Int, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.AcUnit, contentDescription = null, tint = FreezeBlue, modifier = Modifier.size(14.4.dp))
+        Icon(SfSymbols.icon("snowflake"), contentDescription = null, tint = FreezeBlue, modifier = Modifier.size(14.4.dp))
         Text(freezes.toString(), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textPrimary)
     }
 }
@@ -258,7 +250,7 @@ private fun StreakDay(
                 .testTag("progress.calendar.day.$date"),
             contentAlignment = Alignment.Center,
         ) {
-            if (freezeUsed) Icon(Icons.Outlined.AcUnit, contentDescription = null, tint = Color.White, modifier = Modifier.size(9.6.dp))
+            if (freezeUsed) Icon(SfSymbols.icon("snowflake"), contentDescription = null, tint = Color.White, modifier = Modifier.size(9.6.dp))
         }
         val weekday = listOf("S", "M", "T", "W", "T", "F", "S")[date.dayOfWeek.value % 7]
         Text(weekday, style = IosText.system(9, FontWeight.Medium), color = IosColors.textTertiary)
@@ -330,7 +322,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                         Text("Level Benefits", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary)
                         Spacer(Modifier.weight(1f))
                         Icon(
-                            if (showBenefits) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                            if (showBenefits) SfSymbols.icon("chevron.up") else SfSymbols.icon("chevron.down"),
                             contentDescription = null,
                             tint = IosColors.textTertiary,
                             modifier = Modifier.size(14.4.dp),
@@ -342,7 +334,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(Icons.Filled.LockOpen, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.4.dp))
+                            Icon(SfSymbols.icon("lock.open.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.4.dp))
                             Text("Unlocked: ${level!!.unlocks.joinToString(", ")}", style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                     }
@@ -437,7 +429,7 @@ private fun ChallengeCard(
                     CompleteChallengeButton(isCompleting, onComplete)
                 } else if (!completed && timeRemaining != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.AccessTime, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.4.dp))
+                        Icon(SfSymbols.icon("clock"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.4.dp))
                         Text(timeRemaining, style = IosText.subheadline, color = IosColors.textTertiary)
                     }
                 }
@@ -548,7 +540,7 @@ private fun AchievementCard(achievement: UserAchievement, modifier: Modifier, on
             )
             if (!unlocked && !inProgress) {
                 Icon(
-                    Icons.Filled.Lock,
+                    SfSymbols.icon("lock.fill"),
                     contentDescription = null,
                     tint = IosColors.textTertiary,
                     modifier = Modifier.size(19.2.dp).offset(16.dp, 16.dp),
@@ -666,7 +658,7 @@ internal fun ProgressChallengeHistorySection(state: ProgressUiState) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
-                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(57.6.dp))
+                Icon(SfSymbols.icon("questionmark.circle"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(57.6.dp))
                 Text("No challenge history yet", style = IosText.headline, color = IosColors.textTertiary)
                 Text("Complete challenges to see them here", style = IosText.callout, color = IosColors.textTertiary)
             }

@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -191,7 +189,7 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
 private fun ExportHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("export.back")) {
-            androidx.compose.material3.Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+            androidx.compose.material3.Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
         }
         Text("Export Data", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

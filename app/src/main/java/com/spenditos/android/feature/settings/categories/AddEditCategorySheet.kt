@@ -172,6 +172,7 @@ fun AddEditCategorySheet(
     error: String?,
     onDismiss: () -> Unit,
     onSave: (CategoryDraft) -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     var name by remember(category?.id) { mutableStateOf(category?.name.orEmpty()) }
     var color by remember(category?.id) { mutableStateOf(category?.color ?: categoryColors.first()) }
@@ -301,7 +302,7 @@ fun AddEditCategorySheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
-                    CategorySymbolBadge(icon ?: CategoryIcons.DEFAULT, name.ifEmpty { "Category" }, color, size = 40.dp)
+                    CategorySymbolBadge(icon, name.ifEmpty { "Category" }, color, size = 40.dp)
                     Text(name.ifEmpty { "Category Name" }, style = IosText.callout, color = IosColors.textPrimary)
                 }
             }
@@ -316,6 +317,15 @@ fun AddEditCategorySheet(
                     enabled = name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().testTag("categories.editor.save"),
                 )
+            }
+            if (onDelete != null) {
+                TextButton(
+                    onClick = onDelete,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth().testTag("categories.editor.delete"),
+                ) {
+                    Text("Delete Category", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.expense)
+                }
             }
         }
     }
@@ -368,7 +378,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
                 contentAlignment = Alignment.Center,
             ) {
                 if (value == "None") Text("None", style = IosText.caption2, color = IosColors.textSecondary)
-                else Icon(CategoryIcons.symbol(value, iconLibrary.firstOrNull { it.value == value }?.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                else Icon(CategoryIcons.symbol(value, iconLibrary.firstOrNull { it.value == value }?.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
             }
             if (selected) {
                 Box(Modifier.align(Alignment.TopEnd).size(18.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer)) {
@@ -457,8 +467,8 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
-                        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) Color.White else IosColors.textSecondary, modifier = Modifier.size(14.dp))
-                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) Color.White else IosColors.textSecondary)
+                        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) IosColors.spendOrange else IosColors.textSecondary, modifier = Modifier.size(14.dp))
+                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
                     }
                 }
             }

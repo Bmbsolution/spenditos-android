@@ -21,8 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -167,11 +165,11 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
 private fun MerchantHeader(onBack: () -> Unit, onAdd: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("merchants.back")) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
         }
         Text("Merchant Rules", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("merchants.add")) {
-            Icon(Icons.Rounded.AddCircle, contentDescription = "Add merchant rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
+            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add merchant rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
         }
     }
 }

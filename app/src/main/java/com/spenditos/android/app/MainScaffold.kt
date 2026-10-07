@@ -2,13 +2,9 @@ package com.spenditos.android.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -232,7 +228,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     if (currentRoute == Tab.HOME.route || currentRoute == Tab.TRANSACTIONS.route) {
                         GradientFab(
                             onClick = { showAdd = true },
-                            glyph = Icons.Filled.Add,
+                            glyph = SfSymbols.icon("plus"),
                             contentDescription = "Add transaction",
                             modifier = Modifier.padding(end = 20.dp).testTag("fab.add"),
                         )

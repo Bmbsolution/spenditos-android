@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,9 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LockReset
-import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -164,7 +162,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
 @Composable
 private fun ForgotHeaderIcon(isEmailStep: Boolean) {
     Icon(
-        imageVector = if (isEmailStep) Icons.Filled.LockReset else Icons.Filled.MarkEmailUnread,
+        imageVector = if (isEmailStep) SfSymbols.icon("lock.rotation") else SfSymbols.icon("envelope.badge.fill"),
         contentDescription = null,
         tint = IosColors.spendOrange,
         modifier = Modifier.size(72.dp),

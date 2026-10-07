@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,7 +58,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             item {
                 Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.xs)) {
                     IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+                        Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
                     }
                     Text("Offline Changes", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
                     TextButton(
@@ -129,7 +126,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(Spacing.s),
                     ) {
-                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
+                        Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
                         Text("All Changes Synced", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                         Text(
                             "New offline transactions will appear here until they reach the server.",

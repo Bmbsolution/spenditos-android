@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ListAlt
-import androidx.compose.material.icons.outlined.ContentCut
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -183,7 +179,7 @@ fun PulseHero(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(
-                            if (short) Icons.Outlined.ContentCut else SfSymbols.icon("sparkles"),
+                            if (short) SfSymbols.icon("scissors") else SfSymbols.icon("sparkles"),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(14.4.dp),
@@ -220,13 +216,13 @@ fun PulseHero(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
+            Icon(SfSymbols.icon("list.bullet.rectangle"), contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
             Spacer(Modifier.width(6.dp))
             Text("See the math", style = IosText.caption.w(FontWeight.Bold), color = Color.White.copy(alpha = 0.95f))
         }
 
         when (status.state) {
-            CashFlowStatus.State.OVER -> HeroButton("Review your plan", Icons.Outlined.Tune, onReviewPlan, "home.reviewPlan", weather.gradient.last())
+            CashFlowStatus.State.OVER -> HeroButton("Review your plan", SfSymbols.icon("slider.horizontal.3"), onReviewPlan, "home.reviewPlan", weather.gradient.last())
             CashFlowStatus.State.SETUP -> HeroButton("Add income", SfSymbols.icon("plus"), onAddIncome, "home.addIncome", weather.gradient.last())
             else -> Unit
         }

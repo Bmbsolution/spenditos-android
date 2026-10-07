@@ -1,8 +1,5 @@
 package com.spenditos.android.feature.settings
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -315,7 +312,7 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
 private fun ProfileHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
         }
         Text("Profile", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,8 +22,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -130,7 +129,7 @@ fun LoginScreen(
                                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        androidx.compose.material3.Icon(Icons.Filled.MarkEmailUnread, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        androidx.compose.material3.Icon(SfSymbols.icon("envelope.badge.fill"), contentDescription = null, modifier = Modifier.size(18.dp))
                                         Text("Enter Verification Code", style = IosText.subheadline.w(FontWeight.Bold), textAlign = TextAlign.Center)
                                     }
                                 }

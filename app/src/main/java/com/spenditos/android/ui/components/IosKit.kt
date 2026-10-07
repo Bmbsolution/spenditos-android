@@ -163,7 +163,7 @@ fun IconChip(icon: ImageVector, tint: Color, modifier: Modifier = Modifier, size
             .background(Brush.linearGradient(listOf(tint.copy(alpha = 0.24f), tint.copy(alpha = 0.10f))))
             .border(1.dp, tint.copy(alpha = 0.18f), shape),
         contentAlignment = Alignment.Center,
-    ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.5f)) }
+    ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.42f)) }
 }
 
 /**
@@ -181,7 +181,7 @@ fun CategorySymbolBadge(icon: String?, name: String, colorHex: String?, modifier
             CategoryIcons.symbol(icon, name),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(size * 0.54f),
+            modifier = Modifier.size(size * 0.45f),
         )
     }
 }

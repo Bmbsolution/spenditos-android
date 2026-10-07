@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -114,7 +112,7 @@ fun ReceiptScanScreen(
                         },
                     )
                     ReceiptActionCard(
-                        icon = Icons.Outlined.PhotoLibrary,
+                        icon = SfSymbols.icon("photo.on.rectangle"),
                         title = "Choose from library",
                         subtitle = "Select a photo from your device",
                         tint = IosColors.info,

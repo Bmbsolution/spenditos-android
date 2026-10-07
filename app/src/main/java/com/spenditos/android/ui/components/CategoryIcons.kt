@@ -38,12 +38,24 @@ object CategoryIcons {
             emojiToSymbol[raw]?.let { return it }
         }
         val name = categoryName?.lowercase().orEmpty()
-        fun has(vararg words: String) = words.any { name.contains(it) }
+        // Whole words, so "car" does not match Childcare or Credit card.
+        val tokens = name.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }.toSet()
+        fun has(vararg words: String) = words.any { word ->
+            val parts = word.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }
+            when {
+                parts.isEmpty() -> false
+                parts.size == 1 -> parts[0] in tokens
+                else -> name.contains(word)
+            }
+        }
         return when {
             has("internet", "wi-fi", "wifi") -> "globe"
             has("developer", "code", "apps") -> "chevron.left.forwardslash.chevron.right"
-            has("salary", "money", "cash") -> "banknote"
+            has("paycheck", "salary", "money", "cash") -> "banknote"
             has("income", "freelance", "work") -> "briefcase"
+            has("childcare", "daycare", "baby") -> "figure.and.child.holdinghands"
+            has("credit", "card", "debt") -> "creditcard"
+            has("fitness", "gym") -> "figure.strengthtraining.traditional"
             has("home", "housing", "rent") -> "house"
             has("grocery", "groceries", "shopping") -> "cart"
             has("transport", "car", "travel") -> "car"

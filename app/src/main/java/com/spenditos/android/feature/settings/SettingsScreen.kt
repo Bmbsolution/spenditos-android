@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -255,13 +252,13 @@ fun SettingsScreen(
                 GroupedCard {
                     IosRow(
                         "Privacy Policy",
-                        icon = Icons.Outlined.PrivacyTip,
+                        icon = SfSymbols.icon("hand.raised.fill"),
                         iconTint = Color(0xFF8B5CF6),
                         onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://spenditos.com/privacy"))) },
                     )
                     IosRow(
                         "Terms of Service",
-                        icon = Icons.Outlined.Description,
+                        icon = SfSymbols.icon("doc.text"),
                         iconTint = slate,
                         onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://spenditos.com/terms"))) },
                     )

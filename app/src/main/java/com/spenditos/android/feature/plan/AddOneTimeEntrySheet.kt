@@ -21,8 +21,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -134,7 +132,7 @@ fun AddOneTimeEntrySheet(
                         Text("Type", style = IosText.body, color = IosColors.textPrimary)
                         Spacer(Modifier.weight(1f))
                         Text(if (isIncome) "Income" else "Expense", style = IosText.body, color = IosColors.textSecondary)
-                        Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
+                        Icon(SfSymbols.icon("chevron.up.chevron.down"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
                         DropdownMenuItem(

@@ -25,12 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,13 +69,13 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val featureRows = listOf(
         Feature(SfSymbols.icon("doc.text.viewfinder"), "Unlimited AI Receipt Scanning", "Snap photos of receipts and let AI extract all details", SystemBlue),
-        Feature(Icons.Outlined.GraphicEq, "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category", SystemBlue),
+        Feature(SfSymbols.icon("waveform"), "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category", SystemBlue),
         Feature(SfSymbols.icon("chart.line.uptrend.xyaxis"), "Advanced Analytics", "Daily trends, income analysis, and detailed reports", SystemBlue),
         Feature(SfSymbols.icon("arrow.triangle.2.circlepath"), "Unlimited income items and bills", "Add as many income items and bills as you need", SystemBlue),
         // Android-only Pro features remain available with the same feature-row styling.
         Feature(SfSymbols.icon("calendar.badge.clock"), "Paycheck periods", "See how each paycheck covers what is due.", SystemBlue),
         Feature(SfSymbols.icon("doc.text"), "Statement import", "Bring in a bank CSV or Excel file with the columns mapped for you.", SystemBlue),
-        Feature(Icons.Outlined.Mic, "More receipt scans and voice captures", "More receipt scans and voice captures each month.", SystemBlue),
+        Feature(SfSymbols.icon("mic"), "More receipt scans and voice captures", "More receipt scans and voice captures each month.", SystemBlue),
     )
 
     Box(Modifier.fillMaxSize().background(if (isSystemInDarkTheme()) Color.Black else Color.White).statusBarsPadding()) {
@@ -244,14 +238,14 @@ private fun OfferingsUnavailable(onRetry: () -> Unit, hasError: Boolean) {
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
         Box(Modifier.size(43.2.dp)) {
-            Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.fillMaxSize())
-            Icon(Icons.Rounded.Error, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp).align(Alignment.BottomEnd))
+            Icon(SfSymbols.icon("cart"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.fillMaxSize())
+            Icon(SfSymbols.icon("exclamationmark.circle.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp).align(Alignment.BottomEnd))
         }
         Text("Prices Unavailable", style = IosText.headline, color = IosColors.textPrimary)
         Text("We couldn't load subscription options. Check your connection and try again.", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         SystemButton(
             "Retry",
-            Icons.Filled.Refresh,
+            SfSymbols.icon("arrow.clockwise"),
             onRetry,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp).then(if (hasError) Modifier else Modifier.testTag("pro.retry")),
         )

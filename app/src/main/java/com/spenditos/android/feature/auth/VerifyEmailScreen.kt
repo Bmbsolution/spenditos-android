@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -77,7 +76,7 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(Icons.Filled.MarkEmailUnread, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
+                    Icon(SfSymbols.icon("envelope.badge.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
                     Text("Verify your email", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
                     Text(
                         "Enter the 6-digit code we sent to\n$email",

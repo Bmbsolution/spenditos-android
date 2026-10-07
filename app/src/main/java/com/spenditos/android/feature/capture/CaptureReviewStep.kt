@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.Icon
@@ -159,7 +157,7 @@ private fun ReviewSummaryRow(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                if (item.include) SfSymbols.icon("checkmark.circle.fill") else Icons.Outlined.Circle,
+                if (item.include) SfSymbols.icon("checkmark.circle.fill") else SfSymbols.icon("circle"),
                 contentDescription = null,
                 tint = if (item.include) IosColors.spendOrange else IosColors.textTertiary,
                 modifier = Modifier.size(19.dp),
@@ -396,7 +394,7 @@ private fun ReviewItemEditorSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Icon(Icons.Outlined.GridView, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+                        Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(Spacing.m))
                         Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
                     }

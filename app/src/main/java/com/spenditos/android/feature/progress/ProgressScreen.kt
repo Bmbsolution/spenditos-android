@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.progress
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -8,8 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +42,7 @@ fun ProgressScreen(onBack: () -> Unit) {
         topBar = {
             Box(Modifier.fillMaxWidth().statusBarsPadding().height(44.dp)) {
                 IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("progress.back")) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back")
                 }
                 Text("Progress", style = IosText.headline, modifier = Modifier.align(Alignment.Center))
             }

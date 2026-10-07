@@ -27,12 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -241,7 +236,7 @@ private fun WelcomePage(onGetStarted: () -> Unit) {
                 Modifier.size(120.dp).then(glassCardModifier(RoundedCornerShape(Radius.l), shadowAlpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                val image = slide.symbol?.let { SfSymbols.icon(it) } ?: Icons.Filled.ArrowCircleRight
+                val image = slide.symbol?.let { SfSymbols.icon(it) } ?: SfSymbols.icon("arrow.right.circle.fill")
                 Icon(image, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
             }
             Column(
@@ -280,7 +275,7 @@ private fun NamePage(name: String, onNameChange: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(32.dp),
     ) {
         Spacer(Modifier.weight(1f))
-        Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
+        Icon(SfSymbols.icon("person.crop.circle.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text("What should we call you?", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             Text("This is shown on your dashboard", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
@@ -349,7 +344,7 @@ private fun PreferencesPage(
                     TextButton(onClick = onShowCurrencyPicker, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("All currencies", style = IosText.subheadline, color = IosColors.spendOrange)
-                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.dp))
+                            Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.dp))
                         }
                     }
                 }
@@ -423,7 +418,7 @@ private fun DetectedCountryCard(country: String, currency: String) {
             Text(countryName(country), style = IosText.body, color = IosColors.textPrimary)
             Text("Detected currency: $currency", style = IosText.subheadline, color = IosColors.textSecondary)
         }
-        Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = income, modifier = Modifier.size(22.dp))
+        Icon(SfSymbols.icon("checkmark.circle"), contentDescription = null, tint = income, modifier = Modifier.size(22.dp))
     }
 }
 
@@ -479,7 +474,7 @@ private fun ReadyPage(state: OnboardingUiState) {
         Spacer(Modifier.weight(1f))
         val readyBrush = Brush.linearGradient(listOf(IosColors.income, Color(0xFF30B0C7)))
         Icon(
-            Icons.Rounded.CheckCircle,
+            SfSymbols.icon("checkmark.circle.fill"),
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier.size(96.dp)
@@ -514,7 +509,7 @@ private fun ReadyPage(state: OnboardingUiState) {
 @Composable
 private fun SummaryRow(icon: String, text: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
-        val image = if (icon == "square.grid.2x2") Icons.Outlined.GridView else SfSymbols.icon(icon)
+        val image = if (icon == "square.grid.2x2") SfSymbols.icon("square.grid.2x2") else SfSymbols.icon(icon)
         Icon(image, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(24.dp))
         Text(text, style = IosText.callout, color = IosColors.textSecondary)
         Spacer(Modifier.weight(1f))

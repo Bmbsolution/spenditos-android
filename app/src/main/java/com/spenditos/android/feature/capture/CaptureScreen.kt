@@ -8,13 +8,7 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.outlined.FormatQuote
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.MicOff
-import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -262,7 +256,7 @@ fun CaptureScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                                 ) {
-                                    Icon(Icons.Outlined.GridView, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+                                    Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
                                     Text("Nothing recognized — try naming an amount.", modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                                 }
                             }
@@ -462,7 +456,7 @@ private fun RecordingContent(time: String, onStop: () -> Unit) {
     ) {
         Text(time, style = IosText.rounded(22, FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.testTag("capture.timer"))
         Box(Modifier.fillMaxWidth().height(60.dp).padding(horizontal = Spacing.m), contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+            Icon(SfSymbols.icon("waveform"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
         }
         Box(Modifier.size(100.dp), contentAlignment = Alignment.Center) {
             Box(
@@ -480,7 +474,7 @@ private fun RecordingContent(time: String, onStop: () -> Unit) {
             modifier = Modifier.testTag("capture.stop"),
             fill = IosColors.expense,
             textColor = Color.White,
-            icon = Icons.Filled.Stop,
+            icon = SfSymbols.icon("stop.fill"),
         )
     }
 }
@@ -492,7 +486,7 @@ private fun PermissionContent(onOpenSettings: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
-        Icon(Icons.Outlined.MicOff, contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(67.dp))
+        Icon(SfSymbols.icon("mic.slash.fill"), contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(67.dp))
         Text("Microphone Access Required", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
         Text("Allow microphone access in Settings to use voice entry.", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
@@ -540,7 +534,7 @@ private fun ExamplePrompts() {
             "Paid \$12.50 for lunch today",
         ).forEach { text ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.FormatQuote, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
+                Icon(SfSymbols.icon("quote.opening"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
                 Text(text, style = IosText.subheadline, color = IosColors.textSecondary)
             }
         }
@@ -556,7 +550,7 @@ private fun CaptureMessage(text: String, warning: Boolean, modifier: Modifier = 
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Icon(if (warning) Icons.Outlined.WifiOff else SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+            Icon(if (warning) SfSymbols.icon("wifi.slash") else SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             Text(text, style = IosText.body, color = IosColors.textPrimary, modifier = modifier)
         }
     }
@@ -586,7 +580,7 @@ private fun TranscriptBanner(transcript: String, onRestart: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
+            Icon(SfSymbols.icon("waveform"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
             Text("Transcript", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Spacer(Modifier.weight(1f))
             Text(

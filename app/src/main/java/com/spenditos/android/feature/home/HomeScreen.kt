@@ -18,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -272,7 +271,7 @@ private fun EmptyHomeState(onLogFirst: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Icon(Icons.Rounded.AddCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
+            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
             Text("Log First Transaction", style = IosText.headline, color = Color.White)
         }
     }

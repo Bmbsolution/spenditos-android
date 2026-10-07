@@ -22,11 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -438,11 +433,11 @@ private fun TransactionDaysCard(
 @Composable
 private fun SyncBanner(state: TransactionListUiState, onOpenNotSynced: () -> Unit, modifier: Modifier = Modifier) {
     val (icon, message, tint) = when {
-        state.failedCount > 0 -> Triple(Icons.Outlined.ErrorOutline, "${state.failedCount} not synced. Tap to review.", IosColors.expense)
-        !state.isOnline && state.waitingCount > 0 -> Triple(Icons.Outlined.CloudOff, "Offline. ${state.waitingCount} waiting to sync.", IosColors.spendOrange)
-        !state.isOnline -> Triple(Icons.Outlined.CloudOff, "Offline. Showing what's saved on this device.", IosColors.spendOrange)
-        state.waitingCount > 0 -> Triple(Icons.Outlined.Schedule, "${state.waitingCount} waiting to sync.", IosColors.spendOrange)
-        else -> Triple(Icons.Outlined.CloudOff, state.loadError.orEmpty(), IosColors.expense)
+        state.failedCount > 0 -> Triple(SfSymbols.icon("exclamationmark.circle"), "${state.failedCount} not synced. Tap to review.", IosColors.expense)
+        !state.isOnline && state.waitingCount > 0 -> Triple(SfSymbols.icon("icloud.slash"), "Offline. ${state.waitingCount} waiting to sync.", IosColors.spendOrange)
+        !state.isOnline -> Triple(SfSymbols.icon("icloud.slash"), "Offline. Showing what's saved on this device.", IosColors.spendOrange)
+        state.waitingCount > 0 -> Triple(SfSymbols.icon("clock"), "${state.waitingCount} waiting to sync.", IosColors.spendOrange)
+        else -> Triple(SfSymbols.icon("icloud.slash"), state.loadError.orEmpty(), IosColors.expense)
     }
     GlassCard(
         modifier = modifier
@@ -519,7 +514,7 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Box(Modifier.size(12.dp).background(tint, CircleShape))
-        RowCategoryBadge(name = row.categoryName, tint = tint)
+        RowCategoryBadge(icon = row.categoryIcon, name = row.categoryName, tint = tint)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(
                 displayTitle,
@@ -546,17 +541,17 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
 }
 
 @Composable
-private fun RowCategoryBadge(name: String, tint: Color) {
+private fun RowCategoryBadge(icon: String?, name: String, tint: Color) {
     val shape = RoundedCornerShape(Radius.s)
     Box(
         Modifier.size(44.dp).clip(shape).background(tint.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            CategoryIcons.symbol(null, name),
+            CategoryIcons.symbol(icon, name),
             contentDescription = null,
             tint = IosColors.textPrimary,
-            modifier = Modifier.size(19.8.dp),
+            modifier = Modifier.size(16.dp),
         )
     }
 }
@@ -569,7 +564,7 @@ private fun EmptyState(onAdd: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(
-            Icons.Outlined.Inbox,
+            SfSymbols.icon("tray"),
             contentDescription = null,
             tint = IosColors.textTertiary,
             modifier = Modifier.size(56.dp),
@@ -595,7 +590,7 @@ private fun EmptyState(onAdd: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Icon(
-                Icons.Rounded.AddCircle,
+                SfSymbols.icon("plus.circle.fill"),
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.size(20.4.dp),

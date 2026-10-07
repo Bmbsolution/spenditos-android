@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.lock
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -103,7 +102,7 @@ fun AppLockScreen(
                 Modifier.size(120.dp).background(IosColors.spendOrange.copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Fingerprint, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
+                Icon(SfSymbols.icon("touchid"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text("Locked", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
@@ -147,7 +146,7 @@ private fun RowContent(busy: Boolean) {
         if (busy) {
             CircularProgressIndicator(Modifier.size(16.dp).testTag("lock.busy"), color = Color.White, strokeWidth = 2.dp)
         } else {
-            Icon(Icons.Filled.Fingerprint, contentDescription = null, tint = Color.Black, modifier = Modifier.size(23.dp))
+            Icon(SfSymbols.icon("touchid"), contentDescription = null, tint = Color.Black, modifier = Modifier.size(23.dp))
         }
         Text("Unlock with Biometrics", style = IosText.headline, color = Color.Black)
     }

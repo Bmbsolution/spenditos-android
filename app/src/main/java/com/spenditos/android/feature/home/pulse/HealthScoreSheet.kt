@@ -15,9 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.NorthEast
-import androidx.compose.material.icons.outlined.SouthEast
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -69,9 +66,9 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
         else -> "Critical"
     }
     val (trendIcon, trendColor, trendLabel) = when (breakdown.trend) {
-        SpendingTrend.INCREASING -> Triple<ImageVector, Color, String>(Icons.Outlined.NorthEast, IosColors.expense, "Increasing")
+        SpendingTrend.INCREASING -> Triple<ImageVector, Color, String>(SfSymbols.icon("arrow.up.forward"), IosColors.expense, "Increasing")
         SpendingTrend.STABLE -> Triple(SfSymbols.icon("minus"), IosColors.warning, "Stable")
-        SpendingTrend.DECREASING -> Triple(Icons.Outlined.SouthEast, IosColors.income, "Decreasing")
+        SpendingTrend.DECREASING -> Triple(SfSymbols.icon("arrow.down.forward"), IosColors.income, "Decreasing")
     }
     val trendScore = when (breakdown.trend) {
         SpendingTrend.DECREASING -> 1.0

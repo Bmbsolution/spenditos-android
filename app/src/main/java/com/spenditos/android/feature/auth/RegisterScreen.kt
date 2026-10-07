@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,9 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -190,7 +188,7 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
                 val tint = if (requirement.isMet) Color(0xFF34C759) else Color.Gray
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
-                        imageVector = if (requirement.isMet) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                        imageVector = if (requirement.isMet) SfSymbols.icon("checkmark.circle.fill") else SfSymbols.icon("circle"),
                         contentDescription = null,
                         tint = tint,
                         modifier = Modifier.size(14.dp),

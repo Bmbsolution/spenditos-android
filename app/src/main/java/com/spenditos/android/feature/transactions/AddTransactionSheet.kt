@@ -32,8 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FormatAlignLeft
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -279,7 +277,7 @@ fun AddTransactionSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Icon(Icons.Outlined.GridView, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+                        Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(Spacing.m))
                         Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
                     }
@@ -457,7 +455,7 @@ private fun QuickCategoryChip(
     ) {
         if (symbol != null) {
             Icon(
-                if (symbol == "square.grid.2x2") Icons.Outlined.GridView else SfSymbols.icon(symbol),
+                if (symbol == "square.grid.2x2") SfSymbols.icon("square.grid.2x2") else SfSymbols.icon(symbol),
                 contentDescription = null,
                 tint = if (selected) IosColors.spendOrange else IosColors.textSecondary,
                 modifier = Modifier.size(19.dp),
@@ -551,7 +549,7 @@ private fun DescriptionField(value: String, onValueChange: (String) -> Unit, mod
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Icon(Icons.Outlined.FormatAlignLeft, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
+            Icon(SfSymbols.icon("text.alignleft"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,

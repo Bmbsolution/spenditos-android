@@ -19,9 +19,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -130,7 +127,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             ) {
                                 Icon(
-                                    if (requirement.isMet) SfSymbols.icon("checkmark.circle.fill") else Icons.Outlined.Circle,
+                                    if (requirement.isMet) SfSymbols.icon("checkmark.circle.fill") else SfSymbols.icon("circle"),
                                     contentDescription = null,
                                     tint = if (requirement.isMet) finance.income else IosColors.textTertiary,
                                     modifier = Modifier.size(18.dp),
@@ -212,7 +209,7 @@ private fun PasswordField(value: String, onValueChange: (String) -> Unit, placeh
 private fun PasswordHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
         }
         Text("Change Password", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

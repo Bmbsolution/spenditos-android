@@ -18,11 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddCircle
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -150,10 +145,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                             visible.forEachIndexed { index, category ->
                                 CategoryManagementRow(
                                     category = category,
-                                    index = index,
                                     onOpen = { categoryToEdit = category; showEditor = true },
-                                    onEdit = { categoryToEdit = category; showEditor = true },
-                                    onDelete = { categoryToDelete = category },
                                 )
                                 if (index < visible.lastIndex) HorizontalDivider(Modifier.padding(start = 72.dp), color = IosColors.separator)
                             }
@@ -182,6 +174,13 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             error = state.error,
             onDismiss = { showEditor = false; categoryToEdit = null },
             onSave = { draft -> viewModel.saveCategory(categoryToEdit?.id, draft) },
+            onDelete = categoryToEdit?.takeUnless { it.isSystemSuggestion }?.let { current ->
+                {
+                    showEditor = false
+                    categoryToEdit = null
+                    categoryToDelete = current
+                }
+            },
         )
     }
 
@@ -208,11 +207,11 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
 private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
         Text("Categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
-            Icon(Icons.Rounded.AddCircle, contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
+            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
     }
 }
@@ -303,10 +302,11 @@ private fun CategoryTypePicker(selectedIncome: Boolean, onSelectIncome: (Boolean
 }
 
 @Composable
-private fun CategoryManagementRow(category: Category, index: Int, onOpen: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth().testTag("categories.row.${category.id}"), verticalAlignment = Alignment.CenterVertically) {
+private fun CategoryManagementRow(category: Category, onOpen: () -> Unit) {
+    Row(Modifier.fillMaxWidth().testTag("categories.row.${category.id}")) {
         Row(
-            Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen).testTag("categories.item.${category.id}")
+            Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen)
+                .testTag("categories.item.${category.id}")
                 .padding(horizontal = Spacing.m, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -322,12 +322,6 @@ private fun CategoryManagementRow(category: Category, index: Int, onOpen: () -> 
                 )
             }
             Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
-        }
-        IconButton(onClick = onEdit, modifier = Modifier.size(40.dp).testTag("categories.edit.${category.id}")) {
-            Icon(Icons.Filled.Edit, contentDescription = "Edit ${category.name}", tint = IosColors.textSecondary, modifier = Modifier.size(19.dp))
-        }
-        IconButton(onClick = onDelete, modifier = Modifier.size(40.dp).testTag("categories.delete.${category.id}")) {
-            Icon(Icons.Filled.DeleteOutline, contentDescription = "Delete ${category.name}", tint = IosColors.expense.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
         }
     }
 }
