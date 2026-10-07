@@ -57,14 +57,16 @@ android {
 
     flavorDimensions += "env"
     productFlavors {
-        listOf("staging", "prod", "harness").forEach { env ->
+        listOf("staging", "prod", "harness", "local").forEach { env ->
             create(env) {
                 dimension = "env"
                 val cfg = envConfig(env)
                 val harness = env == "harness"
-                val apiHost = if (harness) "" else validatedHost(env, "API_HOST", cfg.getProperty("API_HOST"), required = true)
-                val wsHost = if (harness) "" else validatedHost(env, "WEB_SOCKET_HOST", cfg.getProperty("WEB_SOCKET_HOST"), required = false)
-                val apiBaseUrl = if (harness) cfg.getProperty("API_BASE_URL") else "https://$apiHost"
+                // `local` = real sign-in/refresh flow against the e2e sidecar on 127.0.0.1 (debug only).
+                val localUrl = harness || env == "local"
+                val apiHost = if (localUrl) "" else validatedHost(env, "API_HOST", cfg.getProperty("API_HOST"), required = true)
+                val wsHost = if (localUrl) "" else validatedHost(env, "WEB_SOCKET_HOST", cfg.getProperty("WEB_SOCKET_HOST"), required = false)
+                val apiBaseUrl = if (localUrl) cfg.getProperty("API_BASE_URL") else "https://$apiHost"
                 buildConfigField("String", "API_BASE_URL", quoted(apiBaseUrl))
                 buildConfigField("String", "WEB_SOCKET_URL", quoted(if (wsHost.isEmpty()) "" else "wss://$wsHost"))
                 buildConfigField("String", "DEPLOYMENT_STAGE", quoted(cfg.getProperty("DEPLOYMENT_STAGE", env)))
@@ -114,7 +116,7 @@ androidComponents {
     beforeVariants { variant ->
         val env = variant.productFlavors.firstOrNull { it.first == "env" }?.second
         if (env == "prod" && variant.buildType == "debug") variant.enable = false
-        if (env == "harness" && variant.buildType == "release") variant.enable = false
+        if ((env == "harness" || env == "local") && variant.buildType == "release") variant.enable = false
     }
 }
 
