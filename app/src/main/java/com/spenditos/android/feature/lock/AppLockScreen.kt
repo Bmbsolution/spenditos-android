@@ -149,7 +149,7 @@ private fun RowContent(busy: Boolean) {
         } else {
             Icon(Icons.Filled.Fingerprint, contentDescription = null, tint = Color.Black, modifier = Modifier.size(23.dp))
         }
-        Text("Unlock", style = IosText.headline, color = Color.Black)
+        Text("Unlock with Biometrics", style = IosText.headline, color = Color.Black)
     }
 }
 

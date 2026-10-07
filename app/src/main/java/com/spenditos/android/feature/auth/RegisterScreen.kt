@@ -185,8 +185,6 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
                 )
             }
         }
-        // Android exposes one strength label; keep it in the same caption style as the iOS checks.
-        Text(strength.name.lowercase().replaceFirstChar { it.uppercase() }, style = IosText.caption, color = IosColors.textSecondary)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             requirements.forEach { requirement ->
                 val tint = if (requirement.isMet) Color(0xFF34C759) else Color.Gray

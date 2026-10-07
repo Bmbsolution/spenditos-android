@@ -28,12 +28,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowCircleRight
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -52,10 +52,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -237,7 +241,7 @@ private fun WelcomePage(onGetStarted: () -> Unit) {
                 Modifier.size(120.dp).then(glassCardModifier(RoundedCornerShape(Radius.l), shadowAlpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                val image = slide.symbol?.let { SfSymbols.icon(it) } ?: Icons.AutoMirrored.Rounded.ArrowForward
+                val image = slide.symbol?.let { SfSymbols.icon(it) } ?: Icons.Filled.ArrowCircleRight
                 Icon(image, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
             }
             Column(
@@ -304,12 +308,13 @@ private fun PreferencesPage(
     onRetry: () -> Unit,
     onShowCurrencyPicker: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(32.dp),
-    ) {
-        Spacer(Modifier.height(Spacing.s))
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.weight(1f))
+        Column(
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(32.dp),
+        ) {
         Icon(SfSymbols.icon("gearshape.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text("Set your preferences", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
@@ -399,7 +404,8 @@ private fun PreferencesPage(
                 }
             }
         }
-        Spacer(Modifier.height(Spacing.s))
+        }
+        Spacer(Modifier.weight(1f))
     }
 }
 
@@ -471,14 +477,18 @@ private fun ReadyPage(state: OnboardingUiState) {
         verticalArrangement = Arrangement.spacedBy(32.dp),
     ) {
         Spacer(Modifier.weight(1f))
-        Box(
-            Modifier.size(160.dp).clip(CircleShape).background(IosColors.income.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(Modifier.size(80.dp).clip(CircleShape).background(Brush.linearGradient(listOf(IosColors.income, Color(0xFF30B0C7)))), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
-            }
-        }
+        val readyBrush = Brush.linearGradient(listOf(IosColors.income, Color(0xFF30B0C7)))
+        Icon(
+            Icons.Rounded.CheckCircle,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(96.dp)
+                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                .drawWithContent {
+                    drawContent()
+                    drawRect(brush = readyBrush, blendMode = BlendMode.SrcIn)
+                },
+        )
         Column(
             Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -569,7 +579,7 @@ private fun OnboardingCompletionButton(loading: Boolean, onClick: () -> Unit, mo
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
             if (loading) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-            Text("Finish setup", style = IosText.headline, color = Color.White)
+            Text("Log First Transaction", style = IosText.headline, color = Color.White)
         }
     }
 }
@@ -659,7 +669,7 @@ private fun CurrencyPickerRow(option: CurrencyOption, selected: Boolean, onClick
             Text(option.name, style = IosText.caption, color = IosColors.textSecondary)
         }
         Spacer(Modifier.weight(1f))
-        if (selected) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
+        if (selected) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = Color(0xFFFF9500), modifier = Modifier.size(20.dp))
     }
 }
 

@@ -22,7 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -118,11 +118,9 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(onDone = { viewModel.signIn() }),
                         modifier = Modifier.fillMaxWidth().testTag("login.password"),
                     )
-                    if (state.error != null || state.needsVerification) {
+                    if (state.error != null) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            state.error?.let { error ->
-                                AuthErrorBanner(error, Modifier.fillMaxWidth(), Modifier.testTag("login.error"))
-                            }
+                            AuthErrorBanner(state.error.orEmpty(), Modifier.fillMaxWidth(), Modifier.testTag("login.error"))
                             if (state.needsVerification) {
                                 Button(
                                     onClick = { onNeedsVerification(state.verificationEmail ?: state.email) },
@@ -132,7 +130,7 @@ fun LoginScreen(
                                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        androidx.compose.material3.Icon(Icons.Outlined.Email, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        androidx.compose.material3.Icon(Icons.Filled.MarkEmailUnread, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Text("Enter Verification Code", style = IosText.subheadline.w(FontWeight.Bold), textAlign = TextAlign.Center)
                                     }
                                 }

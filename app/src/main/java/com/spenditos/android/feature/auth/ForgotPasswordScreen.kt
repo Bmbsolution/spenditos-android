@@ -19,8 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.filled.LockReset
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -164,7 +164,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
 @Composable
 private fun ForgotHeaderIcon(isEmailStep: Boolean) {
     Icon(
-        imageVector = if (isEmailStep) Icons.Outlined.Lock else Icons.Outlined.Email,
+        imageVector = if (isEmailStep) Icons.Filled.LockReset else Icons.Filled.MarkEmailUnread,
         contentDescription = null,
         tint = IosColors.spendOrange,
         modifier = Modifier.size(72.dp),

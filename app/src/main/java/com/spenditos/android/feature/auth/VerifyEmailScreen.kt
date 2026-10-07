@@ -3,6 +3,8 @@ package com.spenditos.android.feature.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +22,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,7 +77,7 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(Icons.Outlined.Email, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
+                    Icon(Icons.Filled.MarkEmailUnread, contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
                     Text("Verify your email", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
                     Text(
                         "Enter the 6-digit code we sent to\n$email",
@@ -128,6 +131,8 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
 
 @Composable
 private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -136,11 +141,12 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
         textStyle = IosText.rounded(28, FontWeight.Bold).copy(color = Color.Transparent, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(Color.Transparent),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        interactionSource = interactionSource,
         decorationBox = { innerTextField ->
             Box(contentAlignment = Alignment.Center) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     repeat(6) { index ->
-                        OtpDigitBox(value.getOrNull(index)?.toString().orEmpty(), index == value.length)
+                        OtpDigitBox(value.getOrNull(index)?.toString().orEmpty(), focused && index == value.length)
                     }
                 }
                 Box(Modifier.size(1.dp)) { innerTextField() }
