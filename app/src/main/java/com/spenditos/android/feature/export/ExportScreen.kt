@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,7 +52,6 @@ import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.SectionHeader
 import com.spenditos.android.ui.theme.IosColors
@@ -130,17 +130,17 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
                     divider = false,
                     modifier = Modifier.testTag("export.end"),
                 )
-                androidx.compose.material3.HorizontalDivider(color = IosColors.separator)
+                androidx.compose.material3.HorizontalDivider(color = Color.Black.copy(alpha = 0.06f))
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
+                    Modifier.fillMaxWidth()
+                        .clickable(enabled = state.canExport && !state.isExporting, role = Role.Button, onClick = viewModel::export)
+                        .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                        .testTag("export.run"),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
-                    PillButton(
-                        text = "Export Transactions",
-                        onClick = viewModel::export,
-                        enabled = state.canExport && !state.isExporting,
-                        modifier = Modifier.testTag("export.run"),
-                    )
+                    Icon(SfSymbols.icon("square.and.arrow.up"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
+                    Text("Export Transactions", style = IosText.callout, color = IosColors.spendOrange)
                 }
             }
 

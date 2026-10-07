@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +79,7 @@ fun SettingsScreen(
                     onClick = onOpenProfile,
                 ) {
                     Row(
-                        Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                        Modifier.padding(horizontal = Spacing.m, vertical = Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                     ) {
@@ -89,14 +90,14 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 initials(state.email),
-                                style = IosText.title3.w(FontWeight.SemiBold),
+                                style = IosText.headline,
                                 color = IosColors.spendOrange,
                             )
                         }
                         Column(Modifier.weight(1f).testTag("settings.account"), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                             Text(
                                 "Spenditos User",
-                                style = IosText.title3.w(FontWeight.SemiBold),
+                                style = IosText.headline,
                                 color = IosColors.textPrimary,
                                 maxLines = 1,
                             )
@@ -104,7 +105,7 @@ fun SettingsScreen(
                                 Text(it, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1)
                             }
                         }
-                        Text("›", style = IosText.title, color = IosColors.textTertiary)
+                        Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -126,9 +127,9 @@ fun SettingsScreen(
                 ) { granted -> if (granted) viewModel.setPush(true) }
                 GroupedCard {
                     IosRow(
-                        "Enable notifications",
+                        if (state.pushEnabled) "Daily logging reminder" else "Enable notifications",
                         subtitle = if (state.pushEnabled) "A daily nudge to log your spending" else "Notifications are turned off",
-                        icon = SfSymbols.icon(if (state.pushEnabled) "bell.badge.fill" else "bell.slash.fill"),
+                        icon = SfSymbols.icon(if (state.pushEnabled) "square.and.pencil" else "bell.slash.fill"),
                         iconTint = if (state.pushEnabled) IosColors.spendOrange else IosColors.neutral,
                         chevron = false,
                         divider = false,
@@ -157,7 +158,7 @@ fun SettingsScreen(
                         "Progress",
                         subtitle = "Streak, level and achievements",
                         icon = SfSymbols.icon("flame.fill"),
-                        iconTint = Color(0xFFFF6B35),
+                        iconTint = IosColors.spendOrange,
                         onClick = onOpenProgress,
                         divider = state.lockAvailable,
                         modifier = Modifier.testTag("settings.progress"),
@@ -194,7 +195,7 @@ fun SettingsScreen(
             item {
                 GroupedCard {
                     IosRow("Import", subtitle = "Bank statement or CSV", icon = SfSymbols.icon("square.and.arrow.down"), iconTint = finance.income, onClick = onOpenStatementImport, modifier = Modifier.testTag("settings.importStatement"))
-                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF4F8AC9), onClick = onOpenExport, modifier = Modifier.testTag("settings.export"))
+                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF3B82F6), onClick = onOpenExport, modifier = Modifier.testTag("settings.export"))
                     IosRow(
                         if (state.unsyncedCount == 0) "Everything is synced" else "Waiting to sync (${state.unsyncedCount})",
                         icon = SfSymbols.icon(if (state.unsyncedCount > 0) "arrow.triangle.2.circlepath.icloud" else "checkmark.icloud"),
@@ -209,7 +210,7 @@ fun SettingsScreen(
                     else "Everything is synced. Changes saved offline show up here until they upload.",
                     style = IosText.footnote,
                     color = IosColors.textSecondary,
-                    modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                    modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
                 )
             }
 
@@ -249,7 +250,7 @@ fun SettingsScreen(
                         Modifier.fillMaxWidth().clickable(role = Role.Button) { confirmSignOut = true }.padding(vertical = Spacing.m).testTag("settings.signOut"),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Sign Out", style = IosText.body, color = MaterialTheme.colorScheme.error)
+                        Text("Sign Out", style = IosText.callout, color = Color(0xFFFF3B30))
                     }
                 }
             }
@@ -272,12 +273,12 @@ fun SettingsScreen(
 }
 
 private fun initials(email: String?): String {
-    val local = email?.substringBefore('@').orEmpty()
-    val parts = local.split('.', '_', '-', ' ').filter { it.isNotBlank() }
-    val letters = when {
-        parts.size >= 2 -> "${parts[0].first()}${parts[1].first()}"
-        local.length >= 2 -> local.take(2)
-        else -> local.ifBlank { "?" }
+    val name = email.orEmpty()
+    val parts = name.split(' ').filter { it.isNotBlank() }
+    val letters = if (parts.size >= 2) {
+        "${parts[0].first()}${parts[1].first()}"
+    } else {
+        name.take(2).ifBlank { "?" }
     }
     return letters.uppercase()
 }

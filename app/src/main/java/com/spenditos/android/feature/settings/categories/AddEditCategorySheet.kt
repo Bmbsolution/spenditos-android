@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +23,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +45,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategoryIcons
@@ -171,6 +176,14 @@ fun AddEditCategorySheet(
     var icon by remember(category?.id) { mutableStateOf(category?.icon) }
     var isIncome by remember(category?.id) { mutableStateOf(category?.isIncome ?: initialIsIncome) }
     var showIconLibrary by remember { mutableStateOf(false) }
+    var typeMenu by remember { mutableStateOf(false) }
+    val quickIcons = remember(name, icon) {
+        val tokens = name.lowercase().split(Regex("\\s+")).filter { it.length > 1 }
+        val matched = iconLibrary.filter { item ->
+            tokens.any { token -> item.name.contains(token, ignoreCase = true) || item.keywords.contains(token, ignoreCase = true) }
+        }.map { it.value }
+        (listOfNotNull(icon) + matched + categoryIcons).distinct().take(10)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -207,22 +220,33 @@ fun AddEditCategorySheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Type")
-                Row(
-                    Modifier.fillMaxWidth().clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Spacing.xs),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                ) {
-                    listOf(false to "Expense", true to "Income").forEach { (income, label) ->
-                        val selected = isIncome == income
-                        Row(
-                            Modifier.weight(1f).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
-                                .clickable(role = Role.Tab) { isIncome = income }.semantics { this.selected = selected }
-                                .testTag("categories.editor.type.${label.lowercase()}").padding(vertical = Spacing.s + 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(SfSymbols.icon(if (income) "arrow.down" else "arrow.up"), contentDescription = null, modifier = Modifier.size(14.dp))
-                            Text(label, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-                        }
+                Box(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth().then(subtleGlassModifier()).clickable { typeMenu = true }
+                            .padding(Spacing.m).testTag(if (isIncome) "categories.editor.type.income" else "categories.editor.type.expense"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        Icon(
+                            SfSymbols.icon(if (isIncome) "arrow.down" else "arrow.up"),
+                            contentDescription = null,
+                            tint = IosColors.textSecondary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(if (isIncome) "Income" else "Expense", style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                        Icon(SfSymbols.icon("chevron.down"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
+                    }
+                    DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Expense", style = IosText.body) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.up"), contentDescription = null) },
+                            onClick = { isIncome = false; typeMenu = false },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Income", style = IosText.body) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.down"), contentDescription = null) },
+                            onClick = { isIncome = true; typeMenu = false },
+                        )
                     }
                 }
             }
@@ -245,7 +269,7 @@ fun AddEditCategorySheet(
                 SheetSectionLabel("Icon")
                 Column(Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        categoryIcons.forEach { option ->
+                        quickIcons.forEach { option ->
                             IconChoice(option, selected = icon == option, modifier = Modifier.testTag("categories.editor.icon.$option")) { icon = option }
                         }
                         IconChoice("None", selected = icon == null, modifier = Modifier.testTag("categories.editor.icon.none")) { icon = null }
@@ -262,7 +286,7 @@ fun AddEditCategorySheet(
                 GlassCard(shape = RoundedCornerShape(Radius.m)) {
                     Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                         CategorySymbolBadge(icon ?: CategoryIcons.DEFAULT, name.ifEmpty { "Category" }, color, size = 40.dp)
-                        Text(name.ifEmpty { "Category Name" }, style = IosText.body, color = IosColors.textPrimary)
+                        Text(name.ifEmpty { "Category Name" }, style = IosText.callout, color = IosColors.textPrimary)
                     }
                 }
             }
@@ -325,7 +349,15 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
             }
         }
         if (showsLabel && value != "None") {
-            Text(iconLibrary.firstOrNull { it.value == value }?.name ?: "Current icon", style = IosText.caption, color = IosColors.textSecondary, maxLines = 1)
+            Text(
+                iconLibrary.firstOrNull { it.value == value }?.name ?: "Current icon",
+                style = IosText.caption2,
+                color = IosColors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -367,9 +399,9 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                     value = searchText,
                     onValueChange = { searchText = it },
                     singleLine = true,
-                    textStyle = IosText.body.copy(color = IosColors.textPrimary),
+                    textStyle = IosText.callout.copy(color = IosColors.textPrimary),
                     modifier = Modifier.weight(1f).testTag("categories.iconSearch"),
-                    decorationBox = { inner -> Box { if (searchText.isEmpty()) Text("Search icons", style = IosText.body, color = IosColors.textTertiary); inner() } },
+                    decorationBox = { inner -> Box { if (searchText.isEmpty()) Text("Search icons", style = IosText.callout, color = IosColors.textTertiary); inner() } },
                 )
             }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.screen, vertical = Spacing.m), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -397,8 +429,8 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
-                        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) IosColors.spendOrange else IosColors.textSecondary, modifier = Modifier.size(14.dp))
-                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
+                        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) Color.White else IosColors.textSecondary, modifier = Modifier.size(14.dp))
+                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) Color.White else IosColors.textSecondary)
                     }
                 }
             }
@@ -434,7 +466,7 @@ private fun IconBrowserSection(title: String, values: List<String>, selectedIcon
 private fun IconBrowserGrid(values: List<String>, selectedIcon: String?, onSelect: (String) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         values.forEach { value ->
-            Column(Modifier.clickable(role = Role.Button) { onSelect(value) }.testTag("categories.iconOption.$value"), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.width(72.dp).clickable(role = Role.Button) { onSelect(value) }.testTag("categories.iconOption.$value"), horizontalAlignment = Alignment.CenterHorizontally) {
                 IconChoice(value, selectedIcon == value, showsLabel = true) { onSelect(value) }
             }
         }

@@ -14,16 +14,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -92,14 +95,9 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                                     repeat(4) { index ->
                                         Box(
-                                            Modifier.weight(1f).height(4.dp).then(
-                                                subtleGlassModifier(CircleShape),
-                                            ),
-                                        ) {
-                                            if (index < strength.level) {
-                                                Box(Modifier.fillMaxSize().then(androidx.compose.ui.draw.clip(CircleShape)).background(strength.color))
-                                            }
-                                        }
+                                            Modifier.weight(1f).height(4.dp).clip(CircleShape)
+                                                .background(if (index < strength.level) strength.color else Color.Black.copy(alpha = 0.06f)),
+                                        )
                                     }
                                 }
                                 Text(strength.label, style = IosText.subheadline, color = strength.color)
@@ -131,7 +129,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                                     SfSymbols.icon(if (requirement.isMet) "checkmark.circle.fill" else "circle"),
                                     contentDescription = null,
                                     tint = if (requirement.isMet) finance.income else IosColors.textTertiary,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Text(
                                     requirement.label,
@@ -144,9 +142,6 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     }
 
                     if (state.isOffline) Text("Check your connection and try again.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("changePassword.offline"))
-                    if (state.success) {
-                        Text("Your password has been changed successfully.", style = IosText.footnote, color = finance.income, modifier = Modifier.testTag("changePassword.success"))
-                    }
                     Box(Modifier.fillMaxWidth().padding(top = Spacing.s)) {
                         PillButton(
                             text = "Update Password",
@@ -164,6 +159,14 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
             }
         }
     }
+    if (state.success) {
+        AlertDialog(
+            onDismissRequest = onBack,
+            title = { Text("Password Updated", style = IosText.headline) },
+            text = { Text("Your password has been changed successfully.", style = IosText.body, modifier = Modifier.testTag("changePassword.success")) },
+            confirmButton = { TextButton(onClick = onBack) { Text("OK", color = IosColors.spendOrange) } },
+        )
+    }
 }
 
 private data class PasswordStrengthPresentation(val label: String, val level: Int, val color: Color)
@@ -179,13 +182,13 @@ private fun PasswordField(value: String, onValueChange: (String) -> Unit, placeh
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = IosText.body.copy(color = IosColors.textPrimary),
+        textStyle = IosText.callout.copy(color = IosColors.textPrimary),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         visualTransformation = PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag(tag),
         decorationBox = { inner ->
             Box {
-                if (value.isEmpty()) Text(placeholder, style = IosText.body, color = IosColors.textTertiary)
+                if (value.isEmpty()) Text(placeholder, style = IosText.callout, color = IosColors.textTertiary)
                 inner()
             }
         },

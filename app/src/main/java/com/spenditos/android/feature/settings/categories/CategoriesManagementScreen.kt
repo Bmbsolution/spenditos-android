@@ -40,7 +40,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -162,7 +165,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             ) {
                                 Icon(SfSymbols.icon("plus"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
-                                Text("Add category", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                                Text("Add category", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                             }
                         }
                     }
@@ -209,7 +212,7 @@ private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
         }
         Text("Categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
-            Icon(Icons.Filled.AddCircle, contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(28.dp))
+            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
         }
     }
 }
@@ -229,11 +232,11 @@ private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            textStyle = IosText.body.copy(color = IosColors.textPrimary),
+            textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             modifier = Modifier.weight(1f).testTag("categories.search"),
             decorationBox = { inner ->
                 Box {
-                    if (value.isEmpty()) Text("Search categories", style = IosText.body, color = IosColors.textTertiary)
+                    if (value.isEmpty()) Text("Search categories", style = IosText.callout, color = IosColors.textTertiary)
                     inner()
                 }
             },
@@ -253,9 +256,9 @@ private fun EmptyCategories(isIncome: Boolean, onAdd: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(40.dp))
-        Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
-        Text("Add a category to get started", style = IosText.subheadline, color = IosColors.textSecondary)
+        Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
+        Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
+        Text("Add a category to get started", style = IosText.callout, color = IosColors.textSecondary, maxLines = 3)
         PillButton("Add category", onAdd, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("categories.empty.add"))
     }
 }
@@ -269,18 +272,25 @@ private fun CategoryTypePicker(selectedIncome: Boolean, onSelectIncome: (Boolean
     ) {
         listOf(false to "Expenses", true to "Income").forEach { (income, label) ->
             val selected = selectedIncome == income
+            val tint = if (selected) IosColors.textPrimary else IosColors.textSecondary
             Row(
                 Modifier.weight(1f).clip(CircleShape)
+                    .then(
+                        if (selected) Modifier.dropShadow(
+                            CircleShape,
+                            Shadow(radius = 8.dp, color = Color.Black, offset = DpOffset(0.dp, 2.dp), alpha = 0.08f),
+                        ) else Modifier,
+                    )
                     .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelectIncome(income) }
                     .semantics { this.selected = selected }
                     .testTag(if (income) "categories.tab.income" else "categories.tab.expenses")
                     .padding(vertical = Spacing.s + 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
             ) {
-                Icon(SfSymbols.icon(if (income) "arrow.up" else "arrow.down"), contentDescription = null, modifier = Modifier.size(13.dp))
-                Text(label, style = IosText.body.w(FontWeight.SemiBold), color = if (selected) IosColors.textPrimary else IosColors.textSecondary)
+                Icon(SfSymbols.icon(if (income) "arrow.up" else "arrow.down"), contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
+                Text(label, style = IosText.callout.w(FontWeight.SemiBold), color = tint)
             }
         }
     }
@@ -291,12 +301,12 @@ private fun CategoryManagementRow(category: Category, index: Int, onOpen: () -> 
     Row(Modifier.fillMaxWidth().testTag("categories.row.${category.id}"), verticalAlignment = Alignment.CenterVertically) {
         Row(
             Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen).testTag("categories.item.${category.id}")
-                .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                .padding(horizontal = Spacing.m, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             CategorySymbolBadge(category.icon, category.name, category.color, size = 40.dp)
-            Text(category.name, style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+            Text(category.name, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
             if (category.isSystemSuggestion) {
                 Text(
                     "Default",

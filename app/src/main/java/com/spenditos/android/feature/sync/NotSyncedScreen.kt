@@ -34,7 +34,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.SectionHeader
@@ -59,19 +58,18 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             item {
-                Row(Modifier.fillMaxWidth().padding(start = Spacing.xs, top = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.xs)) {
+                    IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
                     }
-                    Spacer(Modifier.weight(1f))
+                    Text("Offline Changes", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
                     TextButton(
                         onClick = { failed.filter { it.canRetry }.forEach { viewModel.retry(it.id) } },
                         enabled = failed.any { it.canRetry },
-                        modifier = Modifier.padding(end = Spacing.s).testTag("notSynced.retryAll"),
-                    ) { Text("Retry", style = IosText.body, color = IosColors.spendOrange) }
+                        modifier = Modifier.align(Alignment.CenterEnd).testTag("notSynced.retryAll"),
+                    ) { Text("Retry", style = IosText.body, color = if (failed.any { it.canRetry }) IosColors.spendOrange else IosColors.textTertiary) }
                 }
             }
-            item { LargeTitle("Offline Changes") }
 
             if (pending.isNotEmpty()) {
                 item { SectionHeader("Waiting to sync") }
@@ -93,7 +91,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                         "These transactions are stored on this device and keep their idempotency key across retries.",
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
-                        modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                        modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
                     )
                 }
             }
@@ -118,23 +116,26 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                         "Retryable connection failures also retry automatically when you reconnect. Validation and category errors stay here until you fix or discard them.",
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
-                        modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                        modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
                     )
                 }
             }
 
             if (pending.isEmpty() && failed.isEmpty()) {
                 item {
-                    GlassCard(Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(Spacing.l),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                        ) {
-                            Icon(SfSymbols.icon("checkmark.circle"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(42.dp))
-                            Text("All Changes Synced", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-                            Text("New offline transactions will appear here until they reach the server.", style = IosText.subheadline, color = IosColors.textSecondary)
-                        }
+                    Column(
+                        Modifier.fillMaxWidth().padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        Icon(SfSymbols.icon("checkmark.circle"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
+                        Text("All Changes Synced", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                        Text(
+                            "New offline transactions will appear here until they reach the server.",
+                            style = IosText.subheadline,
+                            color = IosColors.textSecondary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
                     }
                 }
             }

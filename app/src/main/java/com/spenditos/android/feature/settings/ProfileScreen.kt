@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.text.BasicTextField
@@ -35,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,7 +53,6 @@ import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
-import com.spenditos.android.ui.theme.w
 
 data class CurrencyOption(val code: String, val name: String)
 
@@ -158,7 +158,7 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
                 item {
                     GroupedCard {
                         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                            Text("Display Name", style = IosText.body, color = IosColors.textPrimary, modifier = if (state.displayName.isEmpty()) Modifier.testTag("profile.empty") else Modifier)
+                            Text("Display Name", style = IosText.subheadline, color = IosColors.textSecondary, modifier = if (state.displayName.isEmpty()) Modifier.testTag("profile.empty") else Modifier)
                             BasicTextField(
                                 value = state.displayName,
                                 onValueChange = viewModel::onDisplayNameChange,
@@ -284,8 +284,8 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Text(option.code, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.size(width = 50.dp, height = 44.dp))
-        Text(option.name, style = IosText.body, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+        Text(option.code, style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.width(50.dp))
+        Text(option.name, style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
         if (option.code == selectedCode) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange)
     }
 }
@@ -294,7 +294,7 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
 private fun ProfileHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = IosColors.spendOrange)
         }
         Text("Profile", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

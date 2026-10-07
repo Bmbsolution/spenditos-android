@@ -28,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -55,7 +56,6 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.IconChip
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
@@ -74,6 +74,7 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
     val state by viewModel.state.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<MerchantMapping?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<MerchantMapping?>(null) }
 
     IosScreen {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
@@ -101,9 +102,9 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            IconChip(SfSymbols.icon("arrow.triangle.branch"), IosColors.spendOrange, size = 56.dp)
-                            Text("No merchant rules yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-                            Text("Add rules to auto-categorize transactions.", style = IosText.subheadline, color = IosColors.textSecondary)
+                            Icon(SfSymbols.icon("arrow.triangle.branch"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
+                            Text("No merchant rules yet", style = IosText.headline, color = IosColors.textPrimary)
+                            Text("Add rules to auto-categorize transactions.", style = IosText.callout, color = IosColors.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             Text("Bank statements often show text like “SQ *COFFEE 1234”. Add a name and imports will show “Coffee” instead.", style = IosText.footnote, color = IosColors.textTertiary)
                             PillButton("Add Rule", { creating = true }, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("merchants.empty.add"))
                         }
@@ -115,7 +116,7 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
                         ) {
                             items(state.items, key = { it.id }) { item ->
                                 val category = state.categories.firstOrNull { it.id == item.categoryId }
-                                MerchantMappingRow(item, category, onClick = { editing = item })
+                                MerchantMappingRow(item, category, onClick = { editing = item }, onDelete = { pendingDelete = item })
                             }
                         }
                     }
@@ -136,6 +137,18 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
             onDelete = item?.let { current -> { viewModel.delete(current.id) { editing = null } } },
         )
     }
+
+    pendingDelete?.let { mapping ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete Rule", style = IosText.headline) },
+            text = { Text("Are you sure you want to delete the rule for \"${mapping.rawPattern}\"? This action cannot be undone.", style = IosText.body) },
+            confirmButton = {
+                TextButton(onClick = { pendingDelete = null; viewModel.delete(mapping.id) {} }) { Text("Delete", color = IosColors.expense) }
+            },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
+        )
+    }
 }
 
 @Composable
@@ -152,12 +165,12 @@ private fun MerchantHeader(onBack: () -> Unit, onAdd: () -> Unit) {
 }
 
 @Composable
-private fun MerchantMappingRow(item: MerchantMapping, category: Category?, onClick: () -> Unit) {
+private fun MerchantMappingRow(item: MerchantMapping, category: Category?, onClick: () -> Unit, onDelete: () -> Unit) {
     GlassCard(Modifier.testTag("merchants.row.${item.id}"), onClick = onClick) {
         Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Box(Modifier.size(12.dp).clip(CircleShape).background(category?.let { categoryColor(it.color) } ?: IosColors.neutral))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(item.rawPattern, style = IosText.body, color = IosColors.textPrimary)
+                Text(item.rawPattern, style = IosText.callout, color = IosColors.textPrimary)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     if (category != null) {
                         Icon(CategoryIcons.symbol(category.icon, category.name), contentDescription = null, tint = categoryColor(category.color).copy(alpha = 0.8f), modifier = Modifier.size(15.dp))
@@ -168,7 +181,9 @@ private fun MerchantMappingRow(item: MerchantMapping, category: Category?, onCli
                 }
                 Text("Shows as ${item.cleanMerchantName}${if (item.isRegex) " · Pattern" else ""}", style = IosText.footnote, color = IosColors.textSecondary)
             }
-            Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp).testTag("merchants.delete.${item.id}")) {
+                Icon(SfSymbols.icon("trash"), contentDescription = "Delete rule for ${item.rawPattern}", tint = IosColors.expense.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+            }
         }
     }
 }
@@ -259,7 +274,10 @@ private fun MerchantEditor(
                         Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                             Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor(selectedCategory.color)))
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                                Text(clean, style = IosText.body, color = IosColors.textPrimary)
+                                Text(raw, style = IosText.callout, color = IosColors.textPrimary)
+                                if (clean.isNotBlank() && clean != raw) {
+                                    Text("Shows as $clean", style = IosText.footnote, color = IosColors.textSecondary)
+                                }
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                                     Icon(CategoryIcons.symbol(selectedCategory.icon, selectedCategory.name), contentDescription = null, tint = categoryColor(selectedCategory.color).copy(alpha = 0.8f), modifier = Modifier.size(15.dp))
                                     Text(selectedCategory.name, style = IosText.subheadline, color = categoryColor(selectedCategory.color).copy(alpha = 0.8f))
@@ -311,7 +329,7 @@ private fun CategorySection(title: String, categories: List<Category>, selectedI
             ) {
                 Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor(category.color)))
                 Icon(CategoryIcons.symbol(category.icon, category.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
-                Text(category.name, style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                Text(category.name, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                 if (selectedId == category.id) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange)
             }
             if (index < categories.lastIndex) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 56.dp), color = IosColors.separator.copy(alpha = 0.5f))
