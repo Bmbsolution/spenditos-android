@@ -173,7 +173,7 @@ class ProgressViewModelTest {
     }
 
     @Test
-    fun `streak chip view model loads once and hides zero and failed streaks`() = runTest {
+    fun `streak view model loads once, keeps zero for the tile and hides failed streaks`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = FakeGamificationDataSource()
         val chip = StreakChipViewModel(repository)
@@ -185,7 +185,8 @@ class ProgressViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val zero = StreakChipViewModel(FakeGamificationDataSource().apply { streak = StreakInfo() })
         advanceUntilIdle()
-        assertNull(zero.streak.value)
+        // The tile shows 0 days; only the chip composable hides a zero streak.
+        assertEquals(0, zero.streak.value)
         ViewModelStore().apply { put("chip", zero); clear() }
 
         listOf(ApiError.Server(400, "Invalid"), ApiError.Network(IOException("offline"))).forEach { failure ->
