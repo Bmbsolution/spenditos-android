@@ -78,6 +78,31 @@ class CaptureViewModelTest {
     }
 
     @Test
+    fun `switching an item to income drops its expense category, and an income category then sticks`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().apply {
+            parsed = CaptureParseResult(
+                items = listOf(CaptureAnalysisItem(24.0, "CAD", "2026-10-03", "cat-food", null, null, "Refund", null, "expense")),
+                analysisId = "analysis-type", transcript = "Refund", parentAnalysisId = null, captureSessionId = null,
+            )
+        }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories = categories()), FakeRecorder())
+        advanceUntilIdle()
+        vm.onTextChange("Refund")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        val key = vm.state.first { it.step == CaptureStep.Review }.items.single().idempotencyKeyId
+        assertEquals("cat-food", vm.state.value.items.single().categoryId)
+
+        vm.onTypeChange(key, income = true)
+        vm.onCategoryChange(key, "cat-food") // an expense category is refused for an income item
+        assertEquals("income", vm.state.value.items.single().transactionType)
+        assertNull(vm.state.value.items.single().categoryId)
+        vm.onCategoryChange(key, "cat-income")
+        assertEquals("cat-income", vm.state.value.items.single().categoryId)
+    }
+
+    @Test
     fun `voice capture checks editable transcript then parses with parent lineage`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val actions = FakeCaptureActions()

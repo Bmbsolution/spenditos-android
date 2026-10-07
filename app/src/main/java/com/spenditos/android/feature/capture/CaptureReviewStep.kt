@@ -60,6 +60,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IosSegmented
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
@@ -85,6 +86,7 @@ fun CaptureReviewStep(
     onDescriptionChange: (String, String) -> Unit,
     onDateChange: (String, LocalDate) -> Unit,
     onCategoryChange: (String, String?) -> Unit,
+    onTypeChange: (String, Boolean) -> Unit = { _, _ -> },
 ) {
     var editingKey by remember { mutableStateOf<String?>(null) }
     Column(
@@ -112,6 +114,7 @@ fun CaptureReviewStep(
             onDescriptionChange = { onDescriptionChange(editing.idempotencyKeyId, it) },
             onDateChange = { onDateChange(editing.idempotencyKeyId, it) },
             onCategoryChange = { onCategoryChange(editing.idempotencyKeyId, it) },
+            onTypeChange = { onTypeChange(editing.idempotencyKeyId, it) },
             onExclude = {
                 if (editing.include) onIncludeChange(editing.idempotencyKeyId)
                 editingKey = null
@@ -217,10 +220,12 @@ private fun ReviewItemEditorSheet(
     onDescriptionChange: (String) -> Unit,
     onDateChange: (LocalDate) -> Unit,
     onCategoryChange: (String?) -> Unit,
+    onTypeChange: (Boolean) -> Unit,
     onExclude: () -> Unit,
 ) {
     val key = item.idempotencyKeyId
-    val income = item.transactionType.equals("income", ignoreCase = true)
+    val itemIncome = item.transactionType.equals("income", ignoreCase = true)
+    var income by remember(key) { mutableStateOf(itemIncome) }
     val choices = categories.filter { it.isIncome == income }
     // Edits stay local until Done, like iOS TransactionItemEditorView; Cancel or dismiss discards them.
     var draftAmount by remember(key) { mutableStateOf(item.amountText) }
@@ -232,7 +237,9 @@ private fun ReviewItemEditorSheet(
         if (draftAmount != item.amountText) onAmountChange(draftAmount)
         if (draftDescription != item.description) onDescriptionChange(draftDescription)
         if (date != initialDate) onDateChange(date)
-        if (draftCategoryId != item.categoryId) onCategoryChange(draftCategoryId)
+        // Kind first: the category is validated against it.
+        if (income != itemIncome) onTypeChange(income)
+        if (draftCategoryId != item.categoryId || income != itemIncome) onCategoryChange(draftCategoryId)
         onDismiss()
     }
     val selectedCategory = choices.firstOrNull { it.id == draftCategoryId }
@@ -275,12 +282,21 @@ private fun ReviewItemEditorSheet(
                                 textAlign = TextAlign.Center,
                             )
                         }
-                        Text(
-                            if (income) "+ Income" else "− Expense",
-                            style = IosText.subheadline.w(FontWeight.SemiBold),
-                            color = if (income) IosColors.income else IosColors.expense,
-                            modifier = Modifier.padding(top = 18.dp),
-                        )
+                        // iOS segmented Picker("Type"), 180pt wide.
+                        Box(Modifier.padding(top = 18.dp).width(220.dp)) { // 180 + IosSegmented's 20dp side insets
+                            IosSegmented(
+                                options = listOf("− Expense", "+ Income"),
+                                selectedIndex = if (income) 1 else 0,
+                                onSelect = { index ->
+                                    val next = index == 1
+                                    if (editable && next != income) {
+                                        income = next
+                                        draftCategoryId = null
+                                    }
+                                },
+                                modifier = Modifier.testTag("capture.type.$key"),
+                            )
+                        }
                     }
                     ReviewInputField(
                         value = draftDescription,

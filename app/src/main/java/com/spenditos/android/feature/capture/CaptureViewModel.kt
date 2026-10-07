@@ -267,6 +267,21 @@ class CaptureViewModel @Inject constructor(
     fun onAmountChange(key: String, text: String) = updateItem(key) { it.copy(amountText = text.filter { char -> char.isDigit() || char == '.' || char == ',' }, failureReason = null) }
     fun onDescriptionChange(key: String, text: String) = updateItem(key) { it.copy(description = text.take(200), failureReason = null) }
     fun onDateChange(key: String, date: LocalDate) = updateItem(key) { it.copy(date = date.toString(), failureReason = null) }
+    /**
+     * iOS TransactionItemEditorView type picker. The category decides the saved kind, so switching
+     * kinds drops a category of the other kind instead of saving a mismatched pair.
+     */
+    fun onTypeChange(key: String, income: Boolean) = updateItem(key) { item ->
+        val wasIncome = item.transactionType.equals("income", ignoreCase = true)
+        if (wasIncome == income) return@updateItem item
+        item.copy(
+            transactionType = if (income) "income" else "expense",
+            categoryId = null,
+            categoryEdited = item.categoryId != null || item.categoryEdited,
+            failureReason = null,
+        )
+    }
+
     fun onCategoryChange(key: String, categoryId: String?) = updateItem(key) { item ->
         val wantsIncome = item.transactionType.equals("income", ignoreCase = true)
         val valid = _state.value.categories.firstOrNull { it.id == categoryId && it.isIncome == wantsIncome }

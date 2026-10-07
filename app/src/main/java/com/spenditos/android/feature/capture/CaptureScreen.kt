@@ -271,6 +271,7 @@ fun CaptureScreen(
                                 onDescriptionChange = viewModel::onDescriptionChange,
                                 onDateChange = viewModel::onDateChange,
                                 onCategoryChange = viewModel::onCategoryChange,
+                                onTypeChange = viewModel::onTypeChange,
                             )
                             val missingCategoryCount = state.includedItems.count { it.categoryId == null }
                             if (missingCategoryCount > 0) {
