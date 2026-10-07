@@ -4,16 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -22,6 +19,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.theme.Spacing
 import java.math.BigDecimal
 import java.time.YearMonth
@@ -41,7 +40,12 @@ fun GenerateMonthSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val preview = remember(templates, month) { generatePreview(templates, month) }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(bottom = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -52,14 +56,20 @@ fun GenerateMonthSheet(
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp).testTag("recurring.generate.month"))
                 OutlinedButton(onClick = { onMonthChange(month.plusMonths(1)) }, modifier = Modifier.testTag("recurring.generate.next")) { Text("Next") }
             }
-            Text("${preview.count} transactions to create", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("recurring.generate.count"))
-            Text("Estimated total · ${Money.format(preview.total.toDouble(), currency)}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("recurring.generate.total"))
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("recurring.generate.error")) }
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f).testTag("recurring.generate.cancel")) { Text("Cancel") }
-                Button(onClick = { onGenerate(month) }, enabled = !isGenerating, modifier = Modifier.weight(1f).height(52.dp).testTag("recurring.generate.confirm")) {
-                    if (isGenerating) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Text("Generate")
+            GlassCard {
+                Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text("${preview.count} transactions to create", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("recurring.generate.count"))
+                    Text("Estimated total · ${Money.format(preview.total.toDouble(), currency)}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("recurring.generate.total"))
                 }
+            }
+            error?.let {
+                GlassCard(Modifier.testTag("recurring.generate.error")) {
+                    Text(it, modifier = Modifier.padding(Spacing.m), color = MaterialTheme.colorScheme.error)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                PillButton("Cancel", onDismiss, modifier = Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.cancel"), filled = false)
+                PillButton(if (isGenerating) "Generating…" else "Generate", { onGenerate(month) }, enabled = !isGenerating, modifier = Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.confirm"))
             }
         }
     }

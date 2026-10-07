@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -20,7 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.theme.Spacing
 import java.math.BigDecimal
 
@@ -34,13 +37,19 @@ fun ChangeAmountSheet(
 ) {
     var amountText by remember { mutableStateOf((row.amounts.firstOrNull() ?: row.usualAmount).setScale(2).toPlainString()) }
     val amount = parsePlanAmount(amountText)
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Text("Change amount", style = MaterialTheme.typography.titleLarge)
-            Text(row.description, style = MaterialTheme.typography.bodyLarge)
+            GlassCard {
+                Text(row.description, modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyLarge)
+            }
             OutlinedTextField(
                 value = amountText,
                 onValueChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
@@ -50,11 +59,12 @@ fun ChangeAmountSheet(
                 modifier = Modifier.fillMaxWidth().testTag("monthPlan.changeAmount.value"),
             )
             Text("Only this month. Your usual amount in Income & bills stays the same.", style = MaterialTheme.typography.bodySmall)
-            Button(
+            PillButton(
+                text = "Save to draft",
                 onClick = { amount?.let { onSave(it); onDismiss() } },
                 enabled = amount != null && row.dates.size <= 10,
                 modifier = Modifier.fillMaxWidth().testTag("monthPlan.changeAmount.save"),
-            ) { Text("Save to draft") }
+            )
             if (row.dates.size > 10) {
                 Text("Amount changes are unavailable for this schedule.", color = MaterialTheme.colorScheme.error)
             }

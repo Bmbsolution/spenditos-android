@@ -3,26 +3,32 @@ package com.spenditos.android.feature.plan
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +40,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,9 +51,12 @@ import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.platform.LocalConfiguration
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IosRow
+import com.spenditos.android.ui.components.PillButton
+import com.spenditos.android.ui.theme.Radius
 
 @Composable
 fun MonthPlanScreen() {
@@ -54,6 +65,23 @@ fun MonthPlanScreen() {
 }
 
 private enum class ConfirmAction { APPLY, DISCARD }
+
+@Composable
+private fun PlanTintCard(
+    modifier: Modifier = Modifier,
+    color: androidx.compose.ui.graphics.Color,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val shape = RoundedCornerShape(Radius.l)
+    Column(
+        modifier.fillMaxWidth()
+            .shadow(8.dp, shape, clip = false)
+            .background(color, shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f), shape)
+            .clip(shape),
+        content = content,
+    )
+}
 
 @Composable
 private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
@@ -66,33 +94,22 @@ private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
 
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Month plan") },
-            )
-        },
-        modifier = Modifier.testTag("monthPlan.screen"),
-    ) { padding ->
+    Column(Modifier.fillMaxSize().testTag("monthPlan.screen")) {
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.screen).padding(bottom = 96.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = 124.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             MonthPicker(state, viewModel)
 
             if (!state.isOnline) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("monthPlan.offline"),
-                ) {
-                    Text("You're offline. Apply and discard need a connection.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium)
+                GlassCard(Modifier.testTag("monthPlan.offline")) {
+                    Text("You're offline. Apply and discard need a connection.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                 }
             }
             if (state.isPast) {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(14.dp)) {
-                    Text("This month has passed. You can discard its draft.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium)
+                GlassCard {
+                    Text("This month has passed. You can discard its draft.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -172,19 +189,23 @@ private fun MonthPlanContent(viewModel: MonthPlanViewModel) {
 private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            TextButton(
-                onClick = { viewModel.moveMonth(-1) },
-                enabled = state.canGoToPreviousMonth && !state.isLoading && !state.isApplying,
-                modifier = Modifier.testTag("monthPlan.previousMonth"),
-            ) { Text("‹") }
+            Box(
+                Modifier.size(40.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                    .clickable(enabled = state.canGoToPreviousMonth && !state.isLoading && !state.isApplying) { viewModel.moveMonth(-1) }
+                    .testTag("monthPlan.previousMonth"),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous month", tint = MaterialTheme.colorScheme.onSurface) }
             Spacer(Modifier.weight(1f))
             Text(state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            TextButton(
-                onClick = { viewModel.moveMonth(1) },
-                enabled = state.canGoToNextMonth && !state.isLoading && !state.isApplying,
-                modifier = Modifier.testTag("monthPlan.nextMonth"),
-            ) { Text("›") }
+            Box(
+                Modifier.size(40.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                    .clickable(enabled = state.canGoToNextMonth && !state.isLoading && !state.isApplying) { viewModel.moveMonth(1) }
+                    .testTag("monthPlan.nextMonth"),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.ChevronRight, contentDescription = "Next month", tint = MaterialTheme.colorScheme.onSurface) }
         }
         if (state.draftChangeCount > 0) {
             Surface(
@@ -200,27 +221,27 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
 
 @Composable
 private fun LoadingCard() {
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.loading")) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.loading")) {
         Row(Modifier.padding(Spacing.l), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-            CircularProgressIndicator()
-            Text("Loading your plan…")
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Text("Loading your plan…", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
 @Composable
 private fun ErrorCard(message: String, onRetry: () -> Unit) {
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.error")) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.error")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text(message, color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = onRetry, modifier = Modifier.testTag("monthPlan.retryLoad")) { Text("Try again") }
+            PillButton("Try again", onRetry, modifier = Modifier.fillMaxWidth().testTag("monthPlan.retryLoad"), filled = false)
         }
     }
 }
 
 @Composable
 private fun ErrorInline(message: String, onRetry: () -> Unit) {
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.inlineError")) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.inlineError")) {
         Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
             Text(message, Modifier.weight(1f), color = MaterialTheme.colorScheme.error)
             TextButton(onClick = onRetry, modifier = Modifier.testTag("monthPlan.retryRefresh")) { Text("Retry") }
@@ -230,7 +251,7 @@ private fun ErrorInline(message: String, onRetry: () -> Unit) {
 
 @Composable
 private fun EmptyPlanCard() {
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.empty")) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.empty")) {
         Text("Nothing scheduled this month yet.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium)
     }
 }
@@ -238,15 +259,12 @@ private fun EmptyPlanCard() {
 @Composable
 private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: Boolean) {
     val finance = LocalFinanceColors.current
-    Card(
-        modifier = Modifier.fillMaxWidth().testTag("monthPlan.summary"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text("Left at month end", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 Money.format(summary.draftLeft.toDouble(), currency),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.displayMedium,
                 color = if (summary.draftLeft.signum() < 0) finance.expense else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.testTag("monthPlan.summary.left"),
             )
@@ -276,25 +294,25 @@ private fun SummaryLine(label: String, value: String, color: androidx.compose.ui
 @Composable
 private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel, onConfirm: (ConfirmAction) -> Unit) {
     val finance = LocalFinanceColors.current
-    Card(
-        modifier = Modifier.fillMaxWidth().testTag("monthPlan.draftActions"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)),
-    ) {
+    PlanTintCard(Modifier.fillMaxWidth().testTag("monthPlan.draftActions"), MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             if (state.draftChangeCount > 0) {
                 Text("${state.draftChangeCount} changes in your draft", fontWeight = FontWeight.SemiBold)
                 Text("Nothing is final until you apply.", style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedButton(
+                    PillButton(
+                        text = "Discard",
                         onClick = { onConfirm(ConfirmAction.DISCARD) },
                         enabled = !state.isApplying && state.isOnline,
-                        modifier = Modifier.weight(1f).testTag("monthPlan.discard"),
-                    ) { Text("Discard") }
-                    Button(
+                        modifier = Modifier.weight(1f).fillMaxWidth().testTag("monthPlan.discard"),
+                        filled = false,
+                    )
+                    PillButton(
+                        text = if (state.isApplying) "Applying…" else if (state.applyMessage?.contains("Try again") == true) "Retry" else "Apply",
                         onClick = { onConfirm(ConfirmAction.APPLY) },
                         enabled = !state.isApplying && state.isOnline && !state.isPast,
-                        modifier = Modifier.weight(1f).testTag("monthPlan.apply"),
-                    ) { Text(if (state.isApplying) "Applying…" else if (state.applyMessage?.contains("Try again") == true) "Retry" else "Apply") }
+                        modifier = Modifier.weight(1f).fillMaxWidth().testTag("monthPlan.apply"),
+                    )
                 }
             }
             state.applyMessage?.let { Text(it, color = if (it.startsWith("Couldn't")) finance.expense else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall) }
@@ -307,7 +325,7 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
 @Composable
 private fun IncomeSection(rows: List<MonthPlanRecurringRow>, transactions: List<MonthPlanTransactionRow>, state: MonthPlanUiState, viewModel: MonthPlanViewModel, onChange: (MonthPlanRecurringRow) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.income")) {
-        Text("Income", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("Income", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (rows.isEmpty()) Text("No income scheduled yet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         rows.forEach { row -> RecurringPlanRow(row, state, viewModel, onChange, isIncome = true) }
         if (transactions.isNotEmpty()) {
@@ -320,7 +338,7 @@ private fun IncomeSection(rows: List<MonthPlanRecurringRow>, transactions: List<
 @Composable
 private fun BillsSection(rows: List<MonthPlanRecurringRow>, transactions: List<MonthPlanTransactionRow>, state: MonthPlanUiState, viewModel: MonthPlanViewModel, onChange: (MonthPlanRecurringRow) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.bills")) {
-        Text("Bills", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("Bills", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (rows.isEmpty()) Text("No bills scheduled yet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         rows.forEach { row -> RecurringPlanRow(row, state, viewModel, onChange, isIncome = false) }
         if (transactions.isNotEmpty()) {
@@ -334,34 +352,30 @@ private fun BillsSection(rows: List<MonthPlanRecurringRow>, transactions: List<M
 private fun RecordedPlanEntry(row: MonthPlanTransactionRow, state: MonthPlanUiState, viewModel: MonthPlanViewModel) {
     val locale = LocalConfiguration.current.locales[0]
     val finance = LocalFinanceColors.current
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.transaction.${row.transaction.id}")) {
-        Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(row.transaction.description, fontWeight = FontWeight.Medium)
-                    if (row.isDeleted) {
-                        Spacer(Modifier.width(Spacing.s))
-                        Text("Draft", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.transaction.${row.transaction.id}")) {
+        IosRow(
+            title = row.transaction.description,
+            subtitle = runCatching { LocalDate.parse(row.transaction.date.take(10)).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
+            icon = Icons.Filled.Receipt,
+            iconTint = if (row.isIncome) finance.income else finance.expense,
+            divider = false,
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    if (row.isDeleted) Text("Draft", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(Money.signed(row.transaction.amount, row.isIncome, state.currency), color = if (row.isIncome) finance.income else finance.expense)
+                    if (!state.isPast) {
+                        TextButton(
+                            onClick = {
+                                if (row.isDeleted) viewModel.undoTransactionDelete(row.transaction.id)
+                                else viewModel.stageTransactionDelete(row.transaction.id)
+                            },
+                            enabled = !state.isApplying,
+                            modifier = Modifier.testTag("monthPlan.transactionAction.${row.transaction.id}"),
+                        ) { Text(if (row.isDeleted) "Undo" else "Remove") }
                     }
                 }
-                Text(
-                    runCatching { LocalDate.parse(row.transaction.date.take(10)).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(Money.signed(row.transaction.amount, row.isIncome, state.currency), color = if (row.isIncome) finance.income else finance.expense)
-            if (!state.isPast) {
-                TextButton(
-                    onClick = {
-                        if (row.isDeleted) viewModel.undoTransactionDelete(row.transaction.id)
-                        else viewModel.stageTransactionDelete(row.transaction.id)
-                    },
-                    enabled = !state.isApplying,
-                    modifier = Modifier.testTag("monthPlan.transactionAction.${row.transaction.id}"),
-                ) { Text(if (row.isDeleted) "Undo" else "Remove") }
-            }
-        }
+            },
+        )
     }
 }
 
@@ -375,7 +389,7 @@ private fun RecurringPlanRow(
     isIncome: Boolean,
 ) {
     val finance = LocalFinanceColors.current
-    Card(Modifier.fillMaxWidth().testTag("monthPlan.row.${row.templateId}")) {
+    GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.row.${row.templateId}")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(row.description, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
@@ -434,7 +448,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
     val finance = LocalFinanceColors.current
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.oneTime")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("One-time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text("One-time", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             if (!state.isPast) TextButton(onClick = onAdd, enabled = !state.isApplying, modifier = Modifier.testTag("monthPlan.addOneTime")) { Text("Add") }
         }
         if (state.draft.entries.isEmpty()) {
@@ -442,7 +456,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
         } else {
             state.draft.entries.forEach { entry ->
                 val isIncome = state.snapshot?.categories?.firstOrNull { it.id == entry.categoryId }?.isIncome ?: false
-                Card(Modifier.fillMaxWidth().testTag("monthPlan.oneTimeRow.${entry.id}")) {
+                GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.oneTimeRow.${entry.id}")) {
                     Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {

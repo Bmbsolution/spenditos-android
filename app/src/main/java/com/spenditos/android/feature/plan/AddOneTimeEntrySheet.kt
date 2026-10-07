@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilterChip
@@ -32,6 +32,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.theme.Spacing
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -60,7 +62,11 @@ fun AddOneTimeEntrySheet(
     val availableCategories = categories.filter { it.isIncome == isIncome }
     val amount = parsePlanAmount(amountText)
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.screen).imePadding().navigationBarsPadding(),
@@ -104,7 +110,9 @@ fun AddOneTimeEntrySheet(
             )
             Text("Category", style = MaterialTheme.typography.labelLarge)
             if (availableCategories.isEmpty()) {
-                Text("No categories available. Add one in Income & bills.", style = MaterialTheme.typography.bodyMedium)
+                GlassCard {
+                    Text("No categories available. Add one in Income & bills.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium)
+                }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 availableCategories.forEach { category ->
@@ -123,7 +131,8 @@ fun AddOneTimeEntrySheet(
                 Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("monthPlan.oneTime.error")) }
-            Button(
+            PillButton(
+                text = "Add to draft",
                 onClick = {
                     val parsed = amount
                     if (parsed == null || categoryId !in availableCategories.map { it.id } || YearMonth.from(date) != month || description.isBlank()) {
@@ -136,7 +145,7 @@ fun AddOneTimeEntrySheet(
                 },
                 enabled = amount != null && description.isNotBlank() && categoryId.isNotBlank() && availableCategories.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().testTag("monthPlan.oneTime.add"),
-            ) { Text("Add to draft") }
+            )
         }
     }
 
