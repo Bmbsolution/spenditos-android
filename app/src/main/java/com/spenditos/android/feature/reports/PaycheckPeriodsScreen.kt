@@ -67,12 +67,23 @@ fun PaycheckPeriodsScreen(
                     IosColors.spendOrange,
                     Modifier.fillMaxSize().testTag("reports.paycheck.list"),
                 )
-                state.isEmpty && state.loadStatus == null -> Box(Modifier.fillMaxSize().testTag("reports.paycheck.list")) {
+                // Empty month: keep the month selector so the user can step to another month.
+                state.isEmpty && state.loadStatus == null -> Column(
+                    Modifier.fillMaxSize().testTag("reports.paycheck.list")
+                        .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
+                ) {
+                    ReportMonthSelector(
+                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        subtitle = monthRangeLabel(state.month, locale),
+                        tag = "reports.paycheck.month",
+                        onPrevious = viewModel::previousMonth,
+                        onNext = viewModel::nextMonth,
+                    )
                     ReportEmptyState(
                         icon = "banknote.fill",
                         title = "No Paycheck Periods",
                         subtitle = "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
-                        modifier = Modifier.fillMaxSize().testTag("reports.empty"),
+                        modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
                 else -> LazyColumn(

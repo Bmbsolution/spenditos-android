@@ -49,6 +49,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextStyle
@@ -137,7 +139,8 @@ private fun ReviewSummaryRow(
     val subtitle = listOfNotNull(
         categoryLabel,
         item.date.takeIf { it.isNotBlank() },
-        sourceCurrency?.let { "$it → ${currency.uppercase()}" },
+        // Android saves the parsed number in the user's currency (no conversion), so say what was parsed, not "→".
+        sourceCurrency?.let { "Parsed as $it" },
     ).joinToString(" · ")
     val symbol = selectedCategory?.icon ?: CategoryIcons.sfSymbolName(null, categoryLabel)
     Row(
@@ -149,8 +152,10 @@ private fun ReviewSummaryRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Box(
-            Modifier.size(24.dp).clickable(enabled = !item.isFrozen, role = Role.Button, onClick = onToggle)
-                .semantics { selected = item.include }.testTag("capture.include.$key"),
+            Modifier.size(48.dp)
+                .toggleable(value = item.include, enabled = !item.isFrozen, role = Role.Checkbox, onValueChange = { onToggle() })
+                .semantics { contentDescription = "Include ${item.description.ifBlank { "transaction" }}" }
+                .testTag("capture.include.$key"),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -190,7 +195,7 @@ private fun ReviewSummaryRow(
             }
         }
         Text(
-            summaryAmountText(item.amountText, item.currency ?: currency, income),
+            summaryAmountText(item.amountText, currency, income),
             style = IosText.rounded(17, FontWeight.Medium),
             color = if (income) IosColors.income else IosColors.expense,
             maxLines = 1,
@@ -219,8 +224,20 @@ private fun ReviewItemEditorSheet(
     val key = item.idempotencyKeyId
     val income = item.transactionType.equals("income", ignoreCase = true)
     val choices = categories.filter { it.isIncome == income }
-    val selectedCategory = choices.firstOrNull { it.id == item.categoryId }
-    val date = runCatching { LocalDate.parse(item.date) }.getOrDefault(LocalDate.now())
+    // Edits stay local until Done, like iOS TransactionItemEditorView; Cancel or dismiss discards them.
+    var draftAmount by remember(key) { mutableStateOf(item.amountText) }
+    var draftDescription by remember(key) { mutableStateOf(item.description) }
+    var draftCategoryId by remember(key) { mutableStateOf(item.categoryId) }
+    val initialDate = runCatching { LocalDate.parse(item.date) }.getOrDefault(LocalDate.now())
+    var date by remember(key) { mutableStateOf(initialDate) }
+    val commit = {
+        if (draftAmount != item.amountText) onAmountChange(draftAmount)
+        if (draftDescription != item.description) onDescriptionChange(draftDescription)
+        if (date != initialDate) onDateChange(date)
+        if (draftCategoryId != item.categoryId) onCategoryChange(draftCategoryId)
+        onDismiss()
+    }
+    val selectedCategory = choices.firstOrNull { it.id == draftCategoryId }
     var showCategoryPicker by remember(key) { mutableStateOf(false) }
     var categorySearchText by remember(key) { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -237,7 +254,7 @@ private fun ReviewItemEditorSheet(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                 )
-                TextButton(onClick = onDismiss) { Text("Done", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
+                TextButton(onClick = commit) { Text("Done", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
             }
             Text(
                 "Transaction details",
@@ -250,8 +267,8 @@ private fun ReviewItemEditorSheet(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                         Box(Modifier.weight(1f)) {
                             ReviewInputField(
-                                value = item.amountText,
-                                onValueChange = onAmountChange,
+                                value = draftAmount,
+                                onValueChange = { draftAmount = it },
                                 label = "Amount",
                                 enabled = editable,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -268,8 +285,8 @@ private fun ReviewItemEditorSheet(
                         )
                     }
                     ReviewInputField(
-                        value = item.description,
-                        onValueChange = onDescriptionChange,
+                        value = draftDescription,
+                        onValueChange = { draftDescription = it },
                         label = "Description",
                         enabled = editable,
                         modifier = Modifier.testTag("capture.description.$key"),
@@ -308,7 +325,7 @@ private fun ReviewItemEditorSheet(
                 LaunchedEffect(pickerState.selectedDateMillis) {
                     val millis = pickerState.selectedDateMillis ?: return@LaunchedEffect
                     val picked = LocalDate.ofEpochDay(millis / MILLIS_PER_DAY)
-                    if (picked != date) onDateChange(picked)
+                    if (picked != date) date = picked
                 }
                 Column(Modifier.padding(horizontal = Spacing.screen).testTag("capture.date.$key")) {
                 DatePicker(
@@ -367,11 +384,11 @@ private fun ReviewItemEditorSheet(
                     text = "Uncategorized",
                     symbol = "tag",
                     onClick = {
-                        onCategoryChange(null)
+                        draftCategoryId = null
                         showCategoryPicker = false
                     },
                     modifier = Modifier.testTag("capture.category.none.$key"),
-                    trailingSymbol = if (item.categoryId == null) "checkmark.circle.fill" else null,
+                    trailingSymbol = if (draftCategoryId == null) "checkmark.circle.fill" else null,
                 )
                 if (filtered.isEmpty()) {
                     Column(
@@ -393,9 +410,9 @@ private fun ReviewItemEditorSheet(
                         items(filtered, key = { it.id }) { category ->
                             ReviewCategoryCell(
                                 category = category,
-                                selected = item.categoryId == category.id,
+                                selected = draftCategoryId == category.id,
                                 onClick = {
-                                    onCategoryChange(category.id)
+                                    draftCategoryId = category.id
                                     showCategoryPicker = false
                                     categorySearchText = ""
                                 },

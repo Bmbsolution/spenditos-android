@@ -65,14 +65,23 @@ fun DailyAggregatesScreen(
                     IosColors.spendOrange,
                     Modifier.fillMaxSize().testTag("reports.daily.list"),
                 )
-                state.isEmpty && state.loadStatus == null -> Box(
-                    Modifier.fillMaxSize().testTag("reports.daily.list"),
+                // Empty month: keep the month selector so the user can step to another month.
+                state.isEmpty && state.loadStatus == null -> Column(
+                    Modifier.fillMaxSize().testTag("reports.daily.list")
+                        .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
                 ) {
+                    ReportMonthSelector(
+                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        subtitle = monthRangeLabel(state.month, locale),
+                        tag = "reports.daily.month",
+                        onPrevious = viewModel::previousMonth,
+                        onNext = viewModel::nextMonth,
+                    )
                     ReportEmptyState(
                         icon = "chart.bar.fill",
                         title = "No Spending Data",
                         subtitle = "No daily spending aggregates were found for ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
-                        modifier = Modifier.fillMaxSize().testTag("reports.empty"),
+                        modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
                 else -> LazyColumn(

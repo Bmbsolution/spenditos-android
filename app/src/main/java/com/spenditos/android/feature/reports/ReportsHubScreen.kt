@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.reports
 
+import java.time.LocalDate
+import java.util.Locale
+import java.time.format.DateTimeFormatter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +65,7 @@ fun ReportsHubScreen(
 ) {
     val viewModel: ReportsHubViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
     Scaffold(
@@ -90,6 +95,15 @@ fun ReportsHubScreen(
                 } else if (state.loadStatus != null && state.dashboard == null) {
                     val status = requireNotNull(state.loadStatus)
                     item {
+                        ReportMonthSelector(
+                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            subtitle = monthRangeLabel(state.month, locale),
+                            tag = "reports.hub.month",
+                            onPrevious = viewModel::previousMonth,
+                            onNext = viewModel::nextMonth,
+                        )
+                    }
+                    item {
                         ReportsStatusCard(
                             status,
                             viewModel::refresh,
@@ -97,35 +111,32 @@ fun ReportsHubScreen(
                             errorMessage = "We could not refresh this review. Check your connection and try again.",
                         )
                     }
-                } else if (state.dashboard == null) {
-                    item { ReportsEmptyReviewCard(onLogTransaction) }
+                } else if (state.isEmpty) {
+                    // A month with no entries: iOS's "starts with one entry" card, with month navigation kept.
+                    item {
+                        ReportMonthSelector(
+                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            subtitle = monthRangeLabel(state.month, locale),
+                            tag = "reports.hub.month",
+                            onPrevious = viewModel::previousMonth,
+                            onNext = viewModel::nextMonth,
+                        )
+                    }
+                    item { Box(Modifier.testTag("reports.empty")) { ReportsEmptyReviewCard(onLogTransaction) } }
                 } else {
                     val dashboard = requireNotNull(state.dashboard)
                     state.loadStatus?.let { status ->
                         item { ReportInlineStatus(status, viewModel::refresh, "reports.hub.status") }
                     }
                     item {
-                        if (state.isEmpty) {
-                            Box(Modifier.testTag("reports.empty")) {
-                                MonthlyReviewCard(
-                                    dashboard,
-                                    state.currency,
-                                    viewModel::previousMonth,
-                                    viewModel::nextMonth,
-                                    state.activeRecurringCount,
-                                    onReviewTransactions,
-                                )
-                            }
-                        } else {
-                            MonthlyReviewCard(
-                                dashboard,
-                                state.currency,
-                                viewModel::previousMonth,
-                                viewModel::nextMonth,
-                                state.activeRecurringCount,
-                                onReviewTransactions,
-                            )
-                        }
+                        MonthlyReviewCard(
+                            dashboard,
+                            state.currency,
+                            viewModel::previousMonth,
+                            viewModel::nextMonth,
+                            state.activeRecurringCount,
+                            onReviewTransactions,
+                        )
                     }
                     if (dashboard.categoryBreakdown.isNotEmpty()) {
                         item { WhereMoneyWentCard(dashboard.categoryBreakdown, state.currency) }
@@ -431,3 +442,7 @@ private fun ReportNavigationCard(
     }
 }
 
+private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
+    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+}

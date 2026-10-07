@@ -75,12 +75,23 @@ fun MonthComparisonScreen(
                     Color(0xFFAF52DE),
                     Modifier.fillMaxSize().testTag("reports.comparison.list"),
                 )
-                state.isEmpty && state.loadStatus == null -> Box(Modifier.fillMaxSize().testTag("reports.comparison.list")) {
+                // Empty month: keep the month selector so the user can step to another month.
+                state.isEmpty && state.loadStatus == null -> Column(
+                    Modifier.fillMaxSize().testTag("reports.comparison.list")
+                        .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
+                ) {
+                    ReportMonthSelector(
+                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        subtitle = comparisonRangeLabel(state.month, locale),
+                        tag = "reports.comparison.month",
+                        onPrevious = viewModel::previousMonth,
+                        onNext = viewModel::nextMonth,
+                    )
                     ReportEmptyState(
                         icon = "calendar.badge.clock",
                         title = "No Data",
                         subtitle = "No daily aggregates found for comparison.",
-                        modifier = Modifier.fillMaxSize().testTag("reports.empty"),
+                        modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
                 else -> LazyColumn(
