@@ -7,59 +7,63 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.outlined.ContentCut
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Shadow as TextShadow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.spenditos.android.feature.home.CashFlowStatus
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 
-/**
- * Home hero (iOS `FinancialPulseView` hero card): the month's mood, what is left after bills, the
- * spending orb, a daily pace chip, a stats strip and, once expanded, the health score and a 7-day sparkline.
- * Every existing Home test tag is kept (`home.statusCard`, `home.status.header`, `home.seeMath`).
- */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PulseHero(
     status: CashFlowStatus,
@@ -78,121 +82,165 @@ fun PulseHero(
     val shape = RoundedCornerShape(28.dp)
     val score = HealthScore.score(status)
     val short = status.leftAfterBills.signum() < 0
+    val symbol = when (weather) {
+        FinancialWeather.SUNNY -> "sun.max.fill"
+        FinancialWeather.CLOUDY -> "cloud.sun.fill"
+        FinancialWeather.RAINY -> "cloud.rain.fill"
+        FinancialWeather.STORM -> "cloud.bolt.rain.fill"
+        FinancialWeather.SETUP -> "sparkles"
+    }
 
     Column(
         modifier = modifier.fillMaxWidth()
+            .dropShadow(shape, Shadow(radius = 44.dp, color = weather.glow, offset = DpOffset(0.dp, 14.dp), alpha = 0.45f))
             .clip(shape)
             .background(Brush.linearGradient(weather.gradient))
-            .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent), center = Offset(900f, 250f), radius = 520f))
+            .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), center = Offset(900f, 250f), radius = 520f))
             .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))), shape)
             .clickable(role = Role.Button, onClickLabel = if (expanded) "Show less" else "Show more") { expanded = !expanded }
-            .padding(Spacing.m + 2.dp)
+            .padding(18.dp)
             .testTag("home.statusCard"),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        FlowRow(
-            Modifier.fillMaxWidth().testTag("home.status.header"),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalArrangement = Arrangement.spacedBy(Spacing.s),
-        ) {
+        if (expanded && score != null) {
+            HealthBadge(score, onOpenHealth)
+        }
+
+        Row(Modifier.fillMaxWidth().testTag("home.status.header"), verticalAlignment = Alignment.CenterVertically) {
             Row(
-                Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 12.dp, vertical = 6.dp),
+                Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.12f)).padding(end = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(weather.glyph, color = Color.White)
-                Text(weather.shortTitle, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Box(
+                    Modifier.size(38.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))
+                        .border(1.dp, Color.White.copy(alpha = 0.28f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(SfSymbols.icon(symbol), contentDescription = null, tint = Color.White, modifier = Modifier.size(21.6.dp))
+                }
+                Text(
+                    weather.shortTitle,
+                    style = IosText.callout.w(FontWeight.Bold),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(
-                PulseCopy.days(status.daysRemaining) + " left",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.16f)).padding(horizontal = 10.dp, vertical = 6.dp),
-            )
+            Spacer(Modifier.weight(1f).width(8.dp))
+            Row(
+                Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.16f)).padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(SfSymbols.icon("hourglass"), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.4.dp))
+                Text("${status.daysRemaining}d left", style = IosText.caption.w(FontWeight.Bold), color = Color.White)
+            }
         }
 
-        if (status.state != CashFlowStatus.State.SETUP) {
+        if (status.state == CashFlowStatus.State.SETUP) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(64.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.16f)).border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape))
+                    Icon(SfSymbols.icon("banknote"), contentDescription = null, tint = Color.White, modifier = Modifier.size(31.2.dp))
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Let’s set up your month", style = IosText.rounded(22, FontWeight.Bold), color = Color.White)
+                    Text("Two steps to see what’s left after bills.", style = IosText.subheadline, color = Color.White.copy(alpha = 0.9f))
+                }
+            }
+        } else {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         if (short) "SHORT AFTER BILLS" else "LEFT AFTER BILLS",
+                        style = IosText.caption.w(FontWeight.Bold),
                         color = Color.White.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Bold,
-                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                        letterSpacing = 0.8.sp,
                     )
                     val headline = money(status.leftAfterBills.abs())
+                    val shadowBlur = with(LocalDensity.current) { 8.dp.toPx() }
+                    val shadowY = with(LocalDensity.current) { 4.dp.toPx() }
                     Text(
                         if (short) "−$headline" else headline,
+                        style = IosText.rounded(40, FontWeight.ExtraBold).copy(
+                            shadow = TextShadow(Color.Black.copy(alpha = 0.18f), Offset(0f, shadowY), shadowBlur),
+                        ),
                         color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     val chip = if (short) {
                         "Trim ≈ ${money(status.leftAfterBills.negate().divide(BigDecimal(maxOf(status.daysRemaining, 1)), 2, RoundingMode.HALF_UP))} a day"
                     } else {
-                        "About ${money(status.affordablePace.setScale(2, RoundingMode.HALF_UP))} a day available"
+                        "≈ ${money(status.affordablePace.setScale(2, RoundingMode.HALF_UP))} a day"
                     }
-                    Text(
-                        chip,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).padding(horizontal = 10.dp, vertical = 5.dp),
-                    )
+                    Row(
+                        Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            if (short) Icons.Outlined.ContentCut else SfSymbols.icon("sparkles"),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.4.dp),
+                        )
+                        Text(chip, style = IosText.caption.w(FontWeight.Bold), color = Color.White)
+                    }
                 }
                 LiquidOrb(
                     level = status.incomeLeftShare.toFloat(),
                     tint = weather.glow,
                     label = PulseCopy.percentLabel(status.incomeLeftShare),
                     caption = "of income left",
+                    size = 124.dp,
                 )
             }
         }
 
         Text(
             PulseCopy.reason(status, locale, money),
+            style = IosText.subheadline.w(FontWeight.Medium),
             color = Color.White.copy(alpha = 0.95f),
-            fontWeight = FontWeight.Medium,
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
         )
 
         StatsStrip(
             listOf(
-                "Income" to whole(status.income, currency, locale),
-                "Spent" to whole(status.spent, currency, locale),
-                "Bills left" to whole(status.billsLeft, currency, locale),
+                Triple("arrow.down.circle.fill", "Income", whole(status.income, currency, locale)),
+                Triple("cart.fill", "Spent", whole(status.spent, currency, locale)),
+                Triple("calendar.badge.clock", "Bills left", whole(status.billsLeft, currency, locale)),
             ),
         )
 
-        TextButton(onClick = onSeeMath, modifier = Modifier.fillMaxWidth().testTag("home.seeMath")) {
-            Text("See the math", color = Color.White.copy(alpha = 0.95f), fontWeight = FontWeight.Bold)
+        Row(
+            Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onSeeMath).padding(vertical = 4.dp).testTag("home.seeMath"),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("See the math", style = IosText.caption.w(FontWeight.Bold), color = Color.White.copy(alpha = 0.95f))
         }
 
         when (status.state) {
-            CashFlowStatus.State.OVER -> HeroButton("Review your plan", onReviewPlan, "home.reviewPlan")
-            CashFlowStatus.State.SETUP -> HeroButton("Add income", onAddIncome, "home.addIncome")
+            CashFlowStatus.State.OVER -> HeroButton("Review your plan", Icons.Outlined.Tune, onReviewPlan, "home.reviewPlan", weather.gradient.last())
+            CashFlowStatus.State.SETUP -> HeroButton("Add income", SfSymbols.icon("plus"), onAddIncome, "home.addIncome", weather.gradient.last())
             else -> Unit
         }
 
         if (expanded) {
-            if (score != null) {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color.Black.copy(alpha = 0.12f))
-                        .clickable(role = Role.Button, onClick = onOpenHealth).padding(12.dp).testTag("home.healthBadge"),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Health score", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    Text("$score  ›", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
             if (status.state != CashFlowStatus.State.SETUP) {
-                Text(
-                    "The orb is the share of this month’s income still left after spending and bills.",
-                    color = Color.White.copy(alpha = 0.9f),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                    Icon(SfSymbols.icon("info.circle"), contentDescription = null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(13.2.dp))
+                    Text(
+                        "The orb is the share of this month’s income still left after spending and bills.",
+                        style = IosText.caption2,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
             }
             if (history.any { it.income.signum() != 0 || it.expenses.signum() != 0 }) {
                 CashFlowSparkline(history, currency, locale)
@@ -202,42 +250,74 @@ fun PulseHero(
 }
 
 @Composable
-private fun StatsStrip(items: List<Pair<String, String>>) {
+private fun HealthBadge(score: Int, onOpen: () -> Unit) {
+    val status = when (score) {
+        in 80..100 -> "Excellent"
+        in 60..79 -> "Good"
+        in 40..59 -> "Needs attention"
+        else -> "Critical"
+    }
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.12f))
+            .clickable(role = Role.Button, onClick = onOpen).padding(horizontal = 10.dp, vertical = 6.dp).testTag("home.healthBadge"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.size(28.dp)) {
+                drawArc(Color.White.copy(alpha = 0.2f), 0f, 360f, false, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+                drawArc(Color.White, -90f, 360f * score / 100f, false, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+            }
+            Text("$score", style = IosText.caption2.w(FontWeight.Bold), color = Color.White)
+        }
+        Text("Health: $score/100 · $status", style = IosText.caption.w(FontWeight.SemiBold), color = Color.White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
+        Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.4.dp))
+    }
+}
+
+@Composable
+private fun StatsStrip(items: List<Triple<String, String, String>>) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.12f))
             .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(16.dp)).padding(vertical = 10.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEachIndexed { index, (title, value) ->
+        items.forEachIndexed { index, (icon, title, value) ->
             if (index > 0) Box(Modifier.width(1.dp).height(30.dp).background(Color.White.copy(alpha = 0.2f)))
             Column(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(title, color = Color.White.copy(alpha = 0.85f), style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                Text(value, color = Color.White, fontWeight = FontWeight.Bold, style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(SfSymbols.icon(icon), contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(13.2.dp))
+                    Text(title, color = Color.White.copy(alpha = 0.85f), style = IosText.caption2.w(FontWeight.SemiBold))
+                }
+                Text(value, color = Color.White, style = IosText.rounded(15, FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
 @Composable
-private fun HeroButton(label: String, onClick: () -> Unit, tag: String) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().testTag(tag),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.92f), contentColor = Color(0xFF2A2420)),
-    ) { Text(label, fontWeight = FontWeight.Bold) }
+private fun HeroButton(label: String, icon: ImageVector, onClick: () -> Unit, tag: String, ink: Color) {
+    Row(
+        Modifier.clip(CircleShape).background(Color.White).clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Spacing.m).height(40.dp).testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = ink, modifier = Modifier.size(19.2.dp))
+        Text(label, style = IosText.callout.w(FontWeight.SemiBold), color = ink)
+    }
 }
 
-/** Last seven days of net cash flow (iOS `CashFlowSparkline`). */
 @Composable
 private fun CashFlowSparkline(history: List<DayFlow>, currency: String, locale: Locale) {
     val points = CashFlowHistory.sparkline(history.map { it.net })
     val avg = history.fold(BigDecimal.ZERO) { sum, day -> sum + day.expenses }
         .divide(BigDecimal(maxOf(history.size, 1)), 2, RoundingMode.HALF_UP)
-    Column(Modifier.fillMaxWidth().testTag("home.sparkline"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home.sparkline"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("7-day cash flow", color = Color.White.copy(alpha = 0.8f), style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-            Text("${Money.format(avg.toDouble(), currency, locale)} avg/day", color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+            Text("7-Day Cash Flow", color = Color.White.copy(alpha = 0.8f), style = IosText.caption2.w(FontWeight.Medium))
+            Text("${Money.format(avg.toDouble(), currency, locale)} avg/day", color = Color.White.copy(alpha = 0.9f), style = IosText.caption2.w(FontWeight.SemiBold))
         }
         Canvas(Modifier.fillMaxWidth().height(40.dp).clearAndSetSemantics { contentDescription = "Net cash flow for the last 7 days" }) {
             if (points.isEmpty()) return@Canvas

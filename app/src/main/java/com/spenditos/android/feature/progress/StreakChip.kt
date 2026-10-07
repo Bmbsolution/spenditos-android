@@ -3,15 +3,23 @@ package com.spenditos.android.feature.progress
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
+import com.spenditos.android.ui.theme.w
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -72,8 +80,11 @@ fun StreakTile(modifier: Modifier = Modifier) {
     val streak by viewModel.streak.collectAsStateWithLifecycle()
     val days = streak ?: return
     com.spenditos.android.ui.components.GlassCard(modifier.testTag("progress.streakTile")) {
-        androidx.compose.foundation.layout.Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Streak", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        androidx.compose.foundation.layout.Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFF06A3B), modifier = Modifier.size(14.4.dp))
+                Text("Streak", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("🔥", style = MaterialTheme.typography.headlineMedium)
                 Text("$days", style = MaterialTheme.typography.displayLarge)

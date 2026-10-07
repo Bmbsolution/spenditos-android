@@ -9,8 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,14 +19,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashFlowMathSheet(
     status: CashFlowStatus,
@@ -39,55 +43,66 @@ fun CashFlowMathSheet(
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.screen).padding(bottom = Spacing.m),
-            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                .padding(horizontal = Spacing.screen).padding(bottom = Spacing.m).testTag("home.math.sheet"),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.title")) {
-                Text("How it’s calculated", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                TextButton(onClick = onDismiss, modifier = Modifier.testTag("home.math.done")) { Text("Done") }
+                Text("How it’s calculated", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("home.math.done")) {
+                    Text("Done", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                }
             }
-            Text("This month", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            EquationRow("Income received", status.received, "+", currency, locale)
-            EquationRow("Income expected", status.expected, "+", currency, locale)
-            EquationRow(
-                title = "Spent so far",
-                amount = status.spent,
-                sign = "−",
-                currency = currency,
-                locale = locale,
-                detail = "${money(status.spent - status.everyday, currency, locale)} bills · ${money(status.everyday, currency, locale)} everyday",
-            )
-            EquationRow(
-                title = "Bills left",
-                amount = status.billsLeft,
-                sign = "−",
-                currency = currency,
-                locale = locale,
-                detail = "${status.billsLeftCount} still to come",
-            )
-            HorizontalDivider(Modifier.padding(vertical = Spacing.xs))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.total")) {
-                Text(
-                    if (status.leftAfterBills < BigDecimal.ZERO) "Short after bills" else "Left after bills",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(money(status.leftAfterBills, currency, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            GlassCard {
+                Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text("This month", style = IosText.footnote.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    EquationRow("Income received", status.received, "+", currency, locale)
+                    EquationRow("Income expected", status.expected, "+", currency, locale)
+                    EquationRow(
+                        title = "Spent so far",
+                        amount = status.spent,
+                        sign = "−",
+                        currency = currency,
+                        locale = locale,
+                        detail = "${money(status.spent - status.everyday, currency, locale)} bills · ${money(status.everyday, currency, locale)} everyday",
+                    )
+                    val entries = if (status.billsLeftCount == 1) "1 entry still to come" else "${status.billsLeftCount} entries still to come"
+                    EquationRow(
+                        title = "Bills left",
+                        amount = status.billsLeft,
+                        sign = "−",
+                        currency = currency,
+                        locale = locale,
+                        detail = entries,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.total")) {
+                        Text(
+                            if (status.leftAfterBills < BigDecimal.ZERO) "Short after bills" else "Left after bills",
+                            style = IosText.callout.w(FontWeight.Bold),
+                            color = IosColors.textPrimary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            signed(status.leftAfterBills, currency, locale),
+                            style = IosText.rounded(17, FontWeight.Bold),
+                            color = if (status.leftAfterBills < BigDecimal.ZERO) IosColors.expense else IosColors.income,
+                        )
+                    }
+                    if (status.income.signum() > 0) {
+                        Text(
+                            "That’s ${percent(status.incomeLeftShare)} of this month’s income (${money(status.income, currency, locale)}).",
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                        )
+                    }
+                    Text(
+                        "Entries dated today or earlier count as received or spent; later ones as expected or still to come. Bills are entries created from a bill in Plan › Bills.",
+                        style = IosText.caption,
+                        color = IosColors.textSecondary,
+                    )
+                }
             }
-            if (status.income.signum() > 0) {
-                val percent = status.incomeLeftShare.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toInt()
-                Text(
-                    "That’s $percent% of this month’s income (${money(status.income, currency, locale)}).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                "Entries dated today or earlier count as received or spent. Later entries count as expected or still to come.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
             BreakdownGroup("Income received", breakdown.received, currency, locale)
             BreakdownGroup("Income expected", breakdown.expected, currency, locale)
             BreakdownGroup("Bills paid", breakdown.billsPaid, currency, locale)
@@ -107,40 +122,42 @@ private fun EquationRow(
     detail: String? = null,
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Bottom,
         modifier = Modifier.fillMaxWidth().testTag("home.math.equation.${title.lowercase().replace(' ', '_')}"),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium)
-            detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = IosText.callout, color = IosColors.textPrimary)
+            detail?.let { Text(it, style = IosText.caption, color = IosColors.textSecondary) }
         }
-        Text("$sign ${money(amount, currency, locale)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text("$sign ${money(amount, currency, locale)}", style = IosText.rounded(15, FontWeight.SemiBold), color = IosColors.textPrimary)
     }
 }
 
 @Composable
 private fun BreakdownGroup(title: String, lines: List<CashFlowBreakdown.Line>, currency: String, locale: Locale) {
     if (lines.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.testTag("home.math.group.${title.lowercase().replace(' ', '_')}")) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.groupHeader.${title.lowercase().replace(' ', '_')}")) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(money(lines.sumOf { it.amount }, currency, locale), style = MaterialTheme.typography.titleSmall)
-        }
-        lines.forEach { line ->
-            Row(
-                modifier = Modifier.fillMaxWidth().testTag("home.math.line.${line.id}"),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(line.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "${line.category} · ${line.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+    GlassCard(modifier = Modifier.testTag("home.math.group.${title.lowercase().replace(' ', '_')}")) {
+        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.groupHeader.${title.lowercase().replace(' ', '_')}")) {
+                Text(title, style = IosText.footnote.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                Text(money(lines.fold(BigDecimal.ZERO) { acc, line -> acc + line.amount }, currency, locale), style = IosText.footnote, color = IosColors.textSecondary)
+            }
+            lines.forEach { line ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().testTag("home.math.line.${line.id}"),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(line.name, style = IosText.callout, color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "${line.category} · ${line.date.format(DateTimeFormatter.ofPattern("MMM d", locale))}",
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                        )
+                    }
+                    Spacer(Modifier.width(Spacing.s))
+                    Text(money(line.amount, currency, locale), style = IosText.rounded(15, FontWeight.Medium), color = IosColors.textPrimary)
                 }
-                Spacer(Modifier.width(Spacing.s))
-                Text(money(line.amount, currency, locale), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -148,3 +165,11 @@ private fun BreakdownGroup(title: String, lines: List<CashFlowBreakdown.Line>, c
 
 private fun money(amount: BigDecimal, currency: String, locale: Locale): String =
     Money.format(amount.setScale(2, RoundingMode.HALF_UP).toDouble(), currency, locale)
+
+private fun signed(amount: BigDecimal, currency: String, locale: Locale): String =
+    if (amount.signum() < 0) "−${money(amount.abs(), currency, locale)}" else money(amount, currency, locale)
+
+private fun percent(share: BigDecimal): String {
+    if (share.signum() > 0 && share < BigDecimal("0.01")) return "less than 1%"
+    return "${share.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toInt()}%"
+}
