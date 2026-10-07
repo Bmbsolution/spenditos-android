@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.settings
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -26,11 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,8 +51,6 @@ import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
 import com.spenditos.android.ui.theme.Spacing
-import com.spenditos.android.ui.theme.w
-
 /** iOS SettingsView: profile card, then grouped settings sections. */
 @Composable
 fun SettingsScreen(
@@ -63,8 +67,10 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val finance = LocalFinanceColors.current
     val slate = Color(0xFF64748B)
+    val biometricName = remember(context) { biometricName(context) }
     val emerald = Color(0xFF10B981)
 
     IosScreen {
@@ -171,8 +177,8 @@ fun SettingsScreen(
                             }.filterIsInstance<androidx.fragment.app.FragmentActivity>().firstOrNull()
                         }
                         IosRow(
-                            "App lock",
-                            subtitle = state.lockMessage ?: "Ask for your fingerprint, face or screen lock",
+                            "Lock with $biometricName",
+                            subtitle = state.lockMessage,
                             icon = SfSymbols.icon("lock.fill"),
                             iconTint = IosColors.info,
                             chevron = false,
@@ -189,21 +195,29 @@ fun SettingsScreen(
                         )
                     }
                 }
+                Text(
+                    "Turn off streaks and XP to keep Spenditos focused on money. Your streak keeps counting in the background.",
+                    style = IosText.footnote,
+                    color = IosColors.textSecondary,
+                    modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
+                )
             }
 
             item { SectionHeader("Your data") }
             item {
                 GroupedCard {
                     IosRow("Import", subtitle = "Bank statement or CSV", icon = SfSymbols.icon("square.and.arrow.down"), iconTint = finance.income, onClick = onOpenStatementImport, modifier = Modifier.testTag("settings.importStatement"))
-                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF3B82F6), onClick = onOpenExport, modifier = Modifier.testTag("settings.export"))
-                    IosRow(
-                        if (state.unsyncedCount == 0) "Everything is synced" else "Waiting to sync (${state.unsyncedCount})",
-                        icon = SfSymbols.icon(if (state.unsyncedCount > 0) "arrow.triangle.2.circlepath.icloud" else "checkmark.icloud"),
-                        iconTint = if (state.unsyncedCount > 0) IosColors.spendOrange else slate,
-                        onClick = onOpenNotSynced,
-                        divider = false,
-                        modifier = Modifier.testTag("settings.notSynced"),
-                    )
+                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF3B82F6), onClick = onOpenExport, divider = state.unsyncedCount > 0, modifier = Modifier.testTag("settings.export"))
+                    if (state.unsyncedCount > 0) {
+                        IosRow(
+                            "Waiting to sync (${state.unsyncedCount})",
+                            icon = SfSymbols.icon("arrow.triangle.2.circlepath.icloud"),
+                            iconTint = IosColors.spendOrange,
+                            onClick = onOpenNotSynced,
+                            divider = false,
+                            modifier = Modifier.testTag("settings.notSynced"),
+                        )
+                    }
                 }
                 Text(
                     if (state.unsyncedCount > 0) "Saved on this phone. They upload when you're back online."
@@ -239,6 +253,18 @@ fun SettingsScreen(
             item { SectionHeader("About") }
             item {
                 GroupedCard {
+                    IosRow(
+                        "Privacy Policy",
+                        icon = Icons.Outlined.PrivacyTip,
+                        iconTint = Color(0xFF8B5CF6),
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://spenditos.com/privacy"))) },
+                    )
+                    IosRow(
+                        "Terms of Service",
+                        icon = Icons.Outlined.Description,
+                        iconTint = slate,
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://spenditos.com/terms"))) },
+                    )
                     IosRow("Version", icon = SfSymbols.icon("info.circle.fill"), iconTint = slate, value = com.spenditos.android.BuildConfig.VERSION_NAME, chevron = false)
                     IosRow("Environment", icon = SfSymbols.icon("server.rack"), iconTint = slate, value = "${state.envName} (${state.stage})", chevron = false, divider = false, modifier = Modifier.testTag("settings.environment"))
                 }
@@ -269,6 +295,17 @@ fun SettingsScreen(
                 TextButton(onClick = { confirmSignOut = false }, modifier = Modifier.testTag("settings.signOut.cancel")) { Text("Cancel") }
             },
         )
+    }
+}
+
+private fun biometricName(context: android.content.Context): String {
+    val pm = context.packageManager
+    val face = pm.hasSystemFeature(PackageManager.FEATURE_FACE)
+    val finger = pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+    return when {
+        face && !finger -> "Face"
+        finger && !face -> "Fingerprint"
+        else -> "biometrics"
     }
 }
 

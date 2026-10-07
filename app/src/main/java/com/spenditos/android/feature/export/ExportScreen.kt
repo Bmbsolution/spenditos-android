@@ -23,7 +23,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -86,51 +89,52 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
 
     IosScreen {
         Column(
-            Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = Spacing.l),
-            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(top = Spacing.m, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             ExportHeader(onBack = { viewModel.cancel(); onBack() })
 
             SectionHeader("Transactions", Modifier.padding(top = Spacing.s).testTag("export.section.transactions"))
             GroupedCard {
-                Text("Date range", style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.m, top = Spacing.m))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.m, vertical = Spacing.s),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                ) {
-                    ExportRange.entries.forEach { range ->
-                        val selected = state.range == range
-                        Box(
-                            Modifier.clip(RoundedCornerShape(50.dp))
-                                .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable(role = Role.Tab) { viewModel.selectRange(range) }
-                                .semantics { this.selected = selected }
-                                .testTag("export.range.${range.name.lowercase()}")
-                                .padding(horizontal = Spacing.m, vertical = Spacing.s),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(range.label, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
+                run {
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.m, vertical = Spacing.s),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        ExportRange.entries.forEach { range ->
+                            val selected = state.range == range
+                            Box(
+                                Modifier.clip(RoundedCornerShape(50.dp))
+                                    .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else Color(0xFFE5E5EA))
+                                    .clickable(role = Role.Tab) { viewModel.selectRange(range) }
+                                    .semantics { this.selected = selected }
+                                    .testTag("export.range.${range.name.lowercase()}")
+                                    .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(range.label, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
+                            }
                         }
                     }
+                    IosRow(
+                        title = "Start Date",
+                        value = state.start.format(dateFormat),
+                        icon = SfSymbols.icon("calendar"),
+                        iconTint = IosColors.spendOrange,
+                        onClick = { picking = DateTarget.START },
+                        modifier = Modifier.testTag("export.start"),
+                    )
+                    IosRow(
+                        title = "End Date",
+                        value = state.end.format(dateFormat),
+                        icon = SfSymbols.icon("calendar"),
+                        iconTint = IosColors.spendOrange,
+                        onClick = { picking = DateTarget.END },
+                        divider = false,
+                        modifier = Modifier.testTag("export.end"),
+                    )
                 }
-                IosRow(
-                    title = "Start Date",
-                    value = state.start.format(dateFormat),
-                    icon = SfSymbols.icon("calendar"),
-                    iconTint = IosColors.spendOrange,
-                    onClick = { picking = DateTarget.START },
-                    modifier = Modifier.testTag("export.start"),
-                )
-                IosRow(
-                    title = "End Date",
-                    value = state.end.format(dateFormat),
-                    icon = SfSymbols.icon("calendar"),
-                    iconTint = IosColors.spendOrange,
-                    onClick = { picking = DateTarget.END },
-                    divider = false,
-                    modifier = Modifier.testTag("export.end"),
-                )
-                androidx.compose.material3.HorizontalDivider(color = Color.Black.copy(alpha = 0.06f))
+                HorizontalDivider(color = Color.Black.copy(alpha = 0.06f))
                 Row(
                     Modifier.fillMaxWidth()
                         .clickable(enabled = state.canExport && !state.isExporting, role = Role.Button, onClick = viewModel::export)
@@ -139,8 +143,20 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
-                    Icon(SfSymbols.icon("square.and.arrow.up"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
-                    Text("Export Transactions", style = IosText.callout, color = IosColors.spendOrange)
+                    if (state.isExporting) {
+                        CircularProgressIndicator(Modifier.size(18.dp).testTag("export.progress"), strokeWidth = 2.dp, color = IosColors.spendOrange)
+                    } else {
+                        Icon(SfSymbols.icon("square.and.arrow.up"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
+                    }
+                    Text("Export Transactions", style = IosText.callout, color = IosColors.spendOrange, modifier = Modifier.weight(1f))
+                    if (state.isExporting) {
+                        Text(
+                            "Cancel",
+                            style = IosText.callout,
+                            color = IosColors.textSecondary,
+                            modifier = Modifier.clickable(role = Role.Button, onClick = viewModel::cancel).testTag("export.cancel"),
+                        )
+                    }
                 }
             }
 
@@ -149,21 +165,6 @@ fun ExportScreen(onBack: () -> Unit, viewModel: ExportViewModel = hiltViewModel(
                     Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(Spacing.m).testTag("export.error"))
                 }
             }
-            if (state.isExporting) {
-                GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
-                    Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        CircularProgressIndicator(Modifier.size(22.dp).testTag("export.progress"), strokeWidth = 2.dp, color = IosColors.spendOrange)
-                        Text("Preparing your file…", style = IosText.body, modifier = Modifier.weight(1f))
-                        TextButton(onClick = viewModel::cancel) { Text("Cancel") }
-                    }
-                }
-            }
-            Text(
-                "The file is only kept long enough to share it.",
-                style = IosText.footnote,
-                color = IosColors.textSecondary,
-                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
-            )
         }
     }
 

@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
@@ -56,7 +56,6 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -178,6 +177,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
         AddEditCategorySheet(
             category = categoryToEdit,
             initialIsIncome = selectedIncome,
+            lockedType = selectedIncome,
             isSaving = state.isSaving,
             error = state.error,
             onDismiss = { showEditor = false; categoryToEdit = null },
@@ -212,7 +212,7 @@ private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
         }
         Text("Categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
-            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
+            Icon(Icons.Rounded.AddCircle, contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
         }
     }
 }
@@ -252,14 +252,20 @@ private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
 @Composable
 private fun EmptyCategories(isIncome: Boolean, onAdd: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(vertical = Spacing.l),
+        Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
         Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
         Text("Add a category to get started", style = IosText.callout, color = IosColors.textSecondary, maxLines = 3)
-        PillButton("Add category", onAdd, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("categories.empty.add"))
+        Box(
+            Modifier.clip(RoundedCornerShape(10.dp)).background(IosColors.spendOrange)
+                .clickable(role = Role.Button, onClick = onAdd).padding(horizontal = 24.dp, vertical = 8.dp).testTag("categories.empty.add"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Add category", style = IosText.callout.w(FontWeight.Bold), color = Color.Black)
+        }
     }
 }
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -113,7 +114,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                 }
                 item {
                     Text(
-                        "Retryable connection failures also retry automatically when you reconnect. Validation and category errors stay here until you fix or discard them.",
+                        "Retryable connection failures also retry automatically when you reconnect. Session errors offer Sign In to Sync; validation and category errors stay here until you fix or discard them.",
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
@@ -128,7 +129,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(Spacing.s),
                     ) {
-                        Icon(SfSymbols.icon("checkmark.circle"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
                         Text("All Changes Synced", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                         Text(
                             "New offline transactions will appear here until they reach the server.",
@@ -158,7 +159,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
 @Composable
 private fun QueuedTransactionRow(item: QueuedItemUi, currency: String, onRetry: () -> Unit, onDiscard: () -> Unit) {
     val finance = LocalFinanceColors.current
-    Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(item.description.ifBlank { "Transaction" }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)

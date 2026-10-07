@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.text.BasicTextField
@@ -118,7 +119,7 @@ private val currencyOptions = listOf(
 )
 
 @Composable
-fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var currencySearch by remember { mutableStateOf("") }
@@ -157,22 +158,29 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
                 item { SectionHeader("Personal", Modifier.padding(top = Spacing.s)) }
                 item {
                     GroupedCard {
-                        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                            Text("Display Name", style = IosText.subheadline, color = IosColors.textSecondary, modifier = if (state.displayName.isEmpty()) Modifier.testTag("profile.empty") else Modifier)
-                            BasicTextField(
-                                value = state.displayName,
-                                onValueChange = viewModel::onDisplayNameChange,
-                                singleLine = true,
-                                textStyle = IosText.body.copy(color = IosColors.textPrimary),
-                                modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("profile.displayName"),
-                                decorationBox = { inner ->
-                                    Box {
-                                        if (state.displayName.isEmpty()) Text("Not set", style = IosText.body, color = IosColors.textTertiary)
-                                        inner()
-                                    }
-                                },
-                            )
-                        }
+                        IosRow(
+                            title = "Display Name",
+                            icon = SfSymbols.icon("person.fill"),
+                            iconTint = IosColors.spendOrange,
+                            chevron = false,
+                            trailing = {
+                                BasicTextField(
+                                    value = state.displayName,
+                                    onValueChange = viewModel::onDisplayNameChange,
+                                    singleLine = true,
+                                    textStyle = IosText.subheadline.copy(color = IosColors.textPrimary, textAlign = TextAlign.End),
+                                    modifier = Modifier.width(160.dp).testTag("profile.displayName"),
+                                    decorationBox = { inner ->
+                                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                                            if (state.displayName.isEmpty()) {
+                                                Text("Not set", style = IosText.subheadline, color = IosColors.textTertiary, modifier = Modifier.testTag("profile.empty"))
+                                            }
+                                            inner()
+                                        }
+                                    },
+                                )
+                            },
+                        )
                         IosRow(
                             title = "Currency",
                             value = state.currency,
@@ -181,6 +189,19 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
                             onClick = { currencySearch = ""; showCurrencyPicker = true },
                             divider = false,
                             modifier = Modifier.testTag("profile.currency"),
+                        )
+                    }
+                }
+                item { SectionHeader("Security") }
+                item {
+                    GroupedCard {
+                        IosRow(
+                            "Change Password",
+                            icon = SfSymbols.icon("lock.fill"),
+                            iconTint = IosColors.info,
+                            onClick = onOpenChangePassword,
+                            divider = false,
+                            modifier = Modifier.testTag("profile.changePassword"),
                         )
                     }
                 }

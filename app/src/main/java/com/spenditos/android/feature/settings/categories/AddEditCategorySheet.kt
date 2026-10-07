@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -51,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.CategorySymbolBadge
-import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
@@ -166,6 +167,7 @@ private val iconLibrary = listOf(
 fun AddEditCategorySheet(
     category: Category?,
     initialIsIncome: Boolean,
+    lockedType: Boolean? = null,
     isSaving: Boolean,
     error: String?,
     onDismiss: () -> Unit,
@@ -174,7 +176,7 @@ fun AddEditCategorySheet(
     var name by remember(category?.id) { mutableStateOf(category?.name.orEmpty()) }
     var color by remember(category?.id) { mutableStateOf(category?.color ?: categoryColors.first()) }
     var icon by remember(category?.id) { mutableStateOf(category?.icon) }
-    var isIncome by remember(category?.id) { mutableStateOf(category?.isIncome ?: initialIsIncome) }
+    var isIncome by remember(category?.id, lockedType) { mutableStateOf(lockedType ?: category?.isIncome ?: initialIsIncome) }
     var showIconLibrary by remember { mutableStateOf(false) }
     var typeMenu by remember { mutableStateOf(false) }
     val quickIcons = remember(name, icon) {
@@ -197,9 +199,17 @@ fun AddEditCategorySheet(
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss, modifier = Modifier.testTag("categories.editor.cancel")) { Text("Cancel", style = IosText.body, color = IosColors.textSecondary) }
-                Text(if (category == null) "New Category" else "Edit Category", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                Text(
+                    if (category == null) "New Category" else "Edit Category",
+                    style = IosText.headline,
+                    color = IosColors.textPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
                 Box(Modifier.size(64.dp))
             }
+
+            error?.let { ErrorBanner(it, Modifier.testTag("categories.editor.error")) }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Name")
@@ -218,7 +228,7 @@ fun AddEditCategorySheet(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            if (lockedType == null) Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Type")
                 Box(Modifier.fillMaxWidth()) {
                     Row(
@@ -283,23 +293,29 @@ fun AddEditCategorySheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Preview")
-                GlassCard(shape = RoundedCornerShape(Radius.m)) {
-                    Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                        CategorySymbolBadge(icon ?: CategoryIcons.DEFAULT, name.ifEmpty { "Category" }, color, size = 40.dp)
-                        Text(name.ifEmpty { "Category Name" }, style = IosText.callout, color = IosColors.textPrimary)
-                    }
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                        .padding(Spacing.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                ) {
+                    CategorySymbolBadge(icon ?: CategoryIcons.DEFAULT, name.ifEmpty { "Category" }, color, size = 40.dp)
+                    Text(name.ifEmpty { "Category Name" }, style = IosText.callout, color = IosColors.textPrimary)
                 }
             }
 
-            error?.let { Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.editor.error")) }
-            Box(Modifier.fillMaxWidth()) {
+            val saveLabel = if (category == null) "Create Category" else "Save Changes"
+            if (isSaving) {
+                SavingPill(saveLabel, Modifier.fillMaxWidth().testTag("categories.editor.save"))
+            } else {
                 PillButton(
-                    text = if (category == null) "Create Category" else "Save Changes",
+                    text = saveLabel,
                     onClick = { onSave(CategoryDraft(name, color, icon, isIncome)) },
-                    enabled = !isSaving && name.isNotBlank(),
+                    enabled = name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().testTag("categories.editor.save"),
                 )
-                if (isSaving) CircularProgressIndicator(Modifier.align(Alignment.CenterStart).padding(start = 18.dp).size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
@@ -311,6 +327,18 @@ fun AddEditCategorySheet(
             onSelect = { icon = it; showIconLibrary = false },
             onDismiss = { showIconLibrary = false },
         )
+    }
+}
+
+@Composable
+private fun SavingPill(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier.height(52.dp).clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange.copy(alpha = 0.72f)),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+        Text(text, style = IosText.headline, color = Color.White, modifier = Modifier.padding(start = Spacing.s))
     }
 }
 
@@ -386,7 +414,7 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
         Column(Modifier.fillMaxWidth().padding(bottom = Spacing.l)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(64.dp))
-                Text("Choose Icon", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                Text("Choose Icon", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 TextButton(onClick = onDismiss) { Text("Done", color = IosColors.spendOrange) }
             }
             Row(
@@ -439,7 +467,10 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                     IconBrowserSection(if (categoryName.isBlank()) "Popular" else "Suggested for “$categoryName”", suggested, selectedIcon, onSelect)
                     IconBrowserSection("All icons", iconLibrary.map { it.value }.distinct(), selectedIcon, onSelect)
                 } else {
-                    Text(selectedGroup ?: "Search results", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(selectedGroup ?: "Search results", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                        Text(icons.map { it.value }.distinct().size.toString(), style = IosText.caption, color = IosColors.textTertiary)
+                    }
                     if (icons.isEmpty()) {
                         Column(Modifier.fillMaxWidth().padding(vertical = Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             Icon(SfSymbols.icon("magnifyingglass"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(28.dp))

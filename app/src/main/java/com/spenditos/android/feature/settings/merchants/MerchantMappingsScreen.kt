@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,7 +31,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -48,13 +51,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
@@ -98,15 +104,21 @@ fun MerchantMappingsScreen(onBack: () -> Unit, viewModel: MerchantMappingsViewMo
                 else -> PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, modifier = Modifier.fillMaxSize()) {
                     if (state.items.isEmpty()) {
                         Column(
-                            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen, vertical = Spacing.l).testTag("merchants.empty"),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp).testTag("merchants.empty"),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(SfSymbols.icon("arrow.triangle.branch"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
                             Text("No merchant rules yet", style = IosText.headline, color = IosColors.textPrimary)
                             Text("Add rules to auto-categorize transactions.", style = IosText.callout, color = IosColors.textSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             Text("Bank statements often show text like “SQ *COFFEE 1234”. Add a name and imports will show “Coffee” instead.", style = IosText.footnote, color = IosColors.textTertiary)
-                            PillButton("Add Rule", { creating = true }, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("merchants.empty.add"))
+                            Box(
+                                Modifier.clip(RoundedCornerShape(10.dp)).background(IosColors.spendOrange)
+                                    .clickable(role = Role.Button) { creating = true }
+                                    .padding(horizontal = 24.dp, vertical = 8.dp).testTag("merchants.empty.add"),
+                            ) {
+                                Text("Add Rule", style = IosText.callout.w(FontWeight.Bold), color = Color.Black)
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -159,7 +171,7 @@ private fun MerchantHeader(onBack: () -> Unit, onAdd: () -> Unit) {
         }
         Text("Merchant Rules", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("merchants.add")) {
-            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add merchant rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
+            Icon(Icons.Rounded.AddCircle, contentDescription = "Add merchant rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
         }
     }
 }
@@ -213,14 +225,16 @@ private fun MerchantEditor(
     ) {
         Column(
             Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.screen).padding(bottom = Spacing.l).testTag("merchants.editor"),
+                .padding(horizontal = Spacing.screen).padding(bottom = 32.dp).testTag("merchants.editor"),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text("Cancel", style = IosText.body, color = IosColors.textSecondary) }
-                Text(if (item == null) "New Rule" else "Edit Rule", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                Text(if (item == null) "New Rule" else "Edit Rule", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 Box(Modifier.size(64.dp))
             }
+
+            state.actionError?.let { ErrorBanner(it, Modifier.testTag("merchants.actionError")) }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Merchant Pattern")
@@ -235,16 +249,18 @@ private fun MerchantEditor(
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 SheetSectionLabel("Category")
-                GlassCard(shape = RoundedCornerShape(Radius.m)) {
-                    if (state.categories.isEmpty()) {
+                if (state.categories.isEmpty()) {
+                    GlassCard {
                         Text("No categories available", style = IosText.body, color = IosColors.textSecondary, modifier = Modifier.padding(Spacing.m))
                     }
-                    state.categories.filter { it.isIncome.not() }.takeIf { it.isNotEmpty() }?.let { rows ->
-                        CategorySection("Expense", rows, categoryId) { categoryId = it }
-                    }
-                    state.categories.filter { it.isIncome }.takeIf { it.isNotEmpty() }?.let { rows ->
-                        CategorySection("Income", rows, categoryId) { categoryId = it }
-                    }
+                }
+                state.categories.filter { it.isIncome.not() }.takeIf { it.isNotEmpty() }?.let { rows ->
+                    CategorySection("Expense", rows, categoryId) { categoryId = it }
+                }
+                state.categories.filter { it.isIncome }.takeIf { it.isNotEmpty() }?.let { rows ->
+                    CategorySection("Income", rows, categoryId) { categoryId = it }
+                }
+                GlassCard {
                     Row(
                         Modifier.fillMaxWidth().clickable(role = Role.Button) { categoryId = null }
                             .padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("merchants.category.none"),
@@ -257,20 +273,25 @@ private fun MerchantEditor(
                 }
             }
 
-            GlassCard(shape = RoundedCornerShape(Radius.m)) {
+            GlassCard {
                 Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                         Text("Match as a pattern", style = IosText.body, color = IosColors.textPrimary)
                         Text("For advanced matching; leave off to match this text anywhere.", style = IosText.caption, color = IosColors.textSecondary)
                     }
-                    Switch(checked = regex, onCheckedChange = { regex = it }, modifier = Modifier.testTag("merchants.regex"))
+                    Switch(
+                        checked = regex,
+                        onCheckedChange = { regex = it },
+                        colors = SwitchDefaults.colors(checkedTrackColor = IosColors.income),
+                        modifier = Modifier.testTag("merchants.regex"),
+                    )
                 }
             }
 
             if (canSave && selectedCategory != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     SheetSectionLabel("Preview")
-                    GlassCard(shape = RoundedCornerShape(Radius.m)) {
+                    GlassCard {
                         Row(Modifier.fillMaxWidth().padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                             Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor(selectedCategory.color)))
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -288,7 +309,6 @@ private fun MerchantEditor(
                 }
             }
 
-            state.actionError?.let { Text(it, style = IosText.footnote, color = IosColors.expense, modifier = Modifier.testTag("merchants.actionError")) }
             Box(Modifier.fillMaxWidth()) {
                 PillButton(
                     text = if (item == null) "Create Rule" else "Update Rule",
@@ -319,7 +339,8 @@ private fun MerchantEditor(
 @Composable
 private fun CategorySection(title: String, categories: List<Category>, selectedId: String?, onSelect: (String) -> Unit) {
     Column {
-        Text(title.uppercase(), style = IosText.caption, color = IosColors.textTertiary, modifier = Modifier.padding(start = Spacing.s, top = Spacing.s, bottom = Spacing.xs))
+        Text(title.uppercase(), style = IosText.caption, color = IosColors.textTertiary, modifier = Modifier.padding(start = 4.dp, bottom = Spacing.xs))
+        GlassCard {
         categories.forEachIndexed { index, category ->
             Row(
                 Modifier.fillMaxWidth().clickable(role = Role.Button) { onSelect(category.id) }
@@ -332,7 +353,8 @@ private fun CategorySection(title: String, categories: List<Category>, selectedI
                 Text(category.name, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                 if (selectedId == category.id) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange)
             }
-            if (index < categories.lastIndex) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 56.dp), color = IosColors.separator.copy(alpha = 0.5f))
+            if (index < categories.lastIndex) HorizontalDivider(color = Color.Black.copy(alpha = 0.06f))
+        }
         }
     }
 }
