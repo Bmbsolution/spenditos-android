@@ -113,6 +113,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     var editTarget by remember { mutableStateOf<com.spenditos.android.feature.transactions.EditTarget?>(null) }
+    var transactionsEditing by remember { mutableStateOf(false) }
     val onTab = backStack?.destination?.route in Tab.entries.map { it.route }
 
     Scaffold(
@@ -154,6 +155,7 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                             editTarget = target
                             showAdd = true
                         },
+                        onEditModeChange = { transactionsEditing = it },
                         onDuplicate = { copy ->
                             editTarget = null
                             receiptPrefill = copy
@@ -247,7 +249,8 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                     horizontalAlignment = Alignment.End,
                 ) {
                     // iOS: Home and Transactions own the add-transaction button; Plan has its own add menu.
-                    if (currentRoute == Tab.HOME.route || currentRoute == Tab.TRANSACTIONS.route) {
+                    // iOS hides the add button while Transactions is in Edit mode (its Delete bar sits there).
+                    if (currentRoute == Tab.HOME.route || (currentRoute == Tab.TRANSACTIONS.route && !transactionsEditing)) {
                         GradientFab(
                             onClick = { showAdd = true },
                             glyph = SfSymbols.icon("plus"),

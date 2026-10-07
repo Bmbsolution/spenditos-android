@@ -91,11 +91,14 @@ fun TransactionListScreen(
     onAdd: () -> Unit = {},
     onEdit: (EditTarget) -> Unit = {},
     onDuplicate: (AddTransactionPrefill) -> Unit = {},
+    onEditModeChange: (Boolean) -> Unit = {},
     viewModel: TransactionListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var deleteTarget by remember { mutableStateOf<TransactionRowUi?>(null) }
     var isEditMode by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(isEditMode) { onEditModeChange(isEditMode) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onEditModeChange(false) } }
     var selectedIds by rememberSaveable { mutableStateOf<Set<String>>(emptySet()) }
     var showBulkDeleteAlert by rememberSaveable { mutableStateOf(false) }
     val rowActions = RowActions(
