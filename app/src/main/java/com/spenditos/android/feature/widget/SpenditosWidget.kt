@@ -33,7 +33,6 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
-import androidx.glance.layout.defaultWeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -73,19 +72,21 @@ class SpenditosWidget : GlanceAppWidget() {
         provideContent { WidgetContent(snapshot) }
     }
 
-    private companion object {
-        // Android's closest practical sizes for iOS systemSmall / Medium / Large.
-        val WidgetSmall = DpSize(170.dp, 170.dp)
-        val WidgetMedium = DpSize(360.dp, 170.dp)
-        val WidgetLarge = DpSize(360.dp, 380.dp)
-    }
 }
+
+// Android's closest practical sizes for iOS systemSmall / Medium / Large.
+private val WidgetSmall = DpSize(170.dp, 170.dp)
+private val WidgetMedium = DpSize(360.dp, 170.dp)
+private val WidgetLarge = DpSize(360.dp, 380.dp)
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface SpenditosWidgetEntryPoint {
     fun widgetStateProvider(): WidgetStateProvider
 }
+
+/** The type behind androidx.glance.color.ColorProvider(day, night). */
+private typealias GlanceColorProvider = androidx.glance.unit.ColorProvider
 
 private val WidgetOrange = Color(0xFFFF6B35)
 private val WidgetRed = Color(0xFFEF4444)
@@ -311,7 +312,7 @@ private fun MediumWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
 }
 
 @Composable
-private fun MonthFigure(label: String, value: String, color: Color, secondary: ColorProvider) {
+private fun androidx.glance.layout.RowScope.MonthFigure(label: String, value: String, color: Color, secondary: GlanceColorProvider) {
     Column(modifier = GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.Horizontal.Start) {
         Text(label, style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
         Spacer(GlanceModifier.height(2.dp))
@@ -421,12 +422,12 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
 }
 
 @Composable
-private fun BudgetCard(
+private fun androidx.glance.layout.RowScope.BudgetCard(
     title: String,
     value: String,
     color: Color,
     icon: String,
-    secondary: ColorProvider,
+    secondary: GlanceColorProvider,
 ) {
     Column(
         modifier = GlanceModifier.defaultWeight()
@@ -444,7 +445,7 @@ private fun BudgetCard(
 }
 
 @Composable
-private fun CategoryPill(name: String, value: String, color: Color, rank: Int, primary: ColorProvider, secondary: ColorProvider) {
+private fun androidx.glance.layout.RowScope.CategoryPill(name: String, value: String, color: Color, rank: Int, primary: GlanceColorProvider, secondary: GlanceColorProvider) {
     Row(
         modifier = GlanceModifier.defaultWeight()
             .background(androidx.glance.unit.ColorProvider(color.copy(alpha = 0.12f)))
@@ -538,7 +539,7 @@ private fun progressRingBitmap(context: Context, value: Double, color: Color, te
     if (sweep > 0f) canvas.drawArc(bounds, -90f, sweep, false, arc)
     val label = "${(value.coerceIn(0.0, 1.0) * 100).toInt()}%"
     val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = textColor.toArgb()
+        this.color = textColor.toArgb()
         textSize = 12f * density
         typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
         textAlign = Paint.Align.CENTER
@@ -634,11 +635,11 @@ private fun iconBitmap(context: Context, kind: String, color: Color, sizeDp: Flo
                 lineTo(16f, 13f)
                 close()
             }
-            canvas.drawPath(bolt, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE })
+            canvas.drawPath(bolt, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = android.graphics.Color.WHITE })
         }
         "card" -> {
             canvas.drawRoundRect(RectF(2f, 5f, 22f, 19f), 3f, 3f, paint)
-            canvas.drawRect(RectF(3f, 9f, 21f, 12f), Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE })
+            canvas.drawRect(RectF(3f, 9f, 21f, 12f), Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = android.graphics.Color.WHITE })
         }
         "dollar" -> {
             canvas.drawCircle(12f, 12f, 10f, paint)
@@ -660,7 +661,7 @@ private fun iconBitmap(context: Context, kind: String, color: Color, sizeDp: Flo
         "plus" -> {
             canvas.drawCircle(12f, 12f, 10f, paint)
             val plus = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = android.graphics.Color.WHITE
+                this.color = android.graphics.Color.WHITE
                 strokeWidth = 2f
                 strokeCap = Paint.Cap.ROUND
             }
@@ -670,7 +671,7 @@ private fun iconBitmap(context: Context, kind: String, color: Color, sizeDp: Flo
         "camera" -> {
             canvas.drawRoundRect(RectF(2f, 7f, 22f, 20f), 3f, 3f, paint)
             canvas.drawRoundRect(RectF(7f, 4f, 13f, 8f), 1.5f, 1.5f, paint)
-            canvas.drawCircle(12f, 13.5f, 4f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE })
+            canvas.drawCircle(12f, 13.5f, 4f, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = android.graphics.Color.WHITE })
             canvas.drawCircle(12f, 13.5f, 2f, paint)
         }
         else -> Unit

@@ -88,7 +88,7 @@ class WidgetSnapshotTest {
     }
 
     @Test
-    fun `iOS widget values - today, month totals booked so far, 7 days and top categories`() {
+    fun `iOS widget values - today, whole-month totals, 7 days and top categories`() {
         val today = LocalDate.parse("2026-10-07")
         val month = listOf(
             transaction("pay", "income", "2026-10-01", 3100.0),
@@ -96,7 +96,7 @@ class WidgetSnapshotTest {
             transaction("food1", "food", "2026-10-06", 30.0),
             transaction("food2", "food", "2026-10-07", 12.5),
             transaction("gas", "car", "2026-10-07", 40.0),
-            transaction("future", "rent", "2026-10-20", 999.0), // scheduled, not booked yet
+            transaction("future", "rent", "2026-10-20", 999.0), // scheduled: counts in the month total like iOS
         )
         val snapshot = WidgetSnapshot.from(
             transactions = month,
@@ -109,7 +109,7 @@ class WidgetSnapshotTest {
         )
         assertEquals(52.5, snapshot.spentToday, 0.001)
         assertEquals(3100.0, snapshot.monthIncome, 0.001)
-        assertEquals(1282.5, snapshot.monthExpenses, 0.001)
+        assertEquals(2281.5, snapshot.monthExpenses, 0.001)
         assertFalse(snapshot.isStormMode)
         assertEquals(100.0, snapshot.dailyPace, 0.001)
         assertEquals(listOf(1200.0, 0.0, 0.0, 0.0, 0.0, 30.0, 52.5), snapshot.last7Days) // Oct 1..7; Sep 30 is outside

@@ -18,7 +18,7 @@ data class WidgetSnapshot(
     val daysLeft: Int?,
     val currency: String,
     val userId: String?,
-    /** iOS widget values (DashboardViewModel.updateWidgetData), from cached transactions dated today or earlier. */
+    /** iOS widget values (DashboardViewModel.updateWidgetData): month totals like iOS's report summary (scheduled entries included). */
     val spentToday: Double = 0.0,
     val monthIncome: Double = 0.0,
     val monthExpenses: Double = 0.0,
@@ -77,8 +77,7 @@ data class WidgetSnapshot(
             val ownCategories = categories.filter { it.userId == userId }
             val status = CashFlowStatus.make(ownTransactions, ownCategories, today)
             val incomeIds = ownCategories.filter { it.isIncome }.map { it.id }.toSet()
-            val booked = ownTransactions.filter { LocalDate.parse(it.date) <= today }
-            val expenses = booked.filter { it.categoryId !in incomeIds }
+            val expenses = ownTransactions.filter { it.categoryId !in incomeIds }
             val byName = ownCategories.associateBy { it.id }
             val ownRecent = (recent.ifEmpty { ownTransactions }).filter { it.userId == userId && it.categoryId !in incomeIds }
             return WidgetSnapshot(
@@ -88,7 +87,7 @@ data class WidgetSnapshot(
                 currency = currency,
                 userId = userId,
                 spentToday = expenses.filter { it.date == today.toString() }.sumOf { it.amount },
-                monthIncome = booked.filter { it.categoryId in incomeIds }.sumOf { it.amount },
+                monthIncome = ownTransactions.filter { it.categoryId in incomeIds }.sumOf { it.amount },
                 monthExpenses = expenses.sumOf { it.amount },
                 last7Days = (6 downTo 0).map { back ->
                     val day = today.minusDays(back.toLong()).toString()
