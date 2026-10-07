@@ -52,13 +52,16 @@ class WidgetStateProvider @Inject constructor(
     private val settings: UserSettingsActions,
     private val session: SessionManager,
     private val clock: Clock,
+    private val streak: com.spenditos.android.data.gamification.StreakCache? = null,
 ) {
     suspend fun snapshot(): WidgetSnapshot {
         val userId = session.currentUserId ?: return WidgetSnapshot.placeholder()
         val today = LocalDate.now(clock)
         val rows = transactions.observeRange(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()))
             .firstOrNull().orEmpty()
+        val recentRows = transactions.observeRange(today.minusDays(6), today).firstOrNull().orEmpty()
         val categoryRows = categories.observe().firstOrNull().orEmpty()
+        val streakDays = runCatching { streak?.get() }.getOrNull() ?: 0
         val currency = settings.currency().first()
 
         // The repository flows are user-scoped when created. Recheck across the reads so a
@@ -71,6 +74,8 @@ class WidgetStateProvider @Inject constructor(
             today = today,
             currency = currency,
             userId = userId,
+            recent = recentRows.filter { it.userId == userId }.map { it.toModel() },
+            streakDays = streakDays,
         )
         return if (session.currentUserId == userId) snapshot else WidgetSnapshot.placeholder(currency)
     }

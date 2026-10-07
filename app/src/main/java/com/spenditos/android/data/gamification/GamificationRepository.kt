@@ -36,12 +36,18 @@ interface GamificationDataSource {
 @Singleton
 class GamificationRepository @Inject constructor(
     private val api: GamificationApi,
+    private val streakCache: StreakCache? = null,
 ) : GamificationDataSource {
-    override suspend fun getStreak(): StreakInfo = apiCall { api.streak() }
+    override suspend fun getStreak(): StreakInfo = apiCall { api.streak() }.also { remember(it) }
 
     override suspend fun getStreakCalendar(): List<StreakCalendarDay> = apiCall { api.streakCalendar() }
 
-    override suspend fun useStreakFreeze(): StreakInfo = apiCall { api.useStreakFreeze() }
+    override suspend fun useStreakFreeze(): StreakInfo = apiCall { api.useStreakFreeze() }.also { remember(it) }
+
+    /** Best effort: the widget's streak; a storage failure never fails the fetch. */
+    private suspend fun remember(info: StreakInfo) {
+        runCatching { streakCache?.set(info.currentStreak) }
+    }
 
     override suspend fun getPoints(): GamificationPointsBalance = apiCall { api.points() }
 

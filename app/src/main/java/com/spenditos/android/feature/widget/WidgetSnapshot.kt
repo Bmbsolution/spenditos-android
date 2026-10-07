@@ -8,6 +8,9 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Locale
 
+/** iOS `WidgetCategory`. */
+data class WidgetCategory(val name: String, val amount: Double, val colorHex: String?)
+
 /** Home's current-month figures reduced to the values shown in the widget. */
 data class WidgetSnapshot(
     val state: CashFlowStatus.State?,
@@ -15,7 +18,24 @@ data class WidgetSnapshot(
     val daysLeft: Int?,
     val currency: String,
     val userId: String?,
+    /** iOS widget values (DashboardViewModel.updateWidgetData), from cached transactions dated today or earlier. */
+    val spentToday: Double = 0.0,
+    val monthIncome: Double = 0.0,
+    val monthExpenses: Double = 0.0,
+    /** Expenses per day, oldest first, the last 7 days through today. */
+    val last7Days: List<Double> = emptyList(),
+    /** Top 3 expense categories this month. */
+    val topCategories: List<WidgetCategory> = emptyList(),
+    val streakDays: Int = 0,
+    val daysInMonth: Int = 0,
 ) {
+    /** iOS "storm mode": more went out than came in this month. */
+    val isStormMode: Boolean get() = monthExpenses > monthIncome
+    val net: Double get() = monthIncome - monthExpenses
+
+    /** iOS `dailyBudget`: this month's income spread over its days. */
+    val dailyPace: Double get() = if (daysInMonth > 0) monthIncome / daysInMonth else 0.0
+
     val isPlaceholder: Boolean
         get() = userId == null || state == null || leftAfterBills == null || daysLeft == null
 
@@ -40,6 +60,9 @@ data class WidgetSnapshot(
             today: LocalDate,
             currency: String,
             userId: String?,
+            /** Transactions of the last 7 days (may start in the previous month). */
+            recent: List<Transaction> = emptyList(),
+            streakDays: Int = 0,
         ): WidgetSnapshot {
             if (userId == null) return placeholder(currency)
 
@@ -53,12 +76,30 @@ data class WidgetSnapshot(
 
             val ownCategories = categories.filter { it.userId == userId }
             val status = CashFlowStatus.make(ownTransactions, ownCategories, today)
+            val incomeIds = ownCategories.filter { it.isIncome }.map { it.id }.toSet()
+            val booked = ownTransactions.filter { LocalDate.parse(it.date) <= today }
+            val expenses = booked.filter { it.categoryId !in incomeIds }
+            val byName = ownCategories.associateBy { it.id }
+            val ownRecent = (recent.ifEmpty { ownTransactions }).filter { it.userId == userId && it.categoryId !in incomeIds }
             return WidgetSnapshot(
                 state = status.state,
                 leftAfterBills = status.leftAfterBills,
                 daysLeft = status.daysRemaining,
                 currency = currency,
                 userId = userId,
+                spentToday = expenses.filter { it.date == today.toString() }.sumOf { it.amount },
+                monthIncome = booked.filter { it.categoryId in incomeIds }.sumOf { it.amount },
+                monthExpenses = expenses.sumOf { it.amount },
+                last7Days = (6 downTo 0).map { back ->
+                    val day = today.minusDays(back.toLong()).toString()
+                    ownRecent.filter { it.date == day }.sumOf { it.amount }
+                },
+                topCategories = expenses.groupBy { it.categoryId }
+                    .map { (id, rows) -> WidgetCategory(byName[id]?.name ?: "Other", rows.sumOf { it.amount }, byName[id]?.color) }
+                    .sortedByDescending { it.amount }
+                    .take(3),
+                streakDays = streakDays,
+                daysInMonth = today.lengthOfMonth(),
             )
         }
 

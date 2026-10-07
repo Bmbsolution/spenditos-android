@@ -113,10 +113,15 @@ class WidgetStateProviderTest {
         var start: LocalDate? = null
         var end: LocalDate? = null
         var reads = 0
+        val ranges = mutableListOf<Pair<LocalDate, LocalDate>>()
 
         override fun observeRange(start: LocalDate, end: LocalDate): Flow<List<TransactionEntity>> {
-            this.start = start
-            this.end = end
+            // The month read comes first; the widget's last-7-days read follows it.
+            if (ranges.isEmpty()) {
+                this.start = start
+                this.end = end
+            }
+            ranges += start to end
             reads++
             return flowOf(rows)
         }
