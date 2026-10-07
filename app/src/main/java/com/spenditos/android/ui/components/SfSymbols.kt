@@ -198,7 +198,7 @@ object SfSymbols {
         "laptopcomputer" to "laptop",
         "leaf" to "leaf",
         "lightbulb" to "lightbulb",
-        "line.3.horizontal.decrease.circle" to "funnel",
+        "line.3.horizontal.decrease.circle" to "line-3-decrease-circle", // custom: Phosphor circle + three bars
         "list.bullet" to "list-bullets",
         "list.bullet.rectangle" to "list-bullets",
         "list.bullet.rectangle.portrait" to "list-bullets",
