@@ -71,9 +71,10 @@ import com.spenditos.android.ui.theme.w
 fun MonthPlanScreen(
     addOneTimeRequest: Int = 0,
     onAddOneTimeRequestHandled: (Int) -> Unit = {},
+    onOpenIncomeAndBills: () -> Unit = {},
 ) {
     val viewModel: MonthPlanViewModel = hiltViewModel()
-    MonthPlanContent(viewModel, addOneTimeRequest, onAddOneTimeRequestHandled)
+    MonthPlanContent(viewModel, addOneTimeRequest, onAddOneTimeRequestHandled, onOpenIncomeAndBills)
 }
 
 private enum class ConfirmAction { APPLY, DISCARD }
@@ -96,6 +97,7 @@ private fun MonthPlanContent(
     viewModel: MonthPlanViewModel,
     addOneTimeRequest: Int,
     onAddOneTimeRequestHandled: (Int) -> Unit,
+    onOpenIncomeAndBills: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var addingOneTime by remember { mutableStateOf(false) }
@@ -145,7 +147,13 @@ private fun MonthPlanContent(
                         DraftActions(state, viewModel, onConfirm = { confirmAction = it })
                     }
                     if (rows.isEmpty() && state.draft.entries.isEmpty()) EmptyPlanCard()
-                    IncomeSection(rows.filter { it.isIncome }, viewModel.transactionRows(isIncome = true, current = state), state, viewModel, onChange = { changingRow = it })
+                    IncomeSection(
+                        rows.filter { it.isIncome },
+                        viewModel.transactionRows(isIncome = true, current = state),
+                        state,
+                        viewModel,
+                        onOpenIncomeAndBills = onOpenIncomeAndBills,
+                    )
                     BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false, current = state), state, viewModel, onChange = { changingRow = it })
                     OneTimeSection(
                         state = state,
@@ -222,7 +230,7 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])),
-                    style = IosText.title3.w(FontWeight.SemiBold),
+                    style = IosText.headline,
                     color = IosColors.textPrimary,
                 )
                 if (state.draftChangeCount > 0) {
@@ -262,7 +270,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.error")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Icon(SfSymbols.icon("calendar.badge.clock"), contentDescription = null, tint = IosColors.textSecondary)
+                Icon(SfSymbols.icon("calendar.badge.exclamationmark"), contentDescription = null, tint = IosColors.textSecondary)
                 Text("Plan unavailable", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             }
             Text(message, style = IosText.subheadline, color = IosColors.textSecondary)
@@ -405,15 +413,39 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
 }
 
 @Composable
-private fun IncomeSection(rows: List<MonthPlanRecurringRow>, transactions: List<MonthPlanTransactionRow>, state: MonthPlanUiState, viewModel: MonthPlanViewModel, onChange: (MonthPlanRecurringRow) -> Unit) {
+private fun IncomeSection(
+    rows: List<MonthPlanRecurringRow>,
+    transactions: List<MonthPlanTransactionRow>,
+    state: MonthPlanUiState,
+    viewModel: MonthPlanViewModel,
+    onOpenIncomeAndBills: () -> Unit,
+) {
+    val finance = LocalFinanceColors.current
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.income")) {
         PlanSectionTitle("Income")
         GlassCard {
             Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 if (rows.isEmpty()) {
-                    Text("No income scheduled yet.", Modifier.padding(vertical = 10.dp), style = IosText.subheadline, color = IosColors.textSecondary)
+                    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("No income scheduled yet.", Modifier.weight(1f), style = IosText.subheadline, color = IosColors.textSecondary)
+                        IncomeBillsLink(onOpenIncomeAndBills)
+                    }
                 }
-                rows.forEach { row -> RecurringPlanRow(row, state, viewModel, onChange, isIncome = true, groupedIncome = true) }
+                rows.forEach { row ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(row.description, Modifier.weight(1f), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1)
+                        Text(
+                            "+${Money.format(row.total.toDouble(), state.currency)}",
+                            style = IosText.subheadline.w(FontWeight.SemiBold),
+                            color = finance.income,
+                        )
+                    }
+                }
+                if (rows.isNotEmpty()) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        IncomeBillsLink(onOpenIncomeAndBills)
+                    }
+                }
                 if (transactions.isNotEmpty()) {
                     Text("In your records", Modifier.padding(top = Spacing.s, bottom = Spacing.xs), style = IosText.caption, color = IosColors.textSecondary)
                     transactions.forEach { RecordedPlanEntry(it, state, viewModel) }
@@ -421,6 +453,16 @@ private fun IncomeSection(rows: List<MonthPlanRecurringRow>, transactions: List<
             }
         }
     }
+}
+
+@Composable
+private fun IncomeBillsLink(onClick: () -> Unit) {
+    Text(
+        "Change in Income & bills",
+        Modifier.clickable(role = Role.Button, onClick = onClick).testTag("monthPlan.openIncomeAndBills"),
+        style = IosText.caption.w(FontWeight.Bold),
+        color = IosColors.spendOrange,
+    )
 }
 
 @Composable

@@ -82,6 +82,7 @@ fun PlanHubScreen() {
                         onAddOneTimeRequestHandled = { handled ->
                             if (addOneTimeRequest == handled) addOneTimeRequest = 0
                         },
+                        onOpenIncomeAndBills = { selected = 0 },
                     )
                 }
             }

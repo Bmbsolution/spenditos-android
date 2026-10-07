@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,9 +21,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,10 +54,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.RecurringTemplate
-import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
@@ -109,7 +114,6 @@ data class RecurringDraft(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddEditRecurringSheet(
     template: RecurringTemplate?,
@@ -133,8 +137,8 @@ fun AddEditRecurringSheet(
         )
     }
     var showDatePicker by remember { mutableStateOf(false) }
-    var showCategoryChoices by remember { mutableStateOf(false) }
-    val visibleCategories = categories.filter { it.isIncome == draft.isIncome }
+    var showCategoryPicker by remember { mutableStateOf(false) }
+    var showSecondDayPicker by remember { mutableStateOf(false) }
     val frequencyOptions = listOf("daily", "weekly", "bi-weekly", "semi-monthly", "monthly", "quarterly", "semi-annually", "yearly")
 
     ModalBottomSheet(
@@ -214,12 +218,18 @@ fun AddEditRecurringSheet(
                 val lowerDescription = draft.description.lowercase()
                 val everydayHint = !draft.isIncome && listOf("gas", "fuel", "grocer", "food", "dining", "restaurant", "coffee", "takeout").any(lowerDescription::contains)
                 if (everydayHint) {
-                    Text(
-                        "Logging each purchase yourself? Skip this bill. What you log shows up as everyday spending in Month plan.",
+                    Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.s)).background(IosColors.spendOrange.copy(alpha = 0.08f)).padding(Spacing.s),
-                        style = IosText.caption,
-                        color = IosColors.textSecondary,
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Icon(SfSymbols.icon("lightbulb"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
+                        Text(
+                            "Logging each purchase yourself? Skip this bill. What you log shows up as everyday spending in Month plan.",
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                        )
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -257,7 +267,7 @@ fun AddEditRecurringSheet(
                 FormLabel("Category")
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
-                        .clickable(role = Role.Button) { showCategoryChoices = !showCategoryChoices }
+                        .clickable(role = Role.Button) { showCategoryPicker = true }
                         .testTag("recurring.form.category.selector").padding(Spacing.m),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -268,53 +278,11 @@ fun AddEditRecurringSheet(
                         Icon(CategoryIcons.symbol(selectedCategory.icon, selectedCategory.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
                         Text(selectedCategory.name, style = IosText.body, color = IosColors.textPrimary)
                     } else {
-                        Icon(SfSymbols.icon("circle.grid.3x3"), contentDescription = null, tint = IosColors.textSecondary)
+                        Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textSecondary)
                         Text("Select a category", style = IosText.body, color = IosColors.textSecondary)
                     }
                     Spacer(Modifier.weight(1f))
                     Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp))
-                }
-                if (showCategoryChoices) {
-                    if (visibleCategories.isEmpty()) {
-                        Text("No matching categories yet.", Modifier.testTag("recurring.form.categories.empty"), style = IosText.subheadline, color = IosColors.textSecondary)
-                    } else {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                            visibleCategories.forEach { category ->
-                                val selected = draft.categoryId == category.id
-                                Row(
-                                    Modifier.clip(RoundedCornerShape(Radius.m))
-                                        .background(if (selected) categoryColor(category.color).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainer)
-                                        .clickable(role = Role.Button) { draft = draft.copy(categoryId = category.id); showCategoryChoices = false }
-                                        .testTag("recurring.form.category.${category.id}")
-                                        .padding(horizontal = Spacing.s, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                                ) {
-                                    CategorySymbolBadge(category.icon, category.name, category.color, size = 32.dp)
-                                    Text(category.name, style = IosText.caption, color = IosColors.textPrimary)
-                                }
-                            }
-                        }
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
-                ) {
-                    listOf(false, true).forEach { isIncome ->
-                        val selected = draft.isIncome == isIncome
-                        Box(
-                            Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
-                                .background(if (selected) MaterialTheme.colorScheme.surface else Color.Transparent)
-                                .clickable(role = Role.Tab) {
-                                    draft = draft.copy(isIncome = isIncome, categoryId = null)
-                                    showCategoryChoices = false
-                                }
-                                .testTag("recurring.form.type.${if (isIncome) "income" else "bill"}"),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(if (isIncome) "Income" else "Bill", style = IosText.subheadline.w(if (selected) FontWeight.SemiBold else FontWeight.Medium))
-                        }
-                    }
                 }
             }
 
@@ -352,7 +320,7 @@ fun AddEditRecurringSheet(
                             title = "Repeat Every",
                             value = draft.repeatIntervalText,
                             placeholder = "1",
-                            suffix = draft.frequency.replace('-', ' ').lowercase(),
+                            suffix = draft.frequency.lowercase(),
                             tag = "recurring.form.repeatInterval",
                             onValueChange = { draft = draft.copy(repeatIntervalText = it.filter(Char::isDigit)) },
                         )
@@ -368,23 +336,33 @@ fun AddEditRecurringSheet(
                         )
                         if (draft.frequency == "semi-monthly") {
                             HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = Color.Black.copy(alpha = 0.06f))
-                            Row(
-                                Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
-                                Text("2nd Day of Month", Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
-                                Text("Required", Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
-                                Spacer(Modifier.weight(1f))
-                                BasicTextField(
-                                    value = draft.secondOccurrenceDayText,
-                                    onValueChange = { draft = draft.copy(secondOccurrenceDayText = it.filter(Char::isDigit).take(2)) },
-                                    modifier = Modifier.width(48.dp).testTag("recurring.form.secondDay"),
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = IosText.body.copy(color = IosColors.textPrimary),
-                                    cursorBrush = SolidColor(IosColors.spendOrange),
-                                )
+                            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
+                                    Text("2nd Day of Month", Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
+                                    Text("Required", Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
+                                }
+                                val day = draft.secondOccurrenceDay
+                                val dayShape = RoundedCornerShape(Radius.s)
+                                Row(
+                                    Modifier.fillMaxWidth().clip(dayShape)
+                                        .background(IosColors.spendOrange.copy(alpha = 0.08f))
+                                        .border(1.dp, IosColors.spendOrange.copy(alpha = 0.7f), dayShape)
+                                        .clickable(role = Role.Button) { showSecondDayPicker = true }
+                                        .testTag("recurring.form.secondDay")
+                                        .padding(horizontal = Spacing.m, vertical = Spacing.m),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                                ) {
+                                    Icon(SfSymbols.icon("calendar"), contentDescription = null, tint = IosColors.spendOrange)
+                                    Text(
+                                        if (day == null) "Select a day" else "Day $day",
+                                        Modifier.weight(1f),
+                                        style = IosText.callout.w(FontWeight.SemiBold),
+                                        color = if (day == null) IosColors.textSecondary else IosColors.textPrimary,
+                                    )
+                                    Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(16.dp))
+                                }
                             }
                             Text(
                                 "Choose the other day this transaction occurs each month.",
@@ -419,6 +397,196 @@ fun AddEditRecurringSheet(
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text("Cancel") } },
         ) { DatePicker(state = pickerState) }
+    }
+
+    if (showCategoryPicker) {
+        RecurringCategoryPickerSheet(
+            categories = categories,
+            isIncome = draft.isIncome,
+            selectedId = draft.categoryId,
+            onTypeChange = { isIncome -> draft = draft.copy(isIncome = isIncome, categoryId = null) },
+            onSelect = { category ->
+                draft = draft.copy(isIncome = category.isIncome, categoryId = category.id)
+                showCategoryPicker = false
+            },
+            onDismiss = { showCategoryPicker = false },
+        )
+    }
+    if (showSecondDayPicker) {
+        SecondDayPickerSheet(
+            initialDay = draft.secondOccurrenceDay ?: 1,
+            onDismiss = { showSecondDayPicker = false },
+            onDone = { day ->
+                draft = draft.copy(secondOccurrenceDayText = day.toString())
+                showSecondDayPicker = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun RecurringCategoryPickerSheet(
+    categories: List<Category>,
+    isIncome: Boolean,
+    selectedId: String?,
+    onTypeChange: (Boolean) -> Unit,
+    onSelect: (Category) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var search by remember { mutableStateOf("") }
+    var typeMenu by remember { mutableStateOf(false) }
+    val filtered = categories.filter { it.isIncome == isIncome && (search.isBlank() || it.name.contains(search, ignoreCase = true)) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding()) {
+            Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(48.dp))
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text("Select Category", style = IosText.headline, color = IosColors.textPrimary)
+                }
+                Text("Done", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+            }
+            Box(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
+                Row(
+                    Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                        .clickable(role = Role.Button) { typeMenu = true }
+                        .padding(Spacing.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    Icon(SfSymbols.icon(if (isIncome) "arrow.down" else "arrow.up"), contentDescription = null, tint = IosColors.textSecondary)
+                    Text(if (isIncome) "Income Categories" else "Expense Categories", Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
+                    Icon(SfSymbols.icon("chevron.down"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
+                }
+                DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Expense") },
+                        onClick = { typeMenu = false; onTypeChange(false) },
+                        modifier = Modifier.testTag("recurring.form.type.bill"),
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Income") },
+                        onClick = { typeMenu = false; onTypeChange(true) },
+                        modifier = Modifier.testTag("recurring.form.type.income"),
+                    )
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m)
+                    .then(subtleGlassModifier(RoundedCornerShape(Radius.m))).padding(Spacing.m),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
+                Icon(SfSymbols.icon("magnifyingglass"), contentDescription = null, tint = IosColors.textSecondary)
+                BasicTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = IosText.callout.copy(color = IosColors.textPrimary),
+                    cursorBrush = SolidColor(IosColors.spendOrange),
+                    decorationBox = { inner ->
+                        Box {
+                            if (search.isEmpty()) Text("Search categories...", style = IosText.callout, color = IosColors.textTertiary)
+                            inner()
+                        }
+                    },
+                )
+            }
+            if (filtered.isEmpty()) {
+                Column(
+                    Modifier.fillMaxWidth().padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                ) {
+                    Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(40.dp))
+                    Text("No categories found", Modifier.testTag("recurring.form.categories.empty"), style = IosText.body, color = IosColors.textSecondary)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(140.dp),
+                    modifier = Modifier.fillMaxWidth().height(360.dp).padding(horizontal = Spacing.screen).padding(top = Spacing.m),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                ) {
+                    items(filtered, key = Category::id) { category ->
+                        val selected = category.id == selectedId
+                        val tint = categoryColor(category.color)
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
+                                .background(if (selected) tint.copy(alpha = 0.15f) else Color.Transparent)
+                                .border(if (selected) 1.5.dp else 0.5.dp, if (selected) tint else Color.Black.copy(alpha = 0.06f), RoundedCornerShape(Radius.m))
+                                .clickable(role = Role.Button) { onSelect(category) }
+                                .testTag("recurring.form.category.${category.id}")
+                                .padding(vertical = Spacing.m),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                        ) {
+                            Box(Modifier.size(48.dp).clip(CircleShape).background(tint.copy(alpha = if (selected) 0.4f else 0.15f)), contentAlignment = Alignment.Center) {
+                                Icon(CategoryIcons.symbol(category.icon, category.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(22.dp))
+                            }
+                            Text(
+                                category.name,
+                                style = IosText.callout,
+                                color = if (selected) Color.White else Color.Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecondDayPickerSheet(initialDay: Int, onDismiss: () -> Unit, onDone: (Int) -> Unit) {
+    var day by remember { mutableStateOf(initialDay.coerceIn(1, 31)) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
+                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text("Choose second day", style = IosText.headline, color = IosColors.textPrimary)
+                }
+                Text("Done", Modifier.clickable(role = Role.Button) { onDone(day) }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+            }
+            Text(
+                "Choose the other day this transaction occurs each month.",
+                Modifier.padding(horizontal = Spacing.screen),
+                style = IosText.callout,
+                color = IosColors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+            AndroidView(
+                factory = { context ->
+                    android.widget.NumberPicker(context).apply {
+                        minValue = 1
+                        maxValue = 31
+                        displayedValues = (1..31).map { "Day $it" }.toTypedArray()
+                        value = day
+                        wrapSelectorWheel = true
+                        descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                        setOnValueChangedListener { _, _, newValue -> day = newValue }
+                    }
+                },
+                update = { picker -> if (picker.value != day) picker.value = day },
+                modifier = Modifier.fillMaxWidth().height(180.dp),
+            )
+        }
     }
 }
 

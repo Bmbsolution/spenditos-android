@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
@@ -45,8 +46,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 /**
- * iOS MonthPickerSheet. Month steps stay the existing previous/next controls; the wheel picker
- * has no matching callback beyond [onMonthChange].
+ * iOS MonthPickerSheet: a wheel of the current month ±6 months.
  */
 @Composable
 fun GenerateMonthSheet(
@@ -62,8 +62,16 @@ fun GenerateMonthSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val preview = remember(templates, month) { generatePreview(templates, month) }
     val locale = LocalConfiguration.current.locales[0]
-    val monthLabel = month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
-    val isCurrent = month == YearMonth.now()
+    val monthOptions = remember {
+        val now = YearMonth.now()
+        (-6..6).map { now.plusMonths(it.toLong()) }
+    }
+    val monthLabels = remember(locale) {
+        monthOptions.map { option ->
+            val label = option.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+            if (option == YearMonth.now()) "$label (Current)" else label
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -88,30 +96,24 @@ fun GenerateMonthSheet(
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
             )
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.m),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    "Previous",
-                    Modifier.clickable(role = Role.Button) { onMonthChange(month.minusMonths(1)) }.testTag("recurring.generate.previous"),
-                    style = IosText.subheadline.w(FontWeight.SemiBold),
-                    color = IosColors.spendOrange,
-                )
-                Text(
-                    if (isCurrent) "$monthLabel (Current)" else monthLabel,
-                    style = IosText.callout.w(FontWeight.SemiBold),
-                    color = IosColors.textPrimary,
-                    modifier = Modifier.testTag("recurring.generate.month"),
-                )
-                Text(
-                    "Next",
-                    Modifier.clickable(role = Role.Button) { onMonthChange(month.plusMonths(1)) }.testTag("recurring.generate.next"),
-                    style = IosText.subheadline.w(FontWeight.SemiBold),
-                    color = IosColors.spendOrange,
-                )
-            }
+            AndroidView(
+                factory = { context ->
+                    android.widget.NumberPicker(context).apply {
+                        minValue = 0
+                        maxValue = monthOptions.lastIndex
+                        displayedValues = monthLabels.toTypedArray()
+                        value = monthOptions.indexOf(month).coerceAtLeast(0)
+                        wrapSelectorWheel = false
+                        descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                        setOnValueChangedListener { _, _, newValue -> onMonthChange(monthOptions[newValue]) }
+                    }
+                },
+                update = { picker ->
+                    val index = monthOptions.indexOf(month).coerceAtLeast(0)
+                    if (picker.value != index) picker.value = index
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m).testTag("recurring.generate.month"),
+            )
             Text("Range: ±6 months from current month", style = IosText.caption, color = IosColors.textTertiary)
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m)
