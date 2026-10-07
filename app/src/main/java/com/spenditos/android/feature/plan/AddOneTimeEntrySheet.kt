@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -41,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
@@ -230,3 +233,44 @@ fun AddOneTimeEntrySheet(
 }
 
 private const val MILLIS_PER_DAY = 86_400_000L
+
+@Composable
+private fun GroupedFormCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.l)).background(MaterialTheme.colorScheme.surfaceContainer),
+        content = content,
+    )
+}
+
+@Composable
+private fun BasicFormRow(label: String, tag: String, field: @Composable () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().testTag(tag).padding(horizontal = Spacing.m, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+    ) {
+        Text(label, style = IosText.body, color = IosColors.textPrimary)
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { field() }
+    }
+}
+
+@Composable
+private fun TypeSegment(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit, tags: List<String>) {
+    Row(
+        Modifier.clip(RoundedCornerShape(Radius.m)).background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
+    ) {
+        labels.forEachIndexed { index, label ->
+            val selected = index == selectedIndex
+            Box(
+                Modifier.height(32.dp).clip(RoundedCornerShape(10.dp))
+                    .background(if (selected) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
+                    .clickable(role = Role.Tab) { onSelect(index) }
+                    .testTag(tags[index])
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, style = IosText.subheadline.w(if (selected) FontWeight.SemiBold else FontWeight.Medium), color = IosColors.textPrimary)
+            }
+        }
+    }
+}

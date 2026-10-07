@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,8 +17,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -40,7 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -161,7 +161,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Filled.AddCircle, contentDescription = null, tint = IosColors.textPrimary)
+                                Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
                                 Text("Add income", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                             }
                         }
@@ -215,10 +215,12 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     )
                 }
             }
+            }
             if (state.templates.isNotEmpty()) {
                 Box(Modifier.align(Alignment.BottomEnd).padding(end = Spacing.screen, bottom = Spacing.l)) {
                     Box(
-                        Modifier.size(56.dp).shadow(16.dp, CircleShape, ambientColor = IosColors.spendOrange.copy(alpha = 0.4f), spotColor = IosColors.spendOrange.copy(alpha = 0.4f))
+                        Modifier.size(56.dp)
+                            .dropShadow(CircleShape, Shadow(radius = 16.dp, color = IosColors.spendOrange, offset = DpOffset(0.dp, 4.dp), alpha = 0.4f))
                             .clip(CircleShape).background(IosColors.spendOrange)
                             .clickable(role = Role.Button) { showAddMenu = true }
                             .testTag("recurring.fab"),
@@ -229,12 +231,12 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }, offset = DpOffset(0.dp, (-8).dp)) {
                         DropdownMenuItem(
                             text = { Text("Add income", style = IosText.subheadline) },
-                            leadingIcon = { Icon(SfSymbols.icon("arrow.down.circle.fill"), contentDescription = null) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.down.circle"), contentDescription = null) },
                             onClick = { showAddMenu = false; addPresetIncome = true; templateToEdit = null; showEditor = true },
                         )
                         DropdownMenuItem(
                             text = { Text("Add bill", style = IosText.subheadline) },
-                            leadingIcon = { Icon(SfSymbols.icon("arrow.up"), contentDescription = null) },
+                            leadingIcon = { Icon(SfSymbols.icon("arrow.up.circle"), contentDescription = null) },
                             onClick = { showAddMenu = false; addPresetIncome = false; templateToEdit = null; showEditor = true },
                         )
                     }
@@ -301,7 +303,7 @@ private fun RecurringToolsCard(onGenerate: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RecurringToolPill(
-                icon = SfSymbols.icon("calendar.badge.clock"),
+                icon = SfSymbols.icon("calendar.badge.plus"),
                 text = "Generate Month",
                 onClick = onGenerate,
                 modifier = Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.open"),
@@ -309,7 +311,7 @@ private fun RecurringToolsCard(onGenerate: () -> Unit) {
                 enabled = true,
             )
             RecurringToolPill(
-                icon = SfSymbols.icon("banknote"),
+                icon = SfSymbols.icon("banknote.fill"),
                 text = "Pay periods",
                 onClick = {},
                 modifier = Modifier.weight(1f).fillMaxWidth(),

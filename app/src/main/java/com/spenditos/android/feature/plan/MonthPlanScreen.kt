@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -218,11 +219,22 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
                 contentAlignment = Alignment.Center,
             ) { Icon(SfSymbols.icon("chevron.left"), contentDescription = "Previous month", tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.weight(1f))
-            Text(
-                state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])),
-                style = IosText.title3.w(FontWeight.SemiBold),
-                color = IosColors.textPrimary,
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])),
+                    style = IosText.title3.w(FontWeight.SemiBold),
+                    color = IosColors.textPrimary,
+                )
+                if (state.draftChangeCount > 0) {
+                    Text(
+                        "Draft · ${state.draftChangeCount} ${if (state.draftChangeCount == 1) "change" else "changes"}",
+                        modifier = Modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
+                            .padding(horizontal = 8.dp, vertical = 3.dp).testTag("monthPlan.draftCount"),
+                        style = IosText.caption2.w(FontWeight.Bold),
+                        color = IosColors.spendOrange,
+                    )
+                }
+            }
             Spacer(Modifier.weight(1f))
             Box(
                 Modifier.size(40.dp).clip(CircleShape)
@@ -231,15 +243,6 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
                     .testTag("monthPlan.nextMonth"),
                 contentAlignment = Alignment.Center,
             ) { Icon(SfSymbols.icon("chevron.right"), contentDescription = "Next month", tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
-        }
-        if (state.draftChangeCount > 0) {
-            Text(
-                "Draft · ${state.draftChangeCount} ${if (state.draftChangeCount == 1) "change" else "changes"}",
-                modifier = Modifier.padding(top = 4.dp).background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
-                    .padding(horizontal = 8.dp, vertical = 3.dp).testTag("monthPlan.draftCount"),
-                style = IosText.caption2.w(FontWeight.Bold),
-                color = IosColors.spendOrange,
-            )
         }
     }
 }
@@ -329,7 +332,7 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
                         (if (delta.signum() >= 0) "+" else "−") + Money.format(delta.abs().toDouble(), currency),
                         if (delta.signum() >= 0) finance.income else finance.expense,
                     )
-            }
+                }
             }
             HorizontalDivider(color = IosColors.separator)
             SummaryLine("Income", "+${Money.format(summary.draftIncome.toDouble(), currency)}", finance.income)
@@ -357,8 +360,9 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
             if (state.draftChangeCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val changeLabel = if (state.draftChangeCount == 1) "1 change" else "${state.draftChangeCount} changes"
                         Text(
-                            if (applyFailed) "${state.draftChangeCount} didn't apply" else "${state.draftChangeCount} changes in your draft",
+                            if (applyFailed) "$changeLabel didn't apply" else "$changeLabel in your draft",
                             style = IosText.subheadline.w(FontWeight.Bold),
                             color = IosColors.textPrimary,
                         )
@@ -375,19 +379,21 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
                         style = IosText.subheadline.w(FontWeight.SemiBold),
                         color = IosColors.textSecondary,
                     )
-                    Box(
-                        Modifier.heightIn(min = 36.dp).clip(CircleShape)
-                            .background(if (state.isApplying || !state.isOnline || state.isPast) IosColors.spendOrange.copy(alpha = 0.45f) else IosColors.spendOrange)
-                            .clickable(enabled = !state.isApplying && state.isOnline && !state.isPast, role = Role.Button) { onConfirm(ConfirmAction.APPLY) }
-                            .testTag("monthPlan.apply")
-                            .padding(horizontal = Spacing.m, vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            if (state.isApplying) "Applying…" else if (applyFailed) "Retry" else "Apply",
-                            style = IosText.subheadline.w(FontWeight.Bold),
-                            color = androidx.compose.ui.graphics.Color.White,
-                        )
+                    if (!state.isPast) {
+                        Box(
+                            Modifier.heightIn(min = 36.dp).clip(CircleShape)
+                                .background(if (state.isApplying || !state.isOnline) IosColors.spendOrange.copy(alpha = 0.45f) else IosColors.spendOrange)
+                                .clickable(enabled = !state.isApplying && state.isOnline, role = Role.Button) { onConfirm(ConfirmAction.APPLY) }
+                                .testTag("monthPlan.apply")
+                                .padding(horizontal = Spacing.m),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                if (state.isApplying) "Applying…" else if (applyFailed) "Retry" else "Apply",
+                                style = IosText.subheadline.w(FontWeight.Bold),
+                                color = androidx.compose.ui.graphics.Color.White,
+                            )
+                        }
                     }
                 }
             }
@@ -515,7 +521,7 @@ private fun RecurringPlanRow(
             Spacer(Modifier.width(Spacing.s))
             Text(
                 Money.signed(row.total.toDouble(), isIncome, state.currency),
-                style = IosText.subheadline.w(FontWeight.Bold),
+                style = IosText.subheadline.w(if (isIncome) FontWeight.SemiBold else FontWeight.Bold),
                 color = if (row.isSkipped) IosColors.textSecondary else if (isIncome) finance.income else finance.expense,
                 textDecoration = if (row.isSkipped) TextDecoration.LineThrough else TextDecoration.None,
             )

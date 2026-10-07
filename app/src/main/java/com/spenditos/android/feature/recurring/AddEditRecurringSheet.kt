@@ -171,7 +171,7 @@ fun AddEditRecurringSheet(
                     onValueChange = { draft = draft.copy(description = it.take(160)) },
                     placeholder = "e.g., Netflix, Rent, Salary",
                     tag = "recurring.form.description",
-                    iconName = "list.bullet",
+                    iconName = "text.alignleft",
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -356,7 +356,7 @@ fun AddEditRecurringSheet(
                             tag = "recurring.form.repeatInterval",
                             onValueChange = { draft = draft.copy(repeatIntervalText = it.filter(Char::isDigit)) },
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator.copy(alpha = 0.45f))
+                        HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = Color.Black.copy(alpha = 0.06f))
                         AdvancedNumberRow(
                             icon = "number",
                             title = "End After",
@@ -367,14 +367,14 @@ fun AddEditRecurringSheet(
                             onValueChange = { draft = draft.copy(occurrencesRemainingText = it.filter(Char::isDigit)) },
                         )
                         if (draft.frequency == "semi-monthly") {
-                            HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator.copy(alpha = 0.45f))
+                            HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = Color.Black.copy(alpha = 0.06f))
                             Row(
                                 Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(SfSymbols.icon("calendar.badge.clock"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
+                                Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
                                 Text("2nd Day of Month", Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
-                                Text("Required", Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.warning)
+                                Text("Required", Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
                                 Spacer(Modifier.weight(1f))
                                 BasicTextField(
                                     value = draft.secondOccurrenceDayText,
@@ -386,6 +386,12 @@ fun AddEditRecurringSheet(
                                     cursorBrush = SolidColor(IosColors.spendOrange),
                                 )
                             }
+                            Text(
+                                "Choose the other day this transaction occurs each month.",
+                                Modifier.padding(horizontal = Spacing.m).padding(bottom = Spacing.s),
+                                style = IosText.caption,
+                                color = IosColors.textSecondary,
+                            )
                         }
                     }
                 }
