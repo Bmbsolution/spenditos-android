@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -85,6 +87,7 @@ fun AddOneTimeEntrySheet(
     val availableCategories = categories.filter { it.isIncome == isIncome }
     val amount = parsePlanAmount(amountText)
     var showCategoryPicker by remember { mutableStateOf(false) }
+    var showTypeMenu by remember { mutableStateOf(false) }
     val canSubmit = amount != null && description.isNotBlank() && categoryId.isNotBlank() && availableCategories.isNotEmpty()
     val submit = {
         val parsed = amount
@@ -121,18 +124,38 @@ fun AddOneTimeEntrySheet(
             }
             GroupedFormCard {
                 Text("Planned item", Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s), style = IosText.caption.w(FontWeight.Bold), color = IosColors.textSecondary)
-                Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Type", style = IosText.body, color = IosColors.textPrimary)
-                    Spacer(Modifier.weight(1f))
-                    TypeSegment(
-                        labels = listOf("Expense", "Income"),
-                        selectedIndex = if (isIncome) 1 else 0,
-                        onSelect = { index ->
-                            isIncome = index == 1
-                            categoryId = categories.firstOrNull { it.isIncome == isIncome }?.id.orEmpty()
-                        },
-                        tags = listOf("monthPlan.oneTime.expense", "monthPlan.oneTime.income"),
-                    )
+                Box {
+                    Row(
+                        Modifier.fillMaxWidth().clickable(role = Role.Button) { showTypeMenu = true }
+                            .padding(horizontal = Spacing.m, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        Text("Type", style = IosText.body, color = IosColors.textPrimary)
+                        Spacer(Modifier.weight(1f))
+                        Text(if (isIncome) "Income" else "Expense", style = IosText.body, color = IosColors.textSecondary)
+                        Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
+                    }
+                    DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Expense") },
+                            onClick = {
+                                showTypeMenu = false
+                                isIncome = false
+                                categoryId = categories.firstOrNull { !it.isIncome }?.id.orEmpty()
+                            },
+                            modifier = Modifier.testTag("monthPlan.oneTime.expense"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Income") },
+                            onClick = {
+                                showTypeMenu = false
+                                isIncome = true
+                                categoryId = categories.firstOrNull { it.isIncome }?.id.orEmpty()
+                            },
+                            modifier = Modifier.testTag("monthPlan.oneTime.income"),
+                        )
+                    }
                 }
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator)
                 BasicFormRow(label = "Description", tag = "monthPlan.oneTime.description") {
@@ -254,23 +277,4 @@ private fun BasicFormRow(label: String, tag: String, field: @Composable () -> Un
     }
 }
 
-@Composable
-private fun TypeSegment(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit, tags: List<String>) {
-    Row(
-        Modifier.clip(RoundedCornerShape(Radius.m)).background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
-    ) {
-        labels.forEachIndexed { index, label ->
-            val selected = index == selectedIndex
-            Box(
-                Modifier.height(32.dp).clip(RoundedCornerShape(10.dp))
-                    .background(if (selected) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
-                    .clickable(role = Role.Tab) { onSelect(index) }
-                    .testTag(tags[index])
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(label, style = IosText.subheadline.w(if (selected) FontWeight.SemiBold else FontWeight.Medium), color = IosColors.textPrimary)
-            }
-        }
-    }
-}
+

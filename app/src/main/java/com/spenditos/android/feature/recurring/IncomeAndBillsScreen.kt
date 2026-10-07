@@ -148,10 +148,10 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                                 Text("No income or bills yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                                 Text(
                                     "Everything that comes in or goes out on a schedule. Each one is logged on its date.",
-                                    style = IosText.body,
+                                    style = IosText.callout,
                                     color = IosColors.textSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = Spacing.l),
+                                    modifier = Modifier.padding(horizontal = 32.dp),
                                 )
                             }
                             Row(
@@ -162,8 +162,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
-                                Text("Add income", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                                Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                                Text("Add income", style = IosText.headline, color = IosColors.textPrimary)
                             }
                         }
                     }
@@ -352,7 +352,7 @@ private fun RecurringToolPill(
 private fun RecurringSectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         title,
-        style = IosText.title3.w(FontWeight.SemiBold),
+        style = IosText.headline,
         color = IosColors.textSecondary,
         modifier = modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s),
     )
