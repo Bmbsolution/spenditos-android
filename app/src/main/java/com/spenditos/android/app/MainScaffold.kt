@@ -47,6 +47,7 @@ import com.spenditos.android.feature.reports.DailyAggregatesScreen
 import com.spenditos.android.feature.reports.MonthComparisonScreen
 import com.spenditos.android.feature.reports.PaycheckPeriodsScreen
 import com.spenditos.android.feature.reports.ReportsHubScreen
+import com.spenditos.android.feature.capture.CaptureScreen
 import com.spenditos.android.feature.settings.ChangePasswordScreen
 import com.spenditos.android.feature.settings.ProfileScreen
 import com.spenditos.android.feature.settings.SettingsScreen
@@ -70,6 +71,7 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
 private const val RECEIPT_SCAN_ROUTE = "receipt-scan"
+private const val CAPTURE_ROUTE = "capture"
 private const val REPORTS_DAILY_ROUTE = "reports/daily"
 private const val REPORTS_COMPARISON_ROUTE = "reports/comparison"
 private const val REPORTS_PAYCHECK_ROUTE = "reports/paycheck-periods"
@@ -141,6 +143,15 @@ fun MainScaffold(envName: String?) {
                 composable(Tab.HOME.route) { HomeScreen() }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
+                composable(CAPTURE_ROUTE) {
+                    CaptureScreen(
+                        onBack = { nav.popBackStack() },
+                        onSaved = { message ->
+                            nav.popBackStack()
+                            scope.launch { snackbar.showSnackbar(message) }
+                        },
+                    )
+                }
                 composable(RECEIPT_SCAN_ROUTE) {
                     ReceiptScanScreen(
                         onResult = { values ->
@@ -195,6 +206,10 @@ fun MainScaffold(envName: String?) {
                 onScanReceipt = {
                     showAdd = false
                     nav.navigate(RECEIPT_SCAN_ROUTE)
+                },
+                onCapture = {
+                    showAdd = false
+                    nav.navigate(CAPTURE_ROUTE)
                 },
                 prefill = receiptPrefill,
             )

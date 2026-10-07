@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Release builds are unsigned (signing/publishing is the owner's step).
+Last updated: 2026-10-06. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
@@ -52,6 +52,12 @@ No queue/sync or token-storage code changed in Wave A (`core/**` untouched since
 - Review: codex (xhigh) read-only; GLM returned nothing usable. Fixed: account switch with a saved flow, temp-file leak on a cancellation race. Verified in code: server derives per-row ids from key + row index, so a same-key replay skips rows already created.
 - Open, shared with iOS (server behavior, not changed): with a key the server skips its fuzzy duplicate reconciliation, so importing an overlapping statement as a NEW import can create duplicates; the key store keeps no body fingerprint; the Pro gate is client-side only (server has no gate on /statements/*); dates go through server-local JS Date parsing; amounts are Doubles end to end.
 - Not on-device: the harness user is not Pro and has no S3, so only the Pro-gate screen was checked on the emulator; analyze/preview/import are covered by MockWebServer + ViewModel tests (incl. process-death restore).
+
+## Wave E: DONE and merged (Voice & typed capture)
+- Add sheet > "Type or speak" > Describe it: Type (sentence) or Speak (MediaRecorder AAC/MP4, 60 s cap, mic permission with settings fallback, no-speech check). Typed text goes up as a tiny text/plain doc; voice is transcribed first, the transcript is editable, then parsed (parentAnalysisId). Review cards (include, amount, description, date, category) -> ONE `POST /transactions/bulk` with a persisted `idempotencyKeyId` per item + source voice/text + analysisId. Items freeze once a save was sent; retries reuse the same keys; online-only (no offline queue).
+- Review (codex, read-only) fixes applied: capture bound to the signed-in user, category revalidated at save, parsed amounts no longer silently rounded, MediaRecorder released on start failure + recorder-level 60 s cap, recording stops when the screen backgrounds.
+- 312 unit tests, lint clean. Emulator (harness): screen, permission denied path, recording timer, "No speech detected" path, calm error when the harness has no analysis endpoints. Not tested end to end: real analysis (needs staging/real audio), quota-exhausted copy on device.
+- Emulator note: it only boots here headless: `emulator -avd <avd> -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim -no-snapshot-save` (the windowed launch hangs); then `adb reverse tcp:4310 tcp:<harness port>`.
 
 ## Hardening: DONE
 - R8: `assembleStagingRelease` + `assembleProdRelease` succeed (unsigned, ~4.5 MB). `-Pspenditos.minifyDebug` runs R8 on a debug-signed harness build; every tab, sub-screen, an add-transaction write (bulk) and a process kill/restore were exercised on the emulator without crashes (serializer rules hold; `StatementCellValueSerializer` made public to avoid a serializer-not-found warning).
