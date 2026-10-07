@@ -26,9 +26,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -153,7 +154,7 @@ private fun ReviewSummaryRow(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                if (item.include) SfSymbols.icon("checkmark.circle.fill") else Icons.Outlined.RadioButtonUnchecked,
+                if (item.include) SfSymbols.icon("checkmark.circle.fill") else Icons.Outlined.Circle,
                 contentDescription = null,
                 tint = if (item.include) IosColors.spendOrange else IosColors.textTertiary,
                 modifier = Modifier.size(19.dp),
@@ -222,7 +223,6 @@ private fun ReviewItemEditorSheet(
     val date = runCatching { LocalDate.parse(item.date) }.getOrDefault(LocalDate.now())
     var showCategoryPicker by remember(key) { mutableStateOf(false) }
     var categorySearchText by remember(key) { mutableStateOf("") }
-    var showDatePicker by remember(key) { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editable = !item.isFrozen
 
@@ -303,13 +303,36 @@ private fun ReviewItemEditorSheet(
                 color = IosColors.textSecondary,
                 modifier = Modifier.padding(start = Spacing.screen, top = Spacing.l, bottom = Spacing.s),
             )
-            ReviewChoice(
-                text = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
-                symbol = "calendar",
-                onClick = { showDatePicker = true },
-                modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.date.$key"),
-                enabled = editable,
-            )
+            if (editable) {
+                val pickerState = rememberDatePickerState(initialSelectedDateMillis = date.toEpochDay() * MILLIS_PER_DAY)
+                LaunchedEffect(pickerState.selectedDateMillis) {
+                    val millis = pickerState.selectedDateMillis ?: return@LaunchedEffect
+                    val picked = LocalDate.ofEpochDay(millis / MILLIS_PER_DAY)
+                    if (picked != date) onDateChange(picked)
+                }
+                Column(Modifier.padding(horizontal = Spacing.screen).testTag("capture.date.$key")) {
+                DatePicker(
+                    state = pickerState,
+                    modifier = Modifier.testTag("capture.date.picker.$key"),
+                    title = null,
+                    headline = null,
+                    showModeToggle = false,
+                    colors = DatePickerDefaults.colors(
+                        selectedDayContainerColor = IosColors.spendOrange,
+                        todayDateBorderColor = IosColors.spendOrange,
+                        todayContentColor = IosColors.spendOrange,
+                    ),
+                )
+                }
+            } else {
+                ReviewChoice(
+                    text = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                    symbol = "calendar",
+                    onClick = {},
+                    modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.date.$key"),
+                    enabled = false,
+                )
+            }
             GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.l), shape = RoundedCornerShape(Radius.l)) {
                 Row(
                     Modifier.fillMaxWidth().clickable(enabled = editable, role = Role.Button, onClick = onExclude).padding(Spacing.m),
@@ -322,20 +345,6 @@ private fun ReviewItemEditorSheet(
             }
             Spacer(Modifier.height(Spacing.l))
         }
-    }
-
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = date.toEpochDay() * MILLIS_PER_DAY)
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { onDateChange(LocalDate.ofEpochDay(it / MILLIS_PER_DAY)) }
-                    showDatePicker = false
-                }, modifier = Modifier.testTag("capture.date.confirm.$key")) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("capture.date.cancel.$key")) { Text("Cancel") } },
-        ) { DatePicker(state = pickerState, modifier = Modifier.testTag("capture.date.picker.$key")) }
     }
 
     if (showCategoryPicker) {
