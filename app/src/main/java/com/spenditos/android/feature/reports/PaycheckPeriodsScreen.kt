@@ -239,5 +239,5 @@ private fun formatPeriodDate(date: LocalDate, locale: Locale): String = date.for
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+    return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

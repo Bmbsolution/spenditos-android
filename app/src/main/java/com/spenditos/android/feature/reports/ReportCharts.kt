@@ -117,8 +117,13 @@ internal fun ReportsStatusCard(
     }
     GlassCard(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-            Text(reportStatusMessage(status), style = IosText.body, color = IosColors.textSecondary)
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                if (status == ReportLoadStatus.PRO_REQUIRED) {
+                    Icon(SfSymbols.icon("lock.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
+                }
+                Text(title, style = IosText.headline, color = IosColors.textPrimary)
+            }
+            Text(reportStatusMessage(status), style = IosText.callout, color = IosColors.textSecondary)
             if (status == ReportLoadStatus.PRO_REQUIRED) {
                 com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
                     PillButton("See Spenditos Pro", openPro, modifier = Modifier.fillMaxWidth().testTag("reports.seePro"), filled = false)
@@ -161,7 +166,11 @@ internal fun ReportLoadingCard(text: String, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            androidx.compose.material3.CircularProgressIndicator(
+                Modifier.size(20.dp),
+                color = IosColors.spendOrange,
+                strokeWidth = 2.dp,
+            )
             Text(text, style = IosText.body, color = IosColors.textPrimary)
         }
     }
@@ -201,8 +210,8 @@ internal fun ReportEmptyState(icon: String, title: String, subtitle: String, mod
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-            Text(subtitle, style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center, maxLines = 3)
+            Text(title, style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(subtitle, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center, maxLines = 3)
         }
     }
 }
@@ -211,8 +220,8 @@ internal fun ReportEmptyState(icon: String, title: String, subtitle: String, mod
 internal fun ReportEmptyCard(title: String, detail: String, modifier: Modifier = Modifier) {
     GlassCard(modifier = modifier.fillMaxWidth().testTag("reports.empty")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-            Text(detail, style = IosText.body, color = IosColors.textSecondary)
+            Text(title, style = IosText.headline, color = IosColors.textPrimary)
+            Text(detail, style = IosText.callout, color = IosColors.textSecondary)
         }
     }
 }
@@ -253,7 +262,11 @@ internal fun DailyExpenseChart(
                     val averageFraction = if (maxExpense > 0) {
                         ((movingAverages.getOrNull(index)?.toDouble() ?: 0.0) / maxExpense).toFloat()
                     } else 0f
-                    val barColor = if (BigDecimal.valueOf(row.expenses) > monthlyAverage) finance.expense else finance.income
+                    val barColor = if (monthlyAverage.signum() > 0 && BigDecimal.valueOf(row.expenses) > monthlyAverage) {
+                        finance.expense
+                    } else {
+                        finance.income
+                    }
                     Box(
                         Modifier.width((maxWidth * fraction).coerceAtLeast(2.dp)).height(20.dp)
                             .clip(RoundedCornerShape(3.dp)).background(barColor),

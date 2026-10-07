@@ -148,7 +148,12 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
             }
             Row(Modifier.testTag("reports.daily.summary.highLow")) {
                 SummaryValue("Avg/Day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), IosColors.spendOrange, Modifier.weight(1f))
-                SummaryValue("Highest Day", summary.highestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—", finance.expense, Modifier.weight(1f))
+                SummaryValue(
+                    "Highest Day",
+                    summary.highestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—",
+                    if (summary.highestSpendingDay == null) IosColors.neutral else finance.expense,
+                    Modifier.weight(1f),
+                )
             }
         }
     }
@@ -156,7 +161,11 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
 
 @Composable
 private fun SummaryValue(label: String, value: String, color: Color, modifier: Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
         Text(label, style = IosText.subheadline, color = IosColors.neutral)
         Text(value, style = IosText.rounded(17, FontWeight.Medium), color = color)
     }
@@ -178,7 +187,7 @@ private fun DailyAggregateRow(aggregate: DailyAggregate, state: DailyAggregatesU
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                Text(dateLabel, style = IosText.body, color = IosColors.textPrimary)
+                Text(dateLabel, style = IosText.callout, color = IosColors.textPrimary)
                 Text(dayLabel, style = IosText.subheadline, color = IosColors.neutral)
                 if (isHigh) DayBadge("HIGHEST", finance.expense, "high")
                 else if (isLow) DayBadge("LOWEST", finance.income, "low")
@@ -218,5 +227,5 @@ private fun signedMoney(value: BigDecimal, currency: String): String {
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+    return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

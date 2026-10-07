@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -181,7 +182,7 @@ private fun ReportsHeroCard() {
             )
             Text(
                 "Track day-to-day trends and income coverage from one place.",
-                style = IosText.body,
+                style = IosText.callout,
                 color = IosColors.textSecondary,
             )
         }
@@ -193,12 +194,12 @@ private fun ReportsEmptyReviewCard() {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                Icon(SfSymbols.icon("chart.line.uptrend.xyaxis"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
-                Text("Your review starts with one entry", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Icon(SfSymbols.icon("chart.line.uptrend.xyaxis"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                Text("Your review starts with one entry", style = IosText.headline, color = IosColors.textPrimary)
             }
             Text(
                 "Log a transaction to see spending and recurring obligations together.",
-                style = IosText.body,
+                style = IosText.callout,
                 color = IosColors.textSecondary,
             )
         }
@@ -221,7 +222,7 @@ private fun MonthlyReviewCard(
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text("Monthly review", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                    Text("Monthly review", style = IosText.headline, color = IosColors.textPrimary)
                     Text(
                         data.dateRange?.startDate?.toString() ?: month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
                         style = IosText.subheadline,
@@ -284,11 +285,17 @@ private fun ReportTakeawayRow(symbol: String, tint: Color, title: String, detail
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = tint, modifier = Modifier.width(24.dp).size(24.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = tint, modifier = Modifier.width(24.dp).size(20.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Text(detail, style = IosText.caption, color = IosColors.textSecondary)
         }
+        Icon(
+            SfSymbols.icon("chevron.right"),
+            contentDescription = null,
+            tint = IosColors.textTertiary,
+            modifier = Modifier.size(14.dp),
+        )
     }
 }
 
@@ -316,7 +323,7 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                 Text(
                     "Where your money went",
                     modifier = Modifier.weight(1f),
-                    style = IosText.title3.w(FontWeight.SemiBold),
+                    style = IosText.headline,
                     color = IosColors.textPrimary,
                 )
                 Text("This month", style = IosText.subheadline, color = IosColors.textSecondary)
@@ -325,8 +332,8 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                 Text("No spending logged this month yet.", style = IosText.subheadline, color = IosColors.textSecondary)
             } else {
                 BoxWithConstraints(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape)) {
+                    val barWidth = maxWidth - 2.dp * (slices.size - 1)
                     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        val barWidth = maxWidth - 2.dp * (slices.size - 1)
                         slices.forEachIndexed { index, slice ->
                             val fraction = slice.amount.divide(total, 6, RoundingMode.HALF_UP).toFloat()
                             Box(
@@ -344,10 +351,16 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
                             Box(Modifier.size(10.dp).clip(CircleShape).background(palette[index]))
-                            Text(slice.name, modifier = Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
-                            Text(Money.format(slice.amount.toDouble(), currency), style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary)
+                            Text(slice.name, modifier = Modifier.weight(1f), style = IosText.callout, color = IosColors.textPrimary)
+                            Text(Money.format(slice.amount.toDouble(), currency), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
                             val percent = slice.amount.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).toInt()
-                            Text("$percent%", modifier = Modifier.widthIn(min = 36.dp), style = IosText.subheadline, color = IosColors.textSecondary)
+                            Text(
+                                "$percent%",
+                                modifier = Modifier.widthIn(min = 36.dp),
+                                style = IosText.subheadline,
+                                color = IosColors.textSecondary,
+                                textAlign = TextAlign.End,
+                            )
                         }
                     }
                 }
@@ -378,7 +391,7 @@ private fun ReportNavigationCard(
                 Icon(SfSymbols.icon(symbol), contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(title, style = IosText.headline, color = IosColors.textPrimary)
                 Text(detail, style = IosText.subheadline, color = IosColors.neutral, maxLines = 2)
             }
             Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(18.dp))
@@ -388,5 +401,5 @@ private fun ReportNavigationCard(
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+    return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

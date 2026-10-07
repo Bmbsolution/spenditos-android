@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -90,7 +91,7 @@ fun MonthComparisonScreen(
                     item {
                         ReportMonthSelector(
                             title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                            subtitle = monthRangeLabel(state.month, locale),
+                            subtitle = comparisonRangeLabel(state.month, locale),
                             tag = "reports.comparison.month",
                             onPrevious = viewModel::previousMonth,
                             onNext = viewModel::nextMonth,
@@ -118,8 +119,8 @@ fun MonthComparisonScreen(
                                         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                                     ) {
                                         val metricColor = if (showIncome) LocalFinanceColors.current.income else LocalFinanceColors.current.expense
-                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMM", locale)))
-                                        ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMM", locale)))
+                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
+                                        ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
                                     }
                                 }
                             }
@@ -197,14 +198,11 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
         ) {
             listOf("Expenses", "Income").forEachIndexed { index, label ->
                 val selected = (index == 1) == showIncome
-                val tag = if (index == 0) "reports.comparison.metric.expenses" else "reports.comparison.metric.income"
+                val tag = if (index == 0) "reports.comparison.picker.expenses" else "reports.comparison.picker.income"
                 Box(
                     Modifier.clip(CircleShape)
                         .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
-                        .clickable(role = Role.Tab) {
-                            onSelectIncome(index == 1)
-                            HapticFeedback.light()
-                        }
+                        .clickable(role = Role.Tab) { onSelectIncome(index == 1) }
                         .testTag(tag)
                         .padding(horizontal = Spacing.m, vertical = Spacing.xs),
                     contentAlignment = Alignment.Center,
@@ -220,7 +218,8 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
     }
 }
 
-private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
+private fun comparisonRangeLabel(month: LocalDate, locale: Locale): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+    val previous = month.minusMonths(1)
+    return "${previous.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }
