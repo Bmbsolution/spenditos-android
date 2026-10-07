@@ -45,6 +45,12 @@ object SfSymbols {
 
     /** SF Symbol base name (without `.fill`) to Phosphor icon name. */
     private val map: Map<String, String> = mapOf(
+        "circle" to "circle",
+        "touchid" to "fingerprint",
+        "icloud.slash" to "cloud-slash",
+        "chevron.up.chevron.down" to "caret-up-down",
+        "chevron.up" to "caret-up",
+        "questionmark.circle" to "question",
         "airplane" to "airplane",
         "antenna.radiowaves.left.and.right" to "broadcast",
         "apple.logo" to "apple-logo",
