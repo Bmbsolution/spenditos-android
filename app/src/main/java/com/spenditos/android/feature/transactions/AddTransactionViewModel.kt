@@ -100,6 +100,9 @@ data class AddTransactionUiState(
     val existingBill: RecurringTemplate? = null,
     /** The payment is saved and only its repeat is waiting: amount and description are locked. */
     val paymentSaved: Boolean = false,
+    /** "Add a category" sheet (no categories of this kind yet). */
+    val isSavingCategory: Boolean = false,
+    val categoryError: String? = null,
 ) {
     val isEditMode: Boolean get() = editing != null
 
@@ -196,6 +199,9 @@ sealed interface AddTransactionEvent {
 
     /** "Save and add another" saved; the form was cleared for the next entry. */
     data object SavedAndContinue : AddTransactionEvent
+
+    /** The category made from "Add a category" exists and is selected; close its sheet. */
+    data object CategoryCreated : AddTransactionEvent
 }
 
 /**
@@ -206,7 +212,7 @@ sealed interface AddTransactionEvent {
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
     private val transactions: TransactionRepository,
-    categories: CategoryRepository,
+    private val categoryRepository: CategoryRepository,
     settings: UserSettingsRepository,
     private val recurring: RecurringActions,
     private val merchantMappings: MerchantMappingActions,
@@ -217,7 +223,7 @@ class AddTransactionViewModel @Inject constructor(
     private val _events = Channel<AddTransactionEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    val state: StateFlow<AddTransactionUiState> = combine(form, categories.observe(), settings.currency()) { f, cats, currency ->
+    val state: StateFlow<AddTransactionUiState> = combine(form, categoryRepository.observe(), settings.currency()) { f, cats, currency ->
         f.copy(categories = cats, currency = currency)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AddTransactionUiState())
 
@@ -328,6 +334,55 @@ class AddTransactionViewModel @Inject constructor(
     fun onNextDueChange(date: LocalDate) = form.update { it.copy(nextDue = maxOf(date, it.date), nextDueTouched = true) }
 
     fun dismissError() = form.update { it.copy(error = null) }
+
+    /**
+     * "Add a category" (iOS AddCategorySheet from the form): creates it with this form's kind and
+     * selects it. Same checks as Settings > Categories.
+     */
+    fun createCategory(draft: com.spenditos.android.feature.settings.categories.CategoryDraft) {
+        val name = draft.name.trim()
+        val isIncome = form.value.type == EntryType.INCOME
+        val error = when {
+            name.isEmpty() -> "Enter a category name."
+            name.length > 100 -> "Name must be 100 characters or fewer."
+            else -> state.value.categories.firstOrNull {
+                it.isIncome == isIncome &&
+                    com.spenditos.android.feature.settings.categories.normalizeCategoryName(it.name) ==
+                    com.spenditos.android.feature.settings.categories.normalizeCategoryName(name)
+            }?.let { "\"${it.name}\" already exists." }
+        }
+        if (error != null) {
+            form.update { it.copy(categoryError = error) }
+            return
+        }
+        if (form.value.isSavingCategory) return
+        form.update { it.copy(isSavingCategory = true, categoryError = null) }
+        viewModelScope.launch {
+            try {
+                val created = categoryRepository.create(
+                    com.spenditos.android.data.model.CategoryCreateRequest(name, draft.color, isIncome, draft.icon),
+                )
+                form.update {
+                    if (it.type == EntryType.INCOME == created.isIncome) {
+                        it.copy(categoryId = created.id, suggestedCategoryId = null, categorySuggestionSource = null)
+                    } else {
+                        it
+                    }
+                }
+                _events.send(AddTransactionEvent.CategoryCreated)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                form.update {
+                    it.copy(categoryError = if (e is ApiError.Network) "You're offline. Check your connection and try again." else "Couldn't save the category. Please try again.")
+                }
+            } finally {
+                form.update { it.copy(isSavingCategory = false) }
+            }
+        }
+    }
+
+    fun dismissCategoryError() = form.update { it.copy(categoryError = null) }
 
     /**
      * Save (iOS `attemptSave`). Asks the bill questions first for a new entry; the skip flags are

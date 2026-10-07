@@ -174,7 +174,7 @@ class CategoriesManagementViewModel @Inject constructor(
     }
 }
 
-private fun normalizeCategoryName(value: String): String =
+internal fun normalizeCategoryName(value: String): String =
     Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
         .replace(Regex("\\p{Mn}+"), "")
         .lowercase(Locale.getDefault())
