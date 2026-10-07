@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +46,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosColors
@@ -87,7 +87,9 @@ fun ReceiptScanScreen(
             modifier = Modifier.fillMaxSize().padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            LargeTitle("Scan a receipt")
+            Box(Modifier.fillMaxWidth().heightIn(min = 44.dp), contentAlignment = Alignment.Center) {
+                Text("Scan receipt", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            }
             when (state.step) {
                 ReceiptScanStep.CHOOSE -> {
                     ReceiptActionCard(

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,7 +44,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -115,6 +117,12 @@ fun CaptureScreen(
         onBack()
     }
 
+    val voiceTranscribeError = state.step == CaptureStep.Input &&
+        state.mode == CaptureMode.SPEAK &&
+        !state.permissionDenied &&
+        !state.isRecording &&
+        !state.offline &&
+        state.error != null
     IosScreen {
         Column(Modifier.fillMaxSize().padding(bottom = 120.dp)) {
             Column(
@@ -125,15 +133,6 @@ fun CaptureScreen(
                     title = captureTitle(state.step, state.mode),
                     onBack = { viewModel.cancel(); onBack() },
                 )
-                if (state.step == CaptureStep.Input) {
-                    CaptureModeSelector(
-                        selected = state.mode,
-                        enabled = !state.isRecording,
-                        onSelect = viewModel::onModeChange,
-                        modifier = Modifier.padding(horizontal = Spacing.screen).testTag("capture.mode.row"),
-                    )
-                }
-
                 if (state.categoriesLoading) {
                     GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.m)) {
                         Row(
@@ -149,18 +148,24 @@ fun CaptureScreen(
 
                 if (state.offline) {
                     CaptureMessage("You're offline. Try again when you're connected.", warning = true, Modifier.testTag("capture.offline"))
-                } else if (state.error != null) {
+                } else if (state.error != null && !voiceTranscribeError) {
                     CaptureMessage(state.error!!, warning = false, Modifier.testTag("capture.error"))
                 }
 
-                when (val step = state.step) {
+                if (voiceTranscribeError) {
+                    VoiceErrorContent(
+                        message = state.error!!,
+                        onRetry = viewModel::retry,
+                        onCancel = { viewModel.cancel(); onBack() },
+                    )
+                } else when (val step = state.step) {
                     CaptureStep.Input -> when (state.mode) {
                         CaptureMode.TYPE -> {
                             Column(
                                 Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
                                 verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                             ) {
-                                Text("Describe the transaction", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                                Text("Describe the transaction", style = IosText.headline, color = IosColors.textPrimary)
                                 Text(
                                     "Enter the amount, merchant, and any details. Spenditos will turn it into a transaction.",
                                     style = IosText.subheadline,
@@ -230,6 +235,7 @@ fun CaptureScreen(
                             Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
                             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                         ) {
+                            Text("Describe the transaction", style = IosText.headline, color = IosColors.textPrimary)
                             Text("Edit the transcript, then review the transactions it finds.", style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                         CaptureTextInput(
@@ -246,7 +252,9 @@ fun CaptureScreen(
                         )
                     }
                     CaptureStep.Review -> {
-                        if (state.transcript.isNotBlank()) TranscriptBanner(state.transcript)
+                        if (state.transcript.isNotBlank()) {
+                            TranscriptBanner(state.transcript, onRestart = viewModel::restart)
+                        }
                         if (state.items.isEmpty()) {
                             GlassCard(modifier = Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
                                 Column(
@@ -255,7 +263,7 @@ fun CaptureScreen(
                                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                                 ) {
                                     Icon(Icons.Outlined.GridView, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-                                    Text("We couldn't find any transactions in that. Try rephrasing.", modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                                    Text("Nothing recognized — try naming an amount.", modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                                 }
                             }
                             PillButton(text = "Try again", onClick = viewModel::retryEmptyAnalysis, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.tryAgain"))
@@ -270,20 +278,28 @@ fun CaptureScreen(
                                 onDateChange = viewModel::onDateChange,
                                 onCategoryChange = viewModel::onCategoryChange,
                             )
-                            if (!state.canSave && state.includedItems.isNotEmpty()) {
+                            val missingCategoryCount = state.includedItems.count { it.categoryId == null }
+                            if (missingCategoryCount > 0) {
+                                val noun = if (missingCategoryCount == 1) "item" else "items"
                                 Text(
-                                    "Check each included amount and description.",
-                                    style = IosText.footnote,
+                                    if (state.offline) {
+                                        "Select a category for $missingCategoryCount $noun before saving"
+                                    } else {
+                                        "$missingCategoryCount $noun will save as Uncategorized — pick a category to refine reports"
+                                    },
+                                    style = IosText.subheadline.w(FontWeight.SemiBold),
                                     color = IosColors.textSecondary,
-                                    modifier = Modifier.padding(horizontal = Spacing.screen),
+                                    modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
                                 )
                             }
-                            PillButton(
-                                text = "Start over",
-                                onClick = viewModel::restart,
-                                filled = false,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.restart"),
-                            )
+                            if (state.transcript.isBlank()) {
+                                PillButton(
+                                    text = "Start over",
+                                    onClick = viewModel::restart,
+                                    filled = false,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.restart"),
+                                )
+                            }
                         }
                     }
                     CaptureStep.Saving -> CaptureProgress(title = "Saving transactions…", modifier = Modifier.testTag("capture.saving"))
@@ -299,6 +315,14 @@ fun CaptureScreen(
                 Spacer(Modifier.height(Spacing.l))
             }
 
+            if (state.step == CaptureStep.Input && !voiceTranscribeError) {
+                CaptureMethodBar(
+                    selected = state.mode,
+                    enabled = !state.isRecording,
+                    onSelect = viewModel::onModeChange,
+                    modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("capture.mode.row"),
+                )
+            }
             if (state.step == CaptureStep.Review && state.items.isNotEmpty()) {
                 CaptureReviewFooter(
                     items = state.includedItems,
@@ -319,7 +343,7 @@ private fun CaptureHeader(title: String?, onBack: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         if (title != null) {
-            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(title, style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center)
         }
         Row(
             Modifier.align(Alignment.CenterStart).clickable(role = Role.Button, onClick = onBack)
@@ -341,31 +365,44 @@ private fun captureTitle(step: CaptureStep, mode: CaptureMode): String? = when (
 }
 
 @Composable
-private fun CaptureModeSelector(selected: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) -> Unit, modifier: Modifier = Modifier) {
-    val dark = isSystemInDarkTheme()
-    val track = if (dark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
-    val thumb = if (dark) Color(0xFF636366) else Color.White
+private fun CaptureMethodBar(selected: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(track).padding(3.dp),
+        modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m))).padding(Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        CaptureMode.entries.forEach { mode ->
-            val isSelected = selected == mode
-            val label = if (mode == CaptureMode.TYPE) "Type" else "Speak"
-            Box(
-                Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
-                    .background(if (isSelected) thumb else Color.Transparent)
-                    .clickable(enabled = enabled, role = Role.Tab) { onSelect(mode) }
-                    .testTag("capture.mode.${mode.name.lowercase()}"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label,
-                    style = IosText.subheadline,
-                    color = IosColors.textPrimary,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                )
-            }
-        }
+        CaptureMethodButton(CaptureMode.TYPE, "text.alignleft", "Sentence", selected, enabled, onSelect)
+        CaptureMethodButton(CaptureMode.SPEAK, "mic.fill", "Voice", selected, enabled, onSelect)
+    }
+}
+
+@Composable
+private fun RowScope.CaptureMethodButton(
+    mode: CaptureMode,
+    symbol: String,
+    label: String,
+    selected: CaptureMode,
+    enabled: Boolean,
+    onSelect: (CaptureMode) -> Unit,
+) {
+    val isSelected = selected == mode
+    val tint = if (isSelected) IosColors.spendOrange else IosColors.textSecondary
+    Column(
+        Modifier.weight(1f).heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(Radius.m))
+            .background(if (isSelected) IosColors.spendOrange.copy(alpha = 0.12f) else Color.Transparent)
+            .clickable(enabled = enabled, role = Role.Tab) { onSelect(mode) }
+            .semantics { this.selected = isSelected }
+            .testTag("capture.mode.${mode.name.lowercase()}"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(SfSymbols.icon(symbol), contentDescription = null, tint = tint, modifier = Modifier.size((17 * 1.2).dp))
+        Text(
+            label,
+            style = IosText.caption2.w(if (isSelected) FontWeight.SemiBold else FontWeight.Normal),
+            color = tint,
+            maxLines = 1,
+        )
     }
 }
 
@@ -400,7 +437,7 @@ private fun VoiceIdleContent(onRecord: () -> Unit) {
     ) {
         Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(67.dp).padding(bottom = Spacing.s))
         Text("Tap and speak", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-        Text("Record up to 60 seconds. Recording stops automatically at 60 seconds.", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Text("Recording stops automatically when you pause", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
             text = "Start Recording",
             onClick = onRecord,
@@ -436,7 +473,7 @@ private fun RecordingContent(time: String, onStop: () -> Unit) {
                 Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
             }
         }
-        Text("Auto-stops after 60 seconds", style = IosText.subheadline, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Text("Auto-stops after 1.5s of silence", style = IosText.subheadline, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
             text = "Stop & Transcribe",
             onClick = onStop,
@@ -541,7 +578,7 @@ private fun CaptureProgress(title: String, detail: String? = null, modifier: Mod
 }
 
 @Composable
-private fun TranscriptBanner(transcript: String) {
+private fun TranscriptBanner(transcript: String, onRestart: () -> Unit) {
     val shape = RoundedCornerShape(Radius.m)
     Column(
         Modifier.fillMaxWidth().padding(horizontal = Spacing.m).clip(shape)
@@ -551,8 +588,52 @@ private fun TranscriptBanner(transcript: String) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
             Text("Transcript", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Spacer(Modifier.weight(1f))
+            Text(
+                "Start over",
+                style = IosText.caption.w(FontWeight.SemiBold),
+                color = IosColors.expense,
+                modifier = Modifier.clickable(role = Role.Button, onClick = onRestart).testTag("capture.restart"),
+            )
         }
         Text(transcript, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 3, modifier = Modifier.testTag("review-transcript"))
+    }
+}
+
+@Composable
+private fun VoiceErrorContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
+    ) {
+        Icon(
+            SfSymbols.icon("exclamationmark.triangle.fill"),
+            contentDescription = null,
+            tint = IosColors.expense,
+            modifier = Modifier.size((48 * 1.2).dp).testTag("capture.error"),
+        )
+        Text("Couldn't transcribe", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text(message, style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            val retryShape = RoundedCornerShape(Radius.m)
+            Box(
+                Modifier.fillMaxWidth().clip(retryShape).background(IosColors.spendOrange)
+                    .clickable(role = Role.Button, onClick = onRetry)
+                    .padding(vertical = Spacing.m),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Try Again", style = IosText.headline, color = Color.Black)
+            }
+            Box(
+                Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                    .clickable(role = Role.Button, onClick = onCancel)
+                    .padding(vertical = Spacing.m),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Cancel", style = IosText.headline, color = IosColors.textPrimary)
+            }
+        }
     }
 }
 

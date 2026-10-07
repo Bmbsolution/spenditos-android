@@ -37,7 +37,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -150,6 +150,8 @@ fun AddTransactionSheet(
 
                 EntryTypeSelector(selected = state.type, onSelect = viewModel::onTypeChange)
 
+                state.error?.let { AddErrorBanner(it, Modifier.testTag("add.error")) }
+
                 if (onScanReceipt != null || onCapture != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
                         Text(
@@ -172,7 +174,7 @@ fun AddTransactionSheet(
                                 MethodOptionCard(
                                     title = "Scan Receipt",
                                     subtitle = "Extract from photo",
-                                    symbol = "camera",
+                                    symbol = "camera.viewfinder",
                                     tint = IosColors.income,
                                     modifier = Modifier.weight(1f).testTag("add.scanReceipt"),
                                     onClick = scan,
@@ -189,50 +191,44 @@ fun AddTransactionSheet(
                     modifier = Modifier.testTag("add.amount"),
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text("Category", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
-                    if (state.visibleCategories.isEmpty()) {
-                        Text(
-                            "No ${if (state.type == EntryType.INCOME) "income" else "expense"} categories yet.",
-                            style = IosText.body,
-                            color = IosColors.textSecondary,
-                        )
-                    } else {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                        ) {
-                            quickCategories.forEach { category ->
-                                QuickCategoryChip(
-                                    category = category,
-                                    selected = state.categoryId == category.id,
-                                    onClick = { viewModel.onCategorySelect(category.id) },
-                                    modifier = Modifier.testTag("add.category"),
-                                )
-                            }
-                            QuickCategoryChip(
-                                title = "More",
-                                symbol = "square.grid.2x2",
-                                onClick = { showCategoryPicker = true },
-                            )
-                        }
-                    }
-                }
-
                 DescriptionField(
                     value = state.description,
                     onValueChange = viewModel::onDescriptionChange,
                     modifier = Modifier.testTag("add.description"),
                 )
 
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text("Category", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                    ) {
+                        quickCategories.forEach { category ->
+                            QuickCategoryChip(
+                                category = category,
+                                selected = state.categoryId == category.id,
+                                onClick = { viewModel.onCategorySelect(category.id) },
+                                modifier = Modifier.testTag("add.category"),
+                            )
+                        }
+                        val noCategories = state.visibleCategories.isEmpty()
+                        QuickCategoryChip(
+                            title = if (noCategories) "Add a category" else "More",
+                            symbol = if (noCategories) "plus" else "square.grid.2x2",
+                            onClick = { showCategoryPicker = true },
+                        )
+                    }
+                }
+
                 DateChoices(
                     date = state.date,
+                    showPicker = showDatePicker,
                     onToday = { viewModel.onDateChange(LocalDate.now()); showDatePicker = false },
                     onYesterday = { viewModel.onDateChange(LocalDate.now().minusDays(1)); showDatePicker = false },
-                    onPickDate = { showDatePicker = true },
+                    onPickDate = { showDatePicker = !showDatePicker },
+                    onDatePicked = viewModel::onDateChange,
                 )
 
-                state.error?.let { AddErrorBanner(it, Modifier.testTag("add.error")) }
                 Spacer(Modifier.height(Spacing.m))
             }
 
@@ -244,23 +240,6 @@ fun AddTransactionSheet(
                     .testTag("add.save"),
             )
         }
-    }
-
-    if (showDatePicker) {
-        // DatePicker works in UTC millis; convert as a calendar date, never through the local zone.
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { viewModel.onDateChange(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
-        ) { DatePicker(state = pickerState) }
     }
 
     if (showCategoryPicker) {
@@ -591,7 +570,14 @@ private fun DescriptionField(value: String, onValueChange: (String) -> Unit, mod
 }
 
 @Composable
-private fun DateChoices(date: LocalDate, onToday: () -> Unit, onYesterday: () -> Unit, onPickDate: () -> Unit) {
+private fun DateChoices(
+    date: LocalDate,
+    showPicker: Boolean,
+    onToday: () -> Unit,
+    onYesterday: () -> Unit,
+    onPickDate: () -> Unit,
+    onDatePicked: (LocalDate) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text("Date", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         val today = date == LocalDate.now()
@@ -601,9 +587,30 @@ private fun DateChoices(date: LocalDate, onToday: () -> Unit, onYesterday: () ->
             DateChip("Yesterday", yesterday, onYesterday)
             DateChip(
                 if (!today && !yesterday) date.format(DateTimeFormatter.ofPattern("MMM d")) else "Pick date",
-                !today && !yesterday,
+                !today && !yesterday || showPicker,
                 onPickDate,
                 symbol = "calendar",
+            )
+        }
+        if (showPicker) {
+            val pickerState = rememberDatePickerState(
+                initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            )
+            LaunchedEffect(pickerState.selectedDateMillis) {
+                val millis = pickerState.selectedDateMillis ?: return@LaunchedEffect
+                val picked = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                if (picked != date) onDatePicked(picked)
+            }
+            DatePicker(
+                state = pickerState,
+                title = null,
+                headline = null,
+                showModeToggle = false,
+                colors = DatePickerDefaults.colors(
+                    selectedDayContainerColor = IosColors.spendOrange,
+                    todayDateBorderColor = IosColors.spendOrange,
+                    todayContentColor = IosColors.spendOrange,
+                ),
             )
         }
     }
