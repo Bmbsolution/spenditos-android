@@ -95,9 +95,11 @@ fun LiquidOrb(
                 .size(width = size * 0.42f, height = size * 0.2f)
                 .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent)), CircleShape),
         )
+        // The orb has a fixed size, so its text must not grow with the system font scale.
+        val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(label, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = (size.value * 0.19f).sp, maxLines = 1)
-            Text(caption, color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.09f).sp, maxLines = 1)
+            Text(label, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = (size.value * 0.19f / fontScale).sp, maxLines = 1)
+            Text(caption, color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.09f / fontScale).sp, maxLines = 1)
         }
     }
 }

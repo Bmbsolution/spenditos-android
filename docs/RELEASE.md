@@ -49,5 +49,5 @@ Use Play App Signing (upload the AAB signed with the upload key; Google holds th
 - Push notifications: needs a Firebase project (`google-services.json`) and a backend sender; `POST /user/device-token`
   already accepts `platform: "android"`.
 - Pro purchases: Play Billing plus a backend webhook change (DECISIONS D12 keeps purchases out of v1).
-- CI: no pipeline exists in this repo (no remote). A GitHub Actions job should run `scripts/verify.sh` and
-  `./gradlew :app:bundleProdRelease` on tags.
+- CI: `.github/workflows/android.yml` is a template (verify on every push/PR; a signed prod bundle on `v*` tags from
+  secrets). It has never run because this repo has no remote; treat the first run as a test.

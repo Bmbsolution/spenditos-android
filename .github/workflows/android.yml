@@ -1,0 +1,52 @@
+# CI template for the Android app. It has NOT been run (this repo has no remote yet): treat the first run as a test.
+name: android
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests, lint, staging debug build
+        run: ./gradlew :app:testStagingDebugUnitTest :app:lintStagingDebug :app:assembleStagingDebug --console=plain
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: E2E sidecar self-test
+        run: node --test tools/e2e-sidecar/test.mjs
+      - name: R8 release builds compile (unsigned)
+        run: ./gradlew :app:assembleStagingRelease :app:assembleProdRelease --console=plain
+
+  bundle:
+    # Signed prod bundle on version tags. Secrets are the owner's (see docs/RELEASE.md): SPENDITOS_KEYSTORE_BASE64,
+    # SPENDITOS_KEYSTORE_PASSWORD, SPENDITOS_KEY_ALIAS, SPENDITOS_KEY_PASSWORD. Nothing is published from here.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Decode keystore
+        run: echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/upload.jks"
+        env: { KEYSTORE: '${{ secrets.SPENDITOS_KEYSTORE_BASE64 }}' }
+      - name: Build signed bundle
+        run: ./gradlew :app:bundleProdRelease --console=plain
+        env:
+          SPENDITOS_KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          SPENDITOS_KEYSTORE_PASSWORD: ${{ secrets.SPENDITOS_KEYSTORE_PASSWORD }}
+          SPENDITOS_KEY_ALIAS: ${{ secrets.SPENDITOS_KEY_ALIAS }}
+          SPENDITOS_KEY_PASSWORD: ${{ secrets.SPENDITOS_KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prod-bundle
+          path: |
+            app/build/outputs/bundle/prodRelease/*.aab
+            app/build/outputs/mapping/prodRelease/mapping.txt
