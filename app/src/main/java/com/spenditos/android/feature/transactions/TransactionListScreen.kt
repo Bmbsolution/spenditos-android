@@ -2,6 +2,7 @@ package com.spenditos.android.feature.transactions
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -52,9 +54,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.spenditos.android.core.db.SyncStatus
-import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosScreen
@@ -75,6 +76,8 @@ import java.time.format.FormatStyle
 @Composable
 fun TransactionListScreen(
     onOpenNotSynced: () -> Unit,
+    onOpenExport: () -> Unit = {},
+    onAdd: () -> Unit = {},
     viewModel: TransactionListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,23 +111,18 @@ fun TransactionListScreen(
                 verticalArrangement = Arrangement.spacedBy(0.dp),
                 modifier = Modifier.fillMaxSize().testTag("transactions.list"),
             ) {
-                item {
+                item(key = "title") {
                     LargeTitle("Transactions", trailing = {
-                        Icon(
-                            SfSymbols.icon(if (isSearchActive) "xmark.circle.fill" else "magnifyingglass"),
-                            contentDescription = if (isSearchActive) "Close search" else "Search transactions",
-                            tint = IosColors.textPrimary,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .clickable(role = Role.Button) { isSearchActive = !isSearchActive }
-                                .testTag("transaction-search"),
+                        TransactionsToolbarCapsule(
+                            isSearchActive = isSearchActive,
+                            onToggleSearch = { isSearchActive = !isSearchActive },
+                            onOpenExport = onOpenExport,
                         )
                     })
                 }
 
                 if (isSearchActive) {
-                    item {
+                    item(key = "search") {
                         SearchBar(
                             query = searchText,
                             onQueryChange = { searchText = it },
@@ -133,7 +131,7 @@ fun TransactionListScreen(
                     }
                 }
 
-                item {
+                item(key = "month") {
                     MonthNavigator(
                         monthLabel = monthLabel,
                         onPrevious = viewModel::previousMonth,
@@ -143,7 +141,7 @@ fun TransactionListScreen(
                 }
 
                 if (!state.isOnline || state.waitingCount > 0 || state.failedCount > 0 || state.loadError != null) {
-                    item {
+                    item(key = "sync") {
                         SyncBanner(
                             state = state,
                             onOpenNotSynced = onOpenNotSynced,
@@ -154,7 +152,7 @@ fun TransactionListScreen(
 
                 if (visibleDays.isNotEmpty()) {
                     if (upcomingDays.isNotEmpty()) {
-                        item {
+                        stickyHeader(key = "upcoming") {
                             TransactionSectionHeader(
                                 title = "Upcoming",
                                 icon = "calendar.badge.clock",
@@ -163,7 +161,7 @@ fun TransactionListScreen(
                                 modifier = Modifier.testTag("transactions.summary"),
                             )
                         }
-                        item {
+                        item(key = "upcoming-days") {
                             TransactionDaysCard(
                                 days = upcomingDays,
                                 currency = state.currency,
@@ -174,7 +172,7 @@ fun TransactionListScreen(
                     }
 
                     if (historyDays.isNotEmpty()) {
-                        item {
+                        stickyHeader(key = "history") {
                             TransactionSectionHeader(
                                 title = "History",
                                 icon = "clock.arrow.circlepath",
@@ -183,7 +181,7 @@ fun TransactionListScreen(
                                 modifier = if (upcomingDays.isEmpty()) Modifier.testTag("transactions.summary") else Modifier,
                             )
                         }
-                        item {
+                        item(key = "history-days") {
                             TransactionDaysCard(
                                 days = historyDays,
                                 currency = state.currency,
@@ -193,45 +191,77 @@ fun TransactionListScreen(
                         }
                     }
                 } else if (state.isEmpty && state.isRefreshing && searchText.isBlank()) {
-                    item {
-                        TransactionSectionHeader(
-                            title = "History",
-                            icon = "clock.arrow.circlepath",
-                            color = IosColors.textSecondary,
-                            count = 0,
-                            modifier = Modifier.testTag("transactions.summary"),
-                        )
-                    }
-                    item {
+                    item(key = "loading") {
                         Box(
-                            Modifier.fillMaxWidth().heightIn(min = 320.dp),
+                            Modifier.fillMaxWidth().heightIn(min = 320.dp).testTag("transactions.summary"),
                             contentAlignment = Alignment.Center,
                         ) {
                             LoadingState()
                         }
                     }
                 } else {
-                    if (searchText.isBlank()) {
-                        item {
-                            TransactionSectionHeader(
-                                title = "History",
-                                icon = "clock.arrow.circlepath",
-                                color = IosColors.textSecondary,
-                                count = 0,
-                                modifier = Modifier.testTag("transactions.summary"),
-                            )
-                        }
-                    }
-                    item {
+                    item(key = "empty") {
                         Box(
-                            Modifier.fillMaxWidth().heightIn(min = 320.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 320.dp)
+                                .then(if (searchText.isBlank()) Modifier.testTag("transactions.summary") else Modifier),
                             contentAlignment = Alignment.Center,
                         ) {
-                            EmptyState()
+                            EmptyState(onAdd = onAdd)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TransactionsToolbarCapsule(
+    isSearchActive: Boolean,
+    onToggleSearch: () -> Unit,
+    onOpenExport: () -> Unit,
+) {
+    val capsule = CircleShape
+    Row(
+        modifier = Modifier
+            .clip(capsule)
+            .then(subtleGlassModifier(capsule))
+            .padding(horizontal = Spacing.xs, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+    ) {
+        Row(
+            modifier = Modifier
+                .clip(capsule)
+                .clickable(role = Role.Button, onClick = onOpenExport)
+                .padding(horizontal = Spacing.s, vertical = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Icon(
+                SfSymbols.icon("square.and.arrow.up"),
+                contentDescription = null,
+                tint = IosColors.spendOrange,
+                modifier = Modifier.size(19.2.dp),
+            )
+            Text("Export", style = IosText.callout, color = IosColors.spendOrange)
+        }
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onToggleSearch)
+                .testTag("transaction-search"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                SfSymbols.icon(if (isSearchActive) "xmark.circle.fill" else "magnifyingglass"),
+                contentDescription = if (isSearchActive) "Close search" else "Search transactions",
+                tint = IosColors.textPrimary,
+                modifier = Modifier.size(20.4.dp),
+            )
         }
     }
 }
@@ -278,7 +308,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
                 contentDescription = "Clear search",
                 tint = IosColors.textSecondary,
                 modifier = Modifier
-                    .size(19.2.dp)
+                    .size(20.4.dp)
                     .clickable(role = Role.Button, onClick = onClear),
             )
         }
@@ -340,10 +370,13 @@ private fun TransactionSectionHeader(
     count: Int,
     modifier: Modifier = Modifier,
 ) {
+    val dark = isSystemInDarkTheme()
+    val material = if (dark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.55f)
     Row(
         modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(material)
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.88f))
             .padding(horizontal = Spacing.screen, vertical = Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -377,6 +410,7 @@ private fun TransactionDaysCard(
 ) {
     GroupedCard(modifier = Modifier.padding(bottom = Spacing.m)) {
         days.forEachIndexed { groupIndex, (day, rows) ->
+            androidx.compose.runtime.key("day-$day") {
             DayHeader(day = day, count = rows.size, locale = locale)
             rows.forEachIndexed { rowIndex, row ->
                 TransactionRow(row = row, currency = currency, locale = locale)
@@ -393,6 +427,7 @@ private fun TransactionDaysCard(
                     modifier = Modifier.padding(vertical = Spacing.s),
                     color = if (upcoming) IosColors.spendOrange.copy(alpha = 0.3f) else IosColors.separator,
                 )
+            }
             }
         }
     }
@@ -431,7 +466,7 @@ private fun DayHeader(day: LocalDate, count: Int, locale: java.util.Locale) {
     val label = when (day) {
         today -> "Today"
         today.minusDays(1) -> "Yesterday"
-        else -> day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
+        else -> day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
     }
     val dark = isSystemInDarkTheme()
     val background = if (dark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
@@ -462,7 +497,7 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
     val dateLabel = when (row.date) {
         LocalDate.now() -> "Today"
         LocalDate.now().minusDays(1) -> "Yesterday"
-        else -> row.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
+        else -> row.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
     }
     val subtitle = buildList {
         if (hasCategory) add(row.categoryName)
@@ -482,7 +517,7 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Box(Modifier.size(12.dp).background(tint, CircleShape))
-        CategorySymbolBadge(icon = null, name = row.categoryName, colorHex = row.categoryColor, size = 44.dp)
+        RowCategoryBadge(name = row.categoryName, tint = tint)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(
                 displayTitle,
@@ -509,7 +544,23 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
 }
 
 @Composable
-private fun EmptyState() {
+private fun RowCategoryBadge(name: String, tint: Color) {
+    val shape = RoundedCornerShape(Radius.s)
+    Box(
+        Modifier.size(44.dp).clip(shape).background(tint.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            CategoryIcons.symbol(null, name),
+            contentDescription = null,
+            tint = IosColors.textPrimary,
+            modifier = Modifier.size(19.8.dp),
+        )
+    }
+}
+
+@Composable
+private fun EmptyState(onAdd: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -522,7 +573,7 @@ private fun EmptyState() {
             modifier = Modifier.size(56.dp),
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("No transactions yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text("No transactions yet", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
             Text(
                 "Start tracking your spending by adding your first transaction.",
                 style = IosText.callout,
@@ -530,6 +581,27 @@ private fun EmptyState() {
                 textAlign = TextAlign.Center,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(Radius.m))
+                .background(IosColors.spendOrange)
+                .clickable(role = Role.Button, onClick = onAdd)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Icon(
+                Icons.Rounded.AddCircle,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.4.dp),
+            )
+            Text(
+                "Add your first transaction",
+                style = IosText.headline,
+                color = Color.White,
             )
         }
     }
