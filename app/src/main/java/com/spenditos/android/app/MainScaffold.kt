@@ -177,6 +177,14 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                         onOpenDaily = { nav.navigate(REPORTS_DAILY_ROUTE) },
                         onOpenComparison = { nav.navigate(REPORTS_COMPARISON_ROUTE) },
                         onOpenPaycheckPeriods = { nav.navigate(REPORTS_PAYCHECK_ROUTE) },
+                        onReviewTransactions = {
+                            nav.navigate(Tab.TRANSACTIONS.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onLogTransaction = { showAdd = true },
                     )
                 }
                 composable(REPORTS_DAILY_ROUTE) { DailyAggregatesScreen(onBack = { nav.popBackStack() }) }
