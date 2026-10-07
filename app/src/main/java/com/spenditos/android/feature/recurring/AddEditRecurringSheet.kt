@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -37,11 +39,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.theme.Spacing
 import java.time.Instant
 import java.time.LocalDate
@@ -107,7 +113,12 @@ fun AddEditRecurringSheet(
     val visibleCategories = categories.filter { it.isIncome == draft.isIncome }
     val frequencyOptions = listOf("daily", "weekly", "bi-weekly", "semi-monthly", "monthly", "quarterly", "semi-annually", "yearly")
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -128,13 +139,15 @@ fun AddEditRecurringSheet(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth().testTag("recurring.form.amount"),
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("The amount changes each time", style = MaterialTheme.typography.bodyLarge)
-                Switch(
-                    checked = draft.amountVaries,
-                    onCheckedChange = { draft = draft.copy(amountVaries = it) },
-                    modifier = Modifier.testTag("recurring.form.amountVaries"),
-                )
+            GlassCard {
+                Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("The amount changes each time", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = draft.amountVaries,
+                        onCheckedChange = { draft = draft.copy(amountVaries = it) },
+                        modifier = Modifier.testTag("recurring.form.amountVaries"),
+                    )
+                }
             }
             Text("Type", style = MaterialTheme.typography.labelLarge)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -175,9 +188,11 @@ fun AddEditRecurringSheet(
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth().testTag("recurring.form.date")) {
                 Text("First date · ${draft.firstOccurrenceDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}")
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Active", style = MaterialTheme.typography.bodyLarge)
-                Switch(checked = draft.isActive, onCheckedChange = { draft = draft.copy(isActive = it) }, modifier = Modifier.testTag("recurring.form.active"))
+            GlassCard {
+                Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Active", style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = draft.isActive, onCheckedChange = { draft = draft.copy(isActive = it) }, modifier = Modifier.testTag("recurring.form.active"))
+                }
             }
             Text("Advanced", style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
@@ -208,13 +223,12 @@ fun AddEditRecurringSheet(
                 )
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("recurring.form.error")) }
-            Button(
+            RecurringSavePill(
                 onClick = { onSave(draft) },
                 enabled = draft.canSave && !isSaving,
-                modifier = Modifier.fillMaxWidth().height(52.dp).testTag("recurring.form.save"),
-            ) {
-                if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Text("Save")
-            }
+                isLoading = isSaving,
+                modifier = Modifier.fillMaxWidth().testTag("recurring.form.save"),
+            )
         }
     }
 
@@ -230,6 +244,20 @@ fun AddEditRecurringSheet(
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text("Cancel") } },
         ) { DatePicker(state = pickerState) }
+    }
+}
+
+@Composable
+private fun RecurringSavePill(onClick: () -> Unit, enabled: Boolean, isLoading: Boolean, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(26.dp)
+    androidx.compose.foundation.layout.Box(
+        modifier.fillMaxWidth().height(52.dp).clip(shape)
+            .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isLoading) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+        else Text("Save", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
     }
 }
 
