@@ -31,6 +31,7 @@ fun SettingsScreen(
     onOpenChangePassword: () -> Unit,
     onOpenStatementImport: () -> Unit,
     onOpenProgress: () -> Unit,
+    onOpenExport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -66,6 +67,14 @@ fun SettingsScreen(
                     headlineContent = { Text("Progress") },
                     supportingContent = { Text("Streak, level and achievements") },
                     modifier = Modifier.clickable(role = Role.Button, onClick = onOpenProgress).testTag("settings.progress"),
+                )
+            }
+            item { HorizontalDivider() }
+            item {
+                ListItem(
+                    headlineContent = { Text("Export transactions") },
+                    supportingContent = { Text("Download a CSV of your transactions") },
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onOpenExport).testTag("settings.export"),
                 )
             }
             item { HorizontalDivider() }

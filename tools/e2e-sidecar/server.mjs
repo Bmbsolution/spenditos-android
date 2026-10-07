@@ -301,6 +301,22 @@ function captureDate(referenceDate, relative) {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+async function exportCsv(req, res, account) {
+  const url = new URL(req.url, 'http://local');
+  const start = url.searchParams.get('startDate'), end = url.searchParams.get('endDate');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start || '') || !/^\d{4}-\d{2}-\d{2}$/.test(end || '')) {
+    return json(res, 400, { error: 'InvalidQuery', message: 'startDate and endDate must be in strict YYYY-MM-DD format.' });
+  }
+  const list = await proxyJson({ url: `/transactions?startDate=${start}&endDate=${end}`, method: 'GET', headers: {}, pipe: d => d.end() }, account.id);
+  const rows = (list.body?.data?.transactions ?? list.body?.data ?? []);
+  const cats = await proxyJson({ url: '/categories', method: 'GET', headers: {}, pipe: d => d.end() }, account.id);
+  const names = new Map((cats.body?.data ?? []).map(c => [c.id, c.name]));
+  const esc = v => `"${String(v ?? '').replaceAll('"', '""')}"`;
+  const csv = ['Date,Description,Amount,Category', ...rows.map(t => [t.date, esc(t.description), t.amount, esc(names.get(t.categoryId) ?? '')].join(','))].join('\n') + '\n';
+  res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename="transactions-${start}-to-${end}.csv"` });
+  res.end(csv);
+}
+
 function proxyToHarness(req, res, userId) {
   const base = process.env.HARNESS_URL || 'http://127.0.0.1:4310';
   const target = new URL(req.url, base);
@@ -498,6 +514,8 @@ async function handleRequest(req, res, server) {
     await readJson(req);
     return json(res, 200, { data: { registered: req.method === "POST" } });
   }
+  // The harness has no export route: build a CSV like the real handler from its transaction + category lists.
+  if (path === '/transactions/export' && req.method === 'GET') return exportCsv(req, res, account);
   if (path === '/transactions/upload-url' && req.method === 'POST') return uploadUrl(req, res, account, server);
   if (path === '/statements/analyze-spreadsheet' && req.method === 'POST') return analyzeStatement(req, res, account);
   if (path === '/statements/preview-spreadsheet' && req.method === 'POST') return previewStatement(req, res, account);
