@@ -58,7 +58,7 @@ internal fun ReportsBackBar(title: String, onBack: () -> Unit) {
         title = { Text(title, style = IosText.headline, color = IosColors.textPrimary) },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("reports.back")) {
-                Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.textPrimary)
+                Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
             }
         },
     )
@@ -109,11 +109,18 @@ internal fun ReportsStatusCard(
     status: ReportLoadStatus,
     onRetry: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    errorTitle: String = "Reports unavailable",
+    errorMessage: String? = null,
 ) {
     val title = when (status) {
         ReportLoadStatus.OFFLINE -> "You're offline"
-        ReportLoadStatus.ERROR -> "Reports unavailable"
+        ReportLoadStatus.ERROR -> errorTitle
         ReportLoadStatus.PRO_REQUIRED -> "Pro feature"
+    }
+    val message = if (status == ReportLoadStatus.ERROR && errorMessage != null) {
+        errorMessage
+    } else {
+        reportStatusMessage(status)
     }
     GlassCard(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -123,7 +130,7 @@ internal fun ReportsStatusCard(
                 }
                 Text(title, style = IosText.headline, color = IosColors.textPrimary)
             }
-            Text(reportStatusMessage(status), style = IosText.callout, color = IosColors.textSecondary)
+            Text(message, style = IosText.callout, color = IosColors.textSecondary)
             if (status == ReportLoadStatus.PRO_REQUIRED) {
                 com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
                     PillButton("See Spenditos Pro", openPro, modifier = Modifier.fillMaxWidth().testTag("reports.seePro"), filled = false)
@@ -171,7 +178,7 @@ internal fun ReportLoadingCard(text: String, modifier: Modifier = Modifier) {
                 color = IosColors.spendOrange,
                 strokeWidth = 2.dp,
             )
-            Text(text, style = IosText.body, color = IosColors.textPrimary)
+            Text(text, style = IosText.body, color = IosColors.textSecondary)
         }
     }
 }
@@ -188,7 +195,7 @@ internal fun ReportLoadingState(text: String, tint: Color, modifier: Modifier = 
             color = tint,
             strokeWidth = 2.dp,
         )
-        Text(text, modifier = Modifier.padding(top = Spacing.m), style = IosText.body, color = IosColors.textTertiary)
+        Text(text, modifier = Modifier.padding(top = Spacing.m), style = IosText.callout, color = IosColors.textTertiary)
     }
 }
 
@@ -242,8 +249,9 @@ internal fun DailyExpenseChart(
     Column(
         modifier.fillMaxWidth().semantics { contentDescription = "Daily expense bars with a seven day average" }
             .testTag("reports.daily.chart"),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         rows.forEachIndexed { index, row ->
             Row(
                 Modifier.fillMaxWidth().height(24.dp),
@@ -283,6 +291,8 @@ internal fun DailyExpenseChart(
                     modifier = Modifier.width(70.dp),
                     style = IosText.subheadline,
                     color = IosColors.textSecondary,
+                    textAlign = TextAlign.End,
+                    softWrap = false,
                     maxLines = 1,
                 )
                 val badge = when (row) {
@@ -294,6 +304,7 @@ internal fun DailyExpenseChart(
                     ChartBadge(badge, if (badge == "HIGH") finance.expense else finance.income)
                 }
             }
+        }
         }
         Row(
             Modifier.fillMaxWidth().padding(top = Spacing.xs),
