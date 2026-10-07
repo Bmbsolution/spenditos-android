@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.gamification.GamificationDataSource
+import com.spenditos.android.ui.theme.IosText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,8 +68,8 @@ fun StreakChip(modifier: Modifier = Modifier) {
             Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("${days}d", style = MaterialTheme.typography.labelLarge)
-            Text("streak", style = MaterialTheme.typography.labelMedium)
+            Text("${days}d", style = IosText.caption)
+            Text("streak", style = IosText.caption2)
         }
     }
 }
@@ -80,17 +81,18 @@ fun StreakTile(modifier: Modifier = Modifier) {
     val streak by viewModel.streak.collectAsStateWithLifecycle()
     val days = streak ?: return
     com.spenditos.android.ui.components.GlassCard(modifier.testTag("progress.streakTile")) {
+        // iOS HomeBento.swift StreakTile: caption-semibold title with a flame, then flame 28 + count 34 heavy rounded + "days".
         androidx.compose.foundation.layout.Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFF06A3B), modifier = Modifier.size(14.4.dp))
                 Text("Streak", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("🔥", style = MaterialTheme.typography.headlineMedium)
-                Text("$days", style = MaterialTheme.typography.displayLarge)
-                Text(if (days == 1) "day" else "days", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFFF7A3D), modifier = Modifier.size(34.dp))
+                Text("$days", style = IosText.rounded(34, FontWeight.ExtraBold), color = IosColors.textPrimary)
+                Text(if (days == 1) "day" else "days", style = IosText.subheadline.w(FontWeight.Medium), color = IosColors.textSecondary)
             }
-            Text("Keep logging to build it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Keep logging to build it", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         }
     }
 }
