@@ -42,6 +42,10 @@ class MonthPlanRepository @Inject constructor(private val api: PlanningApi) {
         return MonthPlanSnapshot(plan, draft, categories, recurring, transactions)
     }
 
+    /** iOS Month plan "More tools" > Plan checkup; [draftItems] keep unsaved drafts from being suggested again. */
+    suspend fun checkup(month: YearMonth, draftItems: List<com.spenditos.android.data.model.MonthlyPlanCheckupDraftItem>) =
+        apiCall { api.checkup(com.spenditos.android.data.model.MonthlyPlanCheckupRequest(month.toString(), draftItems)) }
+
     /** Used by the Plan badge and Home reminder without loading the full plan. */
     suspend fun pendingChangeCount(month: YearMonth): Int {
         val draft = apiCall { api.draft(month.toString()) }.draft ?: return 0

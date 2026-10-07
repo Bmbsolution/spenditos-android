@@ -355,6 +355,9 @@ private class FakeSettings : UserSettingsActions {
 }
 
 private class FakePlanningApi : PlanningApi {
+        override suspend fun checkup(body: com.spenditos.android.data.model.MonthlyPlanCheckupRequest) =
+            com.spenditos.android.core.network.ApiEnvelope(data = com.spenditos.android.data.model.MonthlyPlanCheckupData(body.month))
+
     val failures = mutableMapOf<String, Throwable>()
     val operations = mutableListOf<String>()
     val savedMonths = mutableListOf<String>()

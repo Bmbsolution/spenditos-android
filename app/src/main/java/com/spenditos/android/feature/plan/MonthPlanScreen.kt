@@ -101,6 +101,7 @@ private fun MonthPlanContent(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var addingOneTime by remember { mutableStateOf(false) }
+    var reviewSuggestion by remember { mutableStateOf<com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion?>(null) }
     var changingRow by remember { mutableStateOf<MonthPlanRecurringRow?>(null) }
     var confirmAction by remember { mutableStateOf<ConfirmAction?>(null) }
     val rows = viewModel.rows(state)
@@ -160,7 +161,13 @@ private fun MonthPlanContent(
                     OneTimeSection(
                         state = state,
                         viewModel = viewModel,
-                        onAdd = { addingOneTime = true },
+                        onAdd = { reviewSuggestion = null; addingOneTime = true },
+                    )
+                    MoreTools(
+                        state = state,
+                        onExpand = viewModel::loadCheckup,
+                        onHide = viewModel::dismissSuggestion,
+                        onReview = { reviewSuggestion = it; addingOneTime = true },
                     )
                 }
                 state.isLoading -> LoadingCard()
@@ -174,8 +181,9 @@ private fun MonthPlanContent(
             month = state.month,
             categories = state.snapshot?.categories.orEmpty(),
             currency = state.currency,
-            onDismiss = { addingOneTime = false },
+            onDismiss = { addingOneTime = false; reviewSuggestion = null },
             onAdd = viewModel::addOneTime,
+            suggestion = reviewSuggestion,
         )
     }
     changingRow?.let { row ->
@@ -695,6 +703,110 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** iOS MonthlyPlanningView `moreTools`: a disclosure with the Plan checkup card. */
+@Composable
+private fun MoreTools(
+    state: MonthPlanUiState,
+    onExpand: () -> Unit,
+    onHide: (String) -> Unit,
+    onReview: (com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion) -> Unit,
+) {
+    var expanded by remember(state.month) { mutableStateOf(false) }
+    GlassCard(Modifier.fillMaxWidth().testTag("planning-more-tools")) {
+        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Row(
+                Modifier.fillMaxWidth().clickable(role = Role.Button) {
+                    expanded = !expanded
+                    if (expanded) onExpand()
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("More tools", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                Icon(
+                    com.spenditos.android.ui.components.SfSymbols.icon(if (expanded) "chevron.down" else "chevron.right"),
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = IosColors.spendOrange,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+            if (expanded) CheckupCard(state, onHide, onReview)
+        }
+    }
+}
+
+@Composable
+private fun CheckupCard(
+    state: MonthPlanUiState,
+    onHide: (String) -> Unit,
+    onReview: (com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion) -> Unit,
+) {
+    val checkup = state.checkup?.takeIf { it.month == state.month.toString() }
+    Column(
+        Modifier.fillMaxWidth().padding(top = Spacing.s).clip(RoundedCornerShape(16.dp))
+            .background(IosColors.spendGold.copy(alpha = 0.10f)).padding(12.dp).testTag("planning-checkup"),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+            Icon(com.spenditos.android.ui.components.SfSymbols.icon("sparkles"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
+            Text("Plan checkup", style = IosText.callout.w(FontWeight.Bold), color = IosColors.textPrimary)
+        }
+        Text(
+            "We compare this plan with expenses from your last four completed months. Suggestions need your review before anything is added.",
+            style = IosText.subheadline,
+            color = IosColors.textSecondary,
+        )
+        when {
+            checkup == null -> CircularProgressIndicator(Modifier.size(18.dp).padding(top = 4.dp), strokeWidth = 2.dp, color = IosColors.spendOrange)
+            checkup.monthsWithExpenseHistory < 2 -> Text(
+                "There isn't enough expense history yet. We need transactions in at least two completed months.",
+                style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.padding(top = 4.dp),
+            )
+            state.visibleSuggestions.isEmpty() -> Text(
+                "No repeated expenses appear to be missing from this month's plan.",
+                style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.padding(top = 4.dp),
+            )
+            else -> state.visibleSuggestions.forEach { suggestion ->
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer).padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(suggestion.description, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (suggestion.strength == "likely") "Likely repeat" else "Possible repeat",
+                            style = IosText.caption2.w(FontWeight.Bold),
+                            color = IosColors.spendOrange,
+                        )
+                    }
+                    Text(
+                        "${suggestion.categoryName} · seen in ${suggestion.observedMonths.size} months · typical ${Money.format(suggestion.amount, state.currency)}",
+                        style = IosText.caption,
+                        color = IosColors.textSecondary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Hide",
+                            style = IosText.caption.w(FontWeight.SemiBold),
+                            color = IosColors.textSecondary,
+                            modifier = Modifier.clickable(role = Role.Button) { onHide(suggestion.id) }.padding(vertical = 6.dp),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "Review draft",
+                            style = IosText.caption.w(FontWeight.Bold),
+                            color = IosColors.spendOrange,
+                            modifier = Modifier.clickable(enabled = !state.isPast, role = Role.Button) { onReview(suggestion) }
+                                .padding(vertical = 6.dp).testTag("planning-review-suggestion"),
+                        )
                     }
                 }
             }

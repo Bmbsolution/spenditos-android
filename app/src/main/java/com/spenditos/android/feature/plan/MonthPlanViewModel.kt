@@ -92,7 +92,12 @@ data class MonthPlanUiState(
     val error: String? = null,
     val draftMessage: String? = null,
     val applyMessage: String? = null,
+    /** iOS "More tools" > Plan checkup; null until loaded (best effort, never blocks the plan). */
+    val checkup: com.spenditos.android.data.model.MonthlyPlanCheckupData? = null,
+    val dismissedSuggestions: Set<String> = emptySet(),
 ) {
+    val visibleSuggestions: List<com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion>
+        get() = checkup?.takeIf { it.month == month.toString() }?.suggestions.orEmpty().filterNot { it.id in dismissedSuggestions }
     val isPast: Boolean get() = month < YearMonth.now()
     val canGoToPreviousMonth: Boolean get() = month > YearMonth.now()
     val canGoToNextMonth: Boolean get() = month < YearMonth.now().plusMonths(3)
@@ -173,6 +178,27 @@ class MonthPlanViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch { load() }
     }
+
+    /** Plan checkup for the shown month, sending the current drafts so they aren't suggested again. */
+    fun loadCheckup() {
+        val month = mutableState.value.month
+        val drafts = mutableState.value.draft.entries.map {
+            com.spenditos.android.data.model.MonthlyPlanCheckupDraftItem(it.categoryId, it.description)
+        }
+        viewModelScope.launch {
+            val result = try {
+                repository.checkup(month, drafts)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+            if (result != null && mutableState.value.month == month) mutableState.update { it.copy(checkup = result) }
+        }
+    }
+
+    /** iOS "Hide": this session only, like iOS. */
+    fun dismissSuggestion(id: String) = mutableState.update { it.copy(dismissedSuggestions = it.dismissedSuggestions + id) }
 
     fun applyAllFromScreen() {
         viewModelScope.launch { applyAll() }

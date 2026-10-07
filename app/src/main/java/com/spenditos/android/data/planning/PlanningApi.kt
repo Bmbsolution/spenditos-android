@@ -25,6 +25,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface PlanningApi {
+    /** `POST /planning/checkup` (sst.config.ts:196): repeated expenses missing from this month's plan. */
+    @POST("planning/checkup")
+    suspend fun checkup(@Body body: com.spenditos.android.data.model.MonthlyPlanCheckupRequest): ApiEnvelope<com.spenditos.android.data.model.MonthlyPlanCheckupData>
+
     @GET("planning/month")
     suspend fun monthlyPlan(@Query("month") month: String): ApiEnvelope<MonthlyPlanData>
 

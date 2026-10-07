@@ -144,3 +144,45 @@ data class MonthlyPlanTransactionUpdate(
     val description: String? = null,
     val categoryId: String? = null,
 )
+
+/** `MonthlyPlanCheckupEvidence` packages/types/src/api/index.ts:102. */
+@kotlinx.serialization.Serializable
+data class MonthlyPlanCheckupEvidence(
+    val month: String,
+    val amount: Double,
+    val transactionCount: Int = 0,
+    val dates: List<String> = emptyList(),
+)
+
+/** `MonthlyPlanCheckupSuggestion` api/index.ts:109; `strength` is "possible" or "likely". */
+@kotlinx.serialization.Serializable
+data class MonthlyPlanCheckupSuggestion(
+    val id: String,
+    val categoryId: String,
+    val categoryName: String,
+    val description: String,
+    val amount: Double,
+    val recurringType: String = "fixed",
+    val observedMonths: List<String> = emptyList(),
+    val evidence: List<MonthlyPlanCheckupEvidence> = emptyList(),
+    val strength: String = "possible",
+)
+
+/** `MonthlyPlanCheckupRequest` api/index.ts:121. */
+@kotlinx.serialization.Serializable
+data class MonthlyPlanCheckupRequest(
+    val month: String,
+    val draftItems: List<MonthlyPlanCheckupDraftItem> = emptyList(),
+)
+
+@kotlinx.serialization.Serializable
+data class MonthlyPlanCheckupDraftItem(val categoryId: String, val description: String)
+
+/** `MonthlyPlanCheckupData` api/index.ts:127. */
+@kotlinx.serialization.Serializable
+data class MonthlyPlanCheckupData(
+    val month: String,
+    val historyMonths: List<String> = emptyList(),
+    val monthsWithExpenseHistory: Int = 0,
+    val suggestions: List<MonthlyPlanCheckupSuggestion> = emptyList(),
+)

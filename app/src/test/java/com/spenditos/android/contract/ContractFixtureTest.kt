@@ -89,4 +89,15 @@ class ContractFixtureTest {
         val manifest = SpenditosJson.parseToJsonElement(fixture("MANIFEST")).jsonObject
         assertTrue(manifest["fixtures"]!!.jsonArray.size > 50)
     }
+
+    @Test
+    fun `plan checkup decodes with its suggestion and evidence`() {
+        val data = envelope("monthlyPlanCheckupSuccessFixture", com.spenditos.android.data.model.MonthlyPlanCheckupData.serializer()).data!!
+        assertEquals("2026-02", data.month)
+        assertEquals(4, data.monthsWithExpenseHistory)
+        val suggestion = data.suggestions.single()
+        assertEquals("Mobile Carrier", suggestion.description)
+        assertEquals("likely", suggestion.strength)
+        assertEquals(3, suggestion.evidence.size)
+    }
 }

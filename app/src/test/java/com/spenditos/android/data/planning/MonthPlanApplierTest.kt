@@ -151,6 +151,9 @@ class MonthPlanApplierTest {
 }
 
 private class FakePlanningApi : PlanningApi {
+        override suspend fun checkup(body: com.spenditos.android.data.model.MonthlyPlanCheckupRequest) =
+            com.spenditos.android.core.network.ApiEnvelope(data = com.spenditos.android.data.model.MonthlyPlanCheckupData(body.month))
+
     val operations = mutableListOf<String>()
     val records = mutableListOf<Transaction>()
     val bulkKeys = mutableListOf<String>()

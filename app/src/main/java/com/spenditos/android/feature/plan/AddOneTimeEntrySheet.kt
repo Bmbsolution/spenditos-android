@@ -72,12 +72,15 @@ fun AddOneTimeEntrySheet(
     currency: String,
     onDismiss: () -> Unit,
     onAdd: (String, BigDecimal, String, LocalDate) -> Boolean,
+    /** iOS PlanningDraftEntrySheet `suggestion`: Plan checkup "Review draft" prefills it. */
+    suggestion: com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion? = null,
 ) {
     val expenseCategories = categories.filterNot { it.isIncome }
-    val firstCategory = expenseCategories.firstOrNull()?.id ?: categories.firstOrNull()?.id.orEmpty()
+    val firstCategory = suggestion?.categoryId?.takeIf { id -> categories.any { it.id == id } }
+        ?: expenseCategories.firstOrNull()?.id ?: categories.firstOrNull()?.id.orEmpty()
     var isIncome by remember { mutableStateOf(categories.firstOrNull { it.id == firstCategory }?.isIncome ?: false) }
-    var description by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf(suggestion?.description.orEmpty()) }
+    var amountText by remember { mutableStateOf(suggestion?.amount?.let { BigDecimal.valueOf(it).stripTrailingZeros().toPlainString() }.orEmpty()) }
     var categoryId by remember { mutableStateOf(firstCategory) }
     var date by remember { mutableStateOf(month.atDay(1)) }
     var showDatePicker by remember { mutableStateOf(false) }
