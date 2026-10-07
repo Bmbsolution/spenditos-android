@@ -27,7 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -54,23 +57,30 @@ import com.spenditos.android.ui.theme.Spacing
 /** Brand gradient of the add button (iOS gradientOrangeStart/End). */
 val BrandGradient = Brush.linearGradient(listOf(Color(0xFFB85F42), Color(0xFF9A4B31)))
 
-/** iOS `glassCard`: white on light, the secondary grouped surface on dark, hairline stroke, soft shadow. */
+/**
+ * iOS `glassBackground` (View+Glassmorphism.swift): white on light, the secondary grouped surface on dark,
+ * a 1pt black 8% stroke and a soft black 6% shadow (radius 12, y 4); no shadow in dark mode.
+ */
 @Composable
-fun glassCardModifier(shape: Shape = RoundedCornerShape(Radius.l)): Modifier {
+fun glassCardModifier(shape: Shape = RoundedCornerShape(Radius.l), shadowAlpha: Float = 0.06f): Modifier {
     val dark = isSystemInDarkTheme()
-    val stroke = if (dark) Color(0xFF38383A) else Color.Black.copy(alpha = 0.08f)
+    val stroke = if (dark) Color(0x99545458) else Color.Black.copy(alpha = 0.08f)
     return Modifier
-        .shadow(
-            elevation = if (dark) 0.dp else 8.dp,
-            shape = shape,
-            clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.06f),
-            spotColor = Color.Black.copy(alpha = 0.06f),
+        .then(
+            if (dark) Modifier else Modifier.dropShadow(
+                shape,
+                Shadow(radius = 24.dp, color = Color.Black, offset = DpOffset(0.dp, 4.dp), alpha = shadowAlpha),
+            ),
         )
         .background(if (dark) Color(0xFF1C1C1E) else Color.White, shape)
         .border(1.dp, stroke, shape)
         .clip(shape)
 }
+
+/** iOS `subtleGlass`: flat #F3F4F6 (tertiary grouped on dark) for nested elements, radius 16. */
+@Composable
+fun subtleGlassModifier(shape: Shape = RoundedCornerShape(Radius.m)): Modifier =
+    Modifier.background(if (isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color(0xFFF3F4F6), shape).clip(shape)
 
 @Composable
 fun GlassCard(
@@ -128,13 +138,38 @@ fun GroupedCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.
     GlassCard(modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l), content = content)
 }
 
-/** Soft circular tint behind a glyph (iOS `IconChip`). */
+/**
+ * iOS `IconChip` (HomeVisuals.swift): rounded tile (corner = 30% of size) with a soft diagonal gradient of
+ * [tint] (24% to 10%), a 1pt tint stroke at 18%, and the glyph in [tint] at 42% of the size.
+ */
 @Composable
-fun IconChip(icon: ImageVector, tint: Color, modifier: Modifier = Modifier, size: Dp = 36.dp, shape: Shape = CircleShape) {
+fun IconChip(icon: ImageVector, tint: Color, modifier: Modifier = Modifier, size: Dp = 40.dp, shape: Shape = RoundedCornerShape(size * 0.3f)) {
     Box(
-        modifier.size(size).clip(shape).background(tint.copy(alpha = 0.16f)),
+        modifier.size(size).clip(shape)
+            .background(Brush.linearGradient(listOf(tint.copy(alpha = 0.24f), tint.copy(alpha = 0.10f))))
+            .border(1.dp, tint.copy(alpha = 0.18f), shape),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.5f)) }
+}
+
+/**
+ * iOS `CategorySymbolBadge` (IconMapper.swift): the category's monochrome symbol in the primary label color
+ * on a rounded tile of the category color at 10%. Used by transaction and settings rows.
+ */
+@Composable
+fun CategorySymbolBadge(icon: String?, name: String, colorHex: String?, modifier: Modifier = Modifier, size: Dp = 40.dp) {
+    val shape = RoundedCornerShape(size * 0.28f)
+    Box(
+        modifier.size(size).clip(shape).background(categoryColor(colorHex).copy(alpha = 0.10f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            CategoryIcons.symbol(icon, name),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(size * 0.54f),
+        )
+    }
 }
 
 /** One settings-style row: tinted chip, title (+ subtitle), trailing value or chevron, inset divider. */

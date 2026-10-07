@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontVariation
 import com.spenditos.android.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 // Brand and semantic colors from iOS Shared/Extensions/Color+Theme.swift.
@@ -45,17 +46,19 @@ private val LightColors = lightColorScheme(
     secondaryContainer = Color(0xFFF3E4DE),
     onSecondaryContainer = Color(0xFF4A1F12),
     background = Color(0xFFF2F2F7),
-    onBackground = Color(0xFF1C1C1E),
+    onBackground = Color.Black,
     surface = Color(0xFFF2F2F7),
-    onSurface = Color(0xFF1C1C1E),
+    onSurface = Color.Black,
     surfaceVariant = Color(0xFFE5E5EA),
-    onSurfaceVariant = Color(0xFF6C6C70),
+    // iOS secondaryLabel: #3C3C43 at 60%.
+    onSurfaceVariant = Color(0x993C3C43),
     surfaceContainerLowest = Color.White,
     surfaceContainerLow = Color.White,
     surfaceContainer = Color.White,
     surfaceContainerHigh = Color.White,
     surfaceContainerHighest = Color.White,
-    outlineVariant = Color(0xFFE0E0E5),
+    // iOS separator: #3C3C43 at 29%.
+    outlineVariant = Color(0x4A3C3C43),
 )
 
 private val DarkColors = darkColorScheme(
@@ -67,8 +70,12 @@ private val DarkColors = darkColorScheme(
     secondaryContainer = Color(0xFF3D2A22),
     onSecondaryContainer = Color(0xFFFFDBCF),
     background = Color(0xFF000000),
+    onBackground = Color.White,
     surface = Color(0xFF000000),
-    onSurfaceVariant = Color(0xFF9A9AA0),
+    onSurface = Color.White,
+    // iOS dark secondaryLabel: #EBEBF5 at 60%; separator #545458 at 60%.
+    onSurfaceVariant = Color(0x99EBEBF5),
+    outlineVariant = Color(0x99545458),
     surfaceContainerLowest = Color(0xFF1C1C1E),
     surfaceContainerLow = Color(0xFF1C1C1E),
     surfaceContainer = Color(0xFF1C1C1E),
@@ -143,6 +150,59 @@ fun SpenditosTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composa
             content = content,
         )
     }
+}
+
+/**
+ * SwiftUI's text styles at the default Dynamic Type size, by their iOS names. Screens ported from iOS use
+ * these 1:1: `.font(.caption.weight(.semibold))` becomes `IosText.caption.w(FontWeight.SemiBold)`.
+ * Tracking follows Inter's dynamic metrics, which keep Inter as tight as SF Pro at each size.
+ */
+object IosText {
+    val largeTitle = ios(34, 41)
+    val title = ios(28, 34)
+    val title2 = ios(22, 28)
+    val title3 = ios(20, 25)
+    val headline = ios(17, 22, FontWeight.SemiBold)
+    val body = ios(17, 22)
+    val callout = ios(16, 21)
+    val subheadline = ios(15, 20)
+    val footnote = ios(13, 18)
+    val caption = ios(12, 16)
+    val caption2 = ios(11, 13)
+
+    /** `.system(size:weight:design: .rounded)` and `.monospacedDigit()`: tabular figures for amounts. */
+    fun rounded(size: Int, weight: FontWeight = FontWeight.Normal): TextStyle =
+        ios(size, (size * 1.2f).toInt(), weight).copy(fontFeatureSettings = "tnum")
+
+    /** `.system(size:weight:)`. */
+    fun system(size: Int, weight: FontWeight = FontWeight.Normal): TextStyle = ios(size, (size * 1.2f).toInt(), weight)
+
+    private fun ios(size: Int, lineHeight: Int, weight: FontWeight = FontWeight.Normal) = TextStyle(
+        fontFamily = Inter,
+        fontSize = size.sp,
+        lineHeight = lineHeight.sp,
+        fontWeight = weight,
+        letterSpacing = interTracking(size).em,
+    )
+
+    private fun interTracking(size: Int): Float = (-0.0223 + 0.185 * kotlin.math.exp(-0.1745 * size)).toFloat()
+}
+
+fun TextStyle.w(weight: FontWeight): TextStyle = copy(fontWeight = weight)
+
+/** iOS label colors (`textPrimary`/`textSecondary`/`textTertiary` in Color+Theme.swift) and fixed accents. */
+object IosColors {
+    val textPrimary: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+    val textSecondary: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+    val textTertiary: Color @Composable get() = if (isSystemInDarkTheme()) Color(0x4DEBEBF5) else Color(0x4D3C3C43)
+    val separator: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
+    val spendOrange = Color(0xFFB85F42)
+    val spendGold = Color(0xFFD6B27A)
+    val info = Color(0xFF3B82F6)
+    val warning = Color(0xFFF59E0B)
+    val neutral = Color(0xFF9E9E9E)
+    val income: Color @Composable get() = LocalFinanceColors.current.income
+    val expense: Color @Composable get() = LocalFinanceColors.current.expense
 }
 
 object Spacing {
