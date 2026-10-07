@@ -153,6 +153,7 @@ private fun MonthPlanContent(
                         state,
                         viewModel,
                         onOpenIncomeAndBills = onOpenIncomeAndBills,
+                        onChange = { changingRow = it },
                     )
                     BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false, current = state), state, viewModel, onChange = { changingRow = it })
                     OneTimeSection(
@@ -419,8 +420,8 @@ private fun IncomeSection(
     state: MonthPlanUiState,
     viewModel: MonthPlanViewModel,
     onOpenIncomeAndBills: () -> Unit,
+    onChange: (MonthPlanRecurringRow) -> Unit,
 ) {
-    val finance = LocalFinanceColors.current
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.income")) {
         PlanSectionTitle("Income")
         GlassCard {
@@ -431,16 +432,9 @@ private fun IncomeSection(
                         IncomeBillsLink(onOpenIncomeAndBills)
                     }
                 }
-                rows.forEach { row ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(row.description, Modifier.weight(1f), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1)
-                        Text(
-                            "+${Money.format(row.total.toDouble(), state.currency)}",
-                            style = IosText.subheadline.w(FontWeight.SemiBold),
-                            color = finance.income,
-                        )
-                    }
-                }
+                // Income keeps Skip / Change / Log (Android's Month plan stages income changes too) and shows
+                // staged changes, so a skipped paycheck in the draft is never invisible.
+                rows.forEach { row -> RecurringPlanRow(row, state, viewModel, onChange, isIncome = true, groupedIncome = true) }
                 if (rows.isNotEmpty()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         IncomeBillsLink(onOpenIncomeAndBills)

@@ -108,16 +108,19 @@ fun ChangeAmountSheet(
             if (row.dates.size > 10) {
                 Text("Amount changes are unavailable for this schedule.", style = IosText.caption, color = IosColors.expense)
             }
-            HorizontalDivider(color = IosColors.separator)
-            Text(
-                "Reset to usual amount",
-                Modifier.fillMaxWidth().testTag("monthPlan.changeAmount.reset")
-                    .clickable(role = Role.Button) { onReset(); onDismiss() }
-                    .padding(vertical = Spacing.s),
-                style = IosText.caption.w(FontWeight.SemiBold),
-                color = IosColors.textSecondary,
-                textAlign = TextAlign.Center,
-            )
+            // Only an amount override can be reset: resetAmountChange also drops a pending "Log as paid".
+            if (row.hasAmountChange) {
+                HorizontalDivider(color = IosColors.separator)
+                Text(
+                    "Reset to usual amount",
+                    Modifier.fillMaxWidth().testTag("monthPlan.changeAmount.reset")
+                        .clickable(role = Role.Button) { onReset(); onDismiss() }
+                        .padding(vertical = Spacing.s),
+                    style = IosText.caption.w(FontWeight.SemiBold),
+                    color = IosColors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.WheelPicker
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
@@ -96,22 +97,10 @@ fun GenerateMonthSheet(
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
             )
-            AndroidView(
-                factory = { context ->
-                    android.widget.NumberPicker(context).apply {
-                        minValue = 0
-                        maxValue = monthOptions.lastIndex
-                        displayedValues = monthLabels.toTypedArray()
-                        value = monthOptions.indexOf(month).coerceAtLeast(0)
-                        wrapSelectorWheel = false
-                        descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
-                        setOnValueChangedListener { _, _, newValue -> onMonthChange(monthOptions[newValue]) }
-                    }
-                },
-                update = { picker ->
-                    val index = monthOptions.indexOf(month).coerceAtLeast(0)
-                    if (picker.value != index) picker.value = index
-                },
+            WheelPicker(
+                labels = monthLabels,
+                selectedIndex = monthOptions.indexOf(month).coerceAtLeast(0),
+                onSelect = { onMonthChange(monthOptions[it]) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m).testTag("recurring.generate.month"),
             )
             Text("Range: ±6 months from current month", style = IosText.caption, color = IosColors.textTertiary)

@@ -44,6 +44,8 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
@@ -391,10 +393,11 @@ private fun IncomeBillRow(
     Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.xs)) {
         Row(
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                // Old estimates cannot be edited but must stay deletable: their tap opens the actions menu.
                 .combinedClickable(
-                    enabled = canEdit,
                     role = Role.Button,
-                    onClick = onEdit,
+                    onClick = { if (canEdit) onEdit() else showActions = true },
+                    onLongClickLabel = "More actions",
                     onLongClick = { showActions = true },
                 )
                 .padding(horizontal = Spacing.m, vertical = Spacing.s)
@@ -471,6 +474,16 @@ private fun IncomeBillRow(
                         }
                     }
                 }
+            }
+            // Android has no iOS swipe actions; a visible button keeps Edit/Delete discoverable.
+            Box(
+                Modifier.size(36.dp).clip(CircleShape)
+                    .clickable(role = Role.Button, onClickLabel = "More actions") { showActions = true }
+                    .semantics { contentDescription = "More actions for ${template.description}" }
+                    .testTag("recurring.more.${template.id}"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(SfSymbols.icon("ellipsis"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp))
             }
         }
         DropdownMenu(expanded = showActions, onDismissRequest = { showActions = false }) {

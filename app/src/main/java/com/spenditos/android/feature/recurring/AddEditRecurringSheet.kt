@@ -63,6 +63,7 @@ import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.WheelPicker
 import com.spenditos.android.ui.components.categoryColor
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
@@ -130,10 +131,9 @@ fun AddEditRecurringSheet(
     var draft by remember(template?.id, editIsIncome, initialIsIncome) {
         mutableStateOf(
             template?.let { RecurringDraft.from(it, categories.firstOrNull { category -> category.id == it.categoryId }?.isIncome == true) }
-                ?: RecurringDraft(
-                    isIncome = initialIsIncome,
-                    categoryId = categories.firstOrNull { it.isIncome == initialIsIncome }?.id,
-                ),
+                // No preselected category (iOS starts empty): Save stays disabled until the user picks one,
+                // so a new bill never lands in whichever category happens to sort first.
+                ?: RecurringDraft(isIncome = initialIsIncome),
         )
     }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -571,20 +571,12 @@ private fun SecondDayPickerSheet(initialDay: Int, onDismiss: () -> Unit, onDone:
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
             )
-            AndroidView(
-                factory = { context ->
-                    android.widget.NumberPicker(context).apply {
-                        minValue = 1
-                        maxValue = 31
-                        displayedValues = (1..31).map { "Day $it" }.toTypedArray()
-                        value = day
-                        wrapSelectorWheel = true
-                        descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
-                        setOnValueChangedListener { _, _, newValue -> day = newValue }
-                    }
-                },
-                update = { picker -> if (picker.value != day) picker.value = day },
+            WheelPicker(
+                labels = (1..31).map { "Day $it" },
+                selectedIndex = day - 1,
+                onSelect = { day = it + 1 },
                 modifier = Modifier.fillMaxWidth().height(180.dp),
+                wrap = true,
             )
         }
     }
