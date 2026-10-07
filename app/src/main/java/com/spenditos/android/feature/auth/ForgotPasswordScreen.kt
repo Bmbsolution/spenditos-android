@@ -1,9 +1,12 @@
 package com.spenditos.android.feature.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,19 +15,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,9 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.PillButton
-import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import kotlinx.coroutines.delay
 
 @Composable
@@ -66,117 +67,108 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
     }
 
     IosScreen {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = Spacing.screen, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                TextButton(
-                    onClick = onBack,
-                    modifier = Modifier.testTag("forgot.back"),
-                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                ) { Text("Back") }
-            }
-
+        Box(Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                ForgotHeaderIcon(isEmailStep = state.step == ForgotPasswordStep.EMAIL)
-                Text(
-                    if (state.step == ForgotPasswordStep.EMAIL) "Forgot password?" else "Reset password",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    if (state.step == ForgotPasswordStep.EMAIL) "Enter your email to receive a reset code."
-                    else "Enter the code sent to ${state.email} and choose a new password.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-            }
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 60.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    ForgotHeaderIcon(isEmailStep = state.step == ForgotPasswordStep.EMAIL)
+                    Text(
+                        if (state.step == ForgotPasswordStep.EMAIL) "Forgot Password?" else "Reset Password",
+                        style = IosText.largeTitle.w(FontWeight.Bold),
+                        color = IosColors.textPrimary,
+                    )
+                    Text(
+                        if (state.step == ForgotPasswordStep.EMAIL) "Enter your email to receive a reset code"
+                        else "Enter the code we sent to ${state.email}",
+                        style = IosText.subheadline,
+                        color = IosColors.textSecondary,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
 
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                if (state.step == ForgotPasswordStep.EMAIL) {
-                    RoundedForgotTextField(
-                        value = state.email,
-                        onValueChange = viewModel::onEmailChange,
-                        placeholder = "Email",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth().testTag("forgot.email"),
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    if (state.step == ForgotPasswordStep.EMAIL) {
+                        RoundedForgotTextField(
+                            value = state.email,
+                            onValueChange = viewModel::onEmailChange,
+                            placeholder = "Email",
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth().testTag("forgot.email"),
+                        )
+                    } else {
+                        RoundedForgotTextField(
+                            value = state.code,
+                            onValueChange = viewModel::onCodeChange,
+                            placeholder = "6-digit code",
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                            textStyle = IosText.rounded(22),
+                            textAlign = TextAlign.Center,
+                            heightDp = 58,
+                            modifier = Modifier.fillMaxWidth().testTag("forgot.code"),
+                        )
+                        RoundedForgotTextField(
+                            value = state.newPassword,
+                            onValueChange = { if (it.length <= 128) viewModel.onNewPasswordChange(it) },
+                            placeholder = "New password (min 8 characters)",
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Password),
+                            modifier = Modifier.fillMaxWidth().testTag("forgot.newPassword"),
+                        )
+                    }
+                    state.error?.let { error ->
+                        ForgotErrorBanner(error, Modifier.fillMaxWidth().testTag("forgot.error"))
+                    }
+                    state.notice?.let { notice ->
+                        if (state.isDone) {
+                            ForgotSuccessBanner("Password reset! You can now sign in.", Modifier.fillMaxWidth().testTag("forgot.notice"))
+                        } else {
+                            Text(notice, style = IosText.subheadline, color = Color(0xFF34C759), modifier = Modifier.fillMaxWidth().testTag("forgot.notice"))
+                        }
+                    }
+                    ForgotPrimaryButton(
+                        text = if (state.step == ForgotPasswordStep.EMAIL) "Send Code" else "Reset Password",
+                        onClick = { if (state.step == ForgotPasswordStep.EMAIL) viewModel.sendCode() else viewModel.resetPassword() },
+                        enabled = if (state.step == ForgotPasswordStep.EMAIL) state.canSendCode else state.canReset,
+                        loading = state.isLoading,
+                        modifier = Modifier.fillMaxWidth().testTag("forgot.submit"),
                     )
-                } else {
-                    RoundedForgotTextField(
-                        value = state.code,
-                        onValueChange = viewModel::onCodeChange,
-                        placeholder = "Code",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = MaterialTheme.typography.titleLarge.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, textAlign = TextAlign.Center),
-                        modifier = Modifier.fillMaxWidth().testTag("forgot.code"),
-                    )
-                    RoundedForgotTextField(
-                        value = state.newPassword,
-                        onValueChange = { if (it.length <= 128) viewModel.onNewPasswordChange(it) },
-                        placeholder = "New password",
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth().testTag("forgot.newPassword"),
-                    )
+                    if (state.isDone) {
+                        TextButton(
+                            onClick = onDone,
+                            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
+                            colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
+                        ) { Text("Back to Sign In", style = IosText.headline) }
+                    }
                 }
-                state.error?.let { error ->
-                    ForgotMessageBanner(error, isError = true, modifier = Modifier.fillMaxWidth(), textModifier = Modifier.fillMaxWidth().testTag("forgot.error"))
-                }
-                state.notice?.let { notice ->
-                    ForgotMessageBanner(notice, isError = false, modifier = Modifier.fillMaxWidth(), textModifier = Modifier.fillMaxWidth().testTag("forgot.notice"))
-                }
-                ForgotPrimaryButton(
-                    text = if (state.step == ForgotPasswordStep.EMAIL) "Send code" else "Reset password",
-                    onClick = { if (state.step == ForgotPasswordStep.EMAIL) viewModel.sendCode() else viewModel.resetPassword() },
-                    enabled = if (state.step == ForgotPasswordStep.EMAIL) state.canSendCode else state.canReset,
-                    loading = state.isLoading,
-                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("forgot.submit"),
-                )
             }
+            TextButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("forgot.back"),
+                colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
+            ) { Text("Back", style = IosText.subheadline) }
         }
     }
 }
 
 @Composable
 private fun ForgotHeaderIcon(isEmailStep: Boolean) {
-    Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-        Icon(
-            imageVector = if (isEmailStep) Icons.Filled.Lock else Icons.Filled.Email,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(60.dp),
-        )
-        if (isEmailStep) {
-            Icon(
-                Icons.Filled.Refresh,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomEnd).size(23.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background),
-            )
-        } else {
-            Icon(
-                Icons.Filled.Check,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomEnd).size(23.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background),
-            )
-        }
-    }
+    Icon(
+        imageVector = if (isEmailStep) Icons.Outlined.Lock else Icons.Outlined.Email,
+        contentDescription = null,
+        tint = IosColors.spendOrange,
+        modifier = Modifier.size(72.dp),
+    )
 }
 
 @Composable
@@ -185,23 +177,25 @@ private fun RoundedForgotTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    textStyle: TextStyle = IosText.body,
+    textAlign: TextAlign = TextAlign.Start,
+    heightDp: Int = 54,
 ) {
-    val fieldColor = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color.Black.copy(alpha = 0.06f)
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(fieldColor).padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth().height(heightDp.dp).clip(RoundedCornerShape(12.dp))
+            .background(Color.Black.copy(alpha = 0.06f)).padding(horizontal = 16.dp),
         singleLine = true,
-        textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
-        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        textStyle = textStyle.copy(color = IosColors.textPrimary, textAlign = textAlign),
+        cursorBrush = SolidColor(IosColors.spendOrange),
         keyboardOptions = keyboardOptions,
         visualTransformation = visualTransformation,
         decorationBox = { innerTextField ->
-            Box(contentAlignment = Alignment.CenterStart) {
-                if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box(contentAlignment = if (textAlign == TextAlign.Center) Alignment.Center else Alignment.CenterStart) {
+                if (value.isEmpty()) Text(placeholder, style = textStyle, color = IosColors.textSecondary, textAlign = textAlign)
                 innerTextField()
             }
         },
@@ -209,30 +203,37 @@ private fun RoundedForgotTextField(
 }
 
 @Composable
-private fun ForgotMessageBanner(text: String, isError: Boolean, modifier: Modifier = Modifier, textModifier: Modifier = Modifier) {
-    val tint = if (isError) MaterialTheme.colorScheme.error else LocalFinanceColors.current.income
-    Box(
-        modifier.clip(RoundedCornerShape(8.dp)).background(tint.copy(alpha = if (isError) 0.88f else 0.13f)).padding(12.dp),
-    ) {
-        Text(
-            text,
-            color = if (isError) Color.White else tint,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (isError) FontWeight.SemiBold else FontWeight.Normal),
-            modifier = textModifier,
-        )
+private fun ForgotErrorBanner(text: String, modifier: Modifier = Modifier) {
+    Box(modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFFFF3B30).copy(alpha = 0.8f)).padding(16.dp)) {
+        Text(text, color = Color.White, style = IosText.subheadline.w(FontWeight.Bold), modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun ForgotSuccessBanner(text: String, modifier: Modifier = Modifier) {
+    Box(modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF34C759).copy(alpha = 0.8f)).padding(16.dp)) {
+        Text(text, color = Color.White, style = IosText.subheadline.w(FontWeight.Bold), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }
 
 @Composable
 private fun ForgotPrimaryButton(text: String, onClick: () -> Unit, enabled: Boolean, loading: Boolean, modifier: Modifier = Modifier) {
-    Box(contentAlignment = Alignment.Center) {
-        PillButton(text, onClick, modifier = modifier, enabled = enabled && !loading)
-        if (loading) {
-            CircularProgressIndicator(
-                Modifier.align(Alignment.CenterStart).padding(start = 74.dp).size(18.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp,
-            )
+    val shape = RoundedCornerShape(16.dp)
+    val disabled = !enabled
+    val background = when {
+        loading -> IosColors.spendOrange.copy(alpha = 0.72f)
+        disabled -> if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
+        else -> IosColors.spendOrange
+    }
+    Box(
+        modifier.height(52.dp).clip(shape).background(background)
+            .then(if (disabled) Modifier.border(1.dp, IosColors.separator.copy(alpha = 0.4f), shape) else Modifier)
+            .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (loading) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+            Text(text, style = IosText.headline, color = if (disabled) IosColors.textTertiary else Color.White)
         }
     }
 }
