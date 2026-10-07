@@ -41,6 +41,7 @@ data class HomeUiState(
     val breakdown: CashFlowBreakdown? = null,
     val insights: HomeInsights? = null,
     val history: List<DayFlow> = emptyList(),
+    val recent: List<RecentActivity> = emptyList(),
     val isRefreshing: Boolean = false,
     val hasLoaded: Boolean = false,
     val isOffline: Boolean = false,
@@ -51,6 +52,17 @@ data class HomeUiState(
     val showingSavedData: Boolean get() = isOffline
     val upcomingBills: List<CashFlowBreakdown.Line> get() = breakdown?.billsLeft?.take(5).orEmpty()
 }
+
+/** One row of Home's "Recent activity" (iOS: the last few transactions up to today). */
+data class RecentActivity(
+    val id: String,
+    val title: String,
+    val category: String,
+    val date: LocalDate,
+    val amount: Double,
+    val isIncome: Boolean,
+    val colorHex: String?,
+)
 
 private data class HomeData(val transactions: List<TransactionEntity>, val week: List<TransactionEntity>, val categories: List<Category>)
 private data class HomeSettings(val currency: String, val refresh: HomeRefreshState)
@@ -92,6 +104,7 @@ class HomeViewModel @Inject constructor(
             status = status,
             breakdown = CashFlowBreakdown.make(models, data.categories, today),
             history = CashFlowHistory.make(weekModels, data.categories, today),
+            recent = recentActivity(models, data.categories, today),
             insights = models.takeIf { it.isNotEmpty() }?.let { HomeInsights.make(it, data.categories, today) },
             isRefreshing = settingsState.refresh.isRefreshing,
             hasLoaded = settingsState.refresh.hasLoaded,
@@ -145,4 +158,17 @@ class HomeViewModel @Inject constructor(
         amount = amount,
         date = date,
     )
+}
+
+internal fun recentActivity(transactions: List<Transaction>, categories: List<Category>, today: LocalDate, limit: Int = 3): List<RecentActivity> {
+    val byId = categories.associateBy { it.id }
+    return transactions
+        .map { it to LocalDate.parse(it.date) }
+        .filter { (_, date) -> !date.isAfter(today) }
+        .sortedWith(compareByDescending<Pair<Transaction, LocalDate>> { it.second }.thenByDescending { it.first.id })
+        .take(limit)
+        .map { (tx, date) ->
+            val category = byId[tx.categoryId]
+            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: "Transaction" }, category?.name ?: "Uncategorized", date, tx.amount, category?.isIncome == true, category?.color)
+        }
 }

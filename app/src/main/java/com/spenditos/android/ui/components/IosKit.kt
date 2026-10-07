@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 
@@ -222,7 +223,7 @@ fun FloatingTabBar(
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-                Text(item.label, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
+                Text(item.label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = (-0.1).sp), color = tint, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
             }
         }
     }

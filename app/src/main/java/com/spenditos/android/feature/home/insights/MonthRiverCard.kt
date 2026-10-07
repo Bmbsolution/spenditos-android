@@ -45,7 +45,7 @@ fun MonthRiverCard(insights: HomeInsights, currency: String, locale: Locale) {
     val signedGap = signedAmount(insights.monthEndGap, currency, locale)
     val shortfall = insights.shortfall
     val upcoming = insights.pins.filterNot { it.isPast }.take(4)
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("home.river")) {
+    com.spenditos.android.ui.components.GlassCard(modifier = Modifier.testTag("home.river")) {
         Column(
             Modifier.fillMaxWidth().padding(Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),

@@ -3,6 +3,13 @@ package com.spenditos.android.feature.home
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import com.spenditos.android.feature.home.pulse.FinancialWeather
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,86 +63,82 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 @Composable
-fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}) {
+fun HomeScreen(onReviewPlan: () -> Unit = {}, onAddIncome: () -> Unit = {}, onSeeAll: () -> Unit = {}) {
     val viewModel: HomeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val locale = LocalConfiguration.current.locales[0]
     var showMath by remember { mutableStateOf(false) }
     var showHealth by remember { mutableStateOf(false) }
 
-    PullToRefreshBox(
-        isRefreshing = state.isRefreshing,
-        onRefresh = viewModel::refresh,
-        modifier = Modifier.fillMaxSize().testTag("home.refresh"),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
-                .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+    val hero = state.status?.let { FinancialWeather.from(it.state) }
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // Ambient wash: the weather glow fades in from the top, like the iOS Home.
+        Box(
+            Modifier.fillMaxWidth().height(420.dp).background(
+                Brush.verticalGradient(listOf((hero?.glow ?: MaterialTheme.colorScheme.primary).copy(alpha = 0.22f), Color.Transparent)),
+            ),
+        )
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize().testTag("home.refresh"),
         ) {
-            if (state.isLoading) {
-                Box(Modifier.fillMaxWidth().padding(vertical = 56.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(Modifier.testTag("home.loading"))
-                }
-            } else {
-                if (state.showingSavedData) {
-                    Text(
-                        "Showing saved data",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().testTag("home.offline"),
-                    )
-                }
-                state.refreshError?.let { message ->
-                    Text(
-                        message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.fillMaxWidth().testTag("home.error"),
-                    )
-                }
-
-                state.status?.let { status ->
-                    PulseHero(
-                        status = status,
-                        history = state.history,
-                        currency = state.currency,
-                        locale = locale,
-                        onSeeMath = { showMath = true },
-                        onOpenHealth = { showHealth = true },
-                        onReviewPlan = onReviewPlan,
-                        onAddIncome = onAddIncome,
-                    )
-                }
-
-                state.insights?.let { insights ->
-                    MonthRiverCard(insights, state.currency, locale)
-                    NextBillTile(insights.nextBill, state.today, state.currency, locale)
-                    if (insights.weekTotal.signum() > 0) WeekTile(insights.week, state.currency, locale)
-                    insights.topCategory?.let { TopCategoryTile(it, state.currency, locale) }
-                }
-
-                com.spenditos.android.feature.progress.StreakChip()
-
-                if (state.isEmpty) EmptyHomeState()
-
-                Text("Coming up", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                if (state.upcomingBills.isEmpty()) {
-                    Text(
-                        "No upcoming bills",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().testTag("home.comingUp.empty"),
-                    )
+            Column(
+                modifier = Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
+                    .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = 130.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                GreetingHeader(state.today)
+                if (state.isLoading) {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 56.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(Modifier.testTag("home.loading"))
+                    }
                 } else {
-                    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("home.comingUp")) {
-                        Column {
-                            state.upcomingBills.forEachIndexed { index, line ->
-                                if (index > 0) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = Spacing.m))
-                                UpcomingBillRow(line, state.today, state.currency, locale)
-                            }
+                    if (state.showingSavedData) {
+                        Text(
+                            "Showing saved data",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth().testTag("home.offline"),
+                        )
+                    }
+                    state.refreshError?.let { message ->
+                        Text(
+                            message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth().testTag("home.error"),
+                        )
+                    }
+
+                    state.status?.let { status ->
+                        PulseHero(
+                            status = status,
+                            history = state.history,
+                            currency = state.currency,
+                            locale = locale,
+                            onSeeMath = { showMath = true },
+                            onOpenHealth = { showHealth = true },
+                            onReviewPlan = onReviewPlan,
+                            onAddIncome = onAddIncome,
+                        )
+                    }
+
+                    if (state.isEmpty) EmptyHomeState()
+
+                    state.insights?.let { insights ->
+                        MonthRiverCard(insights, state.currency, locale)
+                        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            NextBillTile(insights.nextBill, state.today, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                            WeekTile(insights.week, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                        }
+                        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            insights.topCategory?.let { TopCategoryTile(it, state.currency, locale, Modifier.weight(1f).fillMaxHeight()) }
+                            com.spenditos.android.feature.progress.StreakTile(Modifier.weight(1f).fillMaxHeight())
                         }
                     }
+
+                    if (state.recent.isNotEmpty()) RecentActivitySection(state.recent, state.currency, locale, onSeeAll)
                 }
             }
         }
@@ -205,5 +208,72 @@ private fun EmptyHomeState() {
     ) {
         Text("No transactions this month", style = MaterialTheme.typography.titleMedium)
         Text("Your cash flow will appear here.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** "THURSDAY, OCTOBER 1" over a large "Good morning" (iOS Home header). */
+@Composable
+private fun GreetingHeader(today: LocalDate) {
+    val hour = java.time.LocalTime.now().hour
+    val greeting = when {
+        hour < 12 -> "Good morning"
+        hour < 18 -> "Good afternoon"
+        else -> "Good evening"
+    }
+    Column(Modifier.fillMaxWidth().padding(top = Spacing.s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())).uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 1.sp,
+        )
+        Text(greeting, style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.testTag("home.greeting"))
+    }
+}
+
+/** iOS "Recent activity": a header with "See all", then the last few transactions in one grouped card. */
+@Composable
+private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, locale: Locale, onSeeAll: () -> Unit) {
+    val finance = LocalFinanceColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.testTag("home.recent")) {
+        Row(Modifier.fillMaxWidth().padding(top = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+            Text("Recent activity", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Text(
+                "See all",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onSeeAll).padding(vertical = 8.dp).testTag("home.recent.seeAll"),
+            )
+        }
+        com.spenditos.android.ui.components.GlassCard {
+            rows.forEachIndexed { index, row ->
+                val color = com.spenditos.android.ui.components.categoryColor(row.colorHex)
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 12.dp).testTag("home.recent.row.${row.id}"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(color.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                        Text(row.category.take(1).uppercase(locale), color = color, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(row.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "${row.category} · ${row.date.format(DateTimeFormatter.ofPattern("MMM d", locale))}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        Money.signed(row.amount, row.isIncome, currency, locale),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (row.isIncome) finance.income else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (index < rows.lastIndex) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 78.dp, end = Spacing.m), color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
     }
 }

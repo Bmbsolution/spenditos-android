@@ -35,11 +35,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun NextBillTile(pin: HomeInsights.Pin?, today: LocalDate, currency: String, locale: Locale) {
+fun NextBillTile(pin: HomeInsights.Pin?, today: LocalDate, currency: String, locale: Locale, modifier: Modifier = Modifier) {
     val finance = LocalFinanceColors.current
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("home.nextBill")) {
+    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.nextBill")) {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Next bill", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Next bill", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (pin == null) {
                 Text("No more bills this month", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             } else {
@@ -63,14 +63,14 @@ fun NextBillTile(pin: HomeInsights.Pin?, today: LocalDate, currency: String, loc
 }
 
 @Composable
-fun WeekTile(week: List<HomeInsights.WeekDay>, currency: String, locale: Locale) {
+fun WeekTile(week: List<HomeInsights.WeekDay>, currency: String, locale: Locale, modifier: Modifier = Modifier) {
     val finance = LocalFinanceColors.current
     val neutralBar = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
     val total = week.fold(java.math.BigDecimal.ZERO) { sum, day -> sum + day.amount }
     val description = "Everyday spending in the last 7 days: ${Money.format(total.toDouble(), currency, locale)}"
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("home.week")) {
+    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.week")) {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Last 7 days", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Last 7 days", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(Money.format(total.toDouble(), currency, locale), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Canvas(
                 Modifier.fillMaxWidth().height(68.dp).semantics { contentDescription = description },
@@ -108,12 +108,12 @@ fun WeekTile(week: List<HomeInsights.WeekDay>, currency: String, locale: Locale)
 }
 
 @Composable
-fun TopCategoryTile(top: HomeInsights.TopCategory, currency: String, locale: Locale) {
+fun TopCategoryTile(top: HomeInsights.TopCategory, currency: String, locale: Locale, modifier: Modifier = Modifier) {
     val color = categoryColor(top.colorHex)
     val sharePercent = top.share.multiply(java.math.BigDecimal(100)).setScale(0, java.math.RoundingMode.HALF_UP)
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().testTag("home.topCategory")) {
+    com.spenditos.android.ui.components.GlassCard(modifier = modifier.testTag("home.topCategory")) {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Most spent on", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Most spent on", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(
                 Modifier.fillMaxWidth().testTag("home.topCategory.summary"),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),

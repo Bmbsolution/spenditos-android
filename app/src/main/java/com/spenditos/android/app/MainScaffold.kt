@@ -130,7 +130,17 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                             restoreState = true
                         }
                     }
-                    HomeScreen(onReviewPlan = toPlan, onAddIncome = toPlan)
+                    HomeScreen(
+                        onReviewPlan = toPlan,
+                        onAddIncome = toPlan,
+                        onSeeAll = {
+                            nav.navigate(Tab.TRANSACTIONS.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
                 }
                 composable(Tab.TRANSACTIONS.route) { TransactionListScreen(onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) }) }
                 composable(Tab.PLAN.route) { PlanHubScreen() }
