@@ -23,11 +23,14 @@ data class ProfileUiState(
     val error: String? = null,
     val isOffline: Boolean = false,
     val success: Boolean = false,
+    val isDeletingAccount: Boolean = false,
+    val deleteError: String? = null,
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val settings: UserSettingsActions,
+    private val accountDeletion: com.spenditos.android.data.auth.AccountDeletion,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
@@ -35,6 +38,30 @@ class ProfileViewModel @Inject constructor(
     init {
         load()
     }
+
+    /** After both confirmations. Success signs out, which leaves this screen. */
+    fun deleteAccount() {
+        if (_state.value.isDeletingAccount) return
+        _state.update { it.copy(isDeletingAccount = true, deleteError = null) }
+        viewModelScope.launch {
+            try {
+                accountDeletion.deleteAccount()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val message = if (e is com.spenditos.android.core.network.ApiError.Network) {
+                    "You're offline. Check your connection and try again."
+                } else {
+                    "Couldn't delete your account. Please try again."
+                }
+                _state.update { it.copy(deleteError = message) }
+            } finally {
+                _state.update { it.copy(isDeletingAccount = false) }
+            }
+        }
+    }
+
+    fun dismissDeleteError() = _state.update { it.copy(deleteError = null) }
 
     fun onDisplayNameChange(value: String) = _state.update { it.copy(displayName = value, success = false) }
 

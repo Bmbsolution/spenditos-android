@@ -18,6 +18,8 @@ class AuthRepository @Inject constructor(
     private val session: SessionManager,
     private val push: com.spenditos.android.data.push.PushRegistrar,
     private val purchases: com.spenditos.android.data.purchases.PurchasesService,
+    private val userApi: com.spenditos.android.data.user.UserApi,
+    private val transactions: com.spenditos.android.data.transactions.TransactionRepository,
 ) {
     /** Throws ApiError.Server(401) for wrong credentials, Server(403) for an unconfirmed email. */
     suspend fun login(email: String, password: String) {
@@ -33,6 +35,20 @@ class AuthRepository @Inject constructor(
         session.refreshTokenOrNull()?.let { token ->
             runCatching { apiCallUnit { api.logout(LogoutRequest(token)) } }
         }
+        session.signOut()
+    }
+
+    /**
+     * Asks the server to delete the account (soft delete, 30 days to cancel through support), then
+     * signs out like iOS. Throws when the server call fails; the user stays signed in to retry.
+     */
+    suspend fun deleteAccount() {
+        apiCallUnit { userApi.deleteAccount() }
+        runCatching { push.unregister() }
+        runCatching { purchases.logOut() }
+        // The account is gone server-side, so its queued creates can never sync; drop them while
+        // the user id is still known. A plain sign-out keeps the queue.
+        runCatching { transactions.dropQueue() }
         session.signOut()
     }
 }

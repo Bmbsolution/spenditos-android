@@ -44,7 +44,30 @@ class SettingsViewModel @Inject constructor(
     private val authenticator: BiometricAuthenticator,
     private val push: com.spenditos.android.data.push.PushRegistrar,
     private val userSettings: com.spenditos.android.data.user.UserSettingsActions,
+    private val purchases: com.spenditos.android.data.purchases.PurchasesService,
 ) : ViewModel() {
+    private val _restoreMessage = MutableStateFlow<String?>(null)
+
+    /** Result line under Restore Purchases; null while idle. */
+    val restoreMessage: StateFlow<String?> = _restoreMessage
+    private var restoring = false
+
+    /** iOS Settings > Restore Purchases. Pro itself comes from the server, which the store webhook updates. */
+    fun restorePurchases() {
+        if (restoring) return
+        restoring = true
+        _restoreMessage.value = "Restoring…"
+        viewModelScope.launch {
+            _restoreMessage.value = when (val result = purchases.restore()) {
+                com.spenditos.android.data.purchases.PurchaseResult.Success -> "Purchases restored. Pro turns on as soon as the store confirms it."
+                com.spenditos.android.data.purchases.PurchaseResult.Cancelled -> null
+                com.spenditos.android.data.purchases.PurchaseResult.Pending -> "Your purchase is pending. Pro will turn on when it clears."
+                is com.spenditos.android.data.purchases.PurchaseResult.Failed -> result.message
+            }
+            restoring = false
+        }
+    }
+
     private val lockMessage = MutableStateFlow<String?>(null)
     private val email = (session.state.value as? SessionState.SignedIn)?.email
 

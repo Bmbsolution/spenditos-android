@@ -44,7 +44,7 @@ class ProfileViewModelTest {
     @Test
     fun `profile loads then saves currency and explicit display name clear`() = runTest {
         val actions = FakeUserSettingsActions()
-        val vm = ProfileViewModel(actions)
+        val vm = ProfileViewModel(actions, com.spenditos.android.data.auth.AccountDeletion { })
         advanceUntilIdle()
         assertEquals("Fake User", vm.state.value.displayName)
         assertEquals("USD", vm.state.value.currency)
@@ -64,7 +64,7 @@ class ProfileViewModelTest {
     fun `profile load reports server and offline failures`() = runTest {
         failures().forEach { failure ->
             val actions = FakeUserSettingsActions().apply { failureFor = "refresh"; this.failure = failure }
-            val vm = ProfileViewModel(actions)
+            val vm = ProfileViewModel(actions, com.spenditos.android.data.auth.AccountDeletion { })
             advanceUntilIdle()
             assertTrue(vm.state.value.error != null)
             assertEquals(failure is ApiError.Network, vm.state.value.isOffline)
@@ -75,7 +75,7 @@ class ProfileViewModelTest {
     fun `profile save reports server and offline failures`() = runTest {
         failures().forEach { failure ->
             val actions = FakeUserSettingsActions()
-            val vm = ProfileViewModel(actions)
+            val vm = ProfileViewModel(actions, com.spenditos.android.data.auth.AccountDeletion { })
             advanceUntilIdle()
             actions.failureFor = "updateSettings"
             actions.failure = failure
@@ -167,5 +167,24 @@ class ProfileViewModelTest {
             fail("changePassword")
             lastPasswordRequest = ChangePasswordRequest(currentPassword, newPassword)
         }
+    }
+
+    @Test
+    fun `a failed account deletion keeps the user here with a message, and a retry can succeed`() = runTest {
+        var calls = 0
+        val vm = ProfileViewModel(FakeUserSettingsActions(), com.spenditos.android.data.auth.AccountDeletion {
+            calls++
+            if (calls == 1) throw ApiError.Network(IOException("offline"))
+        })
+        vm.deleteAccount()
+        advanceUntilIdle()
+        assertEquals("You're offline. Check your connection and try again.", vm.state.value.deleteError)
+        assertFalse(vm.state.value.isDeletingAccount)
+
+        vm.dismissDeleteError()
+        vm.deleteAccount()
+        advanceUntilIdle()
+        assertEquals(2, calls)
+        assertEquals(null, vm.state.value.deleteError)
     }
 }

@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.settings
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,6 +124,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var currencySearch by remember { mutableStateOf("") }
     val finance = LocalFinanceColors.current
+    var deleteStep by remember { mutableStateOf(0) }
 
     IosScreen {
         LazyColumn(
@@ -228,8 +232,65 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                         }
                     }
                 }
+                item {
+                    GroupedCard(Modifier.padding(top = Spacing.l)) {
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 44.dp)
+                                .clickable(enabled = !state.isDeletingAccount, role = Role.Button) { deleteStep = 1 }
+                                .padding(horizontal = Spacing.m, vertical = 12.dp)
+                                .testTag("settings-delete-account"),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (state.isDeletingAccount) {
+                                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = IosColors.expense)
+                            }
+                            Text("Delete Account", style = IosText.body, color = IosColors.expense)
+                        }
+                    }
+                }
+                item {
+                    Text(
+                        "Deleting removes your transactions and income or bills. You have 30 days to contact support to cancel.",
+                        style = IosText.footnote,
+                        color = IosColors.textSecondary,
+                        modifier = Modifier.padding(horizontal = Spacing.screen + Spacing.m, vertical = Spacing.s),
+                    )
+                }
             }
         }
+    }
+
+    // iOS SettingsProfileView: two confirmations before the account is deleted.
+    if (deleteStep == 1) {
+        AlertDialog(
+            onDismissRequest = { deleteStep = 0 },
+            title = { Text("Delete Account") },
+            text = { Text("This will permanently schedule your account for deletion. All your data will be erased. You have 30 days to contact support to cancel.\n\nYou will be signed out immediately.") },
+            confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = IosColors.expense) } },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+        )
+    }
+    if (deleteStep == 2) {
+        AlertDialog(
+            onDismissRequest = { deleteStep = 0 },
+            title = { Text("Are you absolutely sure?") },
+            text = { Text("This action cannot be undone. Your account will be permanently deleted.") },
+            confirmButton = {
+                TextButton(onClick = { deleteStep = 0; viewModel.deleteAccount() }, modifier = Modifier.testTag("profile.deleteAccount.confirm")) {
+                    Text("Delete My Account", color = IosColors.expense)
+                }
+            },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+        )
+    }
+    state.deleteError?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissDeleteError,
+            title = { Text("Delete Account") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = viewModel::dismissDeleteError) { Text("OK") } },
+        )
     }
 
     if (showCurrencyPicker) {

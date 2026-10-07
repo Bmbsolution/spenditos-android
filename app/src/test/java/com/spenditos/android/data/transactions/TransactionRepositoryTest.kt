@@ -248,4 +248,14 @@ class TransactionRepositoryTest {
         assertEquals("DELETE", server.takeRequest().method)
         assertTrue(rows().isEmpty())
     }
+
+    @Test
+    fun `account deletion drops every queued create and its row`() = runTest {
+        online.value = false
+        repo.create(draft)
+        repo.create(draft.copy(description = "Dinner"))
+        repo.dropQueue()
+        assertTrue(queue().isEmpty())
+        assertTrue(rows().isEmpty())
+    }
 }

@@ -30,6 +30,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -266,6 +267,19 @@ class TransactionRepository @Inject constructor(
         db.withTransaction {
             transactions.delete(row.userId, row.localTransactionId)
             mutations.delete(mutationId)
+        }
+        invalidation.invalidate(Aggregate.TRANSACTION)
+    }
+
+    /** Account deletion: drops every queued create of the signed-in user and its optimistic row. */
+    suspend fun dropQueue() {
+        val userId = session.currentUserId ?: return
+        val queued = mutations.observeAll(userId).first()
+        db.withTransaction {
+            queued.forEach { row ->
+                transactions.delete(row.userId, row.localTransactionId)
+                mutations.delete(row.id)
+            }
         }
         invalidation.invalidate(Aggregate.TRANSACTION)
     }

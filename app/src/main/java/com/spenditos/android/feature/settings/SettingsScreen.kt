@@ -63,6 +63,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val restoreMessage by viewModel.restoreMessage.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val finance = LocalFinanceColors.current
@@ -234,8 +235,17 @@ fun SettingsScreen(
                         icon = SfSymbols.icon("sparkles"),
                         iconTint = IosColors.spendGold,
                         onClick = onOpenPro,
-                        divider = false,
                         modifier = Modifier.testTag("settings.pro"),
+                    )
+                    IosRow(
+                        "Restore Purchases",
+                        subtitle = restoreMessage,
+                        icon = SfSymbols.icon("arrow.clockwise"),
+                        iconTint = IosColors.info,
+                        chevron = false,
+                        onClick = viewModel::restorePurchases,
+                        divider = false,
+                        modifier = Modifier.testTag("settings-restore-purchases"),
                     )
                 }
             }
