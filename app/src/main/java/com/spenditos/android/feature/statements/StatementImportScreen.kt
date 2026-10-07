@@ -4,22 +4,27 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,10 +32,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.IconChip
+import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.theme.Spacing
 
 private val STATEMENT_MIME_TYPES = arrayOf(
@@ -53,44 +64,34 @@ fun StatementImportScreen(onBack: () -> Unit) {
 
     BackHandler(enabled = state.importRequestSent) { viewModel.noteBackBlocked() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Import statement") },
-                navigationIcon = {
-                    TextButton(
-                        onClick = onBack,
-                        enabled = !state.importRequestSent,
-                        modifier = Modifier.testTag("statementImport.back"),
-                    ) { Text("Back") }
-                },
+    IosScreen(modifier = Modifier.testTag("statementImport.screen")) {
+        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
+            StatementHeader(
+                onBack = onBack,
+                enabled = !state.importRequestSent,
             )
-        },
-        modifier = Modifier.testTag("statementImport.screen"),
-    ) { insets ->
-        Column(
-            Modifier.fillMaxSize().padding(insets).padding(horizontal = Spacing.screen, vertical = Spacing.m),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
-        ) {
-            when {
-                state.isCheckingSettings -> LoadingCard("Checking account access…", "statementImport.settings.loading")
-                state.settingsError != null -> ErrorCard(
-                    message = state.settingsError,
-                    offline = state.settingsOffline,
-                    retryEnabled = true,
-                    onRetry = viewModel::retrySettings,
-                    tag = "statementImport.settings.error",
-                    retryTag = "statementImport.settings.retry",
-                )
-                !state.premiumActive -> ProFeatureCard()
-                else -> when (state.step) {
-                    StatementImportStep.CHOOSE -> ChooseFileStep(
-                        error = state.error,
-                        offline = state.isOffline,
-                        onChoose = { documentPicker.launch(STATEMENT_MIME_TYPES) },
+            Column(
+                Modifier.fillMaxSize().padding(horizontal = Spacing.screen, vertical = Spacing.m),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                when {
+                    state.isCheckingSettings -> LoadingCard("Checking account access…", "statementImport.settings.loading")
+                    state.settingsError != null -> ErrorCard(
+                        message = state.settingsError,
+                        offline = state.settingsOffline,
+                        retryEnabled = true,
+                        onRetry = viewModel::retrySettings,
+                        tag = "statementImport.settings.error",
+                        retryTag = "statementImport.settings.retry",
                     )
-                    StatementImportStep.ANALYZING -> {
-                        ProgressCard(
+                    !state.premiumActive -> ProFeatureCard()
+                    else -> when (state.step) {
+                        StatementImportStep.CHOOSE -> ChooseFileStep(
+                            error = state.error,
+                            offline = state.isOffline,
+                            onChoose = { documentPicker.launch(STATEMENT_MIME_TYPES) },
+                        )
+                        StatementImportStep.ANALYZING -> ProgressCard(
                             title = if (state.isWorking) "Analyzing statement…" else "Statement ready to retry",
                             message = if (state.isWorking) "This can take a minute." else null,
                             error = state.error,
@@ -100,41 +101,38 @@ fun StatementImportScreen(onBack: () -> Unit) {
                             onRetry = viewModel::retry,
                             onChooseAnother = { documentPicker.launch(STATEMENT_MIME_TYPES) },
                         )
-                    }
-                    StatementImportStep.MAP_COLUMNS -> {
-                        ErrorCardIfNeeded(state.error, state.isOffline, state.canRetry, viewModel::retry)
-                        val analysis = state.analysis
-                        val mapping = state.mapping
-                        if (analysis != null && mapping != null) {
-                            ColumnMappingStep(
-                                analysis = analysis,
-                                mapping = mapping,
-                                onMappingChange = viewModel::onMappingChange,
-                                onPreview = viewModel::preview,
-                                isWorking = state.isWorking,
-                            )
-                        } else if (state.isWorking) {
-                            LoadingCard("Preparing columns…", "statementImport.mapping.loading")
-                        } else {
-                            Text("Try again to reload the file.", modifier = Modifier.testTag("statementImport.mapping.waiting"))
+                        StatementImportStep.MAP_COLUMNS -> {
+                            ErrorCardIfNeeded(state.error, state.isOffline, state.canRetry, viewModel::retry)
+                            val analysis = state.analysis
+                            val mapping = state.mapping
+                            if (analysis != null && mapping != null) {
+                                ColumnMappingStep(
+                                    analysis = analysis,
+                                    mapping = mapping,
+                                    onMappingChange = viewModel::onMappingChange,
+                                    onPreview = viewModel::preview,
+                                    isWorking = state.isWorking,
+                                )
+                            } else if (state.isWorking) {
+                                LoadingCard("Preparing columns…", "statementImport.mapping.loading")
+                            } else {
+                                Text("Try again to reload the file.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("statementImport.mapping.waiting"))
+                            }
                         }
-                    }
-                    StatementImportStep.PREVIEW -> {
-                        ErrorCardIfNeeded(state.error, state.isOffline, state.canRetry, viewModel::retry)
-                        val preview = state.preview
-                        if (preview != null) {
-                            PreviewStep(preview, state.isWorking, { showImportConfirmation = true }, Modifier.weight(1f), state.currency)
-                        } else if (state.isWorking) {
-                            LoadingCard("Preparing preview…", "statementImport.preview.loading")
-                        } else {
-                            Text("Try again to rebuild the preview.", modifier = Modifier.testTag("statementImport.preview.waiting"))
+                        StatementImportStep.PREVIEW -> {
+                            ErrorCardIfNeeded(state.error, state.isOffline, state.canRetry, viewModel::retry)
+                            val preview = state.preview
+                            if (preview != null) {
+                                PreviewStep(preview, state.isWorking, { showImportConfirmation = true }, Modifier.weight(1f), state.currency)
+                            } else if (state.isWorking) {
+                                LoadingCard("Preparing preview…", "statementImport.preview.loading")
+                            } else {
+                                Text("Try again to rebuild the preview.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("statementImport.preview.waiting"))
+                            }
                         }
+                        StatementImportStep.IMPORTING -> ImportingStep(showBackHint = state.backBlockedHint)
+                        StatementImportStep.COMPLETE -> CompleteStep(state = state, onDone = onBack)
                     }
-                    StatementImportStep.IMPORTING -> ImportingStep(showBackHint = state.backBlockedHint)
-                    StatementImportStep.COMPLETE -> CompleteStep(
-                        state = state,
-                        onDone = onBack,
-                    )
                 }
             }
         }
@@ -163,28 +161,45 @@ fun StatementImportScreen(onBack: () -> Unit) {
 }
 
 @Composable
+private fun StatementHeader(onBack: () -> Unit, enabled: Boolean) {
+    Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
+        IconButton(onClick = onBack, enabled = enabled, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("statementImport.back")) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+        }
+        Text("Import statement", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
 private fun ChooseFileStep(error: String?, offline: Boolean, onChoose: () -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Import a bank statement", style = MaterialTheme.typography.titleLarge)
-        Text("Choose a CSV or Excel file. Review the columns and transactions before importing.", style = MaterialTheme.typography.bodyMedium)
-        Text("Files must be 25 MB or smaller.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        GlassCard {
+            Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                IconChip(Icons.Filled.Description, MaterialTheme.colorScheme.primary, size = 64.dp)
+                Text("Import a bank statement", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    "Choose a CSV or Excel file. Review the columns and transactions before importing.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("Files must be 25 MB or smaller.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         if (offline) OfflineMessage()
-        if (error != null) Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("statementImport.choose.error"))
-        Button(onClick = onChoose, modifier = Modifier.fillMaxWidth().testTag("statementImport.chooseFile")) { Text("Choose file") }
+        if (error != null) Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("statementImport.choose.error"))
+        PillButton(text = "Choose file", onClick = onChoose, modifier = Modifier.fillMaxWidth().testTag("statementImport.chooseFile"))
     }
 }
 
 @Composable
 private fun ProFeatureCard() {
-    Card(
-        Modifier.fillMaxWidth().testTag("statementImport.proFeature"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
+    GlassCard(Modifier.testTag("statementImport.proFeature")) {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            IconChip(Icons.Filled.AutoAwesome, Color(0xFFD69C00), size = 44.dp)
             Text("Pro feature", style = MaterialTheme.typography.titleMedium)
-            Text("Statement import with column detection is available with Pro.", style = MaterialTheme.typography.bodyMedium)
+            Text("Statement import with column detection is available with Pro.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
-                androidx.compose.material3.OutlinedButton(onClick = openPro, modifier = Modifier.testTag("statementImport.seePro")) { Text("See Spenditos Pro") }
+                PillButton(text = "See Spenditos Pro", onClick = openPro, filled = false, modifier = Modifier.fillMaxWidth().testTag("statementImport.seePro"))
             }
         }
     }
@@ -201,27 +216,31 @@ private fun ProgressCard(
     onRetry: () -> Unit,
     onChooseAnother: () -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        if (showSpinner) CircularProgressIndicator(Modifier.size(32.dp).testTag("statementImport.progress"))
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-        ErrorCardIfNeeded(error, offline, canRetry, onRetry)
-        if (error != null) OutlinedButton(onClick = onChooseAnother, modifier = Modifier.fillMaxWidth().testTag("statementImport.chooseAnother")) { Text("Choose another file") }
+    GlassCard {
+        Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            if (showSpinner) CircularProgressIndicator(Modifier.size(32.dp).testTag("statementImport.progress"), color = MaterialTheme.colorScheme.primary)
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ErrorCardIfNeeded(error, offline, canRetry, onRetry)
+            if (error != null) PillButton(text = "Choose another file", onClick = onChooseAnother, filled = false, modifier = Modifier.fillMaxWidth().testTag("statementImport.chooseAnother"))
+        }
     }
 }
 
 @Composable
 private fun ImportingStep(showBackHint: Boolean) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        CircularProgressIndicator(Modifier.size(32.dp).testTag("statementImport.importing.progress"))
-        Text("Importing transactions…", style = MaterialTheme.typography.titleMedium)
-        Text("This can take a minute.", style = MaterialTheme.typography.bodyMedium)
-        Text(
-            if (showBackHint) "Please wait for the import to finish before leaving." else "Keep this screen open while the import finishes.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.testTag("statementImport.importing.backHint"),
-        )
+    GlassCard {
+        Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            CircularProgressIndicator(Modifier.size(36.dp).testTag("statementImport.importing.progress"), color = MaterialTheme.colorScheme.primary)
+            Text("Importing transactions…", style = MaterialTheme.typography.titleMedium)
+            Text("This can take a minute.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                if (showBackHint) "Please wait for the import to finish before leaving." else "Keep this screen open while the import finishes.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("statementImport.importing.backHint"),
+            )
+        }
     }
 }
 
@@ -229,23 +248,36 @@ private fun ImportingStep(showBackHint: Boolean) {
 private fun CompleteStep(state: StatementImportUiState, onDone: () -> Unit) {
     val result = state.result
     val stats = result?.stats
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Import complete", style = MaterialTheme.typography.titleLarge)
-        if (result != null) {
-            Text(result.message, style = MaterialTheme.typography.bodyMedium)
-            Text("Created: ${stats?.created ?: result.count}", modifier = Modifier.testTag("statementImport.complete.created"))
-            Text("Updated: ${stats?.updated ?: 0}", modifier = Modifier.testTag("statementImport.complete.updated"))
-            Text("Skipped: ${stats?.skipped ?: 0}", modifier = Modifier.testTag("statementImport.complete.skipped"))
+    GlassCard {
+        Column(Modifier.fillMaxWidth().padding(Spacing.l), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            IconChip(Icons.Filled.CheckCircle, Color(0xFF1F7F47), size = 56.dp)
+            Text("Import complete", style = MaterialTheme.typography.titleLarge)
+            if (result != null) {
+                Text(result.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ImportStatRow("Created", stats?.created ?: result.count, Modifier.testTag("statementImport.complete.created"))
+                ImportStatRow("Updated", stats?.updated ?: 0, Modifier.testTag("statementImport.complete.updated"))
+                ImportStatRow("Skipped", stats?.skipped ?: 0, Modifier.testTag("statementImport.complete.skipped"))
+            }
+            PillButton(text = "Done", onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("statementImport.complete.done"))
         }
-        Button(onClick = onDone, modifier = Modifier.fillMaxWidth().testTag("statementImport.complete.done")) { Text("Done") }
+    }
+}
+
+@Composable
+private fun ImportStatRow(label: String, value: Int, valueModifier: Modifier = Modifier) {
+    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = valueModifier)
     }
 }
 
 @Composable
 private fun LoadingCard(message: String, tag: String) {
-    Column(Modifier.fillMaxWidth().testTag(tag), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        CircularProgressIndicator(Modifier.size(30.dp))
-        Text(message)
+    GlassCard(Modifier.testTag(tag)) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            CircularProgressIndicator(Modifier.size(30.dp), color = MaterialTheme.colorScheme.primary)
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -258,10 +290,12 @@ private fun ErrorCard(
     tag: String,
     retryTag: String,
 ) {
-    Column(Modifier.fillMaxWidth().testTag(tag), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        if (message != null && !offline) Text(message, color = MaterialTheme.colorScheme.error)
-        if (offline) OfflineMessage()
-        if (retryEnabled) OutlinedButton(onClick = onRetry, modifier = Modifier.testTag(retryTag)) { Text("Try again") }
+    GlassCard(Modifier.testTag(tag)) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            if (message != null && !offline) Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (offline) OfflineMessage()
+            if (retryEnabled) TextButton(onClick = onRetry, modifier = Modifier.testTag(retryTag)) { Text("Try again") }
+        }
     }
 }
 
@@ -274,5 +308,5 @@ private fun ErrorCardIfNeeded(error: String?, offline: Boolean, canRetry: Boolea
 
 @Composable
 private fun OfflineMessage() {
-    Text("You're offline. Check your connection and try again.", color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("statementImport.offline"))
+    Text("You're offline. Check your connection and try again.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("statementImport.offline"))
 }

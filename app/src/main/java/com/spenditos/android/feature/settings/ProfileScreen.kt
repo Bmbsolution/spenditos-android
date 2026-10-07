@@ -1,38 +1,49 @@
 package com.spenditos.android.feature.settings
 
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.GlassCard
+import com.spenditos.android.ui.components.GroupedCard
+import com.spenditos.android.ui.components.IosRow
+import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.PillButton
+import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 
 data class CurrencyOption(val code: String, val name: String)
@@ -101,57 +112,114 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var currencySearch by remember { mutableStateOf("") }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Profile") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }) }) { padding ->
-        if (state.isLoading) {
-            Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.Center) {
-                CircularProgressIndicator(Modifier.padding(24.dp).testTag("profile.loading"))
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = Spacing.screen, vertical = Spacing.m),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("profile.error")) }
-                if (state.isOffline) Text("Check your connection and try again.", modifier = Modifier.testTag("profile.offline"))
-                if (state.displayName.isEmpty()) Text("No display name set.", modifier = Modifier.testTag("profile.empty"))
-                OutlinedTextField(
-                    value = state.displayName,
-                    onValueChange = viewModel::onDisplayNameChange,
-                    label = { Text("Display name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("profile.displayName"),
-                )
-                ListItem(
-                    headlineContent = { Text("Currency") },
-                    supportingContent = { Text(state.currency) },
-                    modifier = Modifier.clickable { currencySearch = ""; showCurrencyPicker = true }.testTag("profile.currency"),
-                )
-                if (state.success) Text("Profile saved.", modifier = Modifier.testTag("profile.success"))
-                Button(
-                    onClick = viewModel::save,
-                    enabled = !state.isSaving,
-                    modifier = Modifier.fillMaxWidth().testTag("profile.save"),
-                ) {
-                    if (state.isSaving) CircularProgressIndicator(Modifier.padding(2.dp), strokeWidth = 2.dp)
-                    else Text("Save")
+    IosScreen {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+            contentPadding = PaddingValues(bottom = Spacing.l),
+        ) {
+            item { ProfileHeader(onBack) }
+            if (state.isLoading) {
+                item {
+                    Box(Modifier.fillMaxWidth().height(280.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(Modifier.testTag("profile.loading"), color = MaterialTheme.colorScheme.primary)
+                    }
                 }
-                if (state.error != null) {
-                    TextButton(onClick = viewModel::load, modifier = Modifier.testTag("profile.retry")) { Text("Try again") }
+            } else {
+                state.error?.let { message ->
+                    item {
+                        GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.s)) {
+                            Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(Spacing.m).testTag("profile.error"))
+                        }
+                    }
+                }
+                if (state.isOffline) {
+                    item {
+                        Text(
+                            "Check your connection and try again.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("profile.offline"),
+                        )
+                    }
+                }
+                if (state.displayName.isEmpty()) {
+                    item {
+                        Text(
+                            "No display name set.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("profile.empty"),
+                        )
+                    }
+                }
+                item { SectionHeader("Personal", Modifier.padding(top = Spacing.s)) }
+                item {
+                    GroupedCard {
+                        Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                            Text("Display name", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            OutlinedTextField(
+                                value = state.displayName,
+                                onValueChange = viewModel::onDisplayNameChange,
+                                label = { Text("Display name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().testTag("profile.displayName"),
+                            )
+                        }
+                        IosRow(
+                            title = "Currency",
+                            value = state.currency,
+                            icon = Icons.Filled.AttachMoney,
+                            iconTint = Color(0xFF1F7F47),
+                            onClick = { currencySearch = ""; showCurrencyPicker = true },
+                            divider = false,
+                            modifier = Modifier.testTag("profile.currency"),
+                        )
+                    }
+                }
+                item { SectionHeader("Account") }
+                item {
+                    GroupedCard {
+                        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                            if (state.success) {
+                                Text("Profile saved.", color = Color(0xFF1F7F47), modifier = Modifier.testTag("profile.success"))
+                            }
+                            if (state.error != null) {
+                                TextButton(onClick = viewModel::load, modifier = Modifier.testTag("profile.retry")) { Text("Try again") }
+                            }
+                            Box(Modifier.fillMaxWidth()) {
+                                PillButton(
+                                    text = "Save",
+                                    onClick = viewModel::save,
+                                    enabled = !state.isSaving,
+                                    modifier = Modifier.fillMaxWidth().testTag("profile.save"),
+                                )
+                                if (state.isSaving) CircularProgressIndicator(
+                                    Modifier.align(Alignment.CenterStart).padding(start = 18.dp).size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
     if (showCurrencyPicker) {
-        ModalBottomSheet(onDismissRequest = { showCurrencyPicker = false }) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                Text("Currency", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
+        ModalBottomSheet(
+            onDismissRequest = { showCurrencyPicker = false },
+            shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen)) {
+                Text("Currency", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = Spacing.s))
                 OutlinedTextField(
                     value = currencySearch,
                     onValueChange = { currencySearch = it },
                     label = { Text("Search currencies") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("profile.currency.search"),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s).testTag("profile.currency.search"),
                 )
                 val query = currencySearch.trim()
                 val matches = currencyOptions.filter {
@@ -159,14 +227,14 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
                 }
                 LazyColumn(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
                     if (query.isEmpty()) {
-                        item { Text("Popular", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(12.dp)) }
+                        item { SectionHeader("Popular", Modifier.padding(start = 0.dp, top = Spacing.s)) }
                         items(popularCurrencyCodes.mapNotNull { code -> currencyOptions.firstOrNull { it.code == code } }) { option ->
                             currencyRow(option, state.currency) {
                                 viewModel.onCurrencyChange(option.code)
                                 showCurrencyPicker = false
                             }
                         }
-                        item { Text("All currencies", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(12.dp)) }
+                        item { SectionHeader("All currencies", Modifier.padding(start = 0.dp, top = Spacing.s)) }
                         items(currencyOptions.filterNot { it.code in popularCurrencyCodes }) { option ->
                             currencyRow(option, state.currency) {
                                 viewModel.onCurrencyChange(option.code)
@@ -180,7 +248,7 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
                                 showCurrencyPicker = false
                             }
                         }
-                        if (matches.isEmpty()) item { Text("No currencies found.", modifier = Modifier.padding(16.dp).testTag("profile.currency.empty")) }
+                        if (matches.isEmpty()) item { Text("No currencies found.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(Spacing.m).testTag("profile.currency.empty")) }
                     }
                 }
             }
@@ -190,10 +258,24 @@ fun ProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewMode
 
 @Composable
 private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(option.code) },
-        supportingContent = { Text(option.name) },
-        trailingContent = { if (option.code == selectedCode) Text("✓", color = MaterialTheme.colorScheme.primary) },
-        modifier = Modifier.clickable(role = Role.Button, onClick = onClick).testTag("profile.currency.option.${option.code}"),
+    IosRow(
+        title = option.code,
+        subtitle = option.name,
+        icon = Icons.Filled.AttachMoney,
+        iconTint = Color(0xFF1F7F47),
+        trailing = { if (option.code == selectedCode) Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
+        onClick = onClick,
+        chevron = false,
+        modifier = Modifier.testTag("profile.currency.option.${option.code}"),
     )
+}
+
+@Composable
+private fun ProfileHeader(onBack: () -> Unit) {
+    Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
+        androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
+            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+        }
+        Text("Profile", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Center), fontWeight = FontWeight.SemiBold)
+    }
 }
