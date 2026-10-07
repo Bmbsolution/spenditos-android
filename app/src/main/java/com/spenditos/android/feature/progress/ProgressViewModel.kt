@@ -53,6 +53,8 @@ data class ProgressUiState(
     val pointsHistoryFailed: Boolean = false,
     val isCompletingChallenge: Boolean = false,
     val challengeActionFailed: Boolean = false,
+    val isUsingStreakFreeze: Boolean = false,
+    val streakFreezeUsed: Boolean = false,
     val selectedAchievement: UserAchievement? = null,
     val achievementDetail: AchievementProgressDetail? = null,
     val isLoadingAchievementDetail: Boolean = false,
@@ -135,7 +137,7 @@ class ProgressViewModel @Inject constructor(
     ) { repository.getUserAchievements() }
 
     private suspend fun loadPointsHistory() = section(
-        success = { value -> _state.update { it.copy(pointsHistory = value.take(10), pointsHistoryLoaded = true, pointsHistoryFailed = false) } },
+        success = { value -> _state.update { it.copy(pointsHistory = value, pointsHistoryLoaded = true, pointsHistoryFailed = false) } },
         failure = { _state.update { it.copy(pointsHistoryLoaded = true, pointsHistoryFailed = true) } },
     ) { repository.getPointsHistory(10) }
 
@@ -155,6 +157,25 @@ class ProgressViewModel @Inject constructor(
             throw cancelled
         } catch (_: Exception) {
             failure()
+        }
+    }
+
+    fun useStreakFreeze() {
+        val streak = state.value.streak ?: return
+        if (streak.streakFreezes <= 0 || state.value.isUsingStreakFreeze || state.value.streakFreezeUsed) return
+        // Mark busy before launching so a double tap cannot spend two freezes.
+        _state.update { it.copy(isUsingStreakFreeze = true) }
+        viewModelScope.launch {
+            try {
+                val updated = repository.useStreakFreeze()
+                _state.update { it.copy(streak = updated, streakFreezeUsed = true, streakFailed = false) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Best effort: leave the current streak in place.
+            } finally {
+                _state.update { it.copy(isUsingStreakFreeze = false) }
+            }
         }
     }
 

@@ -64,9 +64,11 @@ fun ProgressScreen(onBack: () -> Unit) {
                     contentPadding = PaddingValues(start = Spacing.screen, top = Spacing.m, end = Spacing.screen, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
-                    item { ProgressStreakSection(state, locale) }
+                    item { ProgressStreakSection(state, locale, viewModel::useStreakFreeze) }
                     item { ProgressPointsSection(state) }
-                    item { ProgressChallengeSection(state, viewModel::completeChallenge) }
+                    if (state.challenge != null || state.challengeFailed) {
+                        item { ProgressChallengeSection(state, viewModel::completeChallenge) }
+                    }
                     item { ProgressAchievementsSection(state, viewModel::openAchievement) }
                     item { ProgressPointsHistorySection(state, viewModel::refresh) }
                     item { ProgressChallengeHistorySection(state) }

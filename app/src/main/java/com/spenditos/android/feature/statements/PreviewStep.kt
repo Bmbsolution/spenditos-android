@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,7 +20,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.StatementPreviewResult
-import com.spenditos.android.data.model.categoryNameFor
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -74,26 +74,22 @@ fun PreviewStep(
                 Text("No transactions found.", style = IosText.body, color = IosColors.textSecondary, modifier = Modifier.padding(Spacing.m))
             }
         } else {
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth().testTag("statementImport.preview.list"),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            ) {
+            LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("statementImport.preview.list")) {
                 itemsIndexed(preview.transactions) { index, row ->
-                    GlassCard(Modifier.fillMaxWidth().testTag("statementImport.preview.row.$index"), shape = RoundedCornerShape(12.dp)) {
-                        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                Text(
-                                    row.importDescription,
-                                    style = IosText.headline,
-                                    color = IosColors.textPrimary,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(formatStatementAmount(row.amount, currency), color = if (row.amount > 0) SystemGreen else SystemRed, style = IosText.headline)
-                            }
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(Modifier.fillMaxWidth().testTag("statementImport.preview.row.$index")) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(row.importDescription, style = IosText.headline, color = IosColors.textPrimary)
                                 Text(row.date.toString(), style = IosText.caption, color = IosColors.textSecondary)
-                                Text(preview.categoryNameFor(row), style = IosText.caption, color = IosColors.textSecondary)
                             }
+                            Text(formatStatementAmount(row.amount, currency), color = if (row.amount > 0) SystemGreen else SystemRed, style = IosText.headline)
+                        }
+                        if (index < preview.transactions.lastIndex) {
+                            HorizontalDivider(Modifier.padding(start = Spacing.m), color = IosColors.separator)
                         }
                     }
                 }

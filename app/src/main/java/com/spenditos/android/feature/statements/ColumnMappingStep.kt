@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +28,7 @@ import com.spenditos.android.data.model.StatementColumnMapping
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.SectionHeader
+import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
@@ -82,19 +81,13 @@ fun ColumnMappingStep(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             androidx.compose.material3.Icon(
-                Icons.Outlined.AutoFixHigh,
+                SfSymbols.icon("wand.and.stars"),
                 contentDescription = null,
                 tint = SystemBlue,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.4.dp),
             )
             Text("AI Confidence: ${"%.0f".format(mapping.confidence * 100)}%", style = IosText.subheadline, color = IosColors.textPrimary)
         }
-        Text(
-            "Choose an amount column or both debit and credit columns.",
-            style = IosText.footnote,
-            color = IosColors.textSecondary,
-            modifier = Modifier.padding(horizontal = Spacing.s),
-        )
 
         SectionHeader("Columns", Modifier.padding(top = Spacing.s))
         GlassCard {

@@ -38,7 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -96,7 +95,7 @@ internal fun ProgressLoadingState() {
 }
 
 @Composable
-internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Locale) {
+internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Locale, onUseFreeze: () -> Unit = {}) {
     val streak = state.streak
     if (streak != null) {
         val fireScale by rememberInfiniteTransition(label = "streak flame").animateFloat(
@@ -107,10 +106,14 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
         )
         GlassCard(modifier = Modifier.fillMaxWidth().testTag("progress.streak.card")) {
             Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🔥", style = IosText.system(36), modifier = Modifier.graphicsLayer(scaleX = fireScale, scaleY = fireScale))
+                Row {
+                    Text(
+                        "🔥",
+                        style = IosText.system(36),
+                        modifier = Modifier.alignByBaseline().graphicsLayer(scaleX = fireScale, scaleY = fireScale),
+                    )
                     Column(
-                        Modifier.weight(1f).padding(start = Spacing.s),
+                        Modifier.weight(1f).alignByBaseline().padding(start = Spacing.s),
                         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                     ) {
                         Text(
@@ -120,9 +123,12 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                         )
                         Text("Longest: ${streak.longestStreak} days", style = IosText.subheadline, color = IosColors.textSecondary)
                     }
-                    FreezeBadge(streak.streakFreezes)
+                    FreezeBadge(streak.streakFreezes, Modifier.align(Alignment.CenterVertically))
                 }
                 StreakCalendarContent(state, locale, insideStreakCard = true)
+                if (streak.streakFreezes > 0) {
+                    StreakFreezeButton(state.isUsingStreakFreeze, state.streakFreezeUsed, onUseFreeze)
+                }
                 if (state.streakFailed) InlineQuietLine("Couldn't load", "progress.streak.error")
             }
         }
@@ -136,14 +142,44 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
 }
 
 @Composable
-private fun FreezeBadge(freezes: Int) {
+private fun FreezeBadge(freezes: Int, modifier: Modifier = Modifier) {
     Row(
-        Modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.s))).padding(horizontal = Spacing.s, vertical = Spacing.xs),
+        modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.s))).padding(horizontal = Spacing.s, vertical = Spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.AcUnit, contentDescription = null, tint = FreezeBlue, modifier = Modifier.size(14.4.dp))
         Text(freezes.toString(), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textPrimary)
+    }
+}
+
+@Composable
+private fun StreakFreezeButton(isUsingFreeze: Boolean, freezeUsed: Boolean, onUseFreeze: () -> Unit) {
+    val tint = if (freezeUsed) IosColors.income else FreezeBlue
+    Row(
+        Modifier.fillMaxWidth()
+            .then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+            .clickable(enabled = !isUsingFreeze && !freezeUsed, role = Role.Button, onClick = onUseFreeze)
+            .padding(vertical = Spacing.s)
+            .testTag("progress.streak.freeze"),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (isUsingFreeze) {
+            CircularProgressIndicator(Modifier.size(15.dp), color = FreezeBlue, strokeWidth = 2.dp)
+        } else {
+            Icon(
+                SfSymbols.icon(if (freezeUsed) "checkmark.circle.fill" else "snowflake"),
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Text(
+            if (freezeUsed) "Freeze Applied" else "Use Streak Freeze",
+            style = IosText.subheadline.w(FontWeight.Bold),
+            color = tint,
+        )
     }
 }
 
@@ -197,19 +233,13 @@ private fun StreakDay(
     locale: java.util.Locale,
 ) {
     val today = date == LocalDate.now()
-    val pulse by rememberInfiniteTransition(label = "today pulse").animateFloat(
-        initialValue = 1f,
-        targetValue = 0.35f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "today pulse opacity",
-    )
     val fill = when {
         active -> IosColors.income
         freezeUsed -> FreezeBlue
         else -> Color.Transparent
     }
     val outline = when {
-        today -> IosColors.spendOrange.copy(alpha = pulse)
+        today -> IosColors.spendOrange
         active || freezeUsed -> Color.Transparent
         else -> Color.Black.copy(alpha = 0.08f)
     }
@@ -332,11 +362,12 @@ private fun PointsBadge(points: Int) {
 
 @Composable
 internal fun ProgressChallengeSection(state: ProgressUiState, onComplete: () -> Unit) {
+    val challenge = state.challenge
+    if (challenge == null && !state.challengeFailed) return
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text("Today's Challenge", style = IosText.headline, color = IosColors.textSecondary)
-        val challenge = state.challenge
         if (challenge == null) {
-            QuietLine(if (state.challengeFailed) "Couldn't load" else "Loading…", if (state.challengeFailed) "progress.challenge.error" else "progress.challenge.loading")
+            QuietLine("Couldn't load", "progress.challenge.error")
         } else {
             ChallengeCard(challenge, state.isCompletingChallenge, state.challengeActionFailed, state.challengeFailed, onComplete)
         }
@@ -374,7 +405,7 @@ private fun ChallengeCard(
                             SfSymbols.icon(if (challenge.type == "daily") "sun.max.fill" else "calendar"),
                             contentDescription = null,
                             tint = IosColors.spendOrange,
-                            modifier = Modifier.size(20.4.dp),
+                            modifier = Modifier.size(19.2.dp),
                         )
                         Text(challenge.title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                     }
@@ -433,7 +464,7 @@ private fun CompleteChallengeButton(isCompleting: Boolean, onComplete: () -> Uni
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
             if (isCompleting) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-            else Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
+            else Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(19.2.dp))
             Text("Complete Challenge", style = IosText.headline, color = Color.White)
         }
     }
@@ -441,6 +472,7 @@ private fun CompleteChallengeButton(isCompleting: Boolean, onComplete: () -> Uni
 
 @Composable
 internal fun ProgressAchievementsSection(state: ProgressUiState, onClick: (UserAchievement) -> Unit) {
+    var showAll by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
         Text("Achievements", style = IosText.headline, color = IosColors.textSecondary)
         when {
@@ -448,17 +480,29 @@ internal fun ProgressAchievementsSection(state: ProgressUiState, onClick: (UserA
             state.achievementsFailed && state.achievements.isEmpty() -> QuietLine("Couldn't load", "progress.achievements.error")
             state.achievements.isEmpty() -> QuietLine("No achievements yet", "progress.achievements.empty")
             else -> {
+                val sorted = state.achievements.sortedWith(
+                    compareByDescending<UserAchievement> { it.unlockedAt != null }
+                        .thenByDescending { if (it.target > 0) it.progress.toFloat() / it.target else 0f },
+                )
+                val visible = if (showAll) sorted else sorted.take(6)
                 Column(Modifier.fillMaxWidth().testTag("progress.achievements.list"), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                    state.achievements.sortedWith(
-                        compareByDescending<UserAchievement> { it.unlockedAt != null }
-                            .thenByDescending { if (it.target > 0) it.progress.toFloat() / it.target else 0f },
-                    ).chunked(2).forEach { row ->
+                    visible.chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                             row.forEach { achievement ->
                                 AchievementCard(achievement, Modifier.weight(1f), onClick)
                             }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
                         }
+                    }
+                }
+                if (!showAll && sorted.size > 6) {
+                    Row(
+                        Modifier.clickable(role = Role.Button, onClick = { showAll = true }).testTag("progress.achievements.viewAll"),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("View All", style = IosText.subheadline, color = IosColors.spendOrange)
+                        Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.4.dp))
                     }
                 }
                 if (state.achievementsFailed) QuietLine("Couldn't refresh", "progress.achievements.refreshError")
@@ -547,10 +591,19 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                 Column(
                     Modifier.fillMaxWidth().testTag("progress.history.error"),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
                     Text("Couldn't load", style = IosText.body, color = IosColors.textTertiary)
-                    TextButton(onClick = onRetry) { Text("Retry", style = IosText.headline, color = IosColors.spendOrange) }
+                    Row(
+                        Modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                            .clickable(role = Role.Button, onClick = onRetry)
+                            .padding(Spacing.m),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(SfSymbols.icon("arrow.clockwise"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.4.dp))
+                        Text("Retry", style = IosText.headline, color = IosColors.spendOrange)
+                    }
                 }
             }
             state.pointsHistory.isEmpty() -> {
@@ -566,7 +619,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
             }
             else -> {
                 Column(Modifier.fillMaxWidth().testTag("progress.history.list")) {
-                    state.pointsHistory.take(10).forEach { entry -> PointsHistoryRow(entry) }
+                    state.pointsHistory.forEach { entry -> PointsHistoryRow(entry) }
                 }
                 if (state.pointsHistoryFailed) QuietLine("Couldn't refresh", "progress.history.refreshError")
             }
