@@ -103,6 +103,23 @@ class CaptureViewModelTest {
     }
 
     @Test
+    fun `a quota 403 shows the monthly limit screen instead of an error line`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().apply {
+            parseBlock = { _, _, _, _ -> throw com.spenditos.android.core.network.ApiError.Server(403, "QuotaExhausted") }
+        }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories = categories()), FakeRecorder())
+        advanceUntilIdle()
+        vm.onTextChange("coffee 5")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.quotaExceeded)
+        assertNull(vm.state.value.error)
+        vm.dismissQuota()
+        assertFalse(vm.state.value.quotaExceeded)
+    }
+
+    @Test
     fun `voice capture checks editable transcript then parses with parent lineage`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val actions = FakeCaptureActions()

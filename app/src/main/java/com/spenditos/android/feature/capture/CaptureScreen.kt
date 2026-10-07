@@ -81,6 +81,7 @@ import java.util.Currency
 fun CaptureScreen(
     onBack: () -> Unit,
     onSaved: (String) -> Unit,
+    onFillManually: () -> Unit = onBack,
 ) {
     val viewModel: CaptureViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -146,7 +147,12 @@ fun CaptureScreen(
                     CaptureMessage(state.error!!, warning = false, Modifier.testTag("capture.error"))
                 }
 
-                if (voiceTranscribeError) {
+                if (state.quotaExceeded) {
+                    QuotaExceededContent(
+                        onUpgrade = com.spenditos.android.feature.pro.LocalOpenPro.current,
+                        onFillManually = { viewModel.dismissQuota(); viewModel.cancel(); onFillManually() },
+                    )
+                } else if (voiceTranscribeError) {
                     VoiceErrorContent(
                         message = state.error!!,
                         onRetry = viewModel::retry,
@@ -696,3 +702,54 @@ private fun formatRecordingTime(milliseconds: Long): String {
 private fun formatCurrency(value: Double, currencyCode: String): String = runCatching {
     NumberFormat.getCurrencyInstance().apply { currency = Currency.getInstance(currencyCode.uppercase()) }.format(value)
 }.getOrDefault("${currencyCode.uppercase()} ${"%.2f".format(value)}")
+
+/** iOS VoiceEntryView `quotaExceededContent`. */
+@Composable
+private fun QuotaExceededContent(onUpgrade: (() -> Unit)?, onFillManually: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.xl).testTag("capture.quota"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xl),
+    ) {
+        Icon(
+            SfSymbols.icon("lock.fill"),
+            contentDescription = null,
+            tint = IosColors.spendOrange.copy(alpha = 0.8f),
+            modifier = Modifier.size(67.dp),
+        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            Text("Monthly Limit Reached", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(
+                "You've used all your free voice entries for this month.",
+                style = IosText.callout,
+                color = IosColors.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = Spacing.xl),
+            )
+            Text("Upgrade to Pro for unlimited voice entries.", style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            if (onUpgrade != null) {
+                Row(
+                    Modifier.clip(RoundedCornerShape(Radius.l)).background(IosColors.spendOrange)
+                        .clickable(role = Role.Button, onClick = onUpgrade)
+                        .padding(horizontal = Spacing.xl, vertical = Spacing.m)
+                        .testTag("capture.quota.upgrade"),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Text("Upgrade to Pro", style = IosText.headline, color = Color.White)
+                }
+            }
+            Box(
+                Modifier.then(com.spenditos.android.ui.components.subtleGlassModifier())
+                    .clickable(role = Role.Button, onClick = onFillManually)
+                    .padding(horizontal = Spacing.xl, vertical = Spacing.m)
+                    .testTag("capture.quota.manual"),
+            ) {
+                Text("Fill Manually", style = IosText.headline, color = IosColors.textPrimary)
+            }
+        }
+    }
+}

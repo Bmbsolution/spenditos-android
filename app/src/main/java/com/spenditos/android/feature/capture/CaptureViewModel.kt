@@ -82,6 +82,8 @@ data class CaptureUiState(
     val currency: String = "USD",
     val categoriesLoading: Boolean = true,
     val permissionDenied: Boolean = false,
+    /** This month's free voice captures are used up (403 QuotaExhausted): iOS shows "Monthly Limit Reached". */
+    val quotaExceeded: Boolean = false,
     val isRecording: Boolean = false,
     val recordingMillis: Long = 0,
     val speechDetected: Boolean = false,
@@ -136,6 +138,8 @@ class CaptureViewModel @Inject constructor(
         _state.update { it.copy(mode = mode, error = null, offline = false) }
         persist()
     }
+
+    fun dismissQuota() = _state.update { it.copy(quotaExceeded = false) }
 
     fun onTextChange(value: String) = _state.update { it.copy(text = value.take(MAX_TEXT_LENGTH), error = null, offline = false) }
 
@@ -439,14 +443,16 @@ class CaptureViewModel @Inject constructor(
             CaptureFailure.AnalysisTimeout -> "Analysis timed out. Try again."
             else -> "Couldn't complete that. Try again."
         }
+        val quota = error is ApiError.Server && error.status == 403 && error.serverMessage.contains("QuotaExhausted", ignoreCase = true)
         _state.update { current ->
             val knownNoCommit = error is ApiError.Server && error.status in 400..499
             current.copy(
                 step = returnTo,
                 isRecording = false,
                 items = if (knownNoCommit) current.items.map { it.copy(isFrozen = false) } else current.items,
-                error = message,
+                error = if (quota) null else message,
                 offline = error is ApiError.Network,
+                quotaExceeded = quota,
             )
         }
         persist()

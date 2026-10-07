@@ -168,6 +168,12 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
                 ) {
                     CaptureScreen(
                         onBack = { nav.popBackStack() },
+                        onFillManually = {
+                            nav.popBackStack()
+                            receiptPrefill = null
+                            editTarget = null
+                            showAdd = true
+                        },
                         onSaved = { message ->
                             nav.popBackStack()
                             scope.launch { snackbar.showSnackbar(message) }

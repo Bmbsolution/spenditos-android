@@ -213,5 +213,6 @@ object Spacing {
     val s = androidx.compose.ui.unit.Dp(8f)
     val m = androidx.compose.ui.unit.Dp(16f)
     val l = androidx.compose.ui.unit.Dp(24f)
+    val xl = androidx.compose.ui.unit.Dp(32f)
     val screen = androidx.compose.ui.unit.Dp(20f)
 }
