@@ -66,6 +66,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -284,7 +288,7 @@ fun AddTransactionSheet(
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(Modifier.width(44.dp))
+                    Spacer(Modifier.width(64.dp))
                     Text(
                         "Select Category",
                         style = IosText.headline,
@@ -293,7 +297,7 @@ fun AddTransactionSheet(
                         textAlign = TextAlign.Center,
                     )
                     TextButton(onClick = { showCategoryPicker = false }, modifier = Modifier.width(64.dp)) {
-                        Text("Done", style = IosText.body.w(FontWeight.Medium), color = IosColors.spendOrange)
+                        Text("Done", style = IosText.body, color = IosColors.spendOrange)
                     }
                 }
                 CategorySearchField(
@@ -333,6 +337,33 @@ fun AddTransactionSheet(
                                     categorySearchText = ""
                                 },
                                 modifier = Modifier.testTag("add.category"),
+                            )
+                        }
+                    }
+                }
+                // iOS CategoryPickerView: create a category when the search has no exact match.
+                val query = categorySearchText.trim()
+                if (state.visibleCategories.none { it.name.equals(query, ignoreCase = true) }) {
+                    val kind = if (state.type == EntryType.INCOME) "Income" else "Expense"
+                    Box(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
+                            .background(IosColors.spendOrange.copy(alpha = 0.08f))
+                            .border(1.dp, IosColors.spendOrange.copy(alpha = 0.2f), RoundedCornerShape(Radius.m))
+                            .clickable(role = Role.Button) {
+                                showCategoryPicker = false
+                                categorySearchText = ""
+                                showAddCategory = true
+                            }
+                            .padding(vertical = Spacing.m)
+                            .testTag("add.category.create"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
+                            Text(
+                                if (query.isEmpty()) "Add $kind Category" else "Add \"$query\"",
+                                style = IosText.callout.w(FontWeight.SemiBold),
+                                color = IosColors.spendOrange,
                             )
                         }
                     }
@@ -499,6 +530,7 @@ private fun EntryTypeSelector(selected: EntryType, onSelect: (EntryType) -> Unit
                 Modifier.weight(1f).height(42.dp).clip(CircleShape)
                     .background(if (isSelected) tint.copy(alpha = 0.15f) else Color.Transparent)
                     .border(1.dp, if (isSelected) tint.copy(alpha = 0.35f) else Color.Transparent, CircleShape)
+                    .semantics { this.selected = isSelected }
                     .clickable(role = Role.Tab) { onSelect(type) }
                     .testTag("add.type." + type.name.lowercase()),
                 horizontalArrangement = Arrangement.Center,
@@ -605,7 +637,8 @@ private fun HeroAmountField(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 interactionSource = interactionSource,
                 textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = IosColors.textPrimary),
-                modifier = Modifier.weight(1f).alignBy(FirstBaseline).focusRequester(focusRequester),
+                modifier = Modifier.weight(1f).alignBy(FirstBaseline).focusRequester(focusRequester)
+                    .semantics { contentDescription = "Amount in $currency. Enter the transaction amount" },
                 decorationBox = { innerTextField ->
                     Box {
                         if (value.isEmpty()) {
@@ -650,6 +683,7 @@ private fun ValidationMessage(message: String) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DescriptionField(
     value: String,
@@ -663,7 +697,7 @@ private fun DescriptionField(
         Row(
             Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer, shape)
                 .clip(shape).border(1.dp, cardBorder(), shape)
-                .padding(horizontal = Spacing.m, vertical = Spacing.m),
+                .padding(horizontal = Spacing.m, vertical = if (WindowInsets.isImeVisible) Spacing.s else Spacing.m),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
@@ -751,6 +785,7 @@ private fun FormChip(
         modifier.clip(shape)
             .background(if (isSelected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainer)
             .border(if (isSelected) 1.5.dp else 1.dp, if (isSelected) IosColors.spendOrange else cardBorder(), shape)
+            .semantics { this.selected = isSelected }
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 44.dp)
             .padding(horizontal = Spacing.m, vertical = Spacing.s)
@@ -834,6 +869,7 @@ private fun DateChip(title: String, selected: Boolean, onClick: () -> Unit, symb
         Modifier.clip(shape)
             .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainer)
             .border(if (selected) 1.5.dp else 1.dp, if (selected) IosColors.spendOrange else cardBorder(), shape)
+            .semantics { this.selected = selected }
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 44.dp)
             .padding(horizontal = Spacing.m, vertical = Spacing.s),
@@ -908,7 +944,7 @@ private fun RecurringSection(
                     SfSymbols.icon("calendar.badge.clock"),
                     contentDescription = null,
                     tint = IosColors.textSecondary,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                 )
                 Text(state.recurringHint, style = IosText.caption, color = IosColors.textSecondary)
             }
@@ -941,6 +977,7 @@ private fun CompactMoodPicker(
                             color.copy(alpha = if (selected) 0.6f else 0.22f),
                             RoundedCornerShape(Radius.m),
                         )
+                        .semantics { this.selected = selected }
                         .clickable(role = Role.Button) { onMoodChange(if (selected) null else option) }
                         .padding(vertical = 12.dp)
                         .then(if (dimmed) Modifier.alpha(0.42f) else Modifier)
@@ -1143,8 +1180,7 @@ private fun QuickAddLoadingButton(
 private fun CategorySearchField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(Radius.m)
     Row(
-        modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer, shape)
-            .border(1.dp, cardBorder(), shape)
+        modifier.fillMaxWidth().then(com.spenditos.android.ui.components.subtleGlassModifier())
             .padding(Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -1202,7 +1238,7 @@ private fun CategoryGridCell(
                     SfSymbols.icon("checkmark.circle.fill"),
                     contentDescription = null,
                     tint = IosColors.spendOrange,
-                    modifier = Modifier.align(Alignment.TopEnd).size(14.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(14.dp)
                         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape),
                 )
             }
@@ -1277,7 +1313,7 @@ private fun moodIcon(mood: TransactionMood): String = when (mood) {
 @Composable
 private fun moodColor(mood: TransactionMood): Color = when (mood) {
     TransactionMood.WORTH_IT -> IosColors.income
-    TransactionMood.NECESSARY -> Color.Blue
+    TransactionMood.NECESSARY -> Color(0xFF007AFF)
     TransactionMood.REGRET -> IosColors.expense
     TransactionMood.IMPULSIVE -> Color(0xFFFF9500)
 }
