@@ -226,9 +226,7 @@ private fun TransactionsToolbarCapsule(
     val capsule = CircleShape
     Row(
         modifier = Modifier
-            .clip(capsule)
-            .then(subtleGlassModifier(capsule))
-            .padding(horizontal = Spacing.xs, vertical = 2.dp),
+            .clip(capsule),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
@@ -244,9 +242,9 @@ private fun TransactionsToolbarCapsule(
                 SfSymbols.icon("square.and.arrow.up"),
                 contentDescription = null,
                 tint = IosColors.spendOrange,
-                modifier = Modifier.size(19.2.dp),
+                modifier = Modifier.size(22.dp),
             )
-            Text("Export", style = IosText.callout, color = IosColors.spendOrange)
+            Text("Export", style = IosText.body, color = IosColors.spendOrange)
         }
         Box(
             modifier = Modifier
@@ -466,7 +464,7 @@ private fun DayHeader(day: LocalDate, count: Int, locale: java.util.Locale) {
     val label = when (day) {
         today -> "Today"
         today.minusDays(1) -> "Yesterday"
-        else -> day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
+        else -> day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
     }
     val dark = isSystemInDarkTheme()
     val background = if (dark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
@@ -497,7 +495,7 @@ private fun TransactionRow(row: TransactionRowUi, currency: String, locale: java
     val dateLabel = when (row.date) {
         LocalDate.now() -> "Today"
         LocalDate.now().minusDays(1) -> "Yesterday"
-        else -> row.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
+        else -> row.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
     }
     val subtitle = buildList {
         if (hasCategory) add(row.categoryName)

@@ -100,23 +100,29 @@ fun GlassCard(
     )
 }
 
-/** Large bold screen title (iOS large navigation title) with optional trailing controls. */
+/**
+ * iOS large navigation title: a 44pt navigation bar strip on top (toolbar items sit there, in an iOS 26
+ * glass capsule), then the 34pt bold title.
+ */
 @Composable
 fun LargeTitle(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
-    Row(
-        // iOS keeps a 44pt navigation bar above the large title.
-        modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = 52.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Column(modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = 8.dp, bottom = 12.dp)) {
+        Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            if (trailing != null) {
+                Row(
+                    Modifier.height(44.dp).then(glassCardModifier(CircleShape, shadowAlpha = 0.08f)).padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) { trailing() }
+            }
+        }
         Text(
             text,
-            style = MaterialTheme.typography.displayLarge,
+            style = IosText.largeTitle.w(FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f).semantics { role = Role.Button; contentDescription = text }.testTag("title.$text"),
+            modifier = Modifier.fillMaxWidth().semantics { role = Role.Button; contentDescription = text }.testTag("title.$text"),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        trailing?.invoke()
     }
 }
 
