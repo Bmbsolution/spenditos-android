@@ -258,4 +258,39 @@ class TransactionRepositoryTest {
         assertTrue(queue().isEmpty())
         assertTrue(rows().isEmpty())
     }
+
+    @Test
+    fun `bulk delete removes what the server deleted and keeps what it reported as failed`() = runTest {
+        server.enqueue(created("srv-1"))
+        repo.create(draft)
+        server.enqueue(created("srv-2"))
+        repo.create(draft.copy(description = "Dinner"))
+        server.takeRequest(); server.takeRequest()
+
+        server.enqueue(
+            MockResponse(
+                code = 207,
+                body = """{"message":"Some transactions could not be deleted","error":"PartialFailure","details":{"failedTransactionIds":["srv-2"],"deletedCount":1}}""",
+            ),
+        )
+        val result = repo.bulkDelete(listOf("srv-1", "srv-2"))
+        assertEquals(BulkDeleteResult(deleted = 1, failed = 1), result)
+        val request = server.takeRequest()
+        assertEquals("/transactions/bulk-delete", request.url.encodedPath)
+        assertEquals(listOf("srv-2"), rows().map { it.id })
+    }
+
+    @Test
+    fun `bulk delete drops queued creates locally and refuses one being sent`() = runTest {
+        online.value = false
+        repo.create(draft)
+        repo.create(draft.copy(description = "Dinner"))
+        val (first, second) = queue().sortedBy { it.createdAt }.let { it[0] to it[1] }
+        db.mutations().claim(second.id, System.currentTimeMillis())
+
+        val result = repo.bulkDelete(listOf(first.localTransactionId, second.localTransactionId))
+        assertEquals(BulkDeleteResult(deleted = 1, failed = 1), result)
+        assertEquals(listOf(second.localTransactionId), rows().map { it.id })
+        assertEquals(0, server.requestCount)
+    }
 }

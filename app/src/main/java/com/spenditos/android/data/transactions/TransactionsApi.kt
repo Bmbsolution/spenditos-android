@@ -36,4 +36,14 @@ interface TransactionsApi {
     /** `DELETE /transactions/{id}` (sst.config.ts:147); 204 with no body. */
     @DELETE("transactions/{id}")
     suspend fun delete(@Path("id") id: String)
+
+    /**
+     * `POST /transactions/bulk-delete` (sst.config.ts:145), at most 100 ids. 204 when all were deleted;
+     * 207 with `details.failedTransactionIds` on a partial failure, so the body is read raw.
+     */
+    @POST("transactions/bulk-delete")
+    suspend fun bulkDelete(@Body body: BulkDeleteRequest): retrofit2.Response<okhttp3.ResponseBody>
 }
+
+@kotlinx.serialization.Serializable
+data class BulkDeleteRequest(val transactionIds: List<String>)

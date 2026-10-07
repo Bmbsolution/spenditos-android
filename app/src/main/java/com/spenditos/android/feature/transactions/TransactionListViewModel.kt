@@ -333,6 +333,34 @@ class TransactionListViewModel @Inject constructor(
         }
     }
 
+    /**
+     * iOS Edit > Delete (n), after the user confirmed. [onDone] runs when nothing is left to retry,
+     * so the screen can leave edit mode; a partial failure keeps the failed rows and says so.
+     */
+    fun bulkDelete(ids: Set<String>, onDone: () -> Unit = {}) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val result = transactions.bulkDelete(ids)
+                if (result.failed == 0) {
+                    onDone()
+                } else {
+                    val noun = if (result.failed == 1) "1 transaction" else "${result.failed} transactions"
+                    refresh.update { it.copy(actionError = "$noun couldn't be deleted. Try again.") }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val message = when (e) {
+                    is ApiError.Network -> "You're offline. Check your connection and try again."
+                    is ApiError.Unauthorized -> "Sign in again to delete."
+                    else -> "Couldn't delete. Please try again."
+                }
+                refresh.update { it.copy(actionError = message) }
+            }
+        }
+    }
+
     fun dismissActionError() = refresh.update { it.copy(actionError = null) }
 
     fun refresh(includeCategories: Boolean = false) {

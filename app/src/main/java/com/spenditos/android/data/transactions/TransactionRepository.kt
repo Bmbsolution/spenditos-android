@@ -27,6 +27,9 @@ import com.spenditos.android.data.model.UpdateTransactionRequest
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -60,6 +63,8 @@ sealed interface CreateResult {
 
 /** A device-only transaction is being sent right now; try again once it lands. */
 class TransactionBusyException : IllegalStateException("This transaction is saving right now. Try again in a moment.")
+
+data class BulkDeleteResult(val deleted: Int, val failed: Int)
 
 enum class DrainResult { DONE, RETRY_LATER }
 
@@ -240,6 +245,58 @@ class TransactionRepository @Inject constructor(
         invalidation.invalidate(Aggregate.TRANSACTION)
     }
 
+    /**
+     * iOS list Edit > Delete (n). Device-only rows drop their queued create (unless a send holds
+     * them); synced rows go to the server in chunks of 100. Rows the server could not delete stay.
+     */
+    suspend fun bulkDelete(ids: Collection<String>): BulkDeleteResult {
+        val userId = session.currentUserId ?: throw ApiError.Unauthorized
+        var failed = 0
+        val (local, synced) = ids.distinct().partition { it.startsWith(LOCAL_PREFIX) }
+        for (id in local) {
+            val removed = db.withTransaction {
+                val deleted = mutations.deleteUnlessInFlight(id.removePrefix(LOCAL_PREFIX)) == 1
+                if (deleted) transactions.delete(userId, id)
+                deleted
+            }
+            if (!removed) failed++
+        }
+        var firstError: Exception? = null
+        for (chunk in synced.chunked(BULK_DELETE_MAX)) {
+            val notDeleted = try {
+                bulkDeleteChunk(chunk)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                firstError = firstError ?: e
+                chunk.toSet()
+            }
+            failed += notDeleted.size
+            db.withTransaction { chunk.filterNot { it in notDeleted }.forEach { transactions.delete(userId, it) } }
+        }
+        invalidation.invalidate(Aggregate.TRANSACTION)
+        // Nothing went through at all: surface why (offline, signed out) instead of a count.
+        if (firstError != null && failed == ids.distinct().size) throw firstError!!
+        return BulkDeleteResult(deleted = ids.distinct().size - failed, failed = failed)
+    }
+
+    /** The ids of [chunk] the server did not delete. */
+    private suspend fun bulkDeleteChunk(chunk: List<String>): Set<String> {
+        var response: retrofit2.Response<okhttp3.ResponseBody>? = null
+        apiCallUnit {
+            val r = api.bulkDelete(BulkDeleteRequest(chunk))
+            if (!r.isSuccessful) throw retrofit2.HttpException(r)
+            response = r
+        }
+        val r = response ?: return chunk.toSet()
+        if (r.code() != 207) return emptySet()
+        val body = r.body()?.string().orEmpty()
+        return runCatching {
+            SpenditosJson.parseToJsonElement(body).jsonObject["details"]?.jsonObject
+                ?.get("failedTransactionIds")?.jsonArray?.map { it.jsonPrimitive.content }?.toSet()
+        }.getOrNull() ?: chunk.toSet()
+    }
+
     /** One server page of [start]..[end] for the bill duplicate check; not cached. */
     suspend fun fetchRange(start: LocalDate, end: LocalDate): List<Transaction> =
         apiCall { api.list(start.toString(), end.toString()) }.transactions
@@ -339,6 +396,7 @@ class TransactionRepository @Inject constructor(
     private companion object {
         const val MAX_PAGES = 25
         const val LOCAL_PREFIX = "local-"
+        const val BULK_DELETE_MAX = 100
         const val STALE_CLAIM_MS = 2 * 60 * 1000L
     }
 }
