@@ -2,17 +2,19 @@ package com.spenditos.android.feature.reports
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
@@ -32,8 +34,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.PaycheckPeriod
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.theme.IosColors
+import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.LocalFinanceColors
+import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
+import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -55,37 +61,58 @@ fun PaycheckPeriodsScreen(
             onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier.fillMaxSize().testTag("reports.paycheck.list"),
-                contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
-                verticalArrangement = Arrangement.spacedBy(Spacing.m),
-            ) {
-                item {
-                    ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
-                        subtitle = monthRangeLabel(state.month, locale),
-                        tag = "reports.paycheck.month",
-                        onPrevious = viewModel::previousMonth,
-                        onNext = viewModel::nextMonth,
+            when {
+                state.isLoading -> ReportLoadingState(
+                    "Loading paycheck periods...",
+                    IosColors.spendOrange,
+                    Modifier.fillMaxSize().testTag("reports.paycheck.list"),
+                )
+                state.isEmpty && state.loadStatus == null -> Box(Modifier.fillMaxSize().testTag("reports.paycheck.list")) {
+                    ReportEmptyState(
+                        icon = "banknote.fill",
+                        title = "No Paycheck Periods",
+                        subtitle = "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                        modifier = Modifier.fillMaxSize().testTag("reports.empty"),
                     )
                 }
-                if (state.isLoading) {
-                    item { ReportLoadingCard("Loading paycheck periods…") }
-                } else if (state.loadStatus != null && state.periods.isEmpty()) {
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("reports.paycheck.list"),
+                    contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.l),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
+                ) {
                     item {
-                        val status = requireNotNull(state.loadStatus)
-                        ReportsStatusCard(status, if (status == ReportLoadStatus.PRO_REQUIRED) null else viewModel::refresh)
+                        ReportMonthSelector(
+                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            subtitle = monthRangeLabel(state.month, locale),
+                            tag = "reports.paycheck.month",
+                            onPrevious = viewModel::previousMonth,
+                            onNext = viewModel::nextMonth,
+                        )
                     }
-                } else {
-                    state.loadStatus?.let { status -> item { ReportInlineStatus(status, viewModel::refresh, "reports.paycheck.status") } }
-                    if (state.isEmpty && state.loadStatus == null) {
-                        item { ReportEmptyCard("No periods this month", "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.") }
+                    if (state.loadStatus != null && state.periods.isEmpty()) {
+                        item {
+                            val status = requireNotNull(state.loadStatus)
+                            ReportsStatusCard(status, if (status == ReportLoadStatus.PRO_REQUIRED) null else viewModel::refresh)
+                        }
                     } else {
-                        state.summary?.let { summary -> item { PaycheckSummaryCard(summary, state.currency) } }
-                        state.periods.forEach { period ->
-                            item(key = period.id) { PaycheckPeriodCard(period, viewModel, state.currency, locale) }
+                        state.loadStatus?.let { status ->
+                            item { ReportInlineStatus(status, viewModel::refresh, "reports.paycheck.status") }
+                        }
+                        if (state.isEmpty && state.loadStatus == null) {
+                            item {
+                                ReportEmptyCard(
+                                    "No Paycheck Periods",
+                                    "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                                )
+                            }
+                        } else {
+                            state.summary?.let { summary -> item { PaycheckSummaryCard(summary, state.currency) } }
+                            state.periods.forEach { period ->
+                                item(key = period.id) { PaycheckPeriodCard(period, viewModel, state.currency, locale) }
+                            }
                         }
                     }
+                    item { Spacer(Modifier.height(32.dp)) }
                 }
             }
         }
@@ -94,28 +121,32 @@ fun PaycheckPeriodsScreen(
 
 @Composable
 private fun PaycheckSummaryCard(summary: PaycheckPeriodsSummary, currency: String) {
+    val finance = LocalFinanceColors.current
     GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Period summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Period summary", style = IosText.headline, color = IosColors.textPrimary)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                 Column(Modifier.weight(1f)) {
-                    Text("Income", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(Money.format(summary.totalIncome.toDouble(), currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Income", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(Money.format(summary.totalIncome.toDouble(), currency), style = IosText.rounded(17, FontWeight.Medium), color = finance.income)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Expenses", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(Money.format(summary.totalExpenses.toDouble(), currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Expenses", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(Money.format(summary.totalExpenses.toDouble(), currency), style = IosText.rounded(17, FontWeight.Medium), color = finance.expense)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Avg coverage", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${summary.averageCoverage?.setScale(0, RoundingMode.HALF_UP) ?: BigDecimal.ZERO}%", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Avg coverage", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(
+                        "${summary.averageCoverage?.setScale(0, RoundingMode.HALF_UP) ?: BigDecimal.ZERO}%",
+                        style = IosText.rounded(17, FontWeight.Medium),
+                        color = IosColors.textPrimary,
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriodsViewModel, currency: String, locale: Locale) {
     val finance = LocalFinanceColors.current
@@ -128,53 +159,72 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
         else -> "Gap"
     }
     val statusColor = when {
-        isExact -> MaterialTheme.colorScheme.primary
+        isExact -> IosColors.spendOrange
         isCovered -> finance.income
         else -> finance.expense
     }
     GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.${period.id}")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-            Row(Modifier.testTag("reports.paycheck.period.heading.${period.id}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Row(
+                Modifier.testTag("reports.paycheck.period.heading.${period.id}"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(displayPeriodLabel(period, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(displayPeriodLabel(period, locale), style = IosText.headline, color = IosColors.textPrimary)
                     Text(
-                        "${formatPeriodDate(period.startDate, locale)} – ${formatPeriodDate(period.endDate, locale)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        "${formatPeriodDate(period.startDate, locale)} - ${formatPeriodDate(period.endDate, locale)}",
+                        style = IosText.subheadline,
+                        color = IosColors.neutral,
                     )
                 }
                 Text(
                     text = statusText,
-                    modifier = Modifier.clip(CircleShape).background(statusColor.copy(alpha = 0.14f)).padding(horizontal = Spacing.m, vertical = Spacing.xs),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clip(RoundedCornerShape(Radius.s)).background(statusColor.copy(alpha = 0.15f))
+                        .padding(horizontal = Spacing.s, vertical = Spacing.xs),
+                    style = IosText.caption.w(FontWeight.SemiBold),
                     color = statusColor,
                 )
             }
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(finance.income.copy(alpha = 0.22f))) {
+            BoxWithConstraints(Modifier.fillMaxWidth().height(8.dp)) {
                 Box(
-                    Modifier.fillMaxWidth(viewModel.expenseRatio(period)).height(8.dp)
-                        .clip(CircleShape).background(if (isCovered) finance.income else finance.expense),
+                    Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(finance.income.copy(alpha = 0.3f)),
+                )
+                Box(
+                    Modifier.width((maxWidth * viewModel.expenseRatio(period)).coerceAtLeast(4.dp)).height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isCovered) IosColors.spendOrange else finance.expense),
                 )
             }
-            FlowRow(horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.period.amounts.${period.id}")) {
-                PeriodAmount("Income", viewModel.incomeAmount(period), currency, finance.income, Alignment.Start)
-                PeriodAmount("Expenses", viewModel.expenseAmount(period), currency, finance.expense, Alignment.CenterHorizontally)
-                PeriodAmount("Remaining", remaining, currency, if (remaining.signum() >= 0) finance.income else finance.expense, Alignment.End)
+            Row(
+                Modifier.fillMaxWidth().testTag("reports.paycheck.period.amounts.${period.id}"),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                verticalAlignment = Alignment.Top,
+            ) {
+                PeriodAmount("Income", viewModel.incomeAmount(period), currency, finance.income, Alignment.Start, Modifier.weight(1f))
+                PeriodAmount("Expenses", viewModel.expenseAmount(period), currency, finance.expense, Alignment.CenterHorizontally, Modifier.weight(1f))
+                PeriodAmount("Remaining", viewModel.remainingAmount(period), currency, if (remaining.signum() >= 0) finance.income else finance.expense, Alignment.End, Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun PeriodAmount(label: String, amount: BigDecimal, currency: String, color: androidx.compose.ui.graphics.Color, alignment: Alignment.Horizontal) {
-    Column(horizontalAlignment = alignment) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(signedPeriodMoney(amount, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = color)
+private fun PeriodAmount(
+    label: String,
+    amount: BigDecimal,
+    currency: String,
+    color: androidx.compose.ui.graphics.Color,
+    alignment: Alignment.Horizontal,
+    modifier: Modifier,
+) {
+    Column(modifier, horizontalAlignment = alignment, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = IosText.subheadline, color = IosColors.neutral)
+        Text(formatPeriodMoney(amount, currency), style = IosText.rounded(17, FontWeight.Medium), color = color)
     }
 }
 
-private fun signedPeriodMoney(value: BigDecimal, currency: String): String {
+private fun formatPeriodMoney(value: BigDecimal, currency: String): String {
     val formatted = Money.format(value.abs().toDouble(), currency)
     return if (value.signum() < 0) "−$formatted" else formatted
 }
@@ -189,5 +239,5 @@ private fun formatPeriodDate(date: LocalDate, locale: Locale): String = date.for
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
-    return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
+    return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }
