@@ -162,50 +162,14 @@ fun LoginScreen(
     }
 }
 
+/** iOS `Image("BrandMark")` at 72pt: the same gold artwork as the app icon. */
 @Composable
 private fun BrandMark() {
-    Canvas(Modifier.size(72.dp)) {
-        val scale = size.width / 100f
-        val gold = Brush.linearGradient(
-            colors = listOf(Color(0xFFFFD36B), Color(0xFFE3A938)),
-            start = Offset(0f, size.height),
-            end = Offset(size.width, 0f),
-        )
-        val outerSweep = Path().apply {
-            moveTo(25f, 66f)
-            cubicTo(11f, 51f, 12f, 30f, 24f, 17f)
-            cubicTo(34f, 6f, 49f, 4f, 67f, 4f)
-            lineTo(86f, 4f)
-            lineTo(73f, 18f)
-            lineTo(58f, 18f)
-            cubicTo(46f, 18f, 38f, 22f, 33f, 31f)
-            cubicTo(29f, 39f, 29f, 48f, 34f, 55f)
-        }
-        val risingLine = Path().apply {
-            moveTo(13f, 88f)
-            lineTo(38f, 59f)
-            lineTo(49f, 70f)
-            lineTo(70f, 47f)
-            lineTo(85f, 31f)
-        }
-        val lowerSweep = Path().apply {
-            moveTo(77f, 53f)
-            cubicTo(89f, 69f, 84f, 82f, 68f, 90f)
-            lineTo(43f, 90f)
-        }
-        val style = Stroke(width = 11f, cap = StrokeCap.Square, join = StrokeJoin.Round)
-        drawContext.transform.scale(scale, scale, pivot = Offset.Zero)
-        drawPath(outerSweep, gold, style = style)
-        drawPath(risingLine, gold, style = style)
-        drawPath(lowerSweep, gold, style = style)
-        val arrowHead = Path().apply {
-            moveTo(77f, 25f)
-            lineTo(98f, 22f)
-            lineTo(97f, 44f)
-            close()
-        }
-        drawPath(arrowHead, gold)
-    }
+    androidx.compose.foundation.Image(
+        painter = androidx.compose.ui.res.painterResource(com.spenditos.android.R.drawable.brand_mark),
+        contentDescription = null,
+        modifier = Modifier.size(72.dp),
+    )
 }
 
 @Composable

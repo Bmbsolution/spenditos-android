@@ -47,7 +47,7 @@ class SpenditosMessagingService : FirebaseMessagingService() {
             .putExtra(DeepLink.EXTRA_TYPE, type)
         val pending = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(com.spenditos.android.R.drawable.ic_stat_spenditos)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
