@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -59,7 +61,10 @@ fun ErrorBanner(
         }
         if (onDismiss != null) {
             Box(
-                Modifier.size(28.dp).clickable(role = Role.Button, onClick = onDismiss).semantics { contentDescription = "Dismiss error" },
+                // 28dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+                Modifier.size(28.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
+                    .clickable(role = Role.Button, onClick = onDismiss)
+                    .semantics { contentDescription = "Dismiss error" },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(SfSymbols.icon("xmark"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(16.dp))

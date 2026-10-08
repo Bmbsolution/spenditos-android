@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -353,17 +356,35 @@ private fun SavingPill(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+/** Human name for an icon option, used as its accessibility description. */
+internal fun iconOptionDescription(value: String): String =
+    if (value == "None") "No icon"
+    else iconLibrary.firstOrNull { it.value == value }?.name ?: value
+
+/** Spoken label for a color swatch option. */
+internal fun colorOptionDescription(hex: String): String = "Color ${hex.removePrefix("#")}"
+
 @Composable
 private fun ColorChoice(hex: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val tint = categorySwatch(hex)
     Box(
-        modifier.size(44.dp).clip(CircleShape).background(tint)
-            .then(if (selected) Modifier.border(3.dp, Color.White, CircleShape) else Modifier)
-            .clickable(role = Role.Button, onClick = onClick).semantics { this.selected = selected }
+        // 44dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+        modifier.size(44.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                this.selected = selected
+                contentDescription = colorOptionDescription(hex)
+            }
             .testTag("categories.editor.color.$hex"),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(16.dp))
+        Box(
+            Modifier.size(44.dp).clip(CircleShape).background(tint)
+                .then(if (selected) Modifier.border(3.dp, Color.White, CircleShape) else Modifier),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(16.dp))
+        }
     }
 }
 
@@ -375,7 +396,10 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
                 modifier.size(52.dp).clip(RoundedCornerShape(Radius.s))
                     .background(if (selected) IosColors.spendOrange.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceContainerHigh)
                     .border(if (selected) 1.5.dp else 0.5.dp, if (selected) IosColors.spendOrange else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.s))
-                    .clickable(role = Role.Button, onClick = onClick).semantics { this.selected = selected },
+                    .clickable(role = Role.Button, onClick = onClick).semantics {
+                        this.selected = selected
+                        contentDescription = iconOptionDescription(value)
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 if (value == "None") Text("None", style = IosText.caption2, color = IosColors.textSecondary)

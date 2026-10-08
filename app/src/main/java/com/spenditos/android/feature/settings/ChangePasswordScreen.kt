@@ -32,6 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -93,7 +96,12 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                         )
                         if (state.newPassword.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                Row(
+                                    Modifier.semantics(mergeDescendants = true) {
+                                        contentDescription = passwordStrengthAnnouncement(strength.label)
+                                    },
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                                ) {
                                     repeat(4) { index ->
                                         Box(
                                             Modifier.weight(1f).height(4.dp).clip(CircleShape)
@@ -122,7 +130,9 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     Column(Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                         requirements.forEachIndexed { index, requirement ->
                             Row(
-                                Modifier.fillMaxWidth(),
+                                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                                    stateDescription = if (requirement.isMet) "met" else "not met"
+                                },
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             ) {
@@ -168,6 +178,10 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
 }
 
 private data class PasswordStrengthPresentation(val label: String, val level: Int, val color: Color)
+
+/** One spoken label for the color-only strength bars. */
+internal fun passwordStrengthAnnouncement(label: String): String =
+    "Password strength: ${label.lowercase(java.util.Locale.ROOT)}"
 
 @Composable
 private fun SavingPill(text: String, modifier: Modifier = Modifier) {

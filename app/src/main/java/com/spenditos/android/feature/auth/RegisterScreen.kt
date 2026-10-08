@@ -34,6 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -175,7 +178,12 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
         PasswordStrength.STRONG -> Color(0xFF34C759)
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                contentDescription = passwordStrengthAnnouncement(strength)
+            },
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             repeat(3) { index ->
                 Box(
                     Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(4.dp))
@@ -186,7 +194,13 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             requirements.forEach { requirement ->
                 val tint = if (requirement.isMet) Color(0xFF34C759) else Color.Gray
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    Modifier.semantics(mergeDescendants = true) {
+                        stateDescription = if (requirement.isMet) "met" else "not met"
+                    },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Icon(
                         imageVector = if (requirement.isMet) SfSymbols.icon("checkmark.circle.fill") else SfSymbols.icon("circle"),
                         contentDescription = null,
@@ -199,6 +213,14 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
         }
     }
 }
+
+/** One spoken label for the color-only strength bars. */
+internal fun passwordStrengthAnnouncement(strength: PasswordStrength): String =
+    "Password strength: " + when (strength) {
+        PasswordStrength.WEAK -> "weak"
+        PasswordStrength.MEDIUM -> "fair"
+        PasswordStrength.STRONG -> "strong"
+    }
 
 @Composable
 private fun RegisterPrimaryButton(text: String, onClick: () -> Unit, enabled: Boolean, loading: Boolean, modifier: Modifier = Modifier) {

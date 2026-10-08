@@ -340,6 +340,7 @@ private fun CategorySection(title: String, categories: List<Category>, selectedI
         categories.forEachIndexed { index, category ->
             Row(
                 Modifier.fillMaxWidth().clickable(role = Role.Button) { onSelect(category.id) }
+                    .semantics { this.selected = selectedId == category.id }
                     .padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("merchants.category.${category.id}"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.m),

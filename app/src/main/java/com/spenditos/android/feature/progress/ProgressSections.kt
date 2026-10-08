@@ -47,6 +47,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +61,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.spenditos.android.data.model.GamificationChallenge
 import com.spenditos.android.data.model.PointsTransaction
+import com.spenditos.android.data.model.StreakCalendarDay
 import com.spenditos.android.data.model.UserAchievement
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
@@ -210,7 +214,8 @@ private fun StreakCalendarContent(state: ProgressUiState, locale: java.util.Loca
                 verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
                 Row(
-                    Modifier.fillMaxWidth().testTag("progress.calendar.grid"),
+                    Modifier.fillMaxWidth().testTag("progress.calendar.grid")
+                        .semantics { contentDescription = streakCalendarSummary(state.calendar.takeLast(14)) },
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -222,6 +227,21 @@ private fun StreakCalendarContent(state: ProgressUiState, locale: java.util.Loca
             }
         }
     }
+}
+
+/** Row-level spoken summary of the 14-day streak calendar. */
+internal fun streakCalendarSummary(days: List<StreakCalendarDay>): String {
+    val active = days.count { it.hasEntry && it.isStreakDay }
+    return "$active of the last ${days.size} days active"
+}
+
+/** Spoken state of one streak calendar day: active / freeze / today / missed. */
+internal fun streakDayStateDescription(date: LocalDate, active: Boolean, freezeUsed: Boolean, today: LocalDate): String = when {
+    freezeUsed -> "freeze"
+    date == today && active -> "active today"
+    date == today -> "today"
+    active -> "active"
+    else -> "missed"
 }
 
 @Composable
@@ -243,7 +263,13 @@ private fun StreakDay(
         active || freezeUsed -> Color.Transparent
         else -> Color.Black.copy(alpha = 0.08f)
     }
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    Column(
+        modifier.semantics {
+            stateDescription = streakDayStateDescription(date, active, freezeUsed, LocalDate.now())
+        },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
         Box(
             Modifier.size(18.dp).clip(CircleShape).background(fill)
                 .border(if (today) 2.dp else if (active || freezeUsed) 0.dp else 1.dp, outline, CircleShape)
@@ -314,7 +340,8 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
             if (!level?.unlocks.isNullOrEmpty()) {
                 Column(Modifier.padding(top = Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Row(
-                        Modifier.fillMaxWidth().clickable { showBenefits = !showBenefits },
+                        Modifier.fillMaxWidth().clickable { showBenefits = !showBenefits }
+                            .semantics { stateDescription = if (showBenefits) "expanded" else "collapsed" },
                         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

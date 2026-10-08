@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.tappableElement
@@ -315,7 +316,14 @@ fun FloatingTabBar(
             ) {
                 // iOS 26 tab bar: ~27pt symbols (filled when selected), 10pt semibold labels.
                 Icon(if (selected) item.selectedIcon else item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
-                Text(item.label, style = IosText.system(10, FontWeight.Medium).copy(letterSpacing = (-0.15).sp), color = tint, maxLines = 1, softWrap = false)
+                Text(
+                    item.label,
+                    style = IosText.system(10, FontWeight.Medium).copy(letterSpacing = (-0.15).sp),
+                    color = tint,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
@@ -332,13 +340,26 @@ fun IosSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> U
         options.forEachIndexed { index, label ->
             val selected = index == selectedIndex
             Box(
-                Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(13.dp))
-                    .background(if (selected) (if (dark) Color(0xFF636366) else Color.White) else Color.Transparent)
-                    .clickable(role = Role.Tab) { onSelect(index) }
-                    .semantics { this.selected = selected }
-                    .testTag("$tagPrefix.$index"),
+                // 36dp visual height like iOS; the 48dp touch target overflows it without changing the layout.
+                Modifier.weight(1f).height(36.dp),
                 contentAlignment = Alignment.Center,
-            ) { Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium) }
+            ) {
+                Box(
+                    Modifier.fillMaxWidth().requiredHeight(48.dp)
+                        .clickable(role = Role.Tab) { onSelect(index) }
+                        .semantics { this.selected = selected }
+                        .testTag("$tagPrefix.$index"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier.height(36.dp).fillMaxWidth().clip(RoundedCornerShape(13.dp))
+                            .background(if (selected) (if (dark) Color(0xFF636366) else Color.White) else Color.Transparent),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium)
+                    }
+                }
+            }
         }
     }
 }

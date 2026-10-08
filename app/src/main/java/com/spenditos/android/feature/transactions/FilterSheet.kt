@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,7 +48,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -254,6 +261,14 @@ private fun PresetsSection(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .semantics {
+                                    customActions = listOf(
+                                        CustomAccessibilityAction("Delete preset") {
+                                            onDelete(index)
+                                            true
+                                        },
+                                    )
+                                }
                                 .clip(RoundedCornerShape(Radius.s))
                                 .background(Color.White.copy(alpha = 0.5f))
                                 .border(1.dp, Color.Black.copy(alpha = 0.06f), RoundedCornerShape(Radius.s))
@@ -340,7 +355,10 @@ private fun DateRangeSection(
     val medium = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         SectionTitle("Date Range")
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
             DateRangeFilter.entries.forEach { filter ->
                 val on = selected == filter
                 Text(
@@ -354,6 +372,7 @@ private fun DateRangeSection(
                             RoundedCornerShape(Radius.s),
                         )
                         .clickable(role = Role.Button) { onSelect(filter) }
+                        .semantics { this.selected = on }
                         .padding(horizontal = Spacing.m, vertical = Spacing.s),
                     style = IosText.callout,
                     color = if (on) Color.White else Color.Gray,
@@ -417,7 +436,7 @@ private fun AmountField(
         BasicTextField(
             value = value,
             onValueChange = onValue,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).semantics { contentDescription = amountFieldDescription(placeholder, symbol) },
             singleLine = true,
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -458,6 +477,7 @@ private fun TypeButton(label: String, selected: Boolean, tint: Color, modifier: 
         modifier = modifier
             .background(if (selected) tint.copy(alpha = 0.3f) else Color.Transparent)
             .clickable(role = Role.Button, onClick = onClick)
+            .semantics { this.selected = selected }
             .padding(vertical = Spacing.m),
         style = IosText.callout,
         color = if (selected) Color.White else Color.Gray,
@@ -526,12 +546,22 @@ private fun CategorySection(
                 },
             )
             if (search.isNotEmpty()) {
-                Icon(
-                    SfSymbols.icon("xmark.circle.fill"),
-                    contentDescription = "Clear",
-                    tint = IosColors.textSecondary,
-                    modifier = Modifier.size(18.dp).clickable(role = Role.Button) { onSearch("") },
-                )
+                Box(
+                    // 18dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+                    modifier = Modifier
+                        .size(18.dp)
+                        .wrapContentSize(Alignment.Center, unbounded = true)
+                        .requiredSize(48.dp)
+                        .clickable(role = Role.Button) { onSearch("") },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        SfSymbols.icon("xmark.circle.fill"),
+                        contentDescription = "Clear",
+                        tint = IosColors.textSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
         Row(
@@ -547,6 +577,7 @@ private fun CategorySection(
                         .background(if (on) chip.copy(alpha = 0.3f) else Color.Transparent)
                         .border(1.dp, if (on) chip else Color.Black.copy(alpha = 0.06f), RoundedCornerShape(Radius.s))
                         .clickable(role = Role.Button) { onToggle(category.id) }
+                        .semantics { this.selected = on }
                         .padding(horizontal = Spacing.m, vertical = Spacing.s),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
@@ -676,4 +707,10 @@ private fun currencySymbol(currency: String): String = when (currency.uppercase(
     "GBP" -> "£"
     "JPY" -> "¥"
     else -> runCatching { java.util.Currency.getInstance(currency.uppercase()).symbol }.getOrDefault(currency)
+}
+
+/** Spoken label for the filter amount fields, mirroring the AddTransactionSheet amount pattern. */
+internal fun amountFieldDescription(placeholder: String, symbol: String): String {
+    val bound = if (placeholder.equals("Min", ignoreCase = true)) "Minimum" else "Maximum"
+    return "$bound amount in $symbol"
 }

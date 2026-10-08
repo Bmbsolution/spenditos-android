@@ -58,6 +58,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -457,7 +459,8 @@ private fun LanguageChip(code: String, label: String, selected: Boolean, onLangu
     Box(
         Modifier.clip(shape).background(if (selected) IosColors.spendOrange else MaterialTheme.colorScheme.surfaceContainer)
             .border(1.dp, if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f), shape)
-            .clickable(role = Role.Button) { onLanguageChange(code) }.padding(horizontal = 20.dp, vertical = 12.dp)
+            .clickable(role = Role.Button) { onLanguageChange(code) }.semantics { this.selected = selected }
+            .padding(horizontal = 20.dp, vertical = 12.dp)
             .testTag("onboarding.language.$code"),
     ) {
         Text(label, style = IosText.subheadline.w(FontWeight.Bold), color = if (selected) Color.White else IosColors.textPrimary)
@@ -656,7 +659,9 @@ private fun CurrencySection(
 @Composable
 private fun CurrencyPickerRow(option: CurrencyOption, selected: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onClick).padding(horizontal = Spacing.m, vertical = Spacing.s),
+        Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onClick)
+            .semantics { this.selected = selected }
+            .padding(horizontal = Spacing.m, vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column {

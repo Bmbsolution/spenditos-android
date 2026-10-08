@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -93,14 +96,18 @@ internal fun ReportMonthSelector(
 @Composable
 internal fun ReportScopeButton(symbol: String, description: String, tag: String, onClick: () -> Unit) {
     Box(
-        Modifier.size(32.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.05f))
+        // 32dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+        Modifier.size(32.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
             .clickable(onClick = onClick)
             .testTag(tag),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(SfSymbols.icon(symbol), contentDescription = description, tint = IosColors.textSecondary, modifier = Modifier.size(17.dp))
+        Box(
+            Modifier.size(32.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.05f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(SfSymbols.icon(symbol), contentDescription = description, tint = IosColors.textSecondary, modifier = Modifier.size(17.dp))
+        }
     }
 }
 
@@ -288,7 +295,7 @@ internal fun DailyExpenseChart(
                 }
                 Text(
                     Money.format(row.expenses, currency),
-                    modifier = Modifier.width(70.dp),
+                    modifier = Modifier.widthIn(min = 70.dp),
                     style = IosText.subheadline,
                     color = IosColors.textSecondary,
                     textAlign = TextAlign.End,
@@ -362,7 +369,7 @@ internal fun WeeklyComparisonChart(
                     }
                 }
                 Column(
-                    Modifier.width(70.dp),
+                    Modifier.widthIn(min = 70.dp),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {

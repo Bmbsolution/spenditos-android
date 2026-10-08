@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -214,6 +216,7 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
                     Modifier.clip(CircleShape)
                         .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
                         .clickable(role = Role.Tab) { onSelectIncome(index == 1) }
+                        .semantics { this.selected = selected }
                         .testTag(tag)
                         .padding(horizontal = Spacing.m, vertical = Spacing.xs),
                     contentAlignment = Alignment.Center,

@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -135,7 +137,7 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.height(56.dp),
+        modifier = modifier.height(56.dp).semantics { contentDescription = "Verification code" },
         singleLine = true,
         textStyle = IosText.rounded(28, FontWeight.Bold).copy(color = Color.Transparent, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(Color.Transparent),
@@ -143,7 +145,10 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
         interactionSource = interactionSource,
         decorationBox = { innerTextField ->
             Box(contentAlignment = Alignment.Center) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = "6-digit verification code" },
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     repeat(6) { index ->
                         OtpDigitBox(value.getOrNull(index)?.toString().orEmpty(), focused && index == value.length)
                     }

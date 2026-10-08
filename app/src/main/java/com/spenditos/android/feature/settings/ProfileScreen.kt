@@ -1,6 +1,8 @@
 package com.spenditos.android.feature.settings
 
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Arrangement
@@ -360,7 +362,9 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
 @Composable
 private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = Spacing.xs).testTag("profile.currency.option.${option.code}"),
+        Modifier.fillMaxWidth().clickable(onClick = onClick)
+            .semantics { this.selected = option.code == selectedCode }
+            .padding(vertical = Spacing.xs).testTag("profile.currency.option.${option.code}"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {

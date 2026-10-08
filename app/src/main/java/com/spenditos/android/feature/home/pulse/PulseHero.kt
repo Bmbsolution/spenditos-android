@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -294,14 +296,21 @@ private fun StatsStrip(items: List<Triple<String, String, String>>) {
 
 @Composable
 private fun HeroButton(label: String, icon: ImageVector, onClick: () -> Unit, tag: String, ink: Color) {
-    Row(
-        Modifier.clip(CircleShape).background(Color.White).clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = Spacing.m).height(40.dp).testTag(tag),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    Box(
+        // 40dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+        Modifier.height(40.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredHeight(48.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = ink, modifier = Modifier.size(19.2.dp))
-        Text(label, style = IosText.callout.w(FontWeight.SemiBold), color = ink)
+        Row(
+            Modifier.clip(CircleShape).background(Color.White).padding(horizontal = Spacing.m).height(40.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(icon, contentDescription = null, tint = ink, modifier = Modifier.size(19.2.dp))
+            Text(label, style = IosText.callout.w(FontWeight.SemiBold), color = ink)
+        }
     }
 }
 

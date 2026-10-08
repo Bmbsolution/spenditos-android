@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -209,12 +211,19 @@ private fun ReviewSummaryRow(
             color = if (income) IosColors.income else IosColors.expense,
             maxLines = 1,
         )
-        Icon(
-            SfSymbols.icon("chevron.right"),
-            contentDescription = null,
-            tint = IosColors.textTertiary,
-            modifier = Modifier.size(14.dp).clickable(enabled = !item.isFrozen, role = Role.Button, onClick = onOpen),
-        )
+        Box(
+            // 14dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+            Modifier.size(14.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
+                .clickable(enabled = !item.isFrozen, role = Role.Button, onClick = onOpen),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                SfSymbols.icon("chevron.right"),
+                contentDescription = null,
+                tint = IosColors.textTertiary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
     }
 }
 
@@ -579,6 +588,7 @@ private fun ReviewCategoryCell(category: Category, selected: Boolean, onClick: (
                 shape,
             )
             .clickable(role = Role.Button, onClick = onClick)
+            .semantics { this.selected = selected }
             .padding(vertical = Spacing.m),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.s),

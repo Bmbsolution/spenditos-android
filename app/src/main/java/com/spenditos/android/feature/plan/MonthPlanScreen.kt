@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,6 +53,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -581,6 +584,7 @@ private fun RecurringPlanRow(
                 color = if (row.isSkipped) IosColors.textSecondary else IosColors.textPrimary,
                 textDecoration = if (row.isSkipped) TextDecoration.LineThrough else TextDecoration.None,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             if (row.amountVaries) Text("≈", style = IosText.subheadline, color = IosColors.textSecondary)
             if (row.hasDraftChange) {
@@ -698,7 +702,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                         ) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(entry.description, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1)
+                                    Text(entry.description, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     DraftBadge()
                                 }
                                 Text(
@@ -714,7 +718,9 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                             )
                             if (!state.isPast) {
                                 Box(
-                                    Modifier.size(30.dp).testTag("monthPlan.remove.${entry.id}")
+                                    // 30dp visual like iOS; the 48dp touch target overflows it without changing the layout.
+                                    Modifier.size(30.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
+                                        .testTag("monthPlan.remove.${entry.id}")
                                         .clickable(enabled = !state.isApplying, role = Role.Button) { viewModel.removeOneTime(entry.id) },
                                     contentAlignment = Alignment.Center,
                                 ) {

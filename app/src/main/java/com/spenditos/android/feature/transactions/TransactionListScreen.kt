@@ -24,8 +24,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -60,6 +62,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -397,19 +401,28 @@ fun TransactionListScreen(
                     .padding(top = 10.dp, end = Spacing.screen),
             ) {
                 Box(
+                    // 40dp visual like iOS; the 48dp touch target overflows it without changing the layout.
                     modifier = Modifier
                         .size(40.dp)
-                        .then(glassCardModifier(CircleShape, shadowAlpha = 0.08f))
+                        .wrapContentSize(Alignment.Center, unbounded = true)
+                        .requiredSize(48.dp)
                         .clickable(role = Role.Button) { scope.launch { listState.animateScrollToItem(0) } }
                         .testTag("scrollToTop"),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        SfSymbols.icon("arrow.up.circle"),
-                        contentDescription = "Scroll to top",
-                        tint = IosColors.textPrimary,
-                        modifier = Modifier.size(20.4.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .then(glassCardModifier(CircleShape, shadowAlpha = 0.08f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            SfSymbols.icon("arrow.up.circle"),
+                            contentDescription = "Scroll to top",
+                            tint = IosColors.textPrimary,
+                            modifier = Modifier.size(20.4.dp),
+                        )
+                    }
                 }
             }
         }
@@ -478,30 +491,38 @@ private fun TransactionsToolbarCapsule(
             Text("Export", style = IosText.body, color = IosColors.spendOrange)
         }
         Box(
+            // 40dp visual like iOS; the 48dp touch target overflows it without changing the layout.
             modifier = Modifier
                 .size(40.dp)
+                .wrapContentSize(Alignment.Center, unbounded = true)
+                .requiredSize(48.dp)
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onToggleSearch)
                 .testTag("transaction-search"),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                SfSymbols.icon(if (isSearchActive) "xmark.circle.fill" else "magnifyingglass"),
-                contentDescription = if (isSearchActive) "Close search" else "Search transactions",
-                tint = IosColors.textPrimary,
-                modifier = Modifier.size(20.4.dp),
-            )
+            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    SfSymbols.icon(if (isSearchActive) "xmark.circle.fill" else "magnifyingglass"),
+                    contentDescription = if (isSearchActive) "Close search" else "Search transactions",
+                    tint = IosColors.textPrimary,
+                    modifier = Modifier.size(20.4.dp),
+                )
+            }
         }
         Box(
+            // 40dp visual like iOS; the 48dp touch target overflows it without changing the layout.
             modifier = Modifier
                 .size(40.dp)
+                .wrapContentSize(Alignment.Center, unbounded = true)
+                .requiredSize(48.dp)
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onOpenFilter)
                 .testTag("transaction-filter")
                 .semantics { if (filtersActive) stateDescription = "Filters active" },
             contentAlignment = Alignment.Center,
         ) {
-            Box {
+            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     SfSymbols.icon("line.3.horizontal.decrease.circle"),
                     contentDescription = "Filter transactions",
@@ -541,14 +562,22 @@ private fun ActiveFilterPills(labels: List<String>, onRemove: (Int) -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
                 Text(label, style = IosText.caption.w(FontWeight.Medium), color = IosColors.spendOrange)
-                Icon(
-                    SfSymbols.icon("xmark.circle.fill"),
-                    contentDescription = "Remove filter",
-                    tint = IosColors.spendOrange.copy(alpha = 0.7f),
+                Box(
+                    // 14.4dp visual like iOS; the 48dp touch target overflows it without changing the layout.
                     modifier = Modifier
                         .size(14.4.dp)
+                        .wrapContentSize(Alignment.Center, unbounded = true)
+                        .requiredSize(48.dp)
                         .clickable(role = Role.Button) { onRemove(index) },
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        SfSymbols.icon("xmark.circle.fill"),
+                        contentDescription = "Remove filter",
+                        tint = IosColors.spendOrange.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.4.dp),
+                    )
+                }
             }
         }
     }
@@ -822,6 +851,12 @@ private fun TransactionRow(
                     onClick = { if (isEditMode) onToggleSelection(row.id) else actions.onEdit(row) },
                     onLongClick = if (isEditMode) null else ({ showMenu = true }),
                 )
+                .semantics {
+                    if (isEditMode) {
+                        selected = isSelected
+                        role = Role.Checkbox
+                    }
+                }
                 .padding(horizontal = Spacing.m, vertical = Spacing.m)
                 .testTag("transaction.row"),
             verticalAlignment = Alignment.CenterVertically,
