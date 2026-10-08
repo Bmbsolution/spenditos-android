@@ -8,3 +8,9 @@ build/
 captures/
 .kotlin/
 /screenshots/tmp/
+
+# Owner-provided release secrets / Firebase config (never commit)
+*.jks
+*.keystore
+app/google-services.json
+keystore.properties
