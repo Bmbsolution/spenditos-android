@@ -9,8 +9,6 @@ import com.spenditos.android.data.user.UserSettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,13 +32,22 @@ class SessionLifecycle @Inject constructor(
 
     fun start() {
         scope.launch {
-            session.state.filterIsInstance<SessionState.SignedIn>().distinctUntilChanged().collect { signedIn ->
-                runCatching { transactions.requeueAuthFailures(signedIn.userId) }
-                sync.requestSync()
-                runCatching { settings.refresh() }
-                runCatching { categories.refresh() }
-                runCatching { push.syncRegistration() }
-                runCatching { purchases.logIn(signedIn.userId) }
+            // Run on every arrival of a SignedIn state, not only on distinct ones: after
+            // SignedIn -> SignedOut -> SignedIn (expiry, then the same user signs back in)
+            // the queue replay and cache warm-up must run again. The first emission counts
+            // as an arrival; a SignedIn state repeated for the same user does not.
+            var previous: SessionState? = null
+            session.state.collect { state ->
+                val signedIn = state as? SessionState.SignedIn
+                if (signedIn != null && (previous as? SessionState.SignedIn)?.userId != signedIn.userId) {
+                    runCatching { transactions.requeueAuthFailures(signedIn.userId) }
+                    sync.requestSync()
+                    runCatching { settings.refresh() }
+                    runCatching { categories.refresh() }
+                    runCatching { push.syncRegistration() }
+                    runCatching { purchases.logIn(signedIn.userId) }
+                }
+                previous = state
             }
         }
     }

@@ -64,6 +64,24 @@ class WidgetStateProviderTest {
     }
 
     @Test
+    fun `cached transactions before the category fetch lands show the placeholder`() = runTest {
+        // A fresh sign-in: the transaction cache is repopulated but the categories flow's
+        // first emission is still empty; nothing may be counted as an expense.
+        val transactions = FakeTransactions(
+            listOf(
+                row("income", "user-1", "income", "2026-10-01", 2000.0),
+                row("food", "user-1", "food", "2026-10-05", 1000.0),
+            ),
+        )
+
+        val snapshot = provider(transactions, FakeCategories(emptyList()), signedIn = true).snapshot()
+
+        assertTrue(snapshot.isPlaceholder)
+        assertEquals(0.0, snapshot.monthIncome, 0.001)
+        assertEquals(0.0, snapshot.monthExpenses, 0.001)
+    }
+
+    @Test
     fun `signed out provider never reads repositories`() = runTest {
         val transactions = FakeTransactions(emptyList())
         val categories = FakeCategories(emptyList())

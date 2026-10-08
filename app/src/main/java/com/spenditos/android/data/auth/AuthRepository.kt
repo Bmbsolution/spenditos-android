@@ -9,6 +9,9 @@ import com.spenditos.android.core.network.apiCallUnit
 import com.spenditos.android.data.model.LoginRequest
 import com.spenditos.android.data.model.LogoutRequest
 import com.spenditos.android.data.model.RefreshRequest
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,12 +47,27 @@ class AuthRepository @Inject constructor(
      */
     suspend fun deleteAccount() {
         apiCallUnit { userApi.deleteAccount() }
-        runCatching { push.unregister() }
-        runCatching { purchases.logOut() }
-        // The account is gone server-side, so its queued creates can never sync; drop them while
-        // the user id is still known. A plain sign-out keeps the queue.
-        runCatching { transactions.dropQueue() }
-        session.signOut()
+        // The account is gone server-side: finish the local cleanup even if this coroutine is
+        // cancelled (the user left the screen), or the device would stay signed in. Everything
+        // after the server's yes is local, so it runs uncancellable; the best-effort wrappers
+        // rethrow CancellationException so cancellation is never swallowed.
+        withContext(NonCancellable) {
+            bestEffort { push.unregister() }
+            bestEffort { purchases.logOut() }
+            // The account is gone, so its queued creates can never sync; drop them while
+            // the user id is still known. A plain sign-out keeps the queue.
+            bestEffort { transactions.dropQueue() }
+            session.signOut()
+        }
+    }
+
+    private inline fun bestEffort(block: () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
     }
 }
 

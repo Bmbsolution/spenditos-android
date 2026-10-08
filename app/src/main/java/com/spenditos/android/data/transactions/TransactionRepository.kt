@@ -32,9 +32,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -383,11 +385,29 @@ class TransactionRepository @Inject constructor(
             mutations.release(mutationId, MutationStatus.PENDING, null, null)
             return SendOutcome.Deferred
         }
-        val item = SpenditosJson.decodeFromString(BulkTransactionItem.serializer(), row.payloadJson)
+        val item = try {
+            SpenditosJson.decodeFromString(BulkTransactionItem.serializer(), row.payloadJson)
+        } catch (e: Exception) {
+            // A payload that no longer decodes can never be sent or retried: settle the claim
+            // as a local validation failure instead of throwing out of the worker.
+            val failure = SendOutcome.Failed(
+                FailureCode.VALIDATION,
+                "This saved transaction could not be read. Review it and add it again.",
+            )
+            mutations.release(mutationId, MutationStatus.FAILED, failure.code, failure.message)
+            transactions.setStatus(row.userId, row.localTransactionId, SyncStatus.FAILED)
+            invalidation.invalidate(Aggregate.TRANSACTION)
+            return failure
+        }
         val outcome = try {
             FailureClassifier.fromBulkResult(apiCall { api.createBulk(BulkCreateRequest(listOf(item)), binding) })
         } catch (e: CancellationException) {
-            mutations.release(mutationId, MutationStatus.PENDING, null, null)
+            // The caller went away mid-send (e.g. the sheet dismissed). The release and the
+            // retry request must survive cancellation, or the claim sticks as IN_FLIGHT.
+            withContext(NonCancellable) {
+                mutations.release(mutationId, MutationStatus.PENDING, null, null)
+                sync.requestSync()
+            }
             throw e
         } catch (e: ApiError.Network) {
             if (e.cause is SessionChangedException) {

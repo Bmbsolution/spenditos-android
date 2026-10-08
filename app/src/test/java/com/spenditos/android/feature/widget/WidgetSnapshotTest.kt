@@ -117,6 +117,37 @@ class WidgetSnapshotTest {
         assertEquals(4, snapshot.streakDays)
     }
 
+    @Test
+    fun `empty or incomplete categories show the placeholder instead of all-expense totals`() {
+        val month = listOf(
+            transaction("pay", "income", "2026-10-01", 3100.0),
+            transaction("food1", "food", "2026-10-06", 30.0),
+        )
+        val emptyCategories = WidgetSnapshot.from(
+            transactions = month,
+            categories = emptyList(),
+            today = LocalDate.parse("2026-10-10"),
+            currency = "USD",
+            userId = "user-1",
+        )
+        val missingFoodCategory = WidgetSnapshot.from(
+            transactions = month,
+            categories = listOf(category("income", "user-1", isIncome = true)), // 'food' not fetched yet
+            today = LocalDate.parse("2026-10-10"),
+            currency = "USD",
+            userId = "user-1",
+        )
+
+        listOf(emptyCategories, missingFoodCategory).forEach { snapshot ->
+            assertTrue(snapshot.isPlaceholder)
+            assertNull(snapshot.stateLabel)
+            assertEquals(0.0, snapshot.monthIncome, 0.001)
+            assertEquals(0.0, snapshot.monthExpenses, 0.001)
+            assertFalse(snapshot.isStormMode)
+            assertEquals(0, snapshot.topCategories.size)
+        }
+    }
+
     private fun category(id: String, userId: String, isIncome: Boolean = false) =
         Category(id, userId, id, "#445566", isIncome = isIncome)
 

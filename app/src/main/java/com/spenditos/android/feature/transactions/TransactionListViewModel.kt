@@ -13,9 +13,13 @@ import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.transactions.TransactionRepository
 import com.spenditos.android.data.user.UserSettingsRepository
+import com.spenditos.android.feature.home.millisUntilNextDayStart
 import com.spenditos.android.ui.components.Money
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,12 +29,15 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -102,11 +109,35 @@ class TransactionListViewModel @Inject constructor(
     connectivity: ConnectivityStatus,
     invalidation: FinanceInvalidationBus,
     private val presetStore: FilterPresetStore,
+    private val clock: Clock,
 ) : ViewModel() {
-    private val month = MutableStateFlow(YearMonth.now())
+    // Like Home: the default month follows the clock (creation day, then every midnight the
+    // list is alive), so a list opened last month never keeps showing last month. A month or
+    // date range the user chose explicitly is pinned and never reset by the rollover.
+    private val today = MutableStateFlow(LocalDate.now(clock))
+    private val month = MutableStateFlow(YearMonth.from(today.value))
+    private var monthPinned = false
     private val refresh = MutableStateFlow(RefreshState())
     private val criteria = MutableStateFlow(TransactionFilterState())
     private val searchQuery = MutableStateFlow("")
+
+    // Re-reads the clock on subscribe and at each local midnight; a source of the state flow
+    // below, so it runs only while the list is observed (WhileSubscribed), like Home's.
+    private val dayTicks: Flow<Unit> = flow {
+        advanceToday()
+        emit(Unit)
+        while (currentCoroutineContext().isActive) {
+            delay(clock.millisUntilNextDayStart())
+            advanceToday()
+        }
+    }
+
+    private fun advanceToday() {
+        val now = LocalDate.now(clock)
+        if (now == today.value) return
+        today.value = now
+        if (!monthPinned) month.value = YearMonth.from(now)
+    }
 
     private val range = combine(month, criteria) { m, filters ->
         if (filters.dateRange == DateRangeFilter.CUSTOM) filters.customStart to filters.customEnd
@@ -116,7 +147,7 @@ class TransactionListViewModel @Inject constructor(
     private val rows = range.flatMapLatest { (start, end) -> transactions.observeRange(start, end) }
 
     val state: StateFlow<TransactionListUiState> = combine(
-        combine(month, rows, categories.observe(), settings.currency()) { m, t, c, cur -> Quad(m, t, c, cur) },
+        combine(month, dayTicks, rows, categories.observe(), settings.currency()) { m, _, t, c, cur -> Quad(m, t, c, cur) },
         combine(criteria, searchQuery) { filters, query -> filters to query },
         transactions.observeQueue(),
         connectivity.isOnline,
@@ -170,6 +201,7 @@ class TransactionListViewModel @Inject constructor(
     /** Month arrows keep browsing months. Leaving a This/Last Month preset clears that date filter. */
     private fun changeMonth(target: YearMonth) {
         if (criteria.value.dateRange == DateRangeFilter.CUSTOM) return
+        monthPinned = true
         month.value = target
         if (criteria.value.dateRange != DateRangeFilter.THIS_MONTH) {
             criteria.update { it.copy(dateRange = DateRangeFilter.THIS_MONTH) }
@@ -181,10 +213,11 @@ class TransactionListViewModel @Inject constructor(
     }
 
     fun selectDateRange(range: DateRangeFilter) {
+        monthPinned = true
         criteria.update { it.copy(dateRange = range) }
         when (range) {
-            DateRangeFilter.THIS_MONTH -> month.value = YearMonth.now()
-            DateRangeFilter.LAST_MONTH -> month.value = YearMonth.now().minusMonths(1)
+            DateRangeFilter.THIS_MONTH -> month.value = YearMonth.now(clock)
+            DateRangeFilter.LAST_MONTH -> month.value = YearMonth.now(clock).minusMonths(1)
             DateRangeFilter.CUSTOM -> Unit
         }
     }
@@ -195,18 +228,21 @@ class TransactionListViewModel @Inject constructor(
     fun setCustomEnd(date: LocalDate) = criteria.update { it.copy(customEnd = date, customStart = minOf(it.customStart, date)) }
 
     fun applyQuickToday() {
-        val today = LocalDate.now()
+        monthPinned = true
+        val today = LocalDate.now(clock)
         criteria.update { it.copy(dateRange = DateRangeFilter.CUSTOM, customStart = today, customEnd = today) }
     }
 
     fun applyQuickThisWeek(locale: Locale) {
-        val today = LocalDate.now()
+        monthPinned = true
+        val today = LocalDate.now(clock)
         val start = today.with(java.time.temporal.WeekFields.of(locale).dayOfWeek(), 1)
         criteria.update { it.copy(dateRange = DateRangeFilter.CUSTOM, customStart = start, customEnd = today) }
     }
 
     fun applyQuickThisMonth() {
-        val today = LocalDate.now()
+        monthPinned = true
+        val today = LocalDate.now(clock)
         criteria.update {
             it.copy(
                 dateRange = DateRangeFilter.THIS_MONTH,
@@ -218,7 +254,8 @@ class TransactionListViewModel @Inject constructor(
     }
 
     fun applyQuickLastDays(days: Long) {
-        val end = LocalDate.now()
+        monthPinned = true
+        val end = LocalDate.now(clock)
         criteria.update {
             it.copy(dateRange = DateRangeFilter.CUSTOM, customStart = end.minusDays(days), customEnd = end)
         }
@@ -266,8 +303,9 @@ class TransactionListViewModel @Inject constructor(
     }
 
     fun loadPreset(preset: FilterPreset) {
-        val start = preset.startDate() ?: LocalDate.now().minusMonths(1)
-        val end = preset.endDate() ?: LocalDate.now()
+        monthPinned = true
+        val start = preset.startDate() ?: LocalDate.now(clock).minusMonths(1)
+        val end = preset.endDate() ?: LocalDate.now(clock)
         criteria.update {
             it.copy(
                 dateRange = preset.dateRange,
@@ -281,15 +319,17 @@ class TransactionListViewModel @Inject constructor(
             )
         }
         when (preset.dateRange) {
-            DateRangeFilter.THIS_MONTH -> month.value = YearMonth.now()
-            DateRangeFilter.LAST_MONTH -> month.value = YearMonth.now().minusMonths(1)
+            DateRangeFilter.THIS_MONTH -> month.value = YearMonth.now(clock)
+            DateRangeFilter.LAST_MONTH -> month.value = YearMonth.now(clock).minusMonths(1)
             DateRangeFilter.CUSTOM -> Unit
         }
     }
 
     fun removeDateFilter() {
+        // Back to the default view, so the month follows the clock again.
+        monthPinned = false
         criteria.update { it.copy(dateRange = DateRangeFilter.THIS_MONTH) }
-        month.value = YearMonth.now()
+        month.value = YearMonth.now(clock)
     }
 
     fun removeTypeFilter() = criteria.update { it.copy(selectedType = null) }
@@ -299,12 +339,14 @@ class TransactionListViewModel @Inject constructor(
     fun removeAmountFilter() = criteria.update { it.copy(minAmount = null, maxAmount = null, presetEpoch = it.presetEpoch + 1) }
 
     fun resetFilters() {
-        month.value = YearMonth.now()
+        // Back to the default view, so the month follows the clock again.
+        monthPinned = false
+        month.value = YearMonth.now(clock)
         criteria.update {
             it.copy(
                 dateRange = DateRangeFilter.THIS_MONTH,
-                customStart = LocalDate.now().minusMonths(1),
-                customEnd = LocalDate.now(),
+                customStart = LocalDate.now(clock).minusMonths(1),
+                customEnd = LocalDate.now(clock),
                 selectedCategoryIds = emptySet(),
                 selectedType = null,
                 minAmount = null,

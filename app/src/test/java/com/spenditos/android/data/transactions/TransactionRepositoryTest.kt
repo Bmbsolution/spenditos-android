@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.spenditos.android.core.auth.AuthTokens
 import com.spenditos.android.core.auth.EpochClock
 import com.spenditos.android.core.auth.RefreshedTokens
+import com.spenditos.android.core.auth.SessionBinding
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.auth.TokenKey
 import com.spenditos.android.core.config.AppEnvironment
@@ -16,20 +17,28 @@ import com.spenditos.android.core.db.PendingMutationEntity
 import com.spenditos.android.core.db.SpenditosDatabase
 import com.spenditos.android.core.db.SyncStatus
 import com.spenditos.android.core.db.TransactionEntity
+import com.spenditos.android.core.network.ApiEnvelope
 import com.spenditos.android.core.network.AuthInterceptor
 import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.core.sync.SyncRequester
+import com.spenditos.android.data.model.BulkCreateRequest
+import com.spenditos.android.data.model.BulkCreateResult
 import com.spenditos.android.data.model.BulkTransactionItem
+import com.spenditos.android.data.model.Transaction
+import com.spenditos.android.data.model.TransactionsPage
+import com.spenditos.android.data.model.UpdateTransactionRequest
 import com.spenditos.android.testing.FakeTokenStore
 import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
 import com.spenditos.android.testing.TestJwt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -365,6 +374,81 @@ class TransactionRepositoryTest {
     @Test
     fun `an empty queue with no claims is done`() = runTest {
         assertEquals(DrainResult.DONE, repo.drainQueue("user-1"))
+        assertEquals(0, server.requestCount)
+    }
+
+    /** Holds the bulk send in flight forever, so the test can cancel the caller mid-request. */
+    private class SuspendingCreateApi : TransactionsApi {
+        val entered = CompletableDeferred<Unit>()
+
+        override suspend fun createBulk(
+            body: BulkCreateRequest,
+            sessionBinding: SessionBinding?,
+        ): ApiEnvelope<BulkCreateResult> {
+            entered.complete(Unit)
+            CompletableDeferred<Unit>().await() // in flight until the test ends
+            throw IllegalStateException("unreachable")
+        }
+
+        override suspend fun list(
+            startDate: String,
+            endDate: String,
+            sortBy: String,
+            sortOrder: String,
+            limit: Int,
+            cursor: String?,
+        ): ApiEnvelope<TransactionsPage> = error("not used")
+
+        override suspend fun update(id: String, body: UpdateTransactionRequest): ApiEnvelope<Transaction> = error("not used")
+        override suspend fun delete(id: String) = error("not used")
+        override suspend fun bulkDelete(body: BulkDeleteRequest): retrofit2.Response<okhttp3.ResponseBody> = error("not used")
+    }
+
+    @Test
+    fun `cancelling the caller mid-send releases the claim as pending and requests a retry`() = runTest {
+        val api = SuspendingCreateApi()
+        val session = SessionManager(FakeTokenStore.signedIn("user-1"), { RefreshedTokens("a", "b") }, EpochClock { NOW }, AppEnvironment())
+        val cancellingRepo = TransactionRepository(
+            api, db, session,
+            object : ConnectivityStatus { override val isOnline = online },
+            SyncRequester { syncRequests++ },
+            FinanceInvalidationBus(),
+        )
+
+        val job = launch { cancellingRepo.create(draft) }
+        api.entered.await() // the claim was won and the request is in flight
+        job.cancelAndJoin() // the sheet was dismissed mid-save; the ViewModel scope is gone
+
+        val queued = queue().single()
+        assertEquals(MutationStatus.PENDING, queued.status)
+        assertNull(queued.failureCode)
+        assertEquals(1, syncRequests)
+    }
+
+    @Test
+    fun `a corrupt payload settles the claim as a non-retryable validation failure`() = runTest {
+        db.transactions().upsert(
+            listOf(
+                TransactionEntity(
+                    "local-m-bad", "user-1", 1.0, "cat-food", "Lunch", "2026-10-05",
+                    null, null, null, null, null, SyncStatus.PENDING,
+                ),
+            ),
+        )
+        db.mutations().insert(
+            PendingMutationEntity(
+                id = "m-bad", userId = "user-1", kind = MutationKind.CREATE_TRANSACTION,
+                payloadJson = "not-json", localTransactionId = "local-m-bad",
+                status = MutationStatus.PENDING, createdAt = 1,
+            ),
+        )
+
+        assertEquals(DrainResult.DONE, repo.drainQueue("user-1"))
+
+        val queued = queue().single()
+        assertEquals(MutationStatus.FAILED, queued.status)
+        assertEquals(FailureCode.VALIDATION, queued.failureCode)
+        assertEquals(SyncStatus.FAILED, rows().single().syncStatus)
         assertEquals(0, server.requestCount)
     }
 
