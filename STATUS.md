@@ -1,6 +1,15 @@
 # STATUS
 
-Last updated: 2026-10-07. Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
+Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
+
+## Correctness pass (2026-10-07, review findings; uncommitted for review)
+Five correctness findings from the Android review, all with regression tests; no screens redesigned, no contracts changed:
+1. **Queued writes are bound to their owning session** (`SessionManager.SessionBinding` + `accessTokenFor`, request tag on `createBulk`, checked in `AuthInterceptor` before the request AND the 401 retry). An account switch mid-send defers the entry back to PENDING (`SendOutcome.Deferred`) instead of sending A's payload with B's token or failing it; single-flight refresh and idempotency keys untouched.
+2. **`discard()` refuses an IN_FLIGHT create** via the same atomic `deleteUnlessInFlight` guard as delete; the Not-synced UI shows a calm "Can't discard yet" notice (`NotSyncedViewModel` now depends on `UserSettingsActions`).
+3. **`drainQueue` recovers interrupted claims**: an empty PENDING queue with unresolved IN_FLIGHT rows returns RETRY_LATER (WorkManager backoff arranges the release+replay once the 2-minute stale threshold passes) instead of a DONE that strands the claim.
+4. **Reconciliation on foreground/reconnect** (`core/sync/FinanceReconciliationCoordinator`, port of iOS `FinanceDataReconciliationCoordinator`): foreground transitions and realtime re-opens refresh the shared category cache and invalidate every aggregate (250 ms coalesced, failure-isolated, works with no WebSocket URL). `RealtimeManager` exposes `ReconnectSignals.reconnects` (emits on re-opens only, like iOS `webSocketReconnected`); started unconditionally in `SpenditosApplication` before `realtime.start()`.
+5. **Home follows the clock**: `HomeViewModel.today` is a StateFlow; month/week ranges rebind via `flatMapLatest`; a day-ticker flow (a source of the state combine, so it runs only while Home is observed) re-reads the clock at each local midnight and on re-subscribe; `refresh()` re-reads the clock first, so pull-to-refresh/invalidations also pick up a new day.
+
 
 ## Where to resume
 Read in order: `/Users/asaklex/dev/Spenditos-Project/CLAUDE.md`, `AGENTS.md`, then `docs/PLAN.md`, `docs/ARCHITECTURE.md`, `docs/PARITY.md`, `docs/DECISIONS.md`, `ANDROID_STYLE.md`, `README.md`, this file.
