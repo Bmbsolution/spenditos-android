@@ -30,12 +30,11 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.test.resetMain
@@ -67,6 +66,12 @@ class TransactionListViewModelTest {
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
         server.start()
+        // The initial refresh requests categories and transactions concurrently; serving by
+        // path keeps the responses deterministic regardless of which request lands first.
+        server.dispatcher = object : mockwebserver3.Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                if (request.url.encodedPath == "/categories") categoriesPage() else emptyPage()
+        }
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext<Context>(),
             SpenditosDatabase::class.java,
@@ -125,11 +130,15 @@ class TransactionListViewModelTest {
         )
     }
 
+    private fun categoriesPage() =
+        MockResponse(body = """{"data":[{"id":"food","userId":"user-1","name":"Food","color":"#445566","isIncome":false}]}""")
+
     private fun emptyPage() = MockResponse(body = """{"data":{"transactions":[],"pagination":{"nextCursor":null,"hasMore":false}}}""")
 
-    /** Keeps the state flow subscribed (WhileSubscribed) while the test moves the clock. */
-    private fun kotlinx.coroutines.test.TestScope.collectMonths(months: MutableList<YearMonth>): Job =
-        launch { viewModel.state.collect { months += it.month } }
+    /** Keeps the state flow subscribed (WhileSubscribed) for the whole test, in the background. */
+    private fun kotlinx.coroutines.test.TestScope.collectMonths(months: MutableList<YearMonth>) {
+        backgroundScope.launch { viewModel.state.collect { months += it.month } }
+    }
 
     private suspend fun receivedRequests(): List<RecordedRequest> {
         val requests = mutableListOf<RecordedRequest>()
@@ -142,49 +151,47 @@ class TransactionListViewModelTest {
 
     @Test
     fun `a midnight rollover advances the default month and fetches the new range`() = runTest {
-        repeat(4) { server.enqueue(emptyPage()) }
         viewModel = createViewModel()
         val months = mutableListOf<YearMonth>()
-        val collector = collectMonths(months)
+        collectMonths(months)
+        runCurrent()
 
-        testScheduler.advanceUntilIdle()
-        println("DIAG after initial: months=$months state=${viewModel.state.value.month} req=${server.requestCount} vtime=${testScheduler.currentTime}")
+        // The initial load settles on the fake clock's month (October 2026, Toronto).
+        viewModel.state.first { it.categories.isNotEmpty() }
+        assertEquals(YearMonth.of(2026, 10), viewModel.state.value.month)
 
-        // Midnight Toronto (04:00Z) while the list stays open on the same ViewModel.
+        // Midnight Toronto (04:00Z) while the list stays open on the same ViewModel: the
+        // dayTicks delay fires, re-reads the clock and moves the unpinned month to November.
         clock.set(Instant.parse("2026-11-01T04:00:00Z"))
         testScheduler.advanceTimeBy(Duration.between(Instant.parse("2026-10-31T16:00:00Z"), Instant.parse("2026-11-01T04:00:00Z")).toMillis())
-        println("DIAG after advanceTimeBy: vtime=${testScheduler.currentTime} months=$months")
-        testScheduler.advanceUntilIdle()
-        println("DIAG after tick: months=$months state=${viewModel.state.value.month} req=${server.requestCount} vtime=${testScheduler.currentTime}")
+        runCurrent()
 
         assertEquals(YearMonth.of(2026, 11), viewModel.state.value.month)
         assertTrue(months.contains(YearMonth.of(2026, 11)))
-        collector.cancelAndJoin()
-        val requests = receivedRequests()
         assertTrue(
-            requests.any { it.url.queryParameter("startDate") == "2026-11-01" && it.url.queryParameter("endDate") == "2026-11-30" },
+            receivedRequests().any {
+                it.url.queryParameter("startDate") == "2026-11-01" && it.url.queryParameter("endDate") == "2026-11-30"
+            },
         )
     }
 
     @Test
     fun `an explicitly browsed month is never reset by the rollover`() = runTest {
-        repeat(4) { server.enqueue(emptyPage()) }
         viewModel = createViewModel()
         val months = mutableListOf<YearMonth>()
-        val collector = collectMonths(months)
+        collectMonths(months)
+        runCurrent()
+        viewModel.state.first { it.categories.isNotEmpty() }
 
-        testScheduler.advanceUntilIdle()
         viewModel.previousMonth() // browsing away from the default month pins it
-        testScheduler.advanceUntilIdle()
-        assertEquals(YearMonth.of(2026, 9), viewModel.state.value.month)
+        viewModel.state.first { it.month == YearMonth.of(2026, 9) }
 
         clock.set(Instant.parse("2026-11-01T04:00:00Z"))
         testScheduler.advanceTimeBy(Duration.between(Instant.parse("2026-10-31T16:00:00Z"), Instant.parse("2026-11-01T04:00:00Z")).toMillis())
-        testScheduler.advanceUntilIdle()
+        runCurrent()
 
         assertEquals(YearMonth.of(2026, 9), viewModel.state.value.month)
         assertFalse(months.contains(YearMonth.of(2026, 11)))
-        collector.cancelAndJoin()
         assertTrue(receivedRequests().none { it.url.queryParameter("startDate") == "2026-11-01" })
     }
 

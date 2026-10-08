@@ -76,11 +76,10 @@ data class WidgetSnapshot(
 
             val ownCategories = categories.filter { it.userId == userId }
             // A fresh sign-in can read the transaction cache before the category fetch lands.
-            // An empty list (or any category the month's rows reference being missing) cannot
-            // classify income, so every row would count as an expense: show the placeholder
-            // instead of inflated totals.
-            val knownCategoryIds = ownCategories.map { it.id }.toSet()
-            if (ownCategories.isEmpty() || ownTransactions.any { it.categoryId !in knownCategoryIds }) {
+            // With no categories nothing can be classified as income, so every row would
+            // count as an expense: show the placeholder instead of inflated totals. A
+            // transaction whose category was deleted or is null still renders, as an expense.
+            if (ownCategories.isEmpty()) {
                 return placeholder(currency, userId)
             }
             val status = CashFlowStatus.make(ownTransactions, ownCategories, today)
