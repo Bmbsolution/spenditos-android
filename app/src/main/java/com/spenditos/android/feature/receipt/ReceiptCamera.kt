@@ -127,11 +127,15 @@ internal fun ReceiptCamera(
     }
 
     // "Open Settings" -> grant -> return must clear the denied screen: re-check on every ON_RESUME.
+    // Only ever promote to granted: ON_RESUME also fires before the system dialog is answered,
+    // and the launcher result callback already records a denial.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                permissionGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            if (event == Lifecycle.Event.ON_RESUME &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionGranted = true
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
