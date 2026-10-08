@@ -16,8 +16,12 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        deepLinks.handle(intent)
-        WidgetDeepLinks.offer(intent)
+        // A recreation (rotation, process death) still delivers the original intent; offering it
+        // again would re-fire the add sheet / camera. Later intents arrive through onNewIntent.
+        if (savedInstanceState == null) {
+            deepLinks.handle(intent)
+            WidgetDeepLinks.offer(intent)
+        }
         enableEdgeToEdge()
         setContent { SpenditosTheme { AppRoot() } }
     }
@@ -51,6 +55,11 @@ internal object WidgetDeepLinks {
     }
 
     fun consume() {
+        _pending.value = null
+    }
+
+    /** Sign-out: a link tapped before signing out must not fire after the next sign-in. */
+    fun clear() {
         _pending.value = null
     }
 }

@@ -93,9 +93,18 @@ private const val EXPORT_ROUTE = "settings/export"
 private const val MERCHANTS_ROUTE = "settings/merchant-names"
 private const val PRO_ROUTE = "settings/pro"
 
-/** iOS MainTabView: five tabs; the FAB is the one global "add" entry point. */
+/**
+ * iOS MainTabView: five tabs; the FAB is the one global "add" entry point.
+ * [linksEnabled] is false while the app lock is up: pending widget links wait, and the add sheet
+ * (a ModalBottomSheet in its own window, which would render above the lock screen) is not shown.
+ */
 @Composable
-fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.DeepLinkHandler, proAvailable: Boolean = false) {
+fun MainScaffold(
+    envName: String?,
+    deepLinks: com.spenditos.android.data.push.DeepLinkHandler,
+    proAvailable: Boolean = false,
+    linksEnabled: Boolean = true,
+) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val snackbar = remember { SnackbarHostState() }
@@ -111,13 +120,15 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
         deepLinks.consume(link)
     }
     // Widget pills deep-link like iOS (spenditos://add-expense, spenditos://scan-receipt).
+    // While the lock is up the link stays pending and only acts once unlocked.
     val widgetLink by WidgetDeepLinks.pending.collectAsStateWithLifecycle()
-    androidx.compose.runtime.LaunchedEffect(widgetLink) {
+    androidx.compose.runtime.LaunchedEffect(widgetLink, linksEnabled) {
+        if (widgetLink == null || !linksEnabled) return@LaunchedEffect
         when (widgetLink) {
             WidgetDeepLinks.ADD_EXPENSE -> showAdd = true
             WidgetDeepLinks.SCAN_RECEIPT -> nav.navigate(RECEIPT_SCAN_ROUTE) { launchSingleTop = true }
         }
-        if (widgetLink != null) WidgetDeepLinks.consume()
+        WidgetDeepLinks.consume()
     }
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
@@ -289,33 +300,37 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
 
     if (showAdd) {
         ScopedViewModels {
-            AddTransactionSheet(
-                onDismiss = {
-                    showAdd = false
-                    receiptPrefill = null
-                    editTarget = null
-                },
-                onDone = { message ->
-                    showAdd = false
-                    receiptPrefill = null
-                    editTarget = null
-                    scope.launch { snackbar.showSnackbar(message) }
-                },
-                onScanReceipt = {
-                    showAdd = false
-                    nav.navigate(RECEIPT_SCAN_ROUTE)
-                },
-                onVoice = {
-                    showAdd = false
-                    nav.navigate(captureRoute("speak"))
-                },
-                onSentence = {
-                    showAdd = false
-                    nav.navigate(captureRoute("type"))
-                },
-                prefill = receiptPrefill,
-                editTarget = editTarget,
-            )
+            // The sheet lives in its own window and would render above the lock screen; keep
+            // showAdd (and the scoped form) so it reappears once unlocked.
+            if (linksEnabled) {
+                AddTransactionSheet(
+                    onDismiss = {
+                        showAdd = false
+                        receiptPrefill = null
+                        editTarget = null
+                    },
+                    onDone = { message ->
+                        showAdd = false
+                        receiptPrefill = null
+                        editTarget = null
+                        scope.launch { snackbar.showSnackbar(message) }
+                    },
+                    onScanReceipt = {
+                        showAdd = false
+                        nav.navigate(RECEIPT_SCAN_ROUTE)
+                    },
+                    onVoice = {
+                        showAdd = false
+                        nav.navigate(captureRoute("speak"))
+                    },
+                    onSentence = {
+                        showAdd = false
+                        nav.navigate(captureRoute("type"))
+                    },
+                    prefill = receiptPrefill,
+                    editTarget = editTarget,
+                )
+            }
         }
     }
 }

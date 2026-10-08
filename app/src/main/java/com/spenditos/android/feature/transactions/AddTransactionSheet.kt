@@ -179,7 +179,7 @@ fun AddTransactionSheet(
                     ErrorBanner(
                         message = message,
                         modifier = Modifier.testTag("add.error"),
-                        onRetry = { viewModel.save() },
+                        onRetry = viewModel::retry,
                         onDismiss = viewModel::dismissError,
                     )
                 }

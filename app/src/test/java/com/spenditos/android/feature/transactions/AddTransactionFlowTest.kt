@@ -265,4 +265,50 @@ class AddTransactionFlowTest {
         assertEquals(AddTransactionEvent.Done("Transaction deleted"), vm.events.first())
         assertEquals("DELETE", take().method)
     }
+
+    @Test
+    fun `retry after a failed delete deletes again and never updates`() = runTest {
+        val vm = newVm()
+        vm.startEdit(EditTarget("srv-9", 12.5, "food", "Lunch", LocalDate.of(2026, 10, 5), null))
+        vm.state.first { it.isEditMode }
+
+        server.enqueue(MockResponse(code = 500))
+        vm.delete()
+        vm.state.first { it.error != null }
+        assertEquals("DELETE", take().method)
+
+        server.enqueue(MockResponse(code = 204))
+        vm.retry()
+        assertEquals(AddTransactionEvent.Done("Transaction deleted"), vm.events.first())
+        val retried = take()
+        assertEquals("DELETE", retried.method)
+        assertTrue(retried.url.encodedPath.endsWith("/transactions/srv-9"))
+        assertEquals(2, server.requestCount) // only the two deletes, never a PUT/POST
+    }
+
+    @Test
+    fun `retry after a failed undo re-runs the undo and keeps it offered`() = runTest {
+        val vm = newVm()
+        vm.onAmountChange("12.50")
+        vm.onCategorySelect("food")
+        server.enqueue(list())
+        server.enqueue(bulkCreated("srv-3"))
+        vm.save(andContinue = true)
+        vm.state.first { it.undo != null }
+        take(); take()
+
+        server.enqueue(MockResponse(code = 500))
+        vm.undo()
+        val failed = vm.state.first { it.error != null }
+        assertEquals("srv-3", failed.undo?.transactionId) // the banner can run it again
+        assertEquals("DELETE", take().method)
+
+        server.enqueue(MockResponse(code = 204))
+        vm.retry()
+        vm.state.first { it.addedCount == 0 }
+        val retried = take()
+        assertEquals("DELETE", retried.method)
+        assertTrue(retried.url.encodedPath.endsWith("/transactions/srv-3"))
+        assertEquals(4, server.requestCount) // two saves, two deletes; retry never saves
+    }
 }

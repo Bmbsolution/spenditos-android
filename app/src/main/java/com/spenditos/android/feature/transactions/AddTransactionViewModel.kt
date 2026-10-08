@@ -204,6 +204,9 @@ sealed interface AddTransactionEvent {
     data object CategoryCreated : AddTransactionEvent
 }
 
+/** Which action the error banner's Retry re-runs: the one that failed. */
+internal enum class FailedAction { SAVE, DELETE, UNDO }
+
 /**
  * The add and edit form (iOS `AddTransactionViewModel`, decisions.md §3): one form for both so
  * they can't drift. Creates go through the offline queue; edits, bill payments and repeats need
@@ -241,6 +244,9 @@ class AddTransactionViewModel @Inject constructor(
     private var createdWithRepeat = false
     private var continueAfterSave = false
     private var undoJob: Job? = null
+
+    /** The action whose failure produced the current error banner; Retry re-runs exactly it. */
+    private var failedAction: FailedAction? = null
 
     init {
         viewModelScope.launch { loadLastUsed(suggest = true) }
@@ -333,7 +339,25 @@ class AddTransactionViewModel @Inject constructor(
 
     fun onNextDueChange(date: LocalDate) = form.update { it.copy(nextDue = maxOf(date, it.date), nextDueTouched = true) }
 
-    fun dismissError() = form.update { it.copy(error = null) }
+    fun dismissError() {
+        failedAction = null
+        form.update { it.copy(error = null) }
+    }
+
+    /** The error banner's Retry: re-runs the action that failed (save, delete or undo). */
+    fun retry() {
+        when (failedAction) {
+            FailedAction.DELETE -> delete()
+            FailedAction.UNDO -> undo()
+            FailedAction.SAVE, null -> save(andContinue = continueAfterSave)
+        }
+    }
+
+    /** Records [action] as the failed one behind the banner the message produces. */
+    private fun showError(message: String, action: FailedAction) {
+        failedAction = action
+        form.update { it.copy(error = message) }
+    }
 
     /**
      * "Add a category" (iOS AddCategorySheet from the form): creates it with this form's kind and
@@ -477,7 +501,13 @@ class AddTransactionViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                form.update { it.copy(error = deleteErrorMessage(e)) }
+                // The banner's Undo (and Retry) must be able to run the delete again.
+                showError(deleteErrorMessage(e), FailedAction.UNDO)
+                form.update { if (it.undo == null) it.copy(undo = target) else it }
+                undoJob = viewModelScope.launch {
+                    delay(UNDO_WINDOW_MS)
+                    form.update { if (it.undo == target) it.copy(undo = null) else it }
+                }
             }
         }
     }
@@ -494,7 +524,7 @@ class AddTransactionViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                form.update { it.copy(error = deleteErrorMessage(e)) }
+                showError(deleteErrorMessage(e), FailedAction.DELETE)
             } finally {
                 form.update { it.copy(isSaving = false) }
             }
@@ -539,7 +569,7 @@ class AddTransactionViewModel @Inject constructor(
 
             if (current.editing != null) {
                 if (current.editing.id.startsWith("local-")) {
-                    form.update { it.copy(error = "This one hasn't synced yet. Edit it once it's synced.") }
+                    showError("This one hasn't synced yet. Edit it once it's synced.", FailedAction.SAVE)
                     return
                 }
                 transactions.update(current.editing.id, draft)
@@ -551,7 +581,7 @@ class AddTransactionViewModel @Inject constructor(
             if (needsServer && !connectivity.isOnline.value) {
                 // Offline saves are queued as plain transactions; a repeat or a link to a bill
                 // needs the server, so don't drop that intent silently.
-                form.update { it.copy(error = OFFLINE_REPEAT) }
+                showError(OFFLINE_REPEAT, FailedAction.SAVE)
                 resetBillLinks()
                 return
             }
@@ -568,7 +598,7 @@ class AddTransactionViewModel @Inject constructor(
 
             when (val result = transactions.create(draft)) {
                 is CreateResult.Rejected -> {
-                    form.update { it.copy(error = result.message) }
+                    showError(result.message, FailedAction.SAVE)
                     resetBillLinks()
                 }
                 CreateResult.SavedOffline -> {
@@ -591,7 +621,7 @@ class AddTransactionViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            form.update { it.copy(error = saveErrorMessage(e)) }
+            showError(saveErrorMessage(e), FailedAction.SAVE)
             if (createdTransactionId == null) resetBillLinks()
         }
     }
@@ -623,7 +653,7 @@ class AddTransactionViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            form.update { it.copy(error = REPEAT_FAILED) }
+            showError(REPEAT_FAILED, FailedAction.SAVE)
             false
         }
     }

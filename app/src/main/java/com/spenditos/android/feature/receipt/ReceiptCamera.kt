@@ -1,8 +1,13 @@
 package com.spenditos.android.feature.receipt
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -60,6 +65,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
@@ -69,6 +76,10 @@ import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal class BoundReceiptCamera(
     val imageCapture: ImageCapture,
@@ -101,13 +112,30 @@ internal fun ReceiptCamera(
     val onCaptureErrorState by rememberUpdatedState(onCaptureError)
     // A photo taken but not used (Back from the preview) must not stay in the cache.
     var handedOver by remember { mutableStateOf(false) }
+    // Set in onDispose: a JPEG that lands after the user left has no owner and is deleted on arrival.
+    val disposed = remember { AtomicBoolean(false) }
     DisposableEffect(Unit) {
-        onDispose { if (!handedOver) capturedFile?.delete() }
+        onDispose {
+            disposed.set(true)
+            if (!handedOver) capturedFile?.delete()
+        }
     }
 
     LaunchedEffect(Unit) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED
         if (granted) permissionGranted = true else permission.launch(Manifest.permission.CAMERA)
+    }
+
+    // "Open Settings" -> grant -> return must clear the denied screen: re-check on every ON_RESUME.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                permissionGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val photo = capturedFile
@@ -124,15 +152,13 @@ internal fun ReceiptCamera(
             // A gallery pick confirms through the same Retake / Use Photo preview as a capture.
             library != null -> ReceiptPhotoPreview(
                 source = library,
-                loadBitmap = {
-                    context.contentResolver.openInputStream(library)?.use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
-                },
+                loadBitmap = { decodePreviewBitmap(context, library)?.asImageBitmap() },
                 onRetake = onLibraryPhotoDismissed,
                 onUse = { onLibraryPhotoConfirmed(library) },
             )
             photo != null -> ReceiptPhotoPreview(
                 source = photo,
-                loadBitmap = { BitmapFactory.decodeFile(photo.absolutePath)?.asImageBitmap() },
+                loadBitmap = { decodePreviewBitmap(context, photo)?.asImageBitmap() },
                 onRetake = {
                     photo.delete()
                     capturedFile = null
@@ -152,7 +178,8 @@ internal fun ReceiptCamera(
                     context.startActivity(intent)
                 },
                 onCancel = onBack,
-                onPickLibrary = if (noCamera) onPickLibrary else null,
+                // Photo library stays usable without the camera permission, like iOS.
+                onPickLibrary = onPickLibrary,
             )
             else -> {
                 if (showLive) {
@@ -188,8 +215,14 @@ internal fun ReceiptCamera(
                                 executor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                        camera.provider.unbindAll()
                                         capturing = false
+                                        if (disposed.get()) {
+                                            // Back was pressed while the JPEG was being written:
+                                            // nobody is left to own the file, so delete it now.
+                                            created.delete()
+                                            return
+                                        }
+                                        camera.provider.unbindAll()
                                         bound = null
                                         capturedFile = created
                                     }
@@ -428,7 +461,7 @@ private fun ReceiptPermissionDenied(
 @Composable
 private fun ReceiptPhotoPreview(
     source: Any,
-    loadBitmap: () -> ImageBitmap?,
+    loadBitmap: suspend () -> ImageBitmap?,
     onRetake: () -> Unit,
     onUse: () -> Unit,
 ) {
@@ -490,5 +523,82 @@ private fun ReceiptPhotoPreview(
             }
         }
     }
+}
+
+/** Long-edge target of the Retake / Use Photo preview; a 48 MP pick decodes to at most this. */
+internal const val PREVIEW_MAX_LONG_SIDE = 2048
+
+/** inSampleSize for the preview decode: halves until the long edge is near [PREVIEW_MAX_LONG_SIDE]. */
+internal fun previewSampleSize(width: Int, height: Int): Int {
+    var sample = 1
+    while (maxOf(width, height) / (sample * 2) >= PREVIEW_MAX_LONG_SIDE) sample *= 2
+    return sample
+}
+
+/**
+ * Preview decode for the Retake / Use Photo screen: bounds first, then sampled to about
+ * [PREVIEW_MAX_LONG_SIDE], EXIF-rotated, on Dispatchers.IO; null on any failure (the screen then
+ * shows no image) instead of a crash or an OOM from a full-size decode on the main thread.
+ */
+internal suspend fun decodePreviewBitmap(context: Context, source: Any): Bitmap? = withContext(Dispatchers.IO) {
+    runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        when (source) {
+            is File -> BitmapFactory.decodeFile(source.absolutePath, bounds)
+            is Uri -> context.contentResolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        }
+        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Preview image could not be decoded" }
+        val orientation = previewExifOrientation(context, source)
+        val options = BitmapFactory.Options().apply { inSampleSize = previewSampleSize(bounds.outWidth, bounds.outHeight) }
+        val decoded = when (source) {
+            is File -> BitmapFactory.decodeFile(source.absolutePath, options)
+            is Uri -> context.contentResolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, options) }
+            else -> null
+        } ?: throw IllegalArgumentException("Preview image could not be decoded")
+        val oriented = orientPreview(decoded, orientation)
+        val fitted = fitPreview(oriented)
+        if (oriented !== fitted) oriented.recycle()
+        if (decoded !== oriented && decoded !== fitted) decoded.recycle()
+        fitted
+    }.getOrNull()
+}
+
+private fun previewExifOrientation(context: Context, source: Any): Int = runCatching {
+    when (source) {
+        is Uri -> context.contentResolver.openInputStream(source)?.use {
+            ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        }
+        is File -> ExifInterface(source.absolutePath).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        else -> null
+    } ?: ExifInterface.ORIENTATION_NORMAL
+}.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
+/** Same orientation mapping as ReceiptImageProcessor: portrait receipts must not show sideways. */
+private fun orientPreview(bitmap: Bitmap, orientation: Int): Bitmap {
+    val matrix = Matrix()
+    val rotate = when (orientation) {
+        ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> { matrix.setScale(-1f, 1f); false }
+        ExifInterface.ORIENTATION_ROTATE_180 -> { matrix.setRotate(180f); false }
+        ExifInterface.ORIENTATION_FLIP_VERTICAL -> { matrix.setScale(1f, -1f); false }
+        ExifInterface.ORIENTATION_TRANSPOSE -> { matrix.setRotate(90f); matrix.postScale(-1f, 1f); false }
+        ExifInterface.ORIENTATION_ROTATE_90 -> { matrix.setRotate(90f); false }
+        ExifInterface.ORIENTATION_TRANSVERSE -> { matrix.setRotate(-90f); matrix.postScale(-1f, 1f); false }
+        ExifInterface.ORIENTATION_ROTATE_270 -> { matrix.setRotate(-90f); false }
+        else -> true
+    }
+    if (rotate) return bitmap
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+}
+
+private fun fitPreview(bitmap: Bitmap): Bitmap {
+    val longest = maxOf(bitmap.width, bitmap.height)
+    if (longest <= PREVIEW_MAX_LONG_SIDE) return bitmap
+    val ratio = PREVIEW_MAX_LONG_SIDE.toFloat() / longest
+    return Bitmap.createScaledBitmap(
+        bitmap,
+        (bitmap.width * ratio).roundToInt().coerceAtLeast(1),
+        (bitmap.height * ratio).roundToInt().coerceAtLeast(1),
+        true,
+    )
 }
 

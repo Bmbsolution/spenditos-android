@@ -104,6 +104,10 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) {
         viewModel.session.expired.collect { loginSnackbar.showSnackbar("Your session expired. Please sign in again.") }
     }
+    LaunchedEffect(Unit) {
+        // A widget link tapped before signing out must not fire after the next sign-in.
+        viewModel.session.state.collect { if (it is SessionState.SignedOut) WidgetDeepLinks.clear() }
+    }
     when (val session = state) {
         SessionState.SignedOut -> SignedOutFlow(envName, loginSnackbar, viewModel.authSteps)
         // Keyed by user: every screen and ViewModel below is rebuilt for a different account.
@@ -125,7 +129,13 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
                     onFinished = { gate = Gate.Ready },
                     viewModel = hiltViewModel(key = "onboarding:${session.userId}"),
                 )
-                Gate.Ready -> MainScaffold(envName = envName, deepLinks = viewModel.deepLinks, proAvailable = viewModel.purchases.isAvailable)
+                Gate.Ready -> MainScaffold(
+                    envName = envName,
+                    deepLinks = viewModel.deepLinks,
+                    proAvailable = viewModel.purchases.isAvailable,
+                    // Widget links and their sheets (own window) must never render above the lock.
+                    linksEnabled = lockState == LockState.UNLOCKED,
+                )
             }
         }
             }
