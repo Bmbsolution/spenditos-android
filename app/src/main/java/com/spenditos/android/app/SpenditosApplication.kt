@@ -13,6 +13,7 @@ class SpenditosApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var sessionLifecycle: SessionLifecycle
     @Inject lateinit var appLock: com.spenditos.android.core.lock.AppLockController
+    @Inject lateinit var reconciliation: com.spenditos.android.core.sync.FinanceReconciliationCoordinator
     @Inject lateinit var realtime: com.spenditos.android.data.realtime.RealtimeManager
 
     override val workManagerConfiguration: Configuration
@@ -22,6 +23,9 @@ class SpenditosApplication : Application(), Configuration.Provider {
         super.onCreate()
         sessionLifecycle.start()
         appLock.start()
+        // Before realtime.start() so the socket's reconnect signal is observed; runs with no
+        // WebSocket configuration too (foreground reconciliation is independent of the socket).
+        reconciliation.start()
         realtime.start()
         com.spenditos.android.feature.widget.WidgetRefreshWorker.schedule(this)
         // Leaving the foreground is when the cache is freshest: push it to the widget.

@@ -1,6 +1,7 @@
 package com.spenditos.android.data.realtime
 
 import com.spenditos.android.core.config.AppEnvironment
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -68,4 +69,11 @@ object RealtimeModule {
     @Singleton
     @RealtimeUrl
     fun webSocketUrl(environment: AppEnvironment): String = environment.webSocketUrl
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RealtimeBindsModule {
+    @Binds
+    abstract fun reconnectSignals(impl: RealtimeManager): ReconnectSignals
 }

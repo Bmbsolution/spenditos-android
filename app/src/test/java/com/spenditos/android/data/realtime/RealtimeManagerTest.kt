@@ -255,6 +255,30 @@ class RealtimeManagerTest {
         assertTrue(connector.sockets.isEmpty())
     }
 
+    @Test
+    fun `reconnects emits only when a socket opens again, never on the first connection`() = runTest {
+        val connector = FakeConnector()
+        val clock = RecordingClock()
+        val manager = manager(FakeRealtimeApi(), connector, clock, session(), FakeForeground(true), FinanceInvalidationBus(), backgroundScope, StandardTestDispatcher(testScheduler))
+        val reconnected = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { manager.reconnects.collect { reconnected += it } }
+
+        manager.start()
+        runCurrent()
+        connector.sockets[0].listener.onOpen() // first connection: not a reconnect
+        runCurrent()
+        assertTrue(reconnected.isEmpty())
+
+        connector.sockets[0].listener.onClosed()
+        runCurrent()
+        clock.advance()
+        runCurrent()
+        connector.sockets[1].listener.onOpen() // opened again after a drop: a reconnect
+        runCurrent()
+
+        assertEquals(listOf(Unit), reconnected)
+    }
+
     private fun manager(
         api: RealtimeApi,
         connector: WebSocketConnector,

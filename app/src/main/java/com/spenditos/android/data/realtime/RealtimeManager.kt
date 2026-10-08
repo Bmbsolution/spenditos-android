@@ -12,8 +12,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -51,6 +53,12 @@ interface ForegroundMonitor {
     val isForeground: kotlinx.coroutines.flow.StateFlow<Boolean>
 }
 
+/** Something that can report successful reconnects (the realtime socket). */
+interface ReconnectSignals {
+    /** Emits when a socket opens again after a previous open, not on the first connection. */
+    val reconnects: SharedFlow<Unit>
+}
+
 /** Injectable wait seam keeps reconnect scheduling deterministic in tests. */
 fun interface RealtimeClock {
     suspend fun sleep(milliseconds: Long)
@@ -71,8 +79,16 @@ class RealtimeManager @Inject constructor(
     @RealtimeScope private val scope: CoroutineScope,
     @RealtimeIoDispatcher private val dispatcher: CoroutineDispatcher,
     @RealtimeUrl private val webSocketUrl: String,
-) {
+) : ReconnectSignals {
     private var started = false
+
+    @Volatile
+    private var hasConnectedOnce = false
+
+    private val _reconnects = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+
+    /** iOS posts `webSocketReconnected` only when a socket opens again, never on first connect. */
+    override val reconnects: SharedFlow<Unit> = _reconnects.asSharedFlow()
 
     val gamificationUpdates: SharedFlow<Unit> = events.gamificationUpdates
 
@@ -115,6 +131,8 @@ class RealtimeManager @Inject constructor(
         val connection = connector.connect(url, object : WebSocketListener {
             override fun onOpen() {
                 opened.set(true)
+                if (hasConnectedOnce) _reconnects.tryEmit(Unit)
+                hasConnectedOnce = true
             }
 
             override fun onMessage(message: String) {
