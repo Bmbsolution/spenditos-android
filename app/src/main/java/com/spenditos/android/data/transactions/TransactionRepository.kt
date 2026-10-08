@@ -1,6 +1,7 @@
 package com.spenditos.android.data.transactions
 
 import androidx.room.withTransaction
+import com.spenditos.android.core.auth.SessionChangedException
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.db.FailureCode
 import com.spenditos.android.core.db.MutationKind
@@ -156,6 +157,11 @@ class TransactionRepository @Inject constructor(
             null -> CreateResult.SavedOffline // the worker claimed it first
             is SendOutcome.Created -> CreateResult.Saved(outcome.transaction.id)
             SendOutcome.AlreadySaved -> CreateResult.Saved(null)
+            SendOutcome.Deferred -> {
+                // The session changed mid-send; the queue keeps it for the owning account.
+                sync.requestSync()
+                CreateResult.SavedOffline
+            }
             is SendOutcome.Failed -> if (outcome.code.isRetryable) {
                 sync.requestSync()
                 CreateResult.SavedOffline
@@ -307,6 +313,7 @@ class TransactionRepository @Inject constructor(
         while (true) {
             val next = mutations.nextPending(userId) ?: return DrainResult.DONE
             val outcome = send(next.id) ?: continue
+            if (outcome is SendOutcome.Deferred) return DrainResult.RETRY_LATER
             if (outcome is SendOutcome.Failed && outcome.code.isRetryable) return DrainResult.RETRY_LATER
         }
     }
@@ -347,20 +354,40 @@ class TransactionRepository @Inject constructor(
         sync.requestSync()
     }
 
-    /** Sends one mutation if this caller wins the claim; null when someone else is sending it. */
+    /**
+     * Sends one mutation if this caller wins the claim; null when someone else is sending it.
+     * The request is bound to the owning account's session (tag on the request), so neither it
+     * nor its 401 retry can adopt another session's credentials; a session switch defers the
+     * entry back to PENDING instead of failing it.
+     */
     private suspend fun send(mutationId: String): SendOutcome? {
+        val binding = session.currentBinding ?: return SendOutcome.Deferred
         if (mutations.claim(mutationId, System.currentTimeMillis()) == 0) return null
         val row = mutations.get(mutationId) ?: return null
+        if (row.userId != binding.userId) {
+            // Never another account's payload with this session's credentials.
+            mutations.release(mutationId, MutationStatus.PENDING, null, null)
+            return SendOutcome.Deferred
+        }
         val item = SpenditosJson.decodeFromString(BulkTransactionItem.serializer(), row.payloadJson)
         val outcome = try {
-            FailureClassifier.fromBulkResult(apiCall { api.createBulk(BulkCreateRequest(listOf(item))) })
+            FailureClassifier.fromBulkResult(apiCall { api.createBulk(BulkCreateRequest(listOf(item)), binding) })
         } catch (e: CancellationException) {
             mutations.release(mutationId, MutationStatus.PENDING, null, null)
             throw e
+        } catch (e: ApiError.Network) {
+            if (e.cause is SessionChangedException) {
+                // Signed out or another account signed in mid-send: keep it queued, not failed.
+                mutations.release(mutationId, MutationStatus.PENDING, null, null)
+                SendOutcome.Deferred
+            } else {
+                FailureClassifier.fromError(e)
+            }
         } catch (e: Exception) {
             FailureClassifier.fromError(e)
         }
         when (outcome) {
+            SendOutcome.Deferred -> return outcome
             is SendOutcome.Created -> db.withTransaction {
                 transactions.delete(row.userId, row.localTransactionId)
                 transactions.upsert(listOf(outcome.transaction.toEntity()))

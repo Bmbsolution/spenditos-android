@@ -1,5 +1,6 @@
 package com.spenditos.android.data.transactions
 
+import com.spenditos.android.core.auth.SessionBinding
 import com.spenditos.android.core.network.ApiEnvelope
 import com.spenditos.android.data.model.BulkCreateRequest
 import com.spenditos.android.data.model.BulkCreateResult
@@ -13,6 +14,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Tag
 
 interface TransactionsApi {
     /** `ListTransactionsQuery` api/index.ts:316; `limit` 1…200 (transactions.ts:327). */
@@ -26,8 +28,16 @@ interface TransactionsApi {
         @Query("cursor") cursor: String? = null,
     ): ApiEnvelope<TransactionsPage>
 
+    /**
+     * `POST /transactions/bulk` with the queued item. [sessionBinding] tags the request with the
+     * account and session generation that owns the write, so the auth interceptor can refuse the
+     * request (and its 401 retry) after an account switch. Null on non-queued calls.
+     */
     @POST("transactions/bulk")
-    suspend fun createBulk(@Body body: BulkCreateRequest): ApiEnvelope<BulkCreateResult>
+    suspend fun createBulk(
+        @Body body: BulkCreateRequest,
+        @Tag sessionBinding: SessionBinding? = null,
+    ): ApiEnvelope<BulkCreateResult>
 
     /** `PUT /transactions/{id}` (sst.config.ts:143); `UpdateTransactionRequest` api/index.ts:422. */
     @PUT("transactions/{id}")

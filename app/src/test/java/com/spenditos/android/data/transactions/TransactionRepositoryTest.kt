@@ -3,9 +3,11 @@ package com.spenditos.android.data.transactions
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.spenditos.android.core.auth.AuthTokens
 import com.spenditos.android.core.auth.EpochClock
 import com.spenditos.android.core.auth.RefreshedTokens
 import com.spenditos.android.core.auth.SessionManager
+import com.spenditos.android.core.auth.TokenKey
 import com.spenditos.android.core.config.AppEnvironment
 import com.spenditos.android.core.db.FailureCode
 import com.spenditos.android.core.db.MutationKind
@@ -14,6 +16,7 @@ import com.spenditos.android.core.db.PendingMutationEntity
 import com.spenditos.android.core.db.SpenditosDatabase
 import com.spenditos.android.core.db.SyncStatus
 import com.spenditos.android.core.db.TransactionEntity
+import com.spenditos.android.core.network.AuthInterceptor
 import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.sync.FinanceInvalidationBus
@@ -21,9 +24,15 @@ import com.spenditos.android.core.sync.SyncRequester
 import com.spenditos.android.data.model.BulkTransactionItem
 import com.spenditos.android.testing.FakeTokenStore
 import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
+import com.spenditos.android.testing.TestJwt
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -34,6 +43,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -42,6 +53,7 @@ import org.robolectric.RobolectricTestRunner
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.time.LocalDate
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 class TransactionRepositoryTest {
@@ -292,5 +304,103 @@ class TransactionRepositoryTest {
         assertEquals(BulkDeleteResult(deleted = 1, failed = 1), result)
         assertEquals(listOf(second.localTransactionId), rows().map { it.id })
         assertEquals(0, server.requestCount)
+    }
+
+    private fun repoWithSession(
+        store: FakeTokenStore,
+        refresher: com.spenditos.android.core.auth.TokenRefresher,
+    ): Pair<TransactionRepository, SessionManager> {
+        val session = SessionManager(store, refresher, EpochClock { NOW }, AppEnvironment())
+        val client = okhttp3.OkHttpClient.Builder().addInterceptor(AuthInterceptor(session)).build()
+        val api = Retrofit.Builder().baseUrl(server.url("/")).client(client)
+            .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
+            .build().create(TransactionsApi::class.java)
+        return TransactionRepository(
+            api, db, session,
+            object : ConnectivityStatus { override val isOnline = online },
+            SyncRequester { syncRequests++ },
+            FinanceInvalidationBus(),
+        ) to session
+    }
+
+    private fun signInAs(session: SessionManager, store: FakeTokenStore, userId: String, nonce: String) {
+        session.signOut()
+        store.values[TokenKey.ACCESS] = TestJwt.token(userId, NOW + 3600, nonce = "$nonce-access")
+        store.values[TokenKey.REFRESH] = "refresh-$userId"
+        store.values[TokenKey.ID] = TestJwt.token(userId, NOW + 3600, nonce = "$nonce-id")
+        session.signIn(
+            AuthTokens(
+                TestJwt.token(userId, NOW + 3600, nonce = "$nonce-access"),
+                "refresh-$userId",
+                TestJwt.token(userId, NOW + 3600, nonce = "$nonce-id"),
+            ),
+        )
+    }
+
+    @Test
+    fun `a queued create of a switched account is never sent with the new account's token and stays recoverable`() = runTest {
+        val store = FakeTokenStore.signedIn("user-1")
+        val (repo, session) = repoWithSession(store) {
+            RefreshedTokens(TestJwt.token("user-1", NOW + 7200, nonce = "new"), TestJwt.token("user-1", NOW + 7200, nonce = "newid"))
+        }
+        online.value = false
+        repo.create(draft)
+        val queued = queue().single()
+
+        // The user signs out and another account signs in while the worker still holds A's id.
+        signInAs(session, store, "user-2", "b")
+        assertEquals(DrainResult.RETRY_LATER, repo.drainQueue("user-1"))
+        assertEquals(0, server.requestCount)
+        assertEquals(MutationStatus.PENDING, queue().single().status)
+
+        // Back as the owning account: the entry replays with that account's token and key.
+        signInAs(session, store, "user-1", "c")
+        server.enqueue(created())
+        assertEquals(DrainResult.DONE, repo.drainQueue("user-1"))
+        val request = server.takeRequest()
+        assertEquals("Bearer ${store.values[TokenKey.ACCESS]}", request.headers["Authorization"])
+        val key = SpenditosJson.parseToJsonElement(request.body!!.utf8()).jsonObject["transactions"]!!
+            .jsonArray.single().jsonObject["idempotencyKeyId"]!!.jsonPrimitive.content
+        assertEquals(queued.id, key)
+        assertTrue(queue().isEmpty())
+    }
+
+    @Test
+    fun `draining with no session defers the queue instead of failing it`() = runTest {
+        val (repo, session) = repoWithSession(FakeTokenStore.signedIn("user-1")) { RefreshedTokens("a", "b") }
+        online.value = false
+        repo.create(draft)
+        session.signOut()
+        assertEquals(DrainResult.RETRY_LATER, repo.drainQueue("user-1"))
+        assertEquals(0, server.requestCount)
+        val row = queue().single()
+        assertEquals(MutationStatus.PENDING, row.status)
+        assertNull(row.failureCode)
+    }
+
+    @Test
+    fun `a session switch during the 401 refresh keeps the create queued and never retries with the new token`() = runTest {
+        val store = FakeTokenStore.signedIn("user-1")
+        val gate = CompletableDeferred<Unit>()
+        val (repo, session) = repoWithSession(store) {
+            gate.await()
+            RefreshedTokens(TestJwt.token("user-1", NOW + 7200, nonce = "new"), TestJwt.token("user-1", NOW + 7200, nonce = "newid"))
+        }
+        server.enqueue(MockResponse(code = 401, body = """{"error":"expired"}"""))
+
+        val saving = async { repo.create(draft) }
+        testScheduler.advanceUntilIdle()
+        // Read (and receive) the first attempt off the test thread: while this suspends,
+        // the scheduler advances the save coroutine through Room and the network call.
+        val firstAttempt = withContext(Dispatchers.IO) { server.takeRequest(10, TimeUnit.SECONDS) }
+        assertNotNull(firstAttempt) // the first attempt went out with user-1's bearer token
+        signInAs(session, store, "user-2", "b")
+        gate.complete(Unit)
+
+        assertEquals(CreateResult.SavedOffline, saving.await())
+        assertEquals(1, server.requestCount) // no retry was sent at all
+        val row = queue().single()
+        assertEquals(MutationStatus.PENDING, row.status)
+        assertNull(row.failureCode)
     }
 }

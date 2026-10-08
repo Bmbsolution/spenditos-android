@@ -143,8 +143,47 @@ class SessionManagerTest {
     @Test
     fun `invalidating the access token keeps the refresh token`() {
         val store = FakeTokenStore.signedIn()
-        manager(store) { fresh }.invalidateAccessToken()
+        manager(store, { fresh }).invalidateAccessToken()
         assertNull(store.values[TokenKey.ACCESS])
         assertEquals("refresh-user-1", store.values[TokenKey.REFRESH])
+    }
+
+    @Test
+    fun `accessTokenFor serves the session it was bound to`() = runTest {
+        val store = FakeTokenStore.signedIn()
+        val session = manager(store, { fresh })
+        assertEquals(store.values[TokenKey.ACCESS], session.accessTokenFor(session.currentBinding!!))
+    }
+
+    @Test
+    fun `accessTokenFor refuses a binding from another account's session`() = runTest {
+        val store = FakeTokenStore.signedIn("user-1")
+        val session = manager(store, { fresh })
+        val binding = session.currentBinding!!
+
+        session.signOut()
+        store.values[TokenKey.ACCESS] = TestJwt.token("user-2", NOW + 3600)
+        store.values[TokenKey.REFRESH] = "refresh-user-2"
+        store.values[TokenKey.ID] = TestJwt.token("user-2", NOW + 3600)
+        session.signIn(AuthTokens(TestJwt.token("user-2", NOW + 3600), "refresh-user-2", TestJwt.token("user-2", NOW + 3600)))
+
+        try {
+            session.accessTokenFor(binding)
+            fail("expected SessionChangedException")
+        } catch (_: SessionChangedException) {
+        }
+    }
+
+    @Test
+    fun `signing in again as the same user changes the binding generation`() {
+        val store = FakeTokenStore.signedIn("user-1")
+        val session = manager(store, { fresh })
+        val first = session.currentBinding!!
+
+        session.signIn(AuthTokens(TestJwt.token("user-1", NOW + 3600, nonce = "again"), "refresh-user-1", TestJwt.token("user-1", NOW + 3600, nonce = "again-id")))
+
+        val second = session.currentBinding!!
+        assertEquals(first.userId, second.userId)
+        assertTrue(second.generation > first.generation)
     }
 }

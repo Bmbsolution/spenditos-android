@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,6 +35,12 @@ fun interface TokenRefresher {
 }
 
 data class RefreshedTokens(val accessToken: String, val idToken: String)
+
+/** The account and session generation a request is bound to (see [SessionManager.currentBinding]). */
+data class SessionBinding(val userId: String, val generation: Long)
+
+/** The signed-in account changed while a request bound to another session was in flight. */
+class SessionChangedException : IOException("The signed-in account changed while this change was being sent.")
 
 /** Wall clock in epoch seconds; injectable for tests. */
 fun interface EpochClock {
@@ -69,6 +76,14 @@ class SessionManager @Inject constructor(
     val expired: SharedFlow<Unit> = _expired.asSharedFlow()
 
     val currentUserId: String? get() = (state.value as? SessionState.SignedIn)?.userId
+
+    /**
+     * Snapshot of the signed-in account and session generation. The generation changes on
+     * every sign-in, sign-out and session expiry, so a captured binding only matches the
+     * session it was taken from.
+     */
+    val currentBinding: SessionBinding?
+        get() = (state.value as? SessionState.SignedIn)?.let { SessionBinding(it.userId, generation.get()) }
 
     private fun initialState(): SessionState {
         if (environment.isHarness) {
@@ -132,6 +147,17 @@ class SessionManager @Inject constructor(
             inFlight?.takeIf { it.isActive } ?: scope.async { performRefresh() }.also { inFlight = it }
         }
         job.await()
+    }
+
+    /**
+     * An access token for a request bound to [binding] (a queued write): refuses — instead of
+     * adopting new credentials — when the account or the session generation has changed, so
+     * one account's payload can never leave the device with another account's bearer token.
+     */
+    suspend fun accessTokenFor(binding: SessionBinding): String {
+        val token = validAccessToken()
+        if (currentBinding != binding) throw SessionChangedException()
+        return token
     }
 
     /** A second 401 after a refresh: drop only the access token, keep the refresh token. */

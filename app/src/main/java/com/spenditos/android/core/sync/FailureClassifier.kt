@@ -12,6 +12,9 @@ sealed interface SendOutcome {
     /** The server already has it (idempotency key matched): a lost response was retried. */
     data object AlreadySaved : SendOutcome
 
+    /** Not sent: the owning session ended or changed. The entry stays queued and recoverable. */
+    data object Deferred : SendOutcome
+
     data class Failed(val code: FailureCode, val message: String) : SendOutcome
 }
 
