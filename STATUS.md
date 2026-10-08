@@ -2,12 +2,15 @@
 
 Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
-## Wave M (2026-10-07, GLM workers; Sonnet review pending)
+## Wave M (2026-10-07/08, GLM workers; Sonnet review done)
 - GLM round review of filters / Edit mode / receipt camera / widget: 11 findings applied (`8dacbe9`, `b25b214`, `afbb808`, `4419a23`). One was wrong and reverted: iOS `.headingM` is title3 SemiBold (20), `.headingL` is title2 Bold (22).
 - List: Edit-mode button reads Cancel, iOS single-delete copy, pinned scroll-to-top overlay, empty-state CTA colour, doc.on.doc icon, 19.2dp row badge icon.
 - Receipt: "Monthly Limit Reached" view (QUOTA step), gallery pick goes through Retake / Use Photo, blurred receipt backdrop while analyzing.
 - Widget: category amounts as "%.0f", Add Expense / Scan pills deep-link (`spenditos://add-expense`, `spenditos://scan-receipt`, manifest filter + `WidgetDeepLinks`); both verified on the emulator (cold start).
 - Verified on the emulator in light and dark (Transactions, Edit, scroll-to-top, add form, camera). `scripts/verify.sh`: 468 tests, 0 failures.
+- Sonnet review of the whole round (read-only) found 11 items; all fixed by GLM and merged (`a778c78`, `b56b453`, `c645b66` and follow-ups): interrupted online save no longer leaves a queued create IN_FLIGHT (release + sync under NonCancellable), corrupt queued payload settles as FAILED, same-user re-login after expiry re-runs the session start work (`shouldRunStartWork`), account deletion finishes sign-out even if cancelled, Transactions list month follows the clock (pinned when the user chose one), widget shows the placeholder while categories are empty, widget links wait for unlock / do not re-fire on recreation / are cleared on sign-out, add-form Retry re-runs the failed action, receipt preview decodes off the main thread with EXIF, leaked capture deleted, camera permission rechecked on resume (only promotes to granted), gallery stays available when the camera is denied.
+- `scripts/verify.sh`: 493 tests, 0 failures, twice in a row (a flaky SessionLifecycle test was replaced by deterministic tests of the transition rule).
+
 - Owner decision: RevenueCat will be replaced; the purchases port stays inert, no more work on it.
 
 ## Correctness pass (2026-10-07, review findings; committed locally, 8ae67e8..32a944f)
