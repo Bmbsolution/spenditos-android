@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -37,9 +38,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,8 +53,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +88,7 @@ import com.spenditos.android.ui.theme.w
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlinx.coroutines.launch
 
 @Composable
 fun TransactionListScreen(
@@ -113,8 +119,8 @@ fun TransactionListScreen(
     deleteTarget?.let { row ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete Transaction?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text("Delete Transaction") },
+            text = { Text("Are you sure you want to delete this transaction? This action cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.delete(row.id); deleteTarget = null }, modifier = Modifier.testTag("transaction.delete.confirm")) {
                     Text("Delete", color = IosColors.expense)
@@ -176,12 +182,22 @@ fun TransactionListScreen(
     val historyCount = historyDays.sumOf { (_, rows) -> rows.size }
 
     IosScreen {
+        val listState = rememberLazyListState()
+        val density = LocalDensity.current
+        val showScrollToTop by remember {
+            derivedStateOf {
+                listState.firstVisibleItemIndex > 0 ||
+                    listState.firstVisibleItemScrollOffset > with(density) { 100.dp.toPx() }
+            }
+        }
+        val scope = rememberCoroutineScope()
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = { viewModel.refresh(includeCategories = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(bottom = 132.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
                 modifier = Modifier.fillMaxSize().testTag("transactions.list"),
@@ -194,6 +210,8 @@ fun TransactionListScreen(
                                 TransactionsToolbarCapsule(
                                     isSearchActive = isSearchActive,
                                     filtersActive = state.hasActiveFilters,
+                                    showScrollToTop = showScrollToTop,
+                                    onScrollToTop = { scope.launch { listState.animateScrollToItem(0) } },
                                     onToggleSearch = {
                                         // Closing search also clears it, so no hidden filter stays on the list.
                                         if (isSearchActive) searchText = ""
@@ -219,11 +237,12 @@ fun TransactionListScreen(
                                     }
                                 }
                                 .testTag("transaction-edit")
+                                .semantics { contentDescription = if (isEditMode) "Cancel selection" else "Edit transactions" }
                                 .padding(horizontal = Spacing.m),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                if (isEditMode) "Done" else "Edit",
+                                if (isEditMode) "Cancel" else "Edit",
                                 style = IosText.body.w(FontWeight.SemiBold),
                                 color = IosColors.spendOrange,
                             )
@@ -400,6 +419,8 @@ fun TransactionListScreen(
 private fun TransactionsToolbarCapsule(
     isSearchActive: Boolean,
     filtersActive: Boolean,
+    showScrollToTop: Boolean,
+    onScrollToTop: () -> Unit,
     onToggleSearch: () -> Unit,
     onOpenFilter: () -> Unit,
     onOpenExport: () -> Unit,
@@ -467,6 +488,23 @@ private fun TransactionsToolbarCapsule(
                             .background(IosColors.spendOrange, CircleShape),
                     )
                 }
+            }
+        }
+        if (showScrollToTop) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .clickable(role = Role.Button, onClick = onScrollToTop)
+                    .testTag("scrollToTop"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    SfSymbols.icon("arrow.up.circle"),
+                    contentDescription = "Scroll to top",
+                    tint = IosColors.textPrimary,
+                    modifier = Modifier.size(20.4.dp),
+                )
             }
         }
     }
@@ -753,7 +791,7 @@ private fun TransactionRow(
                 )
                 DropdownMenuItem(
                     text = { Text("Duplicate") },
-                    leadingIcon = { Icon(SfSymbols.icon("plus.square.on.square"), contentDescription = null) },
+                    leadingIcon = { Icon(SfSymbols.icon("doc.on.doc"), contentDescription = null) },
                     onClick = { showMenu = false; actions.onDuplicate(row) },
                 )
                 DropdownMenuItem(
@@ -836,7 +874,7 @@ private fun RowCategoryBadge(icon: String?, name: String, tint: Color) {
             CategoryIcons.symbol(icon, name),
             contentDescription = null,
             tint = IosColors.textPrimary,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(19.2.dp),
         )
     }
 }
@@ -855,7 +893,7 @@ private fun EmptyState(onAdd: () -> Unit) {
             modifier = Modifier.size(56.dp),
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("No transactions yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text("No transactions yet", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
             Text(
                 "Start tracking your spending by adding your first transaction.",
                 style = IosText.callout,
@@ -877,13 +915,13 @@ private fun EmptyState(onAdd: () -> Unit) {
             Icon(
                 SfSymbols.icon("plus.circle.fill"),
                 contentDescription = null,
-                tint = Color.White,
+                tint = IosColors.textPrimary,
                 modifier = Modifier.size(20.4.dp),
             )
             Text(
                 "Add your first transaction",
                 style = IosText.headline,
-                color = Color.White,
+                color = IosColors.textPrimary,
             )
         }
     }
