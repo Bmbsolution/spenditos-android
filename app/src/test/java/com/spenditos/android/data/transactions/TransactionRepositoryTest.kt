@@ -306,6 +306,39 @@ class TransactionRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun `discard refuses a create being sent and keeps it until the send settles`() = runTest {
+        online.value = false
+        repo.create(draft)
+        val row = queue().single()
+        db.mutations().claim(row.id, System.currentTimeMillis())
+
+        assertEquals(false, repo.discard(row.id))
+        assertEquals(MutationStatus.IN_FLIGHT, queue().single().status)
+        assertEquals(1, rows().size)
+
+        // The send settles as a failure: an ordinary discard now works.
+        db.mutations().release(row.id, MutationStatus.FAILED, FailureCode.VALIDATION, "rejected")
+        assertEquals(true, repo.discard(row.id))
+        assertTrue(queue().isEmpty())
+        assertTrue(rows().isEmpty())
+    }
+
+    @Test
+    fun `pending and failed entries discard normally`() = runTest {
+        online.value = false
+        repo.create(draft)
+        repo.create(draft.copy(description = "Dinner"))
+        val (first, second) = queue().sortedBy { it.createdAt }.let { it[0] to it[1] }
+
+        assertEquals(true, repo.discard(first.id))
+        db.mutations().release(second.id, MutationStatus.FAILED, FailureCode.VALIDATION, "rejected")
+        assertEquals(true, repo.discard(second.id))
+        assertTrue(queue().isEmpty())
+        assertTrue(rows().isEmpty())
+        assertEquals(0, server.requestCount)
+    }
+
     private fun repoWithSession(
         store: FakeTokenStore,
         refresher: com.spenditos.android.core.auth.TokenRefresher,

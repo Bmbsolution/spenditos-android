@@ -6,8 +6,10 @@ import com.spenditos.android.core.db.MutationStatus
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.data.model.BulkTransactionItem
 import com.spenditos.android.data.transactions.TransactionRepository
-import com.spenditos.android.data.user.UserSettingsRepository
+import com.spenditos.android.data.user.UserSettingsActions
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -25,15 +27,26 @@ data class QueuedItemUi(
     val message: String?,
 )
 
-data class NotSyncedUiState(val items: List<QueuedItemUi> = emptyList(), val currency: String = "USD")
+data class NotSyncedUiState(
+    val items: List<QueuedItemUi> = emptyList(),
+    val currency: String = "USD",
+    /** Set when a discard was refused (the change is being sent) or failed; cleared by [dismissNotice]. */
+    val notice: String? = null,
+)
 
 /** iOS `OfflineQueueView`: review, retry, or discard queued creates. */
 @HiltViewModel
 class NotSyncedViewModel @Inject constructor(
     private val transactions: TransactionRepository,
-    settings: UserSettingsRepository,
+    settings: UserSettingsActions,
 ) : ViewModel() {
-    val state: StateFlow<NotSyncedUiState> = combine(transactions.observeQueue(), settings.currency()) { queue, currency ->
+    private val notices = MutableStateFlow<String?>(null)
+
+    val state: StateFlow<NotSyncedUiState> = combine(
+        transactions.observeQueue(),
+        settings.currency(),
+        notices,
+    ) { queue, currency, notice ->
         NotSyncedUiState(
             items = queue.map { row ->
                 val item = SpenditosJson.decodeFromString(BulkTransactionItem.serializer(), row.payloadJson)
@@ -48,10 +61,28 @@ class NotSyncedViewModel @Inject constructor(
                 )
             },
             currency = currency,
+            notice = notice,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotSyncedUiState())
 
     fun retry(id: String) = viewModelScope.launch { transactions.retry(id) }
 
-    fun discard(id: String) = viewModelScope.launch { transactions.discard(id) }
+    fun discard(id: String) = viewModelScope.launch {
+        val notice = try {
+            if (transactions.discard(id)) null else IN_FLIGHT_NOTICE
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            "Couldn't discard this change. Try again in a moment."
+        }
+        if (notice != null) notices.value = notice
+    }
+
+    fun dismissNotice() {
+        notices.value = null
+    }
+
+    private companion object {
+        val IN_FLIGHT_NOTICE = "This change is being sent right now, so it can't be discarded yet. Try again in a moment."
+    }
 }

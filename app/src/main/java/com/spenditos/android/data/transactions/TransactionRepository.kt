@@ -325,14 +325,20 @@ class TransactionRepository @Inject constructor(
         sync.requestSync()
     }
 
-    /** Drops a queued create and its optimistic row. */
-    suspend fun discard(mutationId: String) {
-        val row = mutations.get(mutationId) ?: return
-        db.withTransaction {
-            transactions.delete(row.userId, row.localTransactionId)
-            mutations.delete(mutationId)
+    /**
+     * Drops a queued create and its optimistic row. Returns false (and keeps both) while a
+     * send holds it: the outstanding request can still commit, so the entry must survive
+     * until the send settles. Unsent and failed entries discard normally.
+     */
+    suspend fun discard(mutationId: String): Boolean {
+        val row = mutations.get(mutationId) ?: return true
+        val removed = db.withTransaction {
+            val deleted = mutations.deleteUnlessInFlight(mutationId) == 1
+            if (deleted) transactions.delete(row.userId, row.localTransactionId)
+            deleted
         }
-        invalidation.invalidate(Aggregate.TRANSACTION)
+        if (removed) invalidation.invalidate(Aggregate.TRANSACTION)
+        return removed
     }
 
     /** Account deletion: drops every queued create of the signed-in user and its optimistic row. */

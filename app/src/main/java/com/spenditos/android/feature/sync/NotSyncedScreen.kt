@@ -151,6 +151,19 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             dismissButton = { TextButton(onClick = { confirmDiscard = null }) { Text("Cancel") } },
         )
     }
+
+    state.notice?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissNotice,
+            title = { Text("Can't discard yet", style = IosText.headline) },
+            text = { Text(message, style = IosText.body) },
+            confirmButton = {
+                TextButton(onClick = viewModel::dismissNotice, modifier = Modifier.testTag("notSynced.notice.ok")) {
+                    Text("OK", color = IosColors.spendOrange)
+                }
+            },
+        )
+    }
 }
 
 @Composable
