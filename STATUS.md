@@ -2,6 +2,14 @@
 
 Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
+## Wave M (2026-10-07, GLM workers; Sonnet review pending)
+- GLM round review of filters / Edit mode / receipt camera / widget: 11 findings applied (`8dacbe9`, `b25b214`, `afbb808`, `4419a23`). One was wrong and reverted: iOS `.headingM` is title3 SemiBold (20), `.headingL` is title2 Bold (22).
+- List: Edit-mode button reads Cancel, iOS single-delete copy, pinned scroll-to-top overlay, empty-state CTA colour, doc.on.doc icon, 19.2dp row badge icon.
+- Receipt: "Monthly Limit Reached" view (QUOTA step), gallery pick goes through Retake / Use Photo, blurred receipt backdrop while analyzing.
+- Widget: category amounts as "%.0f", Add Expense / Scan pills deep-link (`spenditos://add-expense`, `spenditos://scan-receipt`, manifest filter + `WidgetDeepLinks`); both verified on the emulator (cold start).
+- Verified on the emulator in light and dark (Transactions, Edit, scroll-to-top, add form, camera). `scripts/verify.sh`: 468 tests, 0 failures.
+- Owner decision: RevenueCat will be replaced; the purchases port stays inert, no more work on it.
+
 ## Correctness pass (2026-10-07, review findings; committed locally, 8ae67e8..32a944f)
 Five correctness findings from the Android review, all with regression tests; no screens redesigned, no contracts changed:
 1. **Queued writes are bound to their owning session** (`SessionManager.SessionBinding` + `accessTokenFor`, request tag on `createBulk`, checked in `AuthInterceptor` before the request AND the 401 retry). An account switch mid-send defers the entry back to PENDING (`SendOutcome.Deferred`) instead of sending A's payload with B's token or failing it; single-flight refresh and idempotency keys untouched.
