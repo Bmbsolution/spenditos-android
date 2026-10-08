@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.transactions
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.TextButton
@@ -191,11 +194,14 @@ fun TransactionListScreen(
             }
         }
         val scope = rememberCoroutineScope()
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = { viewModel.refresh(includeCategories = true) },
-            modifier = Modifier.fillMaxSize(),
-        ) {
+        // iOS pins the scroll-to-top button in the navigation bar toolbar (TransactionListView.swift 124-132),
+        // so it stays on screen instead of scrolling away with the list. Overlay it outside the PullToRefreshBox.
+        Box(Modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = { viewModel.refresh(includeCategories = true) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 132.dp),
@@ -210,8 +216,6 @@ fun TransactionListScreen(
                                 TransactionsToolbarCapsule(
                                     isSearchActive = isSearchActive,
                                     filtersActive = state.hasActiveFilters,
-                                    showScrollToTop = showScrollToTop,
-                                    onScrollToTop = { scope.launch { listState.animateScrollToItem(0) } },
                                     onToggleSearch = {
                                         // Closing search also clears it, so no hidden filter stays on the list.
                                         if (isSearchActive) searchText = ""
@@ -381,6 +385,33 @@ fun TransactionListScreen(
                         .padding(bottom = tabBarBottomPadding() + FloatingTabBarHeight + 10.dp),
                 )
             }
+            }
+            // Pinned where the iOS navigation bar toolbar sits; hidden while the list is at the top,
+            // so it never covers the search/filter capsule.
+            AnimatedVisibility(
+                visible = showScrollToTop,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 10.dp, end = Spacing.screen),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .then(glassCardModifier(CircleShape, shadowAlpha = 0.08f))
+                        .clickable(role = Role.Button) { scope.launch { listState.animateScrollToItem(0) } }
+                        .testTag("scrollToTop"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        SfSymbols.icon("arrow.up.circle"),
+                        contentDescription = "Scroll to top",
+                        tint = IosColors.textPrimary,
+                        modifier = Modifier.size(20.4.dp),
+                    )
+                }
+            }
         }
     }
     if (showFilterSheet) {
@@ -419,8 +450,6 @@ fun TransactionListScreen(
 private fun TransactionsToolbarCapsule(
     isSearchActive: Boolean,
     filtersActive: Boolean,
-    showScrollToTop: Boolean,
-    onScrollToTop: () -> Unit,
     onToggleSearch: () -> Unit,
     onOpenFilter: () -> Unit,
     onOpenExport: () -> Unit,
@@ -488,23 +517,6 @@ private fun TransactionsToolbarCapsule(
                             .background(IosColors.spendOrange, CircleShape),
                     )
                 }
-            }
-        }
-        if (showScrollToTop) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(role = Role.Button, onClick = onScrollToTop)
-                    .testTag("scrollToTop"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    SfSymbols.icon("arrow.up.circle"),
-                    contentDescription = "Scroll to top",
-                    tint = IosColors.textPrimary,
-                    modifier = Modifier.size(20.4.dp),
-                )
             }
         }
     }
