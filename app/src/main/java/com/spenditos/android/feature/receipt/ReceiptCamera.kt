@@ -85,6 +85,9 @@ internal fun ReceiptCamera(
     onPickLibrary: () -> Unit,
     onUsePhoto: (File) -> Unit,
     onCaptureError: () -> Unit,
+    libraryPhoto: Uri? = null,
+    onLibraryPhotoConfirmed: (Uri) -> Unit = {},
+    onLibraryPhotoDismissed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf<Boolean?>(null) }
@@ -108,17 +111,28 @@ internal fun ReceiptCamera(
     }
 
     val photo = capturedFile
+    val library = libraryPhoto
     val showDenied = permissionGranted == false || noCamera
     val showLive = permissionGranted == true && !noCamera && photo == null
 
     Box(
         Modifier
             .fillMaxSize()
-            .background(if (photo == null && !showDenied) Color.Black else MaterialTheme.colorScheme.background),
+            .background(if (photo == null && library == null && !showDenied) Color.Black else MaterialTheme.colorScheme.background),
     ) {
         when {
+            // A gallery pick confirms through the same Retake / Use Photo preview as a capture.
+            library != null -> ReceiptPhotoPreview(
+                source = library,
+                loadBitmap = {
+                    context.contentResolver.openInputStream(library)?.use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+                },
+                onRetake = onLibraryPhotoDismissed,
+                onUse = { onLibraryPhotoConfirmed(library) },
+            )
             photo != null -> ReceiptPhotoPreview(
-                file = photo,
+                source = photo,
+                loadBitmap = { BitmapFactory.decodeFile(photo.absolutePath)?.asImageBitmap() },
                 onRetake = {
                     photo.delete()
                     capturedFile = null
@@ -374,7 +388,7 @@ private fun ReceiptPermissionDenied(
             )
             Text(
                 "Camera Access Required",
-                style = IosText.title3.w(FontWeight.SemiBold),
+                style = IosText.title2.w(FontWeight.Bold),
                 color = IosColors.textPrimary,
                 textAlign = TextAlign.Center,
             )
@@ -413,14 +427,14 @@ private fun ReceiptPermissionDenied(
 
 @Composable
 private fun ReceiptPhotoPreview(
-    file: File,
+    source: Any,
+    loadBitmap: () -> ImageBitmap?,
     onRetake: () -> Unit,
     onUse: () -> Unit,
 ) {
-    var bitmap by remember(file) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(file) {
-        val decoded = BitmapFactory.decodeFile(file.absolutePath)
-        bitmap = decoded?.asImageBitmap()
+    var bitmap by remember(source) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(source) {
+        bitmap = loadBitmap()
     }
     Box(Modifier.fillMaxSize()) {
         bitmap?.let {

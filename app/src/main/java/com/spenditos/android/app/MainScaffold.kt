@@ -110,6 +110,15 @@ fun MainScaffold(envName: String?, deepLinks: com.spenditos.android.data.push.De
         }
         deepLinks.consume(link)
     }
+    // Widget pills deep-link like iOS (spenditos://add-expense, spenditos://scan-receipt).
+    val widgetLink by WidgetDeepLinks.pending.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(widgetLink) {
+        when (widgetLink) {
+            WidgetDeepLinks.ADD_EXPENSE -> showAdd = true
+            WidgetDeepLinks.SCAN_RECEIPT -> nav.navigate(RECEIPT_SCAN_ROUTE) { launchSingleTop = true }
+        }
+        if (widgetLink != null) WidgetDeepLinks.consume()
+    }
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     var editTarget by remember { mutableStateOf<com.spenditos.android.feature.transactions.EditTarget?>(null) }

@@ -39,6 +39,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Widget quick actions, like the iOS widget's spenditos:// links. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="spenditos" android:host="add-expense" />
+                <data android:scheme="spenditos" android:host="scan-receipt" />
+            </intent-filter>
         </activity>
 
         <!-- Share camera photos with the system camera app; files live in the app cache and are

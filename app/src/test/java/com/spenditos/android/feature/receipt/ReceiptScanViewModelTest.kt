@@ -65,7 +65,15 @@ class ReceiptScanViewModelTest {
     @Test
     fun `scan moves through preparation upload and analysis then emits prefill`() = runTest {
         val history = mutableListOf<ReceiptScanStep>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect { history += it.step } }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { state ->
+                history += state.step
+                // The analyzing backdrop (iOS analyzingView) shows the processed image in flight.
+                if (state.step == ReceiptScanStep.UPLOADING || state.step == ReceiptScanStep.ANALYZING) {
+                    assertTrue(state.backdropPath != null)
+                }
+            }
+        }
         val event = async { viewModel.events.first() }
 
         viewModel.onLibraryPhotoSelected(Uri.parse("content://fake/photo"))
@@ -83,8 +91,8 @@ class ReceiptScanViewModelTest {
         viewModel.onLibraryPhotoSelected(Uri.parse("content://fake/photo"))
         advanceUntilIdle()
 
-        assertEquals(ReceiptScanStep.FAILURE, viewModel.state.value.step)
-        assertEquals("You've used this month's free scans.", viewModel.state.value.error)
+        assertEquals(ReceiptScanStep.QUOTA, viewModel.state.value.step)
+        assertEquals("You've used all your free receipt scans for this month.", viewModel.state.value.error)
         assertFalse(viewModel.state.value.offline)
         assertFalse(viewModel.state.value.error!!.contains("Pro"))
 

@@ -25,12 +25,14 @@ import java.io.File
 import com.spenditos.android.data.receipt.ReceiptIoDispatcher
 import javax.inject.Inject
 
-enum class ReceiptScanStep { CHOOSE, PREPARING, UPLOADING, ANALYZING, DONE, FAILURE }
+enum class ReceiptScanStep { CHOOSE, PREPARING, UPLOADING, ANALYZING, DONE, FAILURE, QUOTA }
 
 data class ReceiptScanUiState(
     val step: ReceiptScanStep = ReceiptScanStep.CHOOSE,
     val error: String? = null,
     val offline: Boolean = false,
+    /** The processed image (already resized, owned by the scan job) shown behind the progress card. */
+    val backdropPath: String? = null,
 )
 
 sealed interface ReceiptScanEvent {
@@ -114,6 +116,8 @@ class ReceiptScanViewModel @Inject constructor(
                 temp = outputFile
                 activeTempFile = outputFile
                 withContext(ioDispatcher) { imageProcessor.process(uri, outputFile) }
+                // The backdrop decodes this file while the scan uses it; the lifecycle below is unchanged.
+                _state.value = _state.value.copy(backdropPath = outputFile.absolutePath)
                 if (cameraSource) {
                     imageProcessor.deleteCameraFile(uri.toString())
                     cameraSourceDeleted = true
@@ -137,7 +141,7 @@ class ReceiptScanViewModel @Inject constructor(
                 val quotaUsed = error is ApiError.Server && error.status == 403 && error.serverMessage == QUOTA_EXHAUSTED
                 val offline = error is ApiError.Network
                 _state.value = ReceiptScanUiState(
-                    step = ReceiptScanStep.FAILURE,
+                    step = if (quotaUsed) ReceiptScanStep.QUOTA else ReceiptScanStep.FAILURE,
                     error = when {
                         quotaUsed -> QUOTA_MESSAGE
                         offline -> MANUAL_FALLBACK
@@ -169,7 +173,7 @@ class ReceiptScanViewModel @Inject constructor(
     private companion object {
         const val KEY_PENDING_CAMERA_URI = "receipt.pendingCameraUri"
         const val QUOTA_EXHAUSTED = "QuotaExhausted"
-        const val QUOTA_MESSAGE = "You've used this month's free scans."
+        const val QUOTA_MESSAGE = "You've used all your free receipt scans for this month."
         const val MANUAL_FALLBACK = "Couldn't read that receipt. You can enter it yourself."
     }
 }

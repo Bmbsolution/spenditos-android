@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.widget
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -8,6 +9,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -20,6 +22,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
@@ -49,6 +52,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -406,7 +410,8 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                 Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
                     snapshot.topCategories.take(3).forEachIndexed { index, category ->
                         if (index > 0) Spacer(GlanceModifier.width(8.dp))
-                        CategoryPill(category.name, amount(category.amount, snapshot), categoryColor(category.colorHex), index + 1, primary, secondary)
+                        // iOS CategoryPill: plain "%.0f" figure, no currency symbol.
+                        CategoryPill(category.name, String.format(Locale.US, "%.0f", category.amount), categoryColor(category.colorHex), index + 1, primary, secondary)
                     }
                 }
             }
@@ -414,9 +419,10 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
 
         Spacer(GlanceModifier.height(12.dp))
         Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-            ActionPill("plus", "Add Expense", WidgetBlue)
+            // iOS widget Links: spenditos://add-expense and spenditos://scan-receipt.
+            ActionPill("plus", "Add Expense", WidgetBlue, actionStartActivity(deepLinkIntent(context, "add-expense")))
             Spacer(GlanceModifier.width(12.dp))
-            ActionPill("camera", "Scan", WidgetGreen)
+            ActionPill("camera", "Scan", WidgetGreen, actionStartActivity(deepLinkIntent(context, "scan-receipt")))
         }
     }
 }
@@ -467,12 +473,19 @@ private fun androidx.glance.layout.RowScope.CategoryPill(name: String, value: St
     }
 }
 
+/** Opens MainActivity on a spenditos:// host (SpenditosWidget.swift Links); the pills each own one. */
+private fun deepLinkIntent(context: Context, host: String): Intent =
+    Intent(Intent.ACTION_VIEW, Uri.parse("spenditos://$host"))
+        .setComponent(ComponentName(context, MainActivity::class.java))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
 @Composable
-private fun ActionPill(icon: String, title: String, color: Color) {
+private fun ActionPill(icon: String, title: String, color: Color, onClick: Action) {
     Row(
         modifier = GlanceModifier.background(androidx.glance.unit.ColorProvider(color))
             .cornerRadius(10.dp)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clickable(onClick),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         WidgetIcon(icon, Color.White, 14.dp)
