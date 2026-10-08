@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.flowOf
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -186,36 +188,49 @@ class SessionLifecycleTest {
     }
 
     @Test
-    fun `signing in again after a sign-out reruns the session start work`() {
-        val session = session()
-        lifecycleFor(session).start()
-
-        signInAs(session, "user-1")
-        awaitExactly(1, logIns)
-
-        session.signOut() // session expiry or user sign-out
-        signInAs(session, "user-1") // the same user signs back in without a cold start
-        awaitExactly(2, logIns)
-
-        assertEquals(SessionState.SignedIn("user-1", "test@example.test"), session.state.value)
-        assertEquals(2, settingsRefreshes.get())
-        assertEquals(2, categoriesRefreshes.get())
+    fun `the first emission runs the session start work`() {
+        assertTrue(shouldRunStartWork(null, SessionState.SignedIn("user-1", "test@example.test")))
     }
 
     @Test
-    fun `a repeated identical signed-in state does not rerun the session start work`() {
+    fun `a signed-in state repeated for the same user does not rerun the session start work`() {
+        val state = SessionState.SignedIn("user-1", "test@example.test")
+        assertFalse(shouldRunStartWork(state, state))
+    }
+
+    @Test
+    fun `signing in again after a sign-out reruns the session start work`() {
+        assertTrue(
+            shouldRunStartWork(SessionState.SignedOut, SessionState.SignedIn("user-1", "test@example.test")),
+        )
+    }
+
+    @Test
+    fun `a different user signing in reruns the session start work`() {
+        assertTrue(
+            shouldRunStartWork(
+                SessionState.SignedIn("user-1", "a@example.test"),
+                SessionState.SignedIn("user-2", "b@example.test"),
+            ),
+        )
+    }
+
+    @Test
+    fun `a signed-out state never runs the session start work`() {
+        assertFalse(shouldRunStartWork(null, SessionState.SignedOut))
+        assertFalse(shouldRunStartWork(SessionState.SignedIn("user-1", "test@example.test"), SessionState.SignedOut))
+    }
+
+    @Test
+    fun `a single sign-in runs the session start work exactly once`() {
         val session = session()
         lifecycleFor(session).start()
 
         signInAs(session, "user-1")
         awaitExactly(1, logIns)
 
-        signInAs(session, "user-1") // identical SignedIn(A, email): must not run the body
-        session.signOut()
-        signInAs(session, "user-1") // a real transition: runs it again
-        awaitExactly(2, logIns)
-
-        assertEquals(2, settingsRefreshes.get())
-        assertEquals(2, categoriesRefreshes.get())
+        assertEquals(SessionState.SignedIn("user-1", "test@example.test"), session.state.value)
+        assertEquals(1, settingsRefreshes.get())
+        assertEquals(1, categoriesRefreshes.get())
     }
 }

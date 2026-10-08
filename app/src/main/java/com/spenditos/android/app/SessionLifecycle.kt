@@ -13,6 +13,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// Run on every arrival of a SignedIn state, not only on distinct ones: after
+// SignedIn -> SignedOut -> SignedIn (expiry, then the same user signs back in)
+// the queue replay and cache warm-up must run again. The first emission counts
+// as an arrival; a SignedIn state repeated for the same user does not.
+internal fun shouldRunStartWork(previous: SessionState?, current: SessionState): Boolean {
+    val signedIn = current as? SessionState.SignedIn ?: return false
+    return (previous as? SessionState.SignedIn)?.userId != signedIn.userId
+}
+
 /**
  * App-lifetime reactions to a session starting (launch with a saved session, or a
  * fresh sign-in): replay the queue (iOS replays after login and at launch) and warm
@@ -32,14 +41,10 @@ class SessionLifecycle @Inject constructor(
 
     fun start() {
         scope.launch {
-            // Run on every arrival of a SignedIn state, not only on distinct ones: after
-            // SignedIn -> SignedOut -> SignedIn (expiry, then the same user signs back in)
-            // the queue replay and cache warm-up must run again. The first emission counts
-            // as an arrival; a SignedIn state repeated for the same user does not.
             var previous: SessionState? = null
             session.state.collect { state ->
-                val signedIn = state as? SessionState.SignedIn
-                if (signedIn != null && (previous as? SessionState.SignedIn)?.userId != signedIn.userId) {
+                if (shouldRunStartWork(previous, state)) {
+                    val signedIn = state as SessionState.SignedIn
                     runCatching { transactions.requeueAuthFailures(signedIn.userId) }
                     sync.requestSync()
                     runCatching { settings.refresh() }
