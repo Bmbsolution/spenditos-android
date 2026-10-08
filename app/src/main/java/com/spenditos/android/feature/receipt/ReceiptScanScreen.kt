@@ -170,7 +170,7 @@ private fun ReceiptFailure(offline: Boolean, message: String, onRetry: () -> Uni
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(48.dp))
-        Text("Couldn't read receipt", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text("Couldn't read receipt", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
         if (offline) {
             Text("You're offline. Check your connection and try again.", style = IosText.body, color = IosColors.warning, textAlign = TextAlign.Center)
         }
@@ -276,7 +276,7 @@ private fun ProgressState(title: String, detail: String?, backdropPath: String?,
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             CircularProgressIndicator(modifier = Modifier.size(36.dp).testTag("receipt.loading"), color = IosColors.spendOrange, strokeWidth = 3.dp)
-            Text(title, style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             if (detail != null) Text(detail, color = IosColors.neutral, style = IosText.body, textAlign = TextAlign.Center)
             PillButton("Cancel", onClick = onCancel, filled = false)
         }

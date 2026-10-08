@@ -388,7 +388,7 @@ private fun ReceiptPermissionDenied(
             )
             Text(
                 "Camera Access Required",
-                style = IosText.title2.w(FontWeight.Bold),
+                style = IosText.title3.w(FontWeight.SemiBold),
                 color = IosColors.textPrimary,
                 textAlign = TextAlign.Center,
             )
