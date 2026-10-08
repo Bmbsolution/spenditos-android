@@ -1,6 +1,7 @@
 package com.spenditos.android.feature.transactions
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.spenditos.android.core.auth.EpochClock
@@ -8,6 +9,8 @@ import com.spenditos.android.core.auth.RefreshedTokens
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.config.AppEnvironment
 import com.spenditos.android.core.db.SpenditosDatabase
+import com.spenditos.android.core.db.SyncStatus
+import com.spenditos.android.core.db.TransactionEntity
 import com.spenditos.android.core.network.ApiEnvelope
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.sync.FinanceInvalidationBus
@@ -26,6 +29,7 @@ import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
@@ -85,7 +89,7 @@ class TransactionListViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): TransactionListViewModel {
+    private fun createViewModel(handle: SavedStateHandle = SavedStateHandle()): TransactionListViewModel {
         val retrofit = Retrofit.Builder().baseUrl(server.url("/"))
             .client(OkHttpClient())
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
@@ -126,6 +130,7 @@ class TransactionListViewModelTest {
             },
             FinanceInvalidationBus(),
             FilterPresetStore(ApplicationProvider.getApplicationContext<Context>(), session),
+            handle,
             clock,
         )
     }
@@ -194,6 +199,86 @@ class TransactionListViewModelTest {
         assertFalse(months.contains(YearMonth.of(2026, 11)))
         assertTrue(receivedRequests().none { it.url.queryParameter("startDate") == "2026-11-01" })
     }
+
+    @Test
+    fun `filter criteria and search query restore from SavedStateHandle`() = runTest {
+        // PENDING rows survive the range refresh (it only replaces synced rows).
+        db.transactions().upsert(
+            listOf(
+                savedTransaction(id = "t-1", description = "Coffee shop", date = "2026-10-05", amount = 4.5),
+                savedTransaction(id = "t-2", description = "Rent", date = "2026-10-06", amount = 1200.0),
+            ),
+        )
+        val handle = SavedStateHandle(
+            mapOf(
+                "transactionFilters.dateRange" to DateRangeFilter.CUSTOM.name,
+                "transactionFilters.customStart" to LocalDate.of(2026, 10, 1).toEpochDay(),
+                "transactionFilters.customEnd" to LocalDate.of(2026, 10, 31).toEpochDay(),
+                "transactionFilters.categoryIds" to arrayListOf("food"),
+                "transactionFilters.type" to EntryType.EXPENSE.name,
+                "transactionFilters.minAmount" to 1.0,
+                "transactionFilters.maxAmount" to 100.0,
+                "transactionFilters.search" to "coffee",
+            ),
+        )
+        viewModel = createViewModel(handle)
+        val months = mutableListOf<YearMonth>()
+        collectMonths(months)
+        runCurrent()
+        viewModel.state.first { it.categories.isNotEmpty() }
+
+        val filters = viewModel.state.value.filters
+        assertEquals(DateRangeFilter.CUSTOM, filters.dateRange)
+        assertEquals(LocalDate.of(2026, 10, 1), filters.customStart)
+        assertEquals(LocalDate.of(2026, 10, 31), filters.customEnd)
+        assertEquals(setOf("food"), filters.selectedCategoryIds)
+        assertEquals(EntryType.EXPENSE, filters.selectedType)
+        assertEquals(1.0, filters.minAmount)
+        assertEquals(100.0, filters.maxAmount)
+        // The restored search applies: only the matching row survives the client-side filter.
+        assertEquals(listOf("Coffee shop"), viewModel.state.value.days.flatMap { it.second }.map { it.title })
+        // The month was never pinned, so it keeps following the clock (October 2026 in Toronto).
+        assertEquals(YearMonth.of(2026, 10), viewModel.state.value.month)
+    }
+
+    @Test
+    fun `a pinned month restores from SavedStateHandle and changes keep being saved`() = runTest {
+        val handle = SavedStateHandle(
+            mapOf(
+                "transactionFilters.month" to "2026-09",
+                "transactionFilters.monthPinned" to true,
+            ),
+        )
+        viewModel = createViewModel(handle)
+        val months = mutableListOf<YearMonth>()
+        collectMonths(months)
+        runCurrent()
+        viewModel.state.first { it.categories.isNotEmpty() }
+
+        assertEquals(YearMonth.of(2026, 9), viewModel.state.value.month)
+
+        viewModel.setSearch("abc")
+        runCurrent()
+        assertEquals("abc", handle.get<String>("transactionFilters.search"))
+        viewModel.removeDateFilter() // back to the clock-driven default month
+        runCurrent()
+        assertEquals(false, handle.get<Boolean>("transactionFilters.monthPinned"))
+    }
+
+    private fun savedTransaction(id: String, description: String, date: String, amount: Double) = TransactionEntity(
+        id = id,
+        userId = "user-1",
+        amount = amount,
+        categoryId = "food",
+        description = description,
+        date = date,
+        mood = null,
+        templateId = null,
+        source = null,
+        createdAt = null,
+        updatedAt = null,
+        syncStatus = SyncStatus.PENDING,
+    )
 
     private companion object {
         val TORONTO = ZoneId.of("America/Toronto")

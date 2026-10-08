@@ -36,6 +36,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,23 +77,43 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
 import java.time.YearMonth
 
+/** Saves the generate-month picker selection across recreation as "yyyy-MM". */
+internal val YearMonthSaver = Saver<YearMonth, String>(
+    save = { it.toString() },
+    restore = { saved -> runCatching { YearMonth.parse(saved) }.getOrNull() },
+)
+
 @Composable
 fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    var showEditor by remember { mutableStateOf(false) }
-    var templateToEdit by remember { mutableStateOf<RecurringTemplate?>(null) }
-    var templateToDelete by remember { mutableStateOf<RecurringTemplate?>(null) }
-    var showGenerate by remember { mutableStateOf(false) }
-    var generateMonth by remember { mutableStateOf(YearMonth.now()) }
-    var showAddMenu by remember { mutableStateOf(false) }
-    var addPresetIncome by remember { mutableStateOf(false) }
+    var showEditor by rememberSaveable { mutableStateOf(false) }
+    // Recreations keep only ids; the templates are resolved from the current state below and
+    // the sheet/dialog closes when an id no longer resolves (deleted or refreshed away).
+    var templateToEditId by rememberSaveable { mutableStateOf<String?>(null) }
+    var templateToDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showGenerate by rememberSaveable { mutableStateOf(false) }
+    var generateMonth by rememberSaveable(stateSaver = YearMonthSaver) { mutableStateOf(YearMonth.now()) }
+    var showAddMenu by rememberSaveable { mutableStateOf(false) }
+    var addPresetIncome by rememberSaveable { mutableStateOf(false) }
+    val templateToEdit = templateToEditId?.let { id -> state.templates.firstOrNull { it.id == id } }
+    val templateToDelete = templateToDeleteId?.let { id -> state.templates.firstOrNull { it.id == id } }
+
+    LaunchedEffect(templateToEditId, templateToDeleteId, showEditor, state.isLoading, state.templates) {
+        if (!state.isLoading) {
+            if (showEditor && templateToEditId != null && templateToEdit == null) {
+                showEditor = false
+                templateToEditId = null
+            }
+            if (templateToDeleteId != null && templateToDelete == null) templateToDeleteId = null
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                IncomeAndBillsEvent.Saved -> { showEditor = false; templateToEdit = null }
-                IncomeAndBillsEvent.Deleted -> templateToDelete = null
+                IncomeAndBillsEvent.Saved -> { showEditor = false; templateToEditId = null }
+                IncomeAndBillsEvent.Deleted -> templateToDeleteId = null
                 is IncomeAndBillsEvent.Generated -> {
                     if (event.result.errors == 0) showGenerate = false
                     snackbar.showSnackbar("Generated ${event.result.generated} transactions. ${event.result.skipped} skipped, ${event.result.errors} errors.")
@@ -112,7 +134,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             CircularProgressIndicator(Modifier.size(30.dp).testTag("recurring.loading"), color = MaterialTheme.colorScheme.primary)
-                            TextButton(onClick = { templateToEdit = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text("Add") }
+                            TextButton(onClick = { templateToEditId = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text("Add") }
                         }
                     }
                 }
@@ -162,7 +184,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                             Row(
                                 Modifier.fillMaxWidth().padding(horizontal = Spacing.screen)
                                     .clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange)
-                                    .clickable(role = Role.Button) { addPresetIncome = true; templateToEdit = null; showEditor = true }
+                                    .clickable(role = Role.Button) { addPresetIncome = true; templateToEditId = null; showEditor = true }
                                     .testTag("recurring.empty.add").padding(horizontal = Spacing.l, vertical = Spacing.m),
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -179,7 +201,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                 item("bills.header") {
                     Row(Modifier.fillMaxWidth().padding(end = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
                         RecurringSectionHeader("Bills", Modifier.weight(1f).testTag("recurring.section.bills"))
-                        TextButton(onClick = { addPresetIncome = false; templateToEdit = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text("Add") }
+                        TextButton(onClick = { addPresetIncome = false; templateToEditId = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text("Add") }
                     }
                 }
                 if (!state.isLoading && state.billTemplates.isEmpty() && state.templates.isNotEmpty()) {
@@ -195,8 +217,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                         isIncome = false,
                         mainIncomeTemplateId = state.mainIncomeTemplateId,
                         currency = state.currency,
-                        onEdit = { templateToEdit = template; showEditor = true },
-                        onDelete = { templateToDelete = template },
+                        onEdit = { templateToEditId = template.id; showEditor = true },
+                        onDelete = { templateToDeleteId = template.id },
                         onMainIncome = {},
                     )
                 }
@@ -215,8 +237,8 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                         isIncome = true,
                         mainIncomeTemplateId = state.mainIncomeTemplateId,
                         currency = state.currency,
-                        onEdit = { templateToEdit = template; showEditor = true },
-                        onDelete = { templateToDelete = template },
+                        onEdit = { templateToEditId = template.id; showEditor = true },
+                        onDelete = { templateToDeleteId = template.id },
                         onMainIncome = { viewModel.setMainIncome(if (state.mainIncomeTemplateId == template.id) null else template.id) },
                     )
                 }
@@ -244,12 +266,12 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                         DropdownMenuItem(
                             text = { Text("Add income", style = IosText.subheadline) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.down.circle"), contentDescription = null) },
-                            onClick = { showAddMenu = false; addPresetIncome = true; templateToEdit = null; showEditor = true },
+                            onClick = { showAddMenu = false; addPresetIncome = true; templateToEditId = null; showEditor = true },
                         )
                         DropdownMenuItem(
                             text = { Text("Add bill", style = IosText.subheadline) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.up.circle"), contentDescription = null) },
-                            onClick = { showAddMenu = false; addPresetIncome = false; templateToEdit = null; showEditor = true },
+                            onClick = { showAddMenu = false; addPresetIncome = false; templateToEditId = null; showEditor = true },
                         )
                     }
                 }
@@ -265,7 +287,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             initialIsIncome = addPresetIncome,
             isSaving = state.isWriting,
             error = state.error,
-            onDismiss = { showEditor = false; templateToEdit = null },
+            onDismiss = { showEditor = false; templateToEditId = null },
             onSave = { draft ->
                 if (templateToEdit == null) viewModel.create(draft.toCreateRequest())
                 else viewModel.update(requireNotNull(templateToEdit).id, draft.toUpdateRequest())
@@ -276,7 +298,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
     templateToDelete?.let { template ->
         val deletingIncome = state.categories.firstOrNull { it.id == template.categoryId }?.isIncome == true
         AlertDialog(
-            onDismissRequest = { templateToDelete = null },
+            onDismissRequest = { templateToDeleteId = null },
             title = { Text(if (deletingIncome) "Delete this income?" else "Delete this bill?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -287,7 +309,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
             confirmButton = {
                 TextButton(onClick = { viewModel.delete(template.id) }, enabled = !state.isWriting, modifier = Modifier.testTag("recurring.delete.confirm")) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { templateToDelete = null }, modifier = Modifier.testTag("recurring.delete.cancel")) { Text("Cancel") }
+            dismissButton = { TextButton(onClick = { templateToDeleteId = null }, modifier = Modifier.testTag("recurring.delete.cancel")) { Text("Cancel") }
             },
         )
     }

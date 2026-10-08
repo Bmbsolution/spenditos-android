@@ -40,6 +40,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,7 +79,13 @@ fun MonthPlanScreen(
     MonthPlanContent(viewModel, addOneTimeRequest, onAddOneTimeRequestHandled, onOpenIncomeAndBills)
 }
 
-private enum class ConfirmAction { APPLY, DISCARD }
+internal enum class ConfirmAction { APPLY, DISCARD }
+
+/** Saves the open confirm dialog across recreation; the empty string restores "no dialog". */
+internal val ConfirmActionSaver = Saver<ConfirmAction?, String>(
+    save = { it?.name.orEmpty() },
+    restore = { saved -> ConfirmAction.entries.firstOrNull { it.name == saved } },
+)
 
 @Composable
 private fun PlanTintCard(
@@ -100,11 +108,15 @@ private fun MonthPlanContent(
     onOpenIncomeAndBills: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var addingOneTime by remember { mutableStateOf(false) }
-    var reviewSuggestion by remember { mutableStateOf<com.spenditos.android.data.model.MonthlyPlanCheckupSuggestion?>(null) }
-    var changingRow by remember { mutableStateOf<MonthPlanRecurringRow?>(null) }
-    var confirmAction by remember { mutableStateOf<ConfirmAction?>(null) }
+    var addingOneTime by rememberSaveable { mutableStateOf(false) }
+    // Recreations keep only ids; the objects are resolved from the current state below and the
+    // sheet closes when an id no longer resolves (stale row, dismissed suggestion).
+    var reviewSuggestionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var changingRowId by rememberSaveable { mutableStateOf<String?>(null) }
+    var confirmAction by rememberSaveable(stateSaver = ConfirmActionSaver) { mutableStateOf<ConfirmAction?>(null) }
     val rows = viewModel.rows(state)
+    val changingRow = changingRowId?.let { id -> rows.firstOrNull { it.templateId == id } }
+    val reviewSuggestion = reviewSuggestionId?.let { id -> state.visibleSuggestions.firstOrNull { it.id == id } }
     val summary = viewModel.summary(state)
 
     LaunchedEffect(viewModel) { viewModel.load() }
@@ -113,6 +125,18 @@ private fun MonthPlanContent(
             // A past month can't take new entries; drop the request instead of opening the sheet later.
             if (!state.isPast) addingOneTime = true
             onAddOneTimeRequestHandled(addOneTimeRequest)
+        }
+    }
+    // Rows exist only with a snapshot; before that the id simply cannot resolve yet.
+    LaunchedEffect(changingRowId, state.snapshot, rows) {
+        if (changingRowId != null && state.snapshot != null && rows.none { it.templateId == changingRowId }) changingRowId = null
+    }
+    LaunchedEffect(addingOneTime, reviewSuggestionId, state.checkup) {
+        if (addingOneTime && reviewSuggestionId != null && state.checkup != null &&
+            state.visibleSuggestions.none { it.id == reviewSuggestionId }
+        ) {
+            addingOneTime = false
+            reviewSuggestionId = null
         }
     }
 
@@ -155,19 +179,19 @@ private fun MonthPlanContent(
                         state,
                         viewModel,
                         onOpenIncomeAndBills = onOpenIncomeAndBills,
-                        onChange = { changingRow = it },
+                        onChange = { changingRowId = it.templateId },
                     )
-                    BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false, current = state), state, viewModel, onChange = { changingRow = it })
+                    BillsSection(rows.filterNot { it.isIncome }, viewModel.transactionRows(isIncome = false, current = state), state, viewModel, onChange = { changingRowId = it.templateId })
                     OneTimeSection(
                         state = state,
                         viewModel = viewModel,
-                        onAdd = { reviewSuggestion = null; addingOneTime = true },
+                        onAdd = { reviewSuggestionId = null; addingOneTime = true },
                     )
                     MoreTools(
                         state = state,
                         onExpand = viewModel::loadCheckup,
                         onHide = viewModel::dismissSuggestion,
-                        onReview = { reviewSuggestion = it; addingOneTime = true },
+                        onReview = { reviewSuggestionId = it.id; addingOneTime = true },
                     )
                 }
                 state.isLoading -> LoadingCard()
@@ -181,7 +205,7 @@ private fun MonthPlanContent(
             month = state.month,
             categories = state.snapshot?.categories.orEmpty(),
             currency = state.currency,
-            onDismiss = { addingOneTime = false; reviewSuggestion = null },
+            onDismiss = { addingOneTime = false; reviewSuggestionId = null },
             onAdd = viewModel::addOneTime,
             suggestion = reviewSuggestion,
         )
@@ -190,7 +214,7 @@ private fun MonthPlanContent(
         ChangeAmountSheet(
             row = row,
             currency = state.currency,
-            onDismiss = { changingRow = null },
+            onDismiss = { changingRowId = null },
             onSave = { viewModel.stageAmountChange(row.templateId, row.dates, it) },
             onReset = { viewModel.resetAmountChange(row.templateId) },
         )

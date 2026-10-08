@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +55,7 @@ fun ChangeAmountSheet(
     onSave: (BigDecimal) -> Unit,
     onReset: () -> Unit,
 ) {
-    var amountText by remember { mutableStateOf((row.amounts.firstOrNull() ?: row.usualAmount).setScale(2).toPlainString()) }
+    var amountText by rememberSaveable { mutableStateOf((row.amounts.firstOrNull() ?: row.usualAmount).setScale(2).toPlainString()) }
     val amount = parsePlanAmount(amountText)
     val canSave = amount != null && row.dates.size <= 10
     ModalBottomSheet(

@@ -39,6 +39,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +77,12 @@ import java.time.format.FormatStyle
 import java.util.Currency
 
 private const val MILLIS_PER_DAY = 86_400_000L
+
+/** Saves a date as its epoch day so uncommitted editor drafts survive recreation. */
+internal val LocalDateSaver = Saver<LocalDate, Long>(
+    save = { it.toEpochDay() },
+    restore = { LocalDate.ofEpochDay(it) },
+)
 
 @Composable
 fun CaptureReviewStep(
@@ -225,14 +233,14 @@ private fun ReviewItemEditorSheet(
 ) {
     val key = item.idempotencyKeyId
     val itemIncome = item.transactionType.equals("income", ignoreCase = true)
-    var income by remember(key) { mutableStateOf(itemIncome) }
+    var income by rememberSaveable(key) { mutableStateOf(itemIncome) }
     val choices = categories.filter { it.isIncome == income }
     // Edits stay local until Done, like iOS TransactionItemEditorView; Cancel or dismiss discards them.
-    var draftAmount by remember(key) { mutableStateOf(item.amountText) }
-    var draftDescription by remember(key) { mutableStateOf(item.description) }
-    var draftCategoryId by remember(key) { mutableStateOf(item.categoryId) }
+    var draftAmount by rememberSaveable(key) { mutableStateOf(item.amountText) }
+    var draftDescription by rememberSaveable(key) { mutableStateOf(item.description) }
+    var draftCategoryId by rememberSaveable(key) { mutableStateOf(item.categoryId) }
     val initialDate = runCatching { LocalDate.parse(item.date) }.getOrDefault(LocalDate.now())
-    var date by remember(key) { mutableStateOf(initialDate) }
+    var date by rememberSaveable(key, stateSaver = LocalDateSaver) { mutableStateOf(initialDate) }
     val commit = {
         if (draftAmount != item.amountText) onAmountChange(draftAmount)
         if (draftDescription != item.description) onDescriptionChange(draftDescription)
@@ -244,7 +252,7 @@ private fun ReviewItemEditorSheet(
     }
     val selectedCategory = choices.firstOrNull { it.id == draftCategoryId }
     var showCategoryPicker by remember(key) { mutableStateOf(false) }
-    var categorySearchText by remember(key) { mutableStateOf("") }
+    var categorySearchText by rememberSaveable(key) { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editable = !item.isFrozen
 

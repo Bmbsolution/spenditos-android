@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,12 +90,12 @@ fun FilterSheet(
 ) {
     val filters = state.filters
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    var categorySearch by remember { mutableStateOf("") }
+    var categorySearch by rememberSaveable { mutableStateOf("") }
     var showSave by remember { mutableStateOf(false) }
     var pickingStart by remember { mutableStateOf(false) }
     var pickingEnd by remember { mutableStateOf(false) }
-    var minText by remember { mutableStateOf("") }
-    var maxText by remember { mutableStateOf("") }
+    var minText by rememberSaveable { mutableStateOf("") }
+    var maxText by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(filters.presetEpoch) {
         minText = filters.minAmount?.let { "%.2f".format(Locale.US, it) } ?: ""
         maxText = filters.maxAmount?.let { "%.2f".format(Locale.US, it) } ?: ""
@@ -610,7 +611,7 @@ private fun BottomActions(onSave: () -> Unit, onApply: () -> Unit, onReset: () -
 
 @Composable
 private fun SavePresetDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var name by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Save Preset") },

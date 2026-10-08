@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,7 @@ private val STATEMENT_MIME_TYPES = arrayOf(
 fun StatementImportScreen(onBack: () -> Unit) {
     val viewModel: StatementImportViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var showImportConfirmation by remember { mutableStateOf(false) }
+    var showImportConfirmation by rememberSaveable { mutableStateOf(false) }
     val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.onFileSelected(uri)
     }

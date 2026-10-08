@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.transactions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.MutationStatus
@@ -109,6 +110,7 @@ class TransactionListViewModel @Inject constructor(
     connectivity: ConnectivityStatus,
     invalidation: FinanceInvalidationBus,
     private val presetStore: FilterPresetStore,
+    private val savedStateHandle: SavedStateHandle,
     private val clock: Clock,
 ) : ViewModel() {
     // Like Home: the default month follows the clock (creation day, then every midnight the
@@ -117,6 +119,10 @@ class TransactionListViewModel @Inject constructor(
     private val today = MutableStateFlow(LocalDate.now(clock))
     private val month = MutableStateFlow(YearMonth.from(today.value))
     private var monthPinned = false
+        set(value) {
+            field = value
+            savedStateHandle[KEY_MONTH_PINNED] = value
+        }
     private val refresh = MutableStateFlow(RefreshState())
     private val criteria = MutableStateFlow(TransactionFilterState())
     private val searchQuery = MutableStateFlow("")
@@ -182,6 +188,7 @@ class TransactionListViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionListUiState())
 
     init {
+        restoreSavedState()
         val stored = presetStore.load()
         if (stored.isNotEmpty()) criteria.update { it.copy(presets = stored) }
         refresh(includeCategories = true)
@@ -192,6 +199,46 @@ class TransactionListViewModel @Inject constructor(
             .onEach { refresh(includeCategories = Aggregate.CATEGORY in it) }
             .launchIn(viewModelScope)
         connectivity.isOnline.filter { it }.onEach { refresh() }.launchIn(viewModelScope)
+        criteria.onEach(::persistCriteria).launchIn(viewModelScope)
+        searchQuery.onEach { savedStateHandle[KEY_SEARCH] = it }.launchIn(viewModelScope)
+        month.onEach { savedStateHandle[KEY_MONTH] = it.toString() }.launchIn(viewModelScope)
+    }
+
+    /** Restores the active filter criteria, search text and a pinned month after process death. */
+    private fun restoreSavedState() {
+        val dateRange = savedStateHandle.get<String>(KEY_DATE_RANGE)
+            ?.let { saved -> runCatching { DateRangeFilter.valueOf(saved) }.getOrNull() }
+        if (dateRange != null) {
+            criteria.value = criteria.value.copy(
+                dateRange = dateRange,
+                customStart = savedStateHandle.get<Long>(KEY_CUSTOM_START)?.let(LocalDate::ofEpochDay) ?: criteria.value.customStart,
+                customEnd = savedStateHandle.get<Long>(KEY_CUSTOM_END)?.let(LocalDate::ofEpochDay) ?: criteria.value.customEnd,
+                selectedCategoryIds = savedStateHandle.get<ArrayList<String>>(KEY_CATEGORIES)?.toSet() ?: emptySet(),
+                selectedType = savedStateHandle.get<String>(KEY_TYPE)?.let { saved -> runCatching { EntryType.valueOf(saved) }.getOrNull() },
+                minAmount = savedStateHandle.get<Double>(KEY_MIN),
+                maxAmount = savedStateHandle.get<Double>(KEY_MAX),
+            )
+            searchQuery.value = savedStateHandle.get<String>(KEY_SEARCH).orEmpty()
+        }
+        // Only a month the user explicitly pinned comes back; otherwise the clock keeps driving it.
+        if (savedStateHandle.get<Boolean>(KEY_MONTH_PINNED) == true) {
+            savedStateHandle.get<String>(KEY_MONTH)?.let { saved ->
+                runCatching { YearMonth.parse(saved) }.getOrNull()?.let { pinned ->
+                    monthPinned = true
+                    month.value = pinned
+                }
+            }
+        }
+    }
+
+    private fun persistCriteria(filters: TransactionFilterState) {
+        savedStateHandle[KEY_DATE_RANGE] = filters.dateRange.name
+        savedStateHandle[KEY_CUSTOM_START] = filters.customStart.toEpochDay()
+        savedStateHandle[KEY_CUSTOM_END] = filters.customEnd.toEpochDay()
+        savedStateHandle[KEY_CATEGORIES] = ArrayList(filters.selectedCategoryIds)
+        savedStateHandle[KEY_TYPE] = filters.selectedType?.name
+        savedStateHandle[KEY_MIN] = filters.minAmount
+        savedStateHandle[KEY_MAX] = filters.maxAmount
     }
 
     fun previousMonth() = changeMonth(month.value.minusMonths(1))
@@ -445,6 +492,19 @@ class TransactionListViewModel @Inject constructor(
         syncStatus = syncStatus,
         edit = toEditTarget(),
     )
+
+    private companion object {
+        const val KEY_DATE_RANGE = "transactionFilters.dateRange"
+        const val KEY_CUSTOM_START = "transactionFilters.customStart"
+        const val KEY_CUSTOM_END = "transactionFilters.customEnd"
+        const val KEY_CATEGORIES = "transactionFilters.categoryIds"
+        const val KEY_TYPE = "transactionFilters.type"
+        const val KEY_MIN = "transactionFilters.minAmount"
+        const val KEY_MAX = "transactionFilters.maxAmount"
+        const val KEY_SEARCH = "transactionFilters.search"
+        const val KEY_MONTH = "transactionFilters.month"
+        const val KEY_MONTH_PINNED = "transactionFilters.monthPinned"
+    }
 }
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

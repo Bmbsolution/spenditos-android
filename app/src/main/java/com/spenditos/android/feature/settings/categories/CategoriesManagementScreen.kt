@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,21 +61,31 @@ import com.spenditos.android.ui.theme.w
 @Composable
 fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManagementViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var selectedIncome by remember { mutableStateOf(false) }
-    var searchText by remember { mutableStateOf("") }
-    var showEditor by remember { mutableStateOf(false) }
-    var categoryToEdit by remember { mutableStateOf<Category?>(null) }
+    var selectedIncome by rememberSaveable { mutableStateOf(false) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    var showEditor by rememberSaveable { mutableStateOf(false) }
+    // The editor target survives recreation as an id and is resolved against the current
+    // state; if the category no longer exists the editor is closed instead of falling
+    // back to "new category" mode with stale prefill.
+    var categoryToEditId by rememberSaveable { mutableStateOf<String?>(null) }
     var categoryToDelete by remember { mutableStateOf<Category?>(null) }
+    val categoryToEdit = categoryToEditId?.let { id -> state.categories.firstOrNull { it.id == id } }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 CategoriesManagementEvent.Saved -> {
                     showEditor = false
-                    categoryToEdit = null
+                    categoryToEditId = null
                 }
                 CategoriesManagementEvent.Deleted -> categoryToDelete = null
             }
+        }
+    }
+    LaunchedEffect(showEditor, categoryToEditId, state.isLoading, state.categories) {
+        if (showEditor && categoryToEditId != null && categoryToEdit == null && !state.isLoading) {
+            showEditor = false
+            categoryToEditId = null
         }
     }
 
@@ -86,7 +97,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             Modifier.fillMaxSize().navigationBarsPadding(),
             contentPadding = PaddingValues(bottom = 120.dp),
         ) {
-            item { CategoriesHeader(onBack) { categoryToEdit = null; showEditor = true } }
+            item { CategoriesHeader(onBack) { categoryToEditId = null; showEditor = true } }
             item {
                 CategoryTypePicker(
                     selectedIncome = selectedIncome,
@@ -122,7 +133,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                     }
                 }
                 visible.isEmpty() -> item {
-                    EmptyCategories(selectedIncome, onAdd = { categoryToEdit = null; showEditor = true })
+                    EmptyCategories(selectedIncome, onAdd = { categoryToEditId = null; showEditor = true })
                 }
                 else -> {
                     item {
@@ -145,12 +156,12 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                             visible.forEachIndexed { index, category ->
                                 CategoryManagementRow(
                                     category = category,
-                                    onOpen = { categoryToEdit = category; showEditor = true },
+                                    onOpen = { categoryToEditId = category.id; showEditor = true },
                                 )
                                 if (index < visible.lastIndex) HorizontalDivider(Modifier.padding(start = 72.dp), color = IosColors.separator)
                             }
                             Row(
-                                Modifier.fillMaxWidth().clickable(role = Role.Button) { categoryToEdit = null; showEditor = true }
+                                Modifier.fillMaxWidth().clickable(role = Role.Button) { categoryToEditId = null; showEditor = true }
                                     .padding(horizontal = Spacing.m, vertical = Spacing.m).testTag("categories.add.inline"),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -172,12 +183,12 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             lockedType = selectedIncome,
             isSaving = state.isSaving,
             error = state.error,
-            onDismiss = { showEditor = false; categoryToEdit = null },
+            onDismiss = { showEditor = false; categoryToEditId = null },
             onSave = { draft -> viewModel.saveCategory(categoryToEdit?.id, draft) },
             onDelete = categoryToEdit?.takeUnless { it.isSystemSuggestion }?.let { current ->
                 {
                     showEditor = false
-                    categoryToEdit = null
+                    categoryToEditId = null
                     categoryToDelete = current
                 }
             },

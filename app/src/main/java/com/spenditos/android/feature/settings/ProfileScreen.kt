@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -121,10 +122,10 @@ private val currencyOptions = listOf(
 @Composable
 fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var showCurrencyPicker by remember { mutableStateOf(false) }
-    var currencySearch by remember { mutableStateOf("") }
+    var showCurrencyPicker by rememberSaveable { mutableStateOf(false) }
+    var currencySearch by rememberSaveable { mutableStateOf("") }
     val finance = LocalFinanceColors.current
-    var deleteStep by remember { mutableStateOf(0) }
+    var deleteStep by rememberSaveable { mutableStateOf(0) }
 
     IosScreen {
         LazyColumn(

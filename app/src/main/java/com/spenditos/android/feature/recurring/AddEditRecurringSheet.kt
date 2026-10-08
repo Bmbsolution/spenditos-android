@@ -41,6 +41,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -113,6 +115,40 @@ data class RecurringDraft(
     }
 }
 
+/** Survives rotation/process death as plain Bundle values (date as epoch day, amount as text). */
+internal val RecurringDraftSaver = mapSaver<RecurringDraft>(
+    save = { draft ->
+        mapOf(
+            "description" to draft.description,
+            "amountText" to draft.amountText,
+            "amountVaries" to draft.amountVaries,
+            "frequency" to draft.frequency,
+            "isIncome" to draft.isIncome,
+            "categoryId" to draft.categoryId,
+            "firstOccurrenceDate" to draft.firstOccurrenceDate.toEpochDay(),
+            "isActive" to draft.isActive,
+            "repeatIntervalText" to draft.repeatIntervalText,
+            "occurrencesRemainingText" to draft.occurrencesRemainingText,
+            "secondOccurrenceDayText" to draft.secondOccurrenceDayText,
+        )
+    },
+    restore = { map ->
+        RecurringDraft(
+            description = map["description"] as String? ?: "",
+            amountText = map["amountText"] as String? ?: "",
+            amountVaries = map["amountVaries"] as Boolean? ?: false,
+            frequency = map["frequency"] as String? ?: "monthly",
+            isIncome = map["isIncome"] as Boolean? ?: false,
+            categoryId = map["categoryId"] as String?,
+            firstOccurrenceDate = (map["firstOccurrenceDate"] as Long?)?.let(LocalDate::ofEpochDay) ?: LocalDate.now(),
+            isActive = map["isActive"] as Boolean? ?: true,
+            repeatIntervalText = map["repeatIntervalText"] as String? ?: "1",
+            occurrencesRemainingText = map["occurrencesRemainingText"] as String? ?: "",
+            secondOccurrenceDayText = map["secondOccurrenceDayText"] as String? ?: "15",
+        )
+    },
+)
+
 @Composable
 fun AddEditRecurringSheet(
     template: RecurringTemplate?,
@@ -126,7 +162,7 @@ fun AddEditRecurringSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editIsIncome = template?.let { item -> categories.firstOrNull { it.id == item.categoryId }?.isIncome == true }
-    var draft by remember(template?.id, editIsIncome, initialIsIncome) {
+    var draft by rememberSaveable(template?.id, editIsIncome, initialIsIncome, stateSaver = RecurringDraftSaver) {
         mutableStateOf(
             template?.let { RecurringDraft.from(it, categories.firstOrNull { category -> category.id == it.categoryId }?.isIncome == true) }
                 // No preselected category (iOS starts empty): Save stays disabled until the user picks one,

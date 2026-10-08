@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,8 +82,8 @@ fun HomeScreen(
     val viewModel: HomeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val locale = LocalConfiguration.current.locales[0]
-    var showMath by remember { mutableStateOf(false) }
-    var showHealth by remember { mutableStateOf(false) }
+    var showMath by rememberSaveable { mutableStateOf(false) }
+    var showHealth by rememberSaveable { mutableStateOf(false) }
 
     val hero = state.status?.let { FinancialWeather.from(it.state) }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {

@@ -36,6 +36,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -64,6 +66,12 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
+/** Saves a date as its epoch day so it survives recreation in the saved-state Bundle. */
+internal val LocalDateSaver = Saver<LocalDate, Long>(
+    save = { it.toEpochDay() },
+    restore = { LocalDate.ofEpochDay(it) },
+)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddOneTimeEntrySheet(
@@ -79,12 +87,12 @@ fun AddOneTimeEntrySheet(
     val firstCategory = suggestion?.categoryId?.takeIf { id -> categories.any { it.id == id } }
         ?: expenseCategories.firstOrNull()?.id ?: categories.firstOrNull()?.id.orEmpty()
     var isIncome by remember { mutableStateOf(categories.firstOrNull { it.id == firstCategory }?.isIncome ?: false) }
-    var description by remember { mutableStateOf(suggestion?.description.orEmpty()) }
-    var amountText by remember { mutableStateOf(suggestion?.amount?.let { BigDecimal.valueOf(it).stripTrailingZeros().toPlainString() }.orEmpty()) }
-    var categoryId by remember { mutableStateOf(firstCategory) }
-    var date by remember { mutableStateOf(month.atDay(1)) }
+    var description by rememberSaveable { mutableStateOf(suggestion?.description.orEmpty()) }
+    var amountText by rememberSaveable { mutableStateOf(suggestion?.amount?.let { BigDecimal.valueOf(it).stripTrailingZeros().toPlainString() }.orEmpty()) }
+    var categoryId by rememberSaveable { mutableStateOf(firstCategory) }
+    var date by rememberSaveable(stateSaver = LocalDateSaver) { mutableStateOf(month.atDay(1)) }
     var showDatePicker by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
     val availableCategories = categories.filter { it.isIncome == isIncome }
     val amount = parsePlanAmount(amountText)
     var showCategoryPicker by remember { mutableStateOf(false) }

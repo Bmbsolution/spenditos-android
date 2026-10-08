@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -174,10 +175,10 @@ fun AddEditCategorySheet(
     onSave: (CategoryDraft) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
-    var name by remember(category?.id) { mutableStateOf(category?.name.orEmpty()) }
-    var color by remember(category?.id) { mutableStateOf(category?.color ?: categoryColors.first()) }
-    var icon by remember(category?.id) { mutableStateOf(category?.icon) }
-    var isIncome by remember(category?.id, lockedType) { mutableStateOf(lockedType ?: category?.isIncome ?: initialIsIncome) }
+    var name by rememberSaveable(category?.id) { mutableStateOf(category?.name.orEmpty()) }
+    var color by rememberSaveable(category?.id) { mutableStateOf(category?.color ?: categoryColors.first()) }
+    var icon by rememberSaveable(category?.id) { mutableStateOf(category?.icon) }
+    var isIncome by rememberSaveable(category?.id, lockedType) { mutableStateOf(lockedType ?: category?.isIncome ?: initialIsIncome) }
     var showIconLibrary by remember { mutableStateOf(false) }
     var typeMenu by remember { mutableStateOf(false) }
     val quickIcons = remember(name, icon) {
