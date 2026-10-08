@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
-## Correctness pass (2026-10-07, review findings; uncommitted for review)
+## Correctness pass (2026-10-07, review findings; committed locally, 8ae67e8..32a944f)
 Five correctness findings from the Android review, all with regression tests; no screens redesigned, no contracts changed:
 1. **Queued writes are bound to their owning session** (`SessionManager.SessionBinding` + `accessTokenFor`, request tag on `createBulk`, checked in `AuthInterceptor` before the request AND the 401 retry). An account switch mid-send defers the entry back to PENDING (`SendOutcome.Deferred`) instead of sending A's payload with B's token or failing it; single-flight refresh and idempotency keys untouched.
 2. **`discard()` refuses an IN_FLIGHT create** via the same atomic `deleteUnlessInFlight` guard as delete; the Not-synced UI shows a calm "Can't discard yet" notice (`NotSyncedViewModel` now depends on `UserSettingsActions`).
