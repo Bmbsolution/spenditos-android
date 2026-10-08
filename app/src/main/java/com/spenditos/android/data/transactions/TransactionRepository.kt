@@ -311,11 +311,19 @@ class TransactionRepository @Inject constructor(
     suspend fun drainQueue(userId: String): DrainResult {
         mutations.releaseStaleClaims(before = System.currentTimeMillis() - STALE_CLAIM_MS)
         while (true) {
-            val next = mutations.nextPending(userId) ?: return DrainResult.DONE
+            val next = mutations.nextPending(userId) ?: break
             val outcome = send(next.id) ?: continue
-            if (outcome is SendOutcome.Deferred) return DrainResult.RETRY_LATER
-            if (outcome is SendOutcome.Failed && outcome.code.isRetryable) return DrainResult.RETRY_LATER
+            when (outcome) {
+                SendOutcome.Deferred -> return DrainResult.RETRY_LATER
+                is SendOutcome.Failed if outcome.code.isRetryable -> return DrainResult.RETRY_LATER
+                else -> {}
+            }
         }
+        // No PENDING rows left, but an IN_FLIGHT claim is unresolved: either a concurrent
+        // sender in this process or a claim left by a dead process that is still younger
+        // than the stale threshold. Another worker pass (WorkManager backoff) releases and
+        // replays it once it settles or goes stale.
+        return if (mutations.hasInFlight(userId)) DrainResult.RETRY_LATER else DrainResult.DONE
     }
 
     /** Manual retry from the "Not synced" screen. */

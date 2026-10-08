@@ -339,6 +339,35 @@ class TransactionRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun `a recent claim from a dead process schedules recovery and replays once stale`() = runTest {
+        online.value = false
+        repo.create(draft)
+        val row = queue().single()
+
+        // The process died mid-send: the claim is younger than the stale threshold, so the
+        // queue is not empty — another worker pass must be arranged.
+        db.mutations().claim(row.id, System.currentTimeMillis())
+        assertEquals(DrainResult.RETRY_LATER, repo.drainQueue("user-1"))
+        assertEquals(0, server.requestCount)
+        assertEquals(MutationStatus.IN_FLIGHT, queue().single().status)
+
+        // Past the stale threshold the claim is released and the create replays under its key.
+        server.enqueue(created())
+        db.mutations().release(row.id, MutationStatus.PENDING, null, null)
+        db.mutations().claim(row.id, System.currentTimeMillis() - 3 * 60 * 1000)
+        assertEquals(DrainResult.DONE, repo.drainQueue("user-1"))
+        val key = requestJson()["transactions"]!!.jsonArray.single().jsonObject["idempotencyKeyId"]!!.jsonPrimitive.content
+        assertEquals(row.id, key)
+        assertTrue(queue().isEmpty())
+    }
+
+    @Test
+    fun `an empty queue with no claims is done`() = runTest {
+        assertEquals(DrainResult.DONE, repo.drainQueue("user-1"))
+        assertEquals(0, server.requestCount)
+    }
+
     private fun repoWithSession(
         store: FakeTokenStore,
         refresher: com.spenditos.android.core.auth.TokenRefresher,

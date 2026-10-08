@@ -83,6 +83,10 @@ interface MutationDao {
     @Query("UPDATE pending_mutations SET status = 'PENDING' WHERE status = 'IN_FLIGHT' AND lastAttemptAt < :before")
     suspend fun releaseStaleClaims(before: Long)
 
+    /** True while a claim of this user is unresolved: an active sender or a dead process holds it. */
+    @Query("SELECT EXISTS(SELECT 1 FROM pending_mutations WHERE userId = :userId AND status = 'IN_FLIGHT')")
+    suspend fun hasInFlight(userId: String): Boolean
+
     @Query("UPDATE pending_mutations SET status = 'PENDING', failureCode = NULL, failureMessage = NULL WHERE userId = :userId AND status = 'FAILED' AND failureCode = :code")
     suspend fun requeueFailures(userId: String, code: FailureCode)
 }
