@@ -10,6 +10,7 @@ import com.spenditos.android.data.merchants.MerchantMappingActions
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.MerchantMapping
+import com.spenditos.android.data.model.RuleAction
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.TransactionMood
 import com.spenditos.android.data.recurring.RecurringActions
@@ -256,7 +257,8 @@ class AddTransactionViewModel @Inject constructor(
         viewModelScope.launch { loadLastUsed(suggest = true) }
         // Best effort: rules and bills only improve suggestions and the duplicate check.
         viewModelScope.launch {
-            mappings = runCatching { merchantMappings.list() }.getOrDefault(emptyList())
+            // Skip rules have no category to suggest: only categorizing mappings take part (iOS #358).
+            mappings = runCatching { merchantMappings.list() }.getOrDefault(emptyList()).filter { it.ruleAction == RuleAction.CATEGORIZE }
             applyMerchantRule()
         }
         viewModelScope.launch { recurring.observe().collect { templates = it } }
