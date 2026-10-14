@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.data.merchants.normalizeMerchantKey
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.ScanItem
 import com.spenditos.android.feature.capture.CaptureReviewItem
@@ -37,6 +38,7 @@ fun ScanItem.toReviewItem(categories: List<Category>): CaptureReviewItem {
         include = skip == null,
         skipReason = skipReason?.takeIf { skip != null },
         ruleId = ruleId?.takeIf { it.isNotEmpty() },
+        merchantName = merchantName,
         isPending = isPending,
         duplicateDate = possibleDuplicateOf?.date,
         duplicateAmount = possibleDuplicateOf?.amount,
@@ -75,8 +77,91 @@ fun resolveScanCategories(items: List<CaptureReviewItem>, categories: List<Categ
     if (match != null) item.copy(categoryId = match.id) else item
 }
 
+/** Several rows of one merchant inside one month (iOS `ReviewGroup`). */
+data class ReviewGroup(
+    /** "<monthKey>|<merchantKey>": stable while the user edits rows. */
+    val id: String,
+    val merchantKey: String,
+    /** Name shown for the group (the first member's merchant name). */
+    val merchant: String,
+    val items: List<CaptureReviewItem>,
+) {
+    enum class IncludeState { ALL, NONE, MIXED }
+
+    val itemKeys: List<String> get() = items.map { it.idempotencyKeyId }
+    val count: Int get() = items.size
+
+    /** Net of the group (income positive, expense negative), like the footer. */
+    val signedTotal: BigDecimal
+        get() = items.fold(BigDecimal.ZERO) { sum, item ->
+            val amount = item.editableAmount() ?: BigDecimal.ZERO
+            if (item.isIncomeRow()) sum + amount else sum - amount
+        }
+
+    val hasMissingAmount: Boolean get() = items.any { it.editableAmount() == null }
+    val allAmountsMissing: Boolean get() = items.all { it.editableAmount() == null }
+
+    val includeState: IncludeState
+        get() {
+            val included = items.count { it.include }
+            return when (included) {
+                0 -> IncludeState.NONE
+                items.size -> IncludeState.ALL
+                else -> IncludeState.MIXED
+            }
+        }
+
+    /** The category every row shares, null when none is set or they differ. */
+    val sharedCategoryId: String?
+        get() {
+            val first = items.firstOrNull()?.categoryId?.takeIf { it.isNotEmpty() } ?: return null
+            return first.takeIf { items.all { it.categoryId == first } }
+        }
+
+    val hasMixedCategories: Boolean get() = items.map { it.categoryId.orEmpty() }.toSet().size > 1
+
+    /** Income when every row is income, so the picker lists the right kind. */
+    val isIncome: Boolean get() = items.all { it.isIncomeRow() }
+
+    /** "✓ Your rule" when a categorize rule filed every row. */
+    val allRuleFiled: Boolean get() = items.all { it.ruleId != null && it.skipReason != "rule" }
+
+    /** "Skipped by your rule" when a skip rule left every row unchecked. */
+    val allSkippedByRule: Boolean get() = items.all { it.skipReason == "rule" }
+
+    /** Rows flagged for another reason (duplicate, card payment, transfer). */
+    val flaggedCount: Int get() = items.count { it.skipReason != null && it.skipReason != "rule" }
+}
+
+/** One line of the review list: a single row, or several rows of one merchant (iOS `ReviewEntry`). */
+sealed interface ReviewEntry {
+    val key: String
+
+    data class Single(val item: CaptureReviewItem) : ReviewEntry {
+        override val key: String get() = item.idempotencyKeyId
+    }
+
+    data class Group(val group: ReviewGroup) : ReviewEntry {
+        override val key: String get() = "group|${group.id}"
+    }
+}
+
 /** Rows of one month, in review order (iOS `ReviewMonthSection`). */
-data class ReviewMonthSection(val key: String, val title: String, val items: List<CaptureReviewItem>)
+data class ReviewMonthSection(val key: String, val title: String, val entries: List<ReviewEntry>) {
+    /** Every underlying row, in display order. */
+    val items: List<CaptureReviewItem>
+        get() = entries.flatMap { entry ->
+            when (entry) {
+                is ReviewEntry.Single -> listOf(entry.item)
+                is ReviewEntry.Group -> entry.group.items
+            }
+        }
+}
+
+internal fun CaptureReviewItem.isIncomeRow() = transactionType.equals("income", ignoreCase = true)
+
+/** The amount as typed (the review row's own reading of it), null when empty or not a number. */
+internal fun CaptureReviewItem.editableAmount(): BigDecimal? = amountText.trim().replace(',', '.').toBigDecimalOrNull()
 
 object ScanReviewGrouping {
     /** "2026-09" for "2026-09-14", else "" (no date). */
@@ -98,8 +183,21 @@ object ScanReviewGrouping {
         return if (month.year == now.year) name else "$name ${month.year}"
     }
 
-    /** Rows grouped by month, newest month first (rows without a usable date last); row order is the review order. */
-    fun monthSections(items: List<CaptureReviewItem>, now: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): List<ReviewMonthSection> {
+    /**
+     * Rows grouped by month, newest month first (rows without a usable date last). With [grouping], same-merchant
+     * rows (two or more) inside a month collapse into one group placed where the first of them was. Row order is
+     * otherwise the review order.
+     *
+     * [merchantKey] defaults to the contract's key of the merchant name; the review passes a cached lookup so
+     * thousands of rows are not re-normalized on every change.
+     */
+    fun monthSections(
+        items: List<CaptureReviewItem>,
+        now: LocalDate = LocalDate.now(),
+        locale: Locale = Locale.getDefault(),
+        grouping: Boolean = false,
+        merchantKey: (CaptureReviewItem) -> String = { normalizeMerchantKey(it.merchantName) },
+    ): List<ReviewMonthSection> {
         val order = LinkedHashMap<String, MutableList<CaptureReviewItem>>()
         for (item in items) order.getOrPut(monthKey(item.date)) { mutableListOf() }.add(item)
         val keys = order.keys.sortedWith(Comparator { a, b ->
@@ -108,7 +206,35 @@ object ScanReviewGrouping {
                 else -> b.compareTo(a)
             }
         })
-        return keys.map { key -> ReviewMonthSection(key, monthTitle(key, now, locale), order.getValue(key)) }
+        return keys.map { key ->
+            val rows = order.getValue(key)
+            ReviewMonthSection(
+                key,
+                monthTitle(key, now, locale),
+                if (grouping) entries(rows, key, merchantKey) else rows.map { ReviewEntry.Single(it) },
+            )
+        }
+    }
+
+    private fun entries(rows: List<CaptureReviewItem>, month: String, merchantKey: (CaptureReviewItem) -> String): List<ReviewEntry> {
+        val keys = rows.map(merchantKey)
+        val members = HashMap<String, MutableList<CaptureReviewItem>>()
+        rows.forEachIndexed { index, row -> if (keys[index].isNotEmpty()) members.getOrPut(keys[index]) { mutableListOf() }.add(row) }
+
+        val placed = HashSet<String>()
+        val result = ArrayList<ReviewEntry>(rows.size)
+        rows.forEachIndexed { index, row ->
+            val key = keys[index]
+            val group = members[key]
+            if (key.isEmpty() || group == null || group.size < 2) {
+                result += ReviewEntry.Single(row)
+                return@forEachIndexed
+            }
+            if (!placed.add(key)) return@forEachIndexed
+            val name = group.firstNotNullOfOrNull { it.merchantName?.trim()?.takeIf(String::isNotEmpty) } ?: key
+            result += ReviewEntry.Group(ReviewGroup("$month|$key", key, name, group))
+        }
+        return result
     }
 }
 
