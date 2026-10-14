@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.selection.toggleable
@@ -134,7 +135,7 @@ fun CaptureReviewStep(
 }
 
 @Composable
-private fun ReviewSummaryRow(
+internal fun ReviewSummaryRow(
     item: CaptureReviewItem,
     categories: List<Category>,
     currency: String,
@@ -193,6 +194,17 @@ private fun ReviewSummaryRow(
                 maxLines = 1,
             )
             Text(subtitle, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1)
+            val flags = reviewFlagLabels(item, currency, LocalConfiguration.current.locales[0])
+            if (flags.isNotEmpty()) {
+                // iOS `review-row-flag`: why the row starts unchecked, a rule that filed it, still pending.
+                Text(
+                    flags.joinToString(" · "),
+                    style = IosText.caption.w(FontWeight.SemiBold),
+                    color = IosColors.textSecondary,
+                    maxLines = 2,
+                    modifier = Modifier.testTag("capture.flag.$key"),
+                )
+            }
             item.failureReason?.let {
                 Text(it, color = IosColors.expense, style = IosText.footnote, modifier = Modifier.testTag("capture.failure.$key"))
             }
@@ -228,7 +240,7 @@ private fun ReviewSummaryRow(
 }
 
 @Composable
-private fun ReviewItemEditorSheet(
+internal fun ReviewItemEditorSheet(
     item: CaptureReviewItem,
     categories: List<Category>,
     currency: String,
@@ -617,3 +629,36 @@ private fun summaryAmountText(amountText: String, currency: String, income: Bool
     }.getOrDefault("${currency.uppercase()} ${"%.2f".format(amount)}")
     return sign + formatted
 }
+
+/**
+ * Short secondary labels under a row (iOS `ReviewRow.flagLabels`): why a scanned row starts unchecked
+ * ("Already added (Oct 8 · $62.18)", "Card payment", "Transfer", "Skipped by your rule"), a rule that filed it, and
+ * "Pending". A match without a skip decision is surfaced as "Possible duplicate", not auto-skipped.
+ */
+internal fun reviewFlagLabels(item: CaptureReviewItem, currency: String, locale: java.util.Locale): List<String> {
+    val labels = mutableListOf<String>()
+    val matched = item.duplicateAmount != null
+    when (item.skipReason) {
+        "duplicate" -> {
+            val detail = listOfNotNull(
+                item.duplicateDate?.let { shortDate(it, locale) },
+                item.duplicateAmount?.let { com.spenditos.android.ui.components.Money.format(it, currency, locale) },
+            ).joinToString(" · ")
+            labels += if (detail.isNotEmpty()) "Already added ($detail)" else "Already added"
+        }
+        "payment" -> labels += "Card payment"
+        "transfer" -> labels += "Transfer"
+        "rule" -> labels += SKIPPED_BY_RULE_LABEL
+        else -> if (matched) labels += "Possible duplicate"
+    }
+    if (item.ruleId != null && item.skipReason != "rule") labels += YOUR_RULE_LABEL
+    if (item.isPending == true) labels += "Pending"
+    return labels
+}
+
+internal const val SKIPPED_BY_RULE_LABEL = "Skipped by your rule"
+internal const val YOUR_RULE_LABEL = "✓ Your rule"
+
+/** "Oct 8" for "2026-10-08" (iOS `.dateTime.month(.abbreviated).day()`); null when it does not parse. */
+private fun shortDate(iso: String, locale: java.util.Locale): String? =
+    runCatching { LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrNull()
