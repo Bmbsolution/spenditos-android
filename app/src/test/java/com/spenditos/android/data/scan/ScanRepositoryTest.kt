@@ -237,6 +237,27 @@ class ScanRepositoryTest {
         assertEquals(ScanFailure.NoDocuments, runCatching { repository.submit(emptyList(), context) }.exceptionOrNull())
     }
 
+    @Test
+    fun `end to end a photo is uploaded the scan created and polled until its rows are ready`() = runTest {
+        val polls = AtomicInteger(0)
+        respond = { request ->
+            if (request.url.encodedPath == "/scans/scn_1") {
+                if (polls.incrementAndGet() < 3) MockResponse(body = scanBody("processing")) else MockResponse(body = requireNotNull(javaClass.classLoader!!.getResource("contract/scanReceiptDetailFixture.json")).readText())
+            } else {
+                defaultRoutes(request)
+            }
+        }
+        val submission = repository.submit(listOf(image("receipt.png")), context)
+        val detail = repository.waitUntilReady(submission.scanId)
+
+        assertEquals(listOf("/transactions/upload-url", "/scans", "/scans/scn_1", "/scans/scn_1", "/scans/scn_1"), requests.map { it.url.encodedPath })
+        assertEquals(1, uploader.uploads.size)
+        assertEquals("users/u/scans/doc-1", uploader.uploads.single().first)
+        val resolution = detail.resolution() as ScanResolution.Receipt
+        assertEquals("Metro", resolution.item.merchantName)
+        assertTrue(preparer.created.none { it.exists() })
+    }
+
     // region Polling
 
     private fun scanBody(status: String, extra: String = "") =

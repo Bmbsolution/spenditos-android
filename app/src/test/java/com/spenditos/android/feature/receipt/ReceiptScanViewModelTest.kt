@@ -248,6 +248,20 @@ class ReceiptScanViewModelTest {
     }
 
     @Test
+    fun `a user with no credits left sees the limit screen on open and a null balance never does`() = runTest {
+        remainingCredits = 0
+        val vm = newViewModel()
+        runCurrent()
+        assertEquals(ReceiptScanStep.QUOTA, vm.state.value.step)
+        assertEquals("You've used all your free scan credits for this month.", vm.state.value.error)
+
+        remainingCredits = null
+        val unlimited = newViewModel()
+        runCurrent()
+        assertEquals(ReceiptScanStep.CHOOSE, unlimited.state.value.step)
+    }
+
+    @Test
     fun `a selection that fits the credits, or an unknown balance, uploads`() = runTest {
         val vm = newViewModel()
         scans.waitResult = { _, _ -> awaitCancellation() }

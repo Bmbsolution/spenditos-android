@@ -137,6 +137,13 @@ class ReceiptScanViewModel @Inject constructor(
 
     init {
         coordinator.start()
+        // iOS: a user with no scan credits left sees "Monthly Limit Reached" as soon as the screen opens.
+        viewModelScope.launch {
+            val remaining = credits.remainingScanCredits()
+            if (remaining != null && remaining <= 0 && _state.value.step == ReceiptScanStep.CHOOSE) {
+                _state.value = ReceiptScanUiState(step = ReceiptScanStep.QUOTA, error = QUOTA_MESSAGE)
+            }
+        }
     }
 
     // region Camera
@@ -203,32 +210,38 @@ class ReceiptScanViewModel @Inject constructor(
     /** The document picker returned [uris]: PDF, CSV, Excel and images are read; anything else is explained. */
     fun onFilesPicked(uris: List<Uri>) {
         if (uris.isEmpty()) return
-        val accepted = uris.take(ScanRules.MAX_DOCUMENTS_PER_UPLOAD).mapNotNull(inputs::file)
-        if (accepted.isEmpty()) {
-            _state.value = ReceiptScanUiState(
-                step = ReceiptScanStep.FAILURE,
-                error = ScanFailure.UnsupportedFile(uris.first().lastPathSegment?.takeIf { it.isNotBlank() }).userMessage,
-            )
-            return
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch {
+            // Names and types come from the document provider, which can be slow: off the main thread.
+            val accepted = withContext(ioDispatcher) { uris.take(ScanRules.MAX_DOCUMENTS_PER_UPLOAD).mapNotNull(inputs::file) }
+            if (accepted.isEmpty()) {
+                _state.value = ReceiptScanUiState(
+                    step = ReceiptScanStep.FAILURE,
+                    error = ScanFailure.UnsupportedFile(uris.first().lastPathSegment?.takeIf { it.isNotBlank() }).userMessage,
+                )
+                return@launch
+            }
+            checkCreditsThenRead(accepted)
         }
-        startChecked(accepted)
+    }
+
+    private fun startChecked(picked: List<ScanInput>) {
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch { checkCreditsThenRead(picked) }
     }
 
     /** For a user with a known credit balance, warn before uploading when the selection costs more than they have left. */
-    private fun startChecked(picked: List<ScanInput>) {
-        scanJob?.cancel()
-        scanJob = viewModelScope.launch {
-            val remaining = credits.remainingScanCredits()
-            if (remaining != null) {
-                val message = ScanCredits.overLimitMessage(scans.estimateCredits(picked), remaining)
-                if (message != null) {
-                    _state.update { it.copy(toast = message) }
-                    return@launch
-                }
+    private suspend fun checkCreditsThenRead(picked: List<ScanInput>) {
+        val remaining = credits.remainingScanCredits()
+        if (remaining != null) {
+            val message = ScanCredits.overLimitMessage(scans.estimateCredits(picked), remaining)
+            if (message != null) {
+                _state.update { it.copy(toast = message) }
+                return
             }
-            beginReading(picked)
-            runScan(picked)
         }
+        beginReading(picked)
+        runScan(picked)
     }
 
     fun dismissToast() = _state.update { it.copy(toast = null) }
