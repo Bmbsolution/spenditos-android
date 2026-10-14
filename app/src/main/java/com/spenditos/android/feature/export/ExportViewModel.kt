@@ -2,6 +2,7 @@ package com.spenditos.android.feature.export
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.spenditos.android.core.auth.SessionChangedException
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.export.ExportActions
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,20 +20,20 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
+/** iOS `SpreadsheetRange.Preset`. */
 enum class ExportRange(val label: String) {
     THIS_MONTH("This month"),
-    LAST_MONTH("Last month"),
-    LAST_30_DAYS("Last 30 days"),
     THIS_YEAR("This year"),
+    LAST_YEAR("Last year"),
     CUSTOM("Custom"),
 }
 
 data class ExportUiState(
-    val range: ExportRange = ExportRange.THIS_MONTH,
+    val range: ExportRange = ExportRange.THIS_YEAR,
     val start: LocalDate,
     val end: LocalDate,
     val isExporting: Boolean = false,
-    /** The finished file, until the screen hands it to the share sheet. */
+    /** The finished spreadsheet, until the screen hands it to the share sheet. */
     val file: File? = null,
     val error: String? = null,
 ) {
@@ -53,7 +54,7 @@ class ExportViewModel @Inject constructor(
     private val clock: Clock,
 ) : ViewModel() {
     private val today = LocalDate.now(clock)
-    private val _state = MutableStateFlow(rangeFor(ExportRange.THIS_MONTH).let { (s, e) -> ExportUiState(start = s, end = e) })
+    private val _state = MutableStateFlow(rangeFor(ExportRange.THIS_YEAR).let { (s, e) -> ExportUiState(start = s, end = e) })
     val state: StateFlow<ExportUiState> = _state.asStateFlow()
     private var job: Job? = null
 
@@ -85,6 +86,8 @@ class ExportViewModel @Inject constructor(
         }
     }
 
+    fun dismissError() = _state.update { it.copy(error = null) }
+
     fun cancel() {
         job?.cancel()
         _state.update { it.copy(isExporting = false) }
@@ -104,19 +107,19 @@ class ExportViewModel @Inject constructor(
     private fun message(error: Throwable): String = when (error) {
         is ApiError.Network -> "You're offline. Check your connection and try again."
         is ApiError.Unauthorized -> "Your session expired. Sign in and try again."
+        is SessionChangedException -> "The signed-in account changed, so nothing was downloaded. Try again."
         is ApiError.Server -> when {
             error.status == 400 && error.serverMessage.isNotBlank() && error.serverMessage != "Unknown error" -> error.serverMessage
-            error.status >= 500 -> "Export is temporarily unavailable. Try again."
-            else -> "Couldn't export your transactions. Try again."
+            error.status >= 500 -> "Downloads are temporarily unavailable. Try again."
+            else -> "Couldn't download your transactions. Try again."
         }
-        else -> "Couldn't export your transactions. Try again."
+        else -> "Couldn't download your transactions. Try again."
     }
 
     private fun rangeFor(range: ExportRange): Pair<LocalDate, LocalDate> = when (range) {
         ExportRange.THIS_MONTH -> YearMonth.from(today).let { it.atDay(1) to today }
-        ExportRange.LAST_MONTH -> YearMonth.from(today).minusMonths(1).let { it.atDay(1) to it.atEndOfMonth() }
-        ExportRange.LAST_30_DAYS -> today.minusDays(29) to today
         ExportRange.THIS_YEAR -> LocalDate.of(today.year, 1, 1) to today
+        ExportRange.LAST_YEAR -> LocalDate.of(today.year - 1, 1, 1) to LocalDate.of(today.year - 1, 12, 31)
         ExportRange.CUSTOM -> (_state.value.start) to (_state.value.end)
     }
 }

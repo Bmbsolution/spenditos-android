@@ -49,7 +49,6 @@ import com.spenditos.android.feature.progress.ProgressScreen
 import com.spenditos.android.feature.settings.ChangePasswordScreen
 import com.spenditos.android.feature.settings.ProfileScreen
 import com.spenditos.android.feature.settings.SettingsScreen
-import com.spenditos.android.feature.statements.StatementImportScreen
 import com.spenditos.android.feature.settings.categories.CategoriesManagementScreen
 import com.spenditos.android.feature.sync.NotSyncedScreen
 import com.spenditos.android.feature.transactions.AddTransactionPrefill
@@ -87,9 +86,8 @@ private const val REPORTS_PAYCHECK_ROUTE = "reports/paycheck-periods"
 private const val PROFILE_ROUTE = "settings/profile"
 private const val CATEGORIES_ROUTE = "settings/categories"
 private const val CHANGE_PASSWORD_ROUTE = "settings/change-password"
-private const val STATEMENT_IMPORT_ROUTE = "settings/import-statement"
 private const val PROGRESS_ROUTE = "settings/progress"
-private const val EXPORT_ROUTE = "settings/export"
+private const val DOWNLOAD_DATA_ROUTE = "settings/download-data"
 private const val MERCHANTS_ROUTE = "settings/merchant-names"
 private const val PRO_ROUTE = "settings/pro"
 
@@ -168,7 +166,6 @@ fun MainScaffold(
                 composable(Tab.TRANSACTIONS.route) {
                     TransactionListScreen(
                         onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) },
-                        onOpenExport = { nav.navigate(EXPORT_ROUTE) },
                         onAdd = { showAdd = true },
                         onEdit = { target ->
                             receiptPrefill = null
@@ -237,9 +234,8 @@ fun MainScaffold(
                         onOpenProfile = { nav.navigate(PROFILE_ROUTE) },
                         onOpenCategories = { nav.navigate(CATEGORIES_ROUTE) },
                         onOpenChangePassword = { nav.navigate(CHANGE_PASSWORD_ROUTE) },
-                        onOpenStatementImport = { nav.navigate(STATEMENT_IMPORT_ROUTE) },
                         onOpenProgress = { nav.navigate(PROGRESS_ROUTE) },
-                        onOpenExport = { nav.navigate(EXPORT_ROUTE) },
+                        onOpenDownloadData = { nav.navigate(DOWNLOAD_DATA_ROUTE) },
                         onOpenMerchants = { nav.navigate(MERCHANTS_ROUTE) },
                         onOpenPro = { nav.navigate(PRO_ROUTE) },
                     )
@@ -254,9 +250,8 @@ fun MainScaffold(
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
                 composable(PRO_ROUTE) { com.spenditos.android.feature.pro.ProScreen(onBack = { nav.popBackStack() }) }
                 composable(MERCHANTS_ROUTE) { com.spenditos.android.feature.settings.merchants.MerchantMappingsScreen(onBack = { nav.popBackStack() }) }
-                composable(EXPORT_ROUTE) { com.spenditos.android.feature.export.ExportScreen(onBack = { nav.popBackStack() }) }
+                composable(DOWNLOAD_DATA_ROUTE) { com.spenditos.android.feature.export.DownloadDataScreen(onBack = { nav.popBackStack() }) }
                 composable(PROGRESS_ROUTE) { ProgressScreen(onBack = { nav.popBackStack() }) }
-                composable(STATEMENT_IMPORT_ROUTE) { StatementImportScreen(onBack = { nav.popBackStack() }) }
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }
             }
             }
