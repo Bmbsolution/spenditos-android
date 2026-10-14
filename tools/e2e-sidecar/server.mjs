@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import { randomUUID, createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 
 const HOME_USER_ID = '22222222-2222-4222-8222-222222222222';
@@ -12,8 +13,10 @@ const MIME_TYPES = {
   receipt: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'],
   audio: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'text/plain'],
   bank_statement: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', 'text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  // Scan documents are images or spreadsheets; PDFs are rendered to JPEG pages on the device first.
+  scan: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
 };
-const MAX_BYTES = { receipt: 10 * 1024 * 1024, audio: 25 * 1024 * 1024, bank_statement: 25 * 1024 * 1024 };
+const MAX_BYTES = { receipt: 10 * 1024 * 1024, audio: 25 * 1024 * 1024, bank_statement: 25 * 1024 * 1024, scan: 10 * 1024 * 1024 };
 const BASE_CATEGORIES = [
   { id: 'sidecar-expense-food', name: 'Groceries', color: '#4CAF50', icon: 'cart', isIncome: false, sortOrder: 0, isSystemSuggestion: true },
   { id: 'sidecar-expense-transport', name: 'Transportation', color: '#607D8B', icon: 'car', isIncome: false, sortOrder: 1, isSystemSuggestion: true },
@@ -40,6 +43,11 @@ function newState() {
     deletedCategories: new Map(),
     analyses: new Map(),
     importRows: new Map(),
+    rules: new Map(),
+    scans: new Map(),
+    scanSeq: 0,
+    scanQuotaExhausted: false,
+    exportFail: false,
   };
 }
 
@@ -301,32 +309,400 @@ function captureDate(referenceDate, relative) {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-const merchantStore = new Map();
-async function merchantMappings(req, res, account, id) {
-  const list = merchantStore.get(account.id) ?? merchantStore.set(account.id, []).get(account.id);
+// ---- Rules (merchant mappings) -------------------------------------------------------------
+// In memory per harness identity. The list also holds one `ai` mapping so clients can prove they
+// show `source == "user"` rules only.
+const MIN_CONTAINS_KEY_LENGTH = 3;
+const RULE_PAST_CAP = 1000;
+
+function validationFailure(res, field, message) {
+  return json(res, 400, { message: 'Validation failed', error: 'ValidationError', details: [{ field, message }] });
+}
+
+function normalizeKey(value) {
+  return String(value ?? '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+function validRegex(pattern) {
+  try { new RegExp(pattern, 'i'); return true; } catch { return false; }
+}
+
+function rulesFor(account) {
+  let list = state.rules.get(account.id);
+  if (!list) {
+    const now = new Date().toISOString();
+    list = [{ id: randomUUID(), userId: account.id, rawPattern: 'AMZN MKTP', cleanMerchantName: 'Amazon', confidence: 0.8, source: 'ai', isRegex: false, action: 'categorize', createdAt: now, updatedAt: now }];
+    state.rules.set(account.id, list);
+  }
+  return list;
+}
+
+function userRules(account) {
+  return rulesFor(account).filter(rule => rule.source === 'user');
+}
+
+function ruleMatches(rule, ...texts) {
+  const key = normalizeKey(rule.rawPattern);
+  return texts.some(text => {
+    if (!text) return false;
+    if (rule.isRegex) { try { return new RegExp(rule.rawPattern, 'i').test(text); } catch { return false; } }
+    const target = normalizeKey(text);
+    return key.length > 0 && (target === key || (key.length >= MIN_CONTAINS_KEY_LENGTH && target.includes(key)));
+  });
+}
+
+async function checkRuleCategory(res, account, req, categoryId) {
+  const category = (await categoriesFor(account, req)).find(item => item.id === categoryId);
+  if (!category) { apiError(res, 400, `Category ${categoryId} does not exist`, 'CategoryNotFound'); return null; }
+  return category;
+}
+
+function parseRuleFields(res, body, { partial }) {
+  const out = {};
+  const bad = (field, message) => { validationFailure(res, field, message); return null; };
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return bad('body', 'Request body must be a JSON object');
+  if (body.rawPattern !== undefined || !partial) {
+    const value = typeof body.rawPattern === 'string' ? body.rawPattern.trim() : '';
+    if (!value || value.length > 200) return bad('rawPattern', 'rawPattern must be 1-200 characters');
+    out.rawPattern = value;
+  }
+  if (body.cleanMerchantName !== undefined) {
+    const value = typeof body.cleanMerchantName === 'string' ? body.cleanMerchantName.trim() : '';
+    if (!value || value.length > 200) return bad('cleanMerchantName', 'cleanMerchantName must be 1-200 characters');
+    out.cleanMerchantName = value;
+  }
+  if (body.categoryId !== undefined && body.categoryId !== null && (typeof body.categoryId !== 'string' || !body.categoryId)) return bad('categoryId', 'categoryId must be a non-empty string');
+  if (body.categoryId !== undefined) out.categoryId = body.categoryId;
+  if (body.action !== undefined && !['categorize', 'skip'].includes(body.action)) return bad('action', 'action must be categorize or skip');
+  if (body.action !== undefined) out.action = body.action;
+  if (body.isRegex !== undefined && typeof body.isRegex !== 'boolean') return bad('isRegex', 'isRegex must be a boolean');
+  if (body.isRegex !== undefined) out.isRegex = body.isRegex;
+  if (partial && !Object.keys(out).length) return bad('body', 'At least one field must be provided');
+  return out;
+}
+
+/** Past transactions a rule may move: the harness user's last 24 months, or null if the harness cannot list them. */
+async function pastTransactions(account) {
+  const now = new Date();
+  const fmt = date => date.toISOString().slice(0, 10);
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 24, now.getUTCDate()));
+  const out = [];
+  let cursor;
+  for (let page = 0; page < 10; page++) {
+    const query = new URLSearchParams({ startDate: fmt(start), endDate: fmt(now), limit: '100' });
+    if (cursor) query.set('cursor', cursor);
+    const result = await proxyJson(emptyRequest(`/transactions?${query}`), account.id);
+    const data = result.body?.data;
+    const list = Array.isArray(data) ? data : data?.transactions;
+    if (result.status !== 200 || !Array.isArray(list)) return null;
+    out.push(...list);
+    cursor = data?.pagination?.nextCursor;
+    if (!cursor) break;
+  }
+  return out.slice(0, RULE_PAST_CAP);
+}
+
+/**
+ * Transactions a categorize rule for `merchant` would change: description contains the merchant,
+ * not already in the category, not from a recurring template, and on the same income/expense side.
+ * Returns null when the harness cannot list transactions.
+ */
+async function ruleTargets(account, req, merchant, categoryId, isRegex = false) {
+  const key = normalizeKey(merchant);
+  if (!isRegex && key.length < MIN_CONTAINS_KEY_LENGTH) return [];
+  const transactions = await pastTransactions(account);
+  if (!transactions) return null;
+  const categories = await categoriesFor(account, req);
+  const target = categories.find(item => item.id === categoryId);
+  const incomeById = new Map(categories.map(item => [item.id, item.isIncome]));
+  const rule = { rawPattern: merchant, isRegex };
+  return transactions.filter(tx => !tx.templateId && tx.categoryId !== categoryId && incomeById.has(tx.categoryId)
+    && (!target || incomeById.get(tx.categoryId) === target.isIncome) && ruleMatches(rule, tx.description));
+}
+
+async function merchantMappings(req, res, account, id, action) {
+  const list = rulesFor(account);
   const now = new Date().toISOString();
   if (req.method === 'GET' && !id) return json(res, 200, { data: list });
-  if (req.method === 'DELETE' && id) {
-    const index = list.findIndex(m => m.id === id);
+
+  if (req.method === 'GET' && id === 'match-count') {
+    const url = new URL(req.url, 'http://local');
+    const merchant = url.searchParams.get('merchant')?.trim() ?? '';
+    const categoryId = url.searchParams.get('categoryId')?.trim() ?? '';
+    if (!merchant) return validationFailure(res, 'merchant', 'merchant is required');
+    if (!categoryId) return validationFailure(res, 'categoryId', 'categoryId is required');
+    if (!await checkRuleCategory(res, account, req, categoryId)) return;
+    const targets = await ruleTargets(account, req, merchant, categoryId);
+    // Harness unavailable for listing: a fixed answer keeps the screen usable.
+    return json(res, 200, { data: { count: targets ? targets.length : 3 } });
+  }
+
+  if (req.method === 'POST' && id && action === 'apply') {
+    const rule = list.find(item => item.id === id && item.source === 'user');
+    if (!rule) return apiError(res, 404, 'Merchant mapping not found', 'NotFound');
+    if (rule.action === 'skip') return apiError(res, 409, 'Skip rules do not change past transactions', 'SkipRuleCannotApply');
+    if (!rule.categoryId) return validationFailure(res, 'categoryId', 'The rule has no category to apply');
+    if (!await checkRuleCategory(res, account, req, rule.categoryId)) return;
+    const targets = await ruleTargets(account, req, rule.rawPattern, rule.categoryId, rule.isRegex);
+    if (!targets) return json(res, 200, { data: { updated: 3 } });
+    let updated = 0;
+    for (const tx of targets) {
+      const result = await proxyJson(jsonRequest('PUT', `/transactions/${encodeURIComponent(tx.id)}`, { categoryId: rule.categoryId }), account.id);
+      if (result.status >= 200 && result.status < 300) updated++;
+    }
+    return json(res, 200, { data: { updated } });
+  }
+
+  if (req.method === 'DELETE' && id && !action) {
+    const index = list.findIndex(m => m.id === id && m.source === 'user');
     if (index >= 0) list.splice(index, 1);
     res.writeHead(204); return res.end();
   }
-  if ((req.method === 'POST' && !id) || (req.method === 'PUT' && id)) {
-    const body = await readJson(req);
-    const bad = field => apiError(res, 400, `${field} is required`, 'ValidationError');
-    if (req.method === 'POST' && (!body?.rawPattern || typeof body.rawPattern !== 'string')) return bad('rawPattern');
-    if (req.method === 'POST' && (!body?.cleanMerchantName || typeof body.cleanMerchantName !== 'string')) return bad('cleanMerchantName');
-    if (req.method === 'POST') {
-      const created = { id: randomUUID(), userId: account.id, rawPattern: body.rawPattern, cleanMerchantName: body.cleanMerchantName, categoryId: body.categoryId, confidence: 1, source: 'user', isRegex: !!body.isRegex, createdAt: now, updatedAt: now };
-      list.push(created);
-      return json(res, 201, { data: created });
+
+  if (req.method === 'POST' && !id) {
+    const fields = parseRuleFields(res, await readJson(req), { partial: false });
+    if (!fields) return;
+    const ruleAction = fields.action ?? 'categorize';
+    const isRegex = fields.isRegex ?? false;
+    if (!normalizeKey(fields.rawPattern)) return validationFailure(res, 'rawPattern', 'rawPattern needs at least one letter or digit');
+    if (isRegex && !validRegex(fields.rawPattern)) return validationFailure(res, 'rawPattern', 'rawPattern is not a valid regex');
+    if (ruleAction === 'categorize' && !fields.categoryId) return validationFailure(res, 'categoryId', 'categoryId is required for a categorize rule');
+    if (ruleAction === 'categorize' && !await checkRuleCategory(res, account, req, fields.categoryId)) return;
+    const values = { rawPattern: fields.rawPattern, cleanMerchantName: fields.cleanMerchantName ?? fields.rawPattern, isRegex, action: ruleAction, ...(ruleAction === 'categorize' ? { categoryId: fields.categoryId } : {}) };
+    const existing = userRules(account).find(rule => normalizeKey(rule.rawPattern) === normalizeKey(fields.rawPattern));
+    if (existing) {
+      delete existing.categoryId;
+      Object.assign(existing, values, { updatedAt: now });
+      return json(res, 200, { data: existing });
     }
+    const created = { id: randomUUID(), userId: account.id, ...values, confidence: 1, source: 'user', createdAt: now, updatedAt: now };
+    list.push(created);
+    return json(res, 201, { data: created });
+  }
+
+  if (req.method === 'PUT' && id && !action) {
+    const fields = parseRuleFields(res, await readJson(req), { partial: true });
+    if (!fields) return;
     const existing = list.find(m => m.id === id);
     if (!existing) return apiError(res, 404, 'Merchant mapping not found', 'NotFound');
-    Object.assign(existing, { ...body, updatedAt: now });
+    const ruleAction = fields.action ?? existing.action;
+    const isRegex = fields.isRegex ?? existing.isRegex;
+    const rawPattern = fields.rawPattern ?? existing.rawPattern;
+    const categoryId = ruleAction === 'skip' ? undefined : fields.categoryId === undefined ? existing.categoryId : (fields.categoryId ?? undefined);
+    if (!normalizeKey(rawPattern)) return validationFailure(res, 'rawPattern', 'rawPattern needs at least one letter or digit');
+    if (isRegex && !validRegex(rawPattern)) return validationFailure(res, 'rawPattern', 'rawPattern is not a valid regex');
+    if (ruleAction === 'categorize' && !categoryId) return validationFailure(res, 'categoryId', 'categoryId is required for a categorize rule');
+    if (ruleAction === 'categorize' && categoryId !== existing.categoryId && !await checkRuleCategory(res, account, req, categoryId)) return;
+    if (existing.source === 'user' && fields.rawPattern !== undefined && normalizeKey(rawPattern) !== normalizeKey(existing.rawPattern)
+      && userRules(account).some(rule => rule.id !== id && normalizeKey(rule.rawPattern) === normalizeKey(rawPattern))) {
+      return apiError(res, 409, 'A rule for that merchant already exists', 'RuleExists');
+    }
+    delete existing.categoryId;
+    Object.assign(existing, { rawPattern, cleanMerchantName: fields.cleanMerchantName ?? existing.cleanMerchantName, action: ruleAction, isRegex, ...(categoryId ? { categoryId } : {}), updatedAt: now });
     return json(res, 200, { data: existing });
   }
   return apiError(res, 405, 'Method not allowed', 'MethodNotAllowed');
+}
+
+// ---- Account export ("Download my data") -----------------------------------------------------
+async function accountExport(req, res, account) {
+  if (state.exportFail) return json(res, 500, { error: 'ExportFailed', message: 'Could not build your data file. Please try again.' });
+  const now = new Date().toISOString();
+  const categories = await categoriesFor(account, req);
+  const doc = {
+    format: 'spenditos-export', version: 1, exportedAt: now,
+    account: { userId: account.id, email: account.email, currency: account.settings?.currency ?? 'USD', timezone: account.settings?.timezone ?? 'UTC', createdAt: '2026-01-01T00:00:00.000Z' },
+    categories,
+    incomeAndBills: [
+      { id: 'sidecar-income-1', name: 'Paycheque', kind: 'income', amount: 2500, frequency: 'biweekly', categoryId: 'sidecar-income-salary' },
+      { id: 'sidecar-bill-1', name: 'Rent', kind: 'bill', amount: 1200, frequency: 'monthly', categoryId: 'sidecar-expense-other' },
+    ],
+    rules: userRules(account),
+    transactions: [
+      { id: 'sidecar-tx-1', amount: 12.5, date: '2026-10-01', description: 'Corner Shop purchase', categoryId: 'sidecar-expense-food', transactionType: 'expense' },
+      { id: 'sidecar-tx-2', amount: 2500, date: '2026-10-02', description: 'Payroll', categoryId: 'sidecar-income-salary', transactionType: 'income' },
+    ],
+  };
+  const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="spenditos-data-${now.slice(0, 10)}.json"`, 'Cache-Control': 'no-store' };
+  let body = Buffer.from(JSON.stringify(doc));
+  if (/\bgzip\b/i.test(String(req.headers['accept-encoding'] ?? ''))) { body = gzipSync(body); headers['Content-Encoding'] = 'gzip'; }
+  headers['Content-Length'] = String(body.length);
+  res.writeHead(200, headers);
+  res.end(body);
+}
+
+// ---- Scans -----------------------------------------------------------------------------------
+// The harness has no scan worker, so scans live in the sidecar. Per account (email), in memory.
+// Polling GET /scans/{id}: first two reads report `processing`, the third is `ready`.
+const SCAN_STATUSES = ['processing', 'ready', 'failed', 'saved', 'discarded'];
+const PDF_GROUP_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+function scansFor(account) {
+  return state.scans.get(account.email) ?? state.scans.set(account.email, new Map()).get(account.email);
+}
+
+function addDays(date, days) {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+function validateScanBody(body) {
+  const fail = (field, message) => ({ field, message });
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('body', 'Request body must be a JSON object');
+  if (!Array.isArray(body.documents) || body.documents.length < 1 || body.documents.length > 60) return fail('documents', 'documents must contain 1-60 items');
+  for (let i = 0; i < body.documents.length; i++) {
+    const doc = body.documents[i];
+    if (!doc || typeof doc !== 'object') return fail(`documents[${i}]`, 'document must be an object');
+    if (typeof doc.documentKey !== 'string' || !doc.documentKey) return fail(`documents[${i}].documentKey`, 'documentKey is required');
+    if (!['image', 'spreadsheet'].includes(doc.kind)) return fail(`documents[${i}].kind`, 'kind must be image or spreadsheet');
+    if (doc.filename !== undefined && (typeof doc.filename !== 'string' || doc.filename.length > 255)) return fail(`documents[${i}].filename`, 'filename must be at most 255 characters');
+    if (doc.pdfGroupId !== undefined) {
+      if (typeof doc.pdfGroupId !== 'string' || !PDF_GROUP_ID.test(doc.pdfGroupId)) return fail(`documents[${i}].pdfGroupId`, 'pdfGroupId must be 1-64 characters of A-Z a-z 0-9 _ -');
+      if (doc.kind !== 'image') return fail(`documents[${i}].pdfGroupId`, 'pdfGroupId is only allowed on images');
+    }
+  }
+  if (body.referenceDate !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.referenceDate))) return fail('referenceDate', 'referenceDate must be YYYY-MM-DD');
+  if (body.locale !== undefined && typeof body.locale !== 'string') return fail('locale', 'locale must be a string');
+  if (body.userCurrency !== undefined && typeof body.userCurrency !== 'string') return fail('userCurrency', 'userCurrency must be a string');
+  if (body.sourceLabel !== undefined && (typeof body.sourceLabel !== 'string' || body.sourceLabel.length > 80)) return fail('sourceLabel', 'sourceLabel must be at most 80 characters');
+  return null;
+}
+
+/** 1 credit per ungrouped document; pages sharing a pdfGroupId cost 1 per started block of 10. */
+function scanCredits(documents) {
+  const groups = new Map();
+  let credits = 0;
+  for (const doc of documents) {
+    if (doc.pdfGroupId) groups.set(doc.pdfGroupId, (groups.get(doc.pdfGroupId) ?? 0) + 1);
+    else credits++;
+  }
+  for (const pages of groups.values()) credits += Math.ceil(pages / 10);
+  return credits;
+}
+
+async function createScan(req, res, account) {
+  const body = await readJson(req);
+  const invalid = validateScanBody(body);
+  if (invalid) return validationFailure(res, invalid.field, invalid.message);
+  if (state.scanQuotaExhausted && !account.premiumActive) {
+    const reset = new Date(); reset.setUTCMonth(reset.getUTCMonth() + 1, 1);
+    return errorOnly(res, 403, 'QuotaExhausted', { quotaType: 'scanCredits', limit: 10, used: 10, remaining: 0, amount: scanCredits(body.documents), resetDate: reset.toISOString().slice(0, 10) });
+  }
+  const now = new Date().toISOString();
+  const scanId = `scn_${String(++state.scanSeq).padStart(4, '0')}${randomUUID().slice(0, 4)}`;
+  const total = body.documents.length;
+  const scan = {
+    scanId, seq: state.scanSeq, status: 'processing', polls: 0, done: 0, total, kind: null, items: null,
+    documents: body.documents.map(({ documentKey, kind, filename, pdfGroupId }) => ({ documentKey, kind, filename, pdfGroupId })),
+    referenceDate: body.referenceDate ?? null, userCurrency: body.userCurrency || 'USD',
+    sourceLabel: body.sourceLabel || (total === 1 ? '1 file' : `${total} files`), createdAt: now, updatedAt: now,
+  };
+  scansFor(account).set(scanId, scan);
+  return json(res, 202, { data: { scanId, status: 'processing', total } });
+}
+
+function scanSummary(scan) {
+  const items = scan.items ?? [];
+  return {
+    scanId: scan.scanId, status: scan.status, progress: { done: scan.done, total: scan.total }, kind: scan.kind,
+    itemCount: items.length, flaggedCount: items.filter(item => item.skipReason).length, ruleCount: items.filter(item => item.ruleId).length,
+    failedDocuments: 0, sourceLabel: scan.sourceLabel, createdAt: scan.createdAt, updatedAt: scan.updatedAt,
+  };
+}
+
+/** Rows for a list scan: 12 deterministic rows over ~2 months relative to the reference date. */
+function listScanItems(today) {
+  const at = days => addDays(today, -days);
+  const rows = [
+    { merchantName: 'Blue Bottle Coffee', description: 'BLUE BOTTLE COFFEE #12', amount: 4.5, date: at(0), categoryHint: 'dining' },
+    { merchantName: 'Blue Bottle Coffee', description: 'BLUE BOTTLE COFFEE #12', amount: 5.25, date: at(2), categoryHint: 'dining' },
+    { merchantName: 'Blue Bottle Coffee', description: 'BLUE BOTTLE COFFEE #12', amount: 4.75, date: at(5), categoryHint: 'dining' },
+    { merchantName: 'Blue Bottle Coffee', description: 'BLUE BOTTLE COFFEE #12', amount: 6, date: at(9), categoryHint: 'dining' },
+    { merchantName: 'Shell', description: 'SHELL GAS STATION', amount: 48.3, date: at(1), categoryHint: 'transport', isPending: true },
+    { merchantName: 'Metro', description: 'Metro groceries', amount: 62.18, date: at(3), categoryHint: 'groceries', skipReason: 'duplicate',
+      possibleDuplicateOf: { transactionId: 'txn_existing-001', date: at(3), amount: 62.18, description: 'Metro groceries' } },
+    { merchantName: null, description: 'PAYMENT – THANK YOU', amount: 420, date: at(6), transactionType: 'income', skipReason: 'payment', confidence: 0.7 },
+    { merchantName: null, description: 'E-TRANSFER TO SAVINGS', amount: 300, date: at(14), skipReason: 'transfer', confidence: 0.7 },
+    { merchantName: 'Acme Inc', description: 'PAYROLL ACME INC', amount: 2500, date: at(20), transactionType: 'income', categoryHint: 'salary' },
+    { merchantName: 'Loblaws', description: 'LOBLAWS #1021', amount: 87.42, date: at(27), categoryHint: 'groceries' },
+    { merchantName: 'Netflix', description: 'NETFLIX.COM', amount: 15.99, date: at(35), categoryHint: 'entertainment' },
+    { merchantName: 'Corner Store', description: 'CORNER STORE', amount: 7.99, date: null, categoryHint: 'shopping' },
+  ];
+  return rows;
+}
+
+function buildScanItems(scan, account) {
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(scan.referenceDate ?? '') ? scan.referenceDate : (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; })();
+  const isReceipt = scan.documents.length === 1 && scan.documents[0].kind === 'image' && /receipt/i.test(scan.documents[0].filename ?? '');
+  scan.kind = isReceipt ? 'receipt' : 'list';
+  const rows = isReceipt
+    ? [{ merchantName: 'Metro', description: 'groceries', amount: 38.74, date: addDays(today, -1), categoryHint: 'groceries', isPending: null }]
+    : listScanItems(today);
+  const seqByDoc = new Map();
+  const rules = userRules(account);
+  const items = rows.map((row, index) => {
+    const documentIndex = index % scan.documents.length;
+    const seq = seqByDoc.get(documentIndex) ?? 0;
+    seqByDoc.set(documentIndex, seq + 1);
+    const item = {
+      id: `${scan.scanId}-${documentIndex}-${seq}`, documentIndex, amount: row.amount, currency: scan.userCurrency, date: row.date,
+      categoryId: null, categoryHint: row.categoryHint ?? null, merchantName: row.merchantName, description: row.description,
+      confidence: row.confidence ?? 1, transactionType: row.transactionType ?? 'expense', possibleDuplicateOf: row.possibleDuplicateOf ?? null,
+      skipReason: row.skipReason ?? null, isPending: row.isPending ?? false, ruleId: null,
+    };
+    // A user rule beats the model: skip rules flag the row, categorize rules file it.
+    const rule = rules.find(candidate => ruleMatches(candidate, item.description, item.merchantName));
+    if (rule) {
+      item.ruleId = rule.id;
+      if (rule.action === 'skip') item.skipReason = 'rule';
+      else { item.categoryId = rule.categoryId ?? null; item.categoryHint = null; }
+    }
+    return item;
+  });
+  // Newest date first, undated last (stable, so ties keep generation order).
+  return items.map((item, index) => ({ item, index })).sort((a, b) => (a.item.date === b.item.date ? a.index - b.index : a.item.date === null ? 1 : b.item.date === null ? -1 : a.item.date < b.item.date ? 1 : -1)).map(entry => entry.item);
+}
+
+function advanceScan(scan, account) {
+  if (scan.status !== 'processing') return;
+  scan.polls++;
+  scan.updatedAt = new Date().toISOString();
+  if (scan.polls <= 2) { scan.done = Math.floor(scan.total * scan.polls / 3); return; }
+  scan.items = buildScanItems(scan, account);
+  scan.done = scan.total;
+  scan.status = 'ready';
+}
+
+function scanNotFound(res) {
+  return json(res, 404, { message: 'Scan not found' });
+}
+
+function getScan(res, account, id) {
+  const scan = scansFor(account).get(id);
+  if (!scan) return scanNotFound(res);
+  advanceScan(scan, account);
+  const summary = scanSummary(scan);
+  return json(res, 200, { data: ['ready', 'saved'].includes(scan.status) ? { ...summary, items: scan.items } : summary });
+}
+
+function listScans(res, account, url) {
+  const raw = url.searchParams.get('status');
+  const wanted = raw === null ? ['processing', 'ready'] : raw.split(',').map(value => value.trim()).filter(Boolean);
+  if (!wanted.length || wanted.some(status => !SCAN_STATUSES.includes(status))) return validationFailure(res, 'status', `status must be a comma-separated list of ${SCAN_STATUSES.join(', ')}`);
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const scans = [...scansFor(account).values()].filter(scan => wanted.includes(scan.status) && Date.parse(scan.createdAt) >= cutoff)
+    .sort((a, b) => b.seq - a.seq).slice(0, 20).map(scanSummary);
+  return json(res, 200, { data: { scans } });
+}
+
+async function completeScan(req, res, account, id) {
+  const body = await readJson(req);
+  if (!['saved', 'discarded'].includes(body?.outcome)) return validationFailure(res, 'outcome', 'outcome must be saved or discarded');
+  const scan = scansFor(account).get(id);
+  if (!scan) return scanNotFound(res);
+  if (scan.status === 'processing' || scan.status === 'failed') return apiError(res, 409, 'Scan is not ready', 'ScanNotReady');
+  if (scan.status === 'ready') { scan.status = body.outcome; scan.updatedAt = new Date().toISOString(); }
+  return json(res, 200, { data: scanSummary(scan) });
 }
 
 async function exportCsv(req, res, account) {
@@ -454,6 +830,18 @@ async function handleRequest(req, res, server) {
     return json(res, 200, { data: { users: [...state.accounts.values()].map(({ id, email, verified, premiumActive }) => ({ id, email, verified, premiumActive })), uploads: [...state.uploads.values()].filter(upload => upload.bytes).length } });
   }
   if (path === '/__sidecar/reset' && req.method === 'POST') { state = newState(); return json(res, 200, { data: { reset: true } }); }
+  if (path === '/__sidecar/scan-quota' && req.method === 'POST') {
+    const body = await readJson(req);
+    if (typeof body?.exhausted !== 'boolean') return apiError(res, 400, 'exhausted must be true or false', 'ValidationError');
+    state.scanQuotaExhausted = body.exhausted;
+    return json(res, 200, { data: { exhausted: state.scanQuotaExhausted } });
+  }
+  if (path === '/__sidecar/export-fail' && req.method === 'POST') {
+    const body = await readJson(req);
+    if (typeof body?.fail !== 'boolean') return apiError(res, 400, 'fail must be true or false', 'ValidationError');
+    state.exportFail = body.fail;
+    return json(res, 200, { data: { fail: state.exportFail } });
+  }
   if (path === '/__s3' && req.method === 'POST') return handleS3(req, res);
 
   if (path.startsWith('/auth/')) return handleAuth(req, res, path);
@@ -543,8 +931,16 @@ async function handleRequest(req, res, server) {
     return json(res, 200, { data: { registered: req.method === "POST" } });
   }
   // Merchant names: the harness has no route, keep them in memory per account.
-  const merchantMatch = /^\/settings\/merchant-mappings(?:\/([^/]+))?$/.exec(path);
-  if (merchantMatch) return merchantMappings(req, res, account, merchantMatch[1]);
+  const merchantMatch = /^\/settings\/merchant-mappings(?:\/([^/]+)(?:\/(apply))?)?$/.exec(path);
+  if (merchantMatch) return merchantMappings(req, res, account, merchantMatch[1] && decodeURIComponent(merchantMatch[1]), merchantMatch[2]);
+  // The harness has no account export route: serve a small synthetic document like the real handler.
+  if (path === '/user/export' && req.method === 'GET') return accountExport(req, res, account);
+  // Scans: the harness has no scan worker, so the sidecar fakes the whole engine in memory.
+  if (path === '/scans' && req.method === 'POST') return createScan(req, res, account);
+  if (path === '/scans' && req.method === 'GET') return listScans(res, account, url);
+  const scanMatch = /^\/scans\/([^/]+)(\/complete)?$/.exec(path);
+  if (scanMatch && !scanMatch[2] && req.method === 'GET') return getScan(res, account, decodeURIComponent(scanMatch[1]));
+  if (scanMatch && scanMatch[2] && req.method === 'POST') return completeScan(req, res, account, decodeURIComponent(scanMatch[1]));
   // The harness has no export route: build a CSV like the real handler from its transaction + category lists.
   if (path === '/transactions/export' && req.method === 'GET') return exportCsv(req, res, account);
   if (path === '/transactions/upload-url' && req.method === 'POST') return uploadUrl(req, res, account, server);
@@ -556,12 +952,27 @@ async function handleRequest(req, res, server) {
   const analysisMatch = /^\/transactions\/analysis\/([^/]+)$/.exec(path);
   if (analysisMatch && req.method === 'GET') return analysisStatus(res, decodeURIComponent(analysisMatch[1]), account);
 
-  // The harness has no analysis log, so a bulk save that references a sidecar analysisId would
-  // fail there; drop the link (the real server only uses it for audit) and forward the rest.
+  // The harness has no analysis or scan log, so a bulk save that references a sidecar analysisId or
+  // scanId would fail there; drop the link (the real server only uses it for audit / marking the
+  // scan saved) and forward the rest. Scan bulk saves keep source "scan".
   if (path === '/transactions/bulk' && req.method === 'POST') {
     const payload = await readJson(req);
-    if (payload && !Array.isArray(payload) && 'analysisId' in payload) delete payload.analysisId;
-    return sendProxyJson(res, await proxyJson(reqFromBody(req, payload), account.id));
+    let scan = null;
+    if (payload && !Array.isArray(payload)) {
+      if ('analysisId' in payload) delete payload.analysisId;
+      if (payload.source === 'scan' && 'scanId' in payload) {
+        scan = scansFor(account).get(String(payload.scanId));
+        if (!scan) return apiError(res, 404, 'Scan not found', 'ScanNotFound');
+        delete payload.scanId;
+      }
+    }
+    let result = await proxyJson(reqFromBody(req, payload), account.id);
+    if (scan && result.status === 400 && result.body?.error === 'ValidationError') {
+      console.warn('[sidecar] harness bulk route rejected source=scan; retrying with source=manual');
+      result = await proxyJson(reqFromBody(req, { ...payload, source: 'manual' }), account.id);
+    }
+    if (scan && scan.status === 'ready' && result.status >= 200 && result.status < 300) { scan.status = 'saved'; scan.updatedAt = new Date().toISOString(); }
+    return sendProxyJson(res, result);
   }
 
   return proxyToHarness(req, res, account.id);
@@ -585,6 +996,11 @@ class ReadableRequestShim {
 async function readSeedCategories(req, account) {
   const result = await proxyJson(emptyRequest('/categories'), account.id);
   return result.status === 200 && Array.isArray(result.body?.data) ? categoryOverlays(account, result.body.data) : [];
+}
+
+function jsonRequest(method, url, body) {
+  const bytes = Buffer.from(JSON.stringify(body));
+  return { url, method, headers: { 'content-type': 'application/json', 'content-length': String(bytes.length) }, pipe(destination) { destination.end(bytes); return destination; } };
 }
 
 function emptyRequest(url) {
@@ -660,7 +1076,7 @@ async function uploadUrl(req, res, account, server) {
   const mimeType = typeof body?.mimeType === 'string' ? body.mimeType.split(';')[0].trim().toLowerCase() : '';
   if (!MIME_TYPES[type]) return apiError(res, 400, 'Validation failed', 'ValidationError');
   if (!MIME_TYPES[type].includes(mimeType)) return json(res, 400, { message: `Unsupported file type for ${type}. Allowed: ${MIME_TYPES[type].join(', ')}` });
-  const extByMime = { 'text/csv': 'csv', 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'text/plain': 'txt' };
+  const extByMime = { 'text/csv': 'csv', 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/vnd.ms-excel': 'xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'text/plain': 'txt' };
   const key = `users/${account.id}/${type}/${randomUUID()}.${extByMime[mimeType] ?? 'bin'}`;
   const fields = { key, 'Content-Type': body.mimeType };
   state.uploads.set(key, { key, userId: account.id, type, mimeType, maxBytes: MAX_BYTES[type], fields, bytes: null, filename: null });
