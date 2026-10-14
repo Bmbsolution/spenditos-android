@@ -24,18 +24,20 @@ fun ScanItem.toReviewItem(categories: List<Category>): CaptureReviewItem {
         // Wire amounts are positive numbers with at most two decimals; round anything longer so it can be saved.
         BigDecimal.valueOf(it).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
     }.orEmpty()
+    // A row without a date keeps it blank: the user sets it in the editor before it can be saved.
+    val dateText = date?.takeIf { runCatching { LocalDate.parse(it) }.isSuccess }.orEmpty()
     return CaptureReviewItem(
         idempotencyKeyId = id,
         amountText = amountText,
         description = displayDescription().take(200),
-        // A row without a date keeps it blank: the user sets it in the editor before it can be saved.
-        date = date?.takeIf { runCatching { LocalDate.parse(it) }.isSuccess }.orEmpty(),
+        date = dateText,
         categoryId = matched?.id,
         suggestedCategoryId = categoryId,
         categoryHint = categoryHint,
         currency = currency,
         transactionType = transactionType,
-        include = skip == null,
+        // Rows missing an amount or a date start unchecked too, so one incomplete row never blocks saving the rest.
+        include = skip == null && amountText.isNotEmpty() && dateText.isNotEmpty(),
         skipReason = skipReason?.takeIf { skip != null },
         ruleId = ruleId?.takeIf { it.isNotEmpty() },
         merchantName = merchantName,

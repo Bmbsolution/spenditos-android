@@ -155,7 +155,7 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
         }
         if (state.incompleteCount > 0) {
             Text(
-                "${state.incompleteCount.counted("item")} need an amount and a date before saving",
+                "${state.incompleteCount.counted("item")} ${if (state.incompleteCount == 1) "needs" else "need"} an amount and a date before saving",
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.warning,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.incomplete"),

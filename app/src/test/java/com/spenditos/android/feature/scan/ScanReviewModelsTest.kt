@@ -70,7 +70,7 @@ class ScanReviewModelsTest {
 
     @Test
     fun `an unknown skip reason does not uncheck a row`() {
-        val row = ScanItem(id = "x", amount = 5.0, skipReason = "from_the_future").toReviewItem(categories)
+        val row = ScanItem(id = "x", amount = 5.0, date = "2026-10-01", skipReason = "from_the_future").toReviewItem(categories)
         assertTrue(row.include)
         assertNull(row.skipReason)
     }
@@ -98,6 +98,8 @@ class ScanReviewModelsTest {
         assertEquals("Amazon", row.description)
         assertEquals("", ScanItem(id = "b", amount = -3.0).toReviewItem(categories).amountText)
         assertEquals("", ScanItem(id = "c").displayDescription())
+        // Incomplete rows start unchecked so they never block saving the rest.
+        assertFalse(row.include)
     }
 
     @Test

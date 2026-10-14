@@ -169,9 +169,15 @@ class ScanReviewViewModelTest {
     // region Editing and validation
 
     @Test
-    fun `a row without an amount or date blocks saving until it is fixed or unchecked`() = runTest {
+    fun `a row without an amount or date starts unchecked and blocks saving only once included`() = runTest {
         val vm = newViewModel(detail(row("a"), row("b", amount = null), row("c", date = null)))
         advanceUntilIdle()
+        assertEquals(listOf(true, false, false), vm.state.value.items.map { it.include })
+        assertEquals(0, vm.state.value.incompleteCount)
+        assertTrue(vm.state.value.canSave)
+
+        vm.toggleInclude("b")
+        vm.toggleInclude("c")
         assertEquals(2, vm.state.value.incompleteCount)
         assertFalse(vm.state.value.canSave)
 
