@@ -67,16 +67,7 @@ private fun secondarySystemBackgroundColor(): Color = if (isSystemInDarkTheme())
 fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val featureRows = listOf(
-        Feature(SfSymbols.icon("doc.text.viewfinder"), "Unlimited AI Receipt Scanning", "Snap photos of receipts and let AI extract all details", SystemBlue),
-        Feature(SfSymbols.icon("waveform"), "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category", SystemBlue),
-        Feature(SfSymbols.icon("chart.line.uptrend.xyaxis"), "Advanced Analytics", "Daily trends, income analysis, and detailed reports", SystemBlue),
-        Feature(SfSymbols.icon("arrow.triangle.2.circlepath"), "Unlimited income items and bills", "Add as many income items and bills as you need", SystemBlue),
-        // Android-only Pro features remain available with the same feature-row styling.
-        Feature(SfSymbols.icon("calendar.badge.clock"), "Paycheck periods", "See how each paycheck covers what is due.", SystemBlue),
-        Feature(SfSymbols.icon("doc.text"), "Statement import", "Bring in a bank CSV or Excel file with the columns mapped for you.", SystemBlue),
-        Feature(SfSymbols.icon("mic"), "More receipt scans and voice captures", "More receipt scans and voice captures each month.", SystemBlue),
-    )
+    val featureRows = PRO_FEATURES.map { Feature(SfSymbols.icon(it.symbol), it.title, it.description, SystemBlue) }
 
     Box(Modifier.fillMaxSize().background(if (isSystemInDarkTheme()) Color.Black else Color.White).statusBarsPadding()) {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
@@ -214,6 +205,16 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
         }
     }
 }
+
+/** The paywall list, copied from iOS PaywallView.featuresSection (same rows, same words). */
+internal data class ProFeatureSpec(val symbol: String, val title: String, val description: String)
+
+internal val PRO_FEATURES = listOf(
+    ProFeatureSpec("doc.viewfinder", "Unlimited AI Receipt Scanning", "Snap photos of receipts and let AI extract all details"),
+    ProFeatureSpec("waveform", "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category"),
+    ProFeatureSpec("chart.line.uptrend.xyaxis", "Advanced Analytics", "Daily trends, income analysis, and detailed reports"),
+    ProFeatureSpec("arrow.triangle.2.circlepath", "Unlimited income items and bills", "Add as many income items and bills as you need"),
+)
 
 private data class Feature(val icon: ImageVector, val title: String, val description: String, val tint: Color)
 
