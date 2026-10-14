@@ -37,6 +37,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.spenditos.android.testing.FakeProAccess
+import com.spenditos.android.testing.FakeQuotaSource
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +48,8 @@ class ReceiptScanViewModelTest {
     private lateinit var processor: FakeImageProcessor
     private lateinit var handle: SavedStateHandle
     private lateinit var viewModel: ReceiptScanViewModel
+    private lateinit var access: FakeProAccess
+    private lateinit var quota: FakeQuotaSource
 
     @Before
     fun setUp() {
@@ -53,7 +57,9 @@ class ReceiptScanViewModelTest {
         scanner = FakeScanner()
         processor = FakeImageProcessor()
         handle = SavedStateHandle()
-        viewModel = ReceiptScanViewModel(scanner, processor, handle, Dispatchers.Main) // same test scheduler
+        access = FakeProAccess()
+        quota = FakeQuotaSource(FakeQuotaSource.overview(), access)
+        viewModel = ReceiptScanViewModel(scanner, processor, handle, Dispatchers.Main, access, quota) // same test scheduler
     }
 
     @After
@@ -92,13 +98,56 @@ class ReceiptScanViewModelTest {
         advanceUntilIdle()
 
         assertEquals(ReceiptScanStep.QUOTA, viewModel.state.value.step)
-        assertEquals("You've used all your free receipt scans for this month.", viewModel.state.value.error)
+        assertEquals("You've used all your free scan credits for this month.", viewModel.state.value.error)
+        assertFalse(viewModel.state.value.error!!.contains("QuotaExhausted"))
         assertFalse(viewModel.state.value.offline)
         assertFalse(viewModel.state.value.error!!.contains("Pro"))
 
         viewModel.retry()
         assertEquals(ReceiptScanStep.CHOOSE, viewModel.state.value.step)
         assertEquals(null, viewModel.state.value.error)
+    }
+
+    private fun newViewModel(overview: com.spenditos.android.data.model.QuotaOverview?, pro: Boolean = false): ReceiptScanViewModel {
+        access.setPro(pro)
+        quota.fetched = overview
+        return ReceiptScanViewModel(scanner, processor, SavedStateHandle(), Dispatchers.Main, access, quota)
+    }
+
+    @Test
+    fun `a free user with no scan credits left sees the exhausted screen before scanning`() = runTest {
+        val vm = newViewModel(FakeQuotaSource.overview(scanLeft = 0, scanUsed = 10))
+        advanceUntilIdle()
+        assertEquals(ReceiptScanStep.QUOTA, vm.state.value.step)
+        assertEquals("You've used all your free scan credits for this month.", vm.state.value.error)
+        assertEquals(0, vm.state.value.scanCreditsLeft)
+    }
+
+    @Test
+    fun `remaining scan credits come from the scan credits bucket`() = runTest {
+        val vm = newViewModel(FakeQuotaSource.overview(scanLeft = 3, scanUsed = 7))
+        advanceUntilIdle()
+        assertEquals(ReceiptScanStep.CHOOSE, vm.state.value.step)
+        assertEquals(3, vm.state.value.scanCreditsLeft)
+    }
+
+    @Test
+    fun `pro and unknown quota never block the chooser`() = runTest {
+        val pro = newViewModel(FakeQuotaSource.overview(scanLeft = 0), pro = true)
+        advanceUntilIdle()
+        assertEquals(ReceiptScanStep.CHOOSE, pro.state.value.step)
+        assertEquals(null, pro.state.value.scanCreditsLeft)
+
+        val offline = newViewModel(null)
+        advanceUntilIdle()
+        assertEquals(ReceiptScanStep.CHOOSE, offline.state.value.step)
+    }
+
+    @Test
+    fun `a finished scan invalidates the quota cache`() = runTest {
+        viewModel.onLibraryPhotoSelected(Uri.parse("content://fake/photo"))
+        advanceUntilIdle()
+        assertEquals(1, quota.invalidations)
     }
 
     @Test

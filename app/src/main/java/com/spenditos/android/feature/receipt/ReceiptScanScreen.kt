@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.data.quota.QuotaCopy
 import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
@@ -151,7 +152,7 @@ fun ReceiptScanScreen(
                 }
                 ReceiptScanStep.QUOTA -> {
                     ReceiptQuotaExceeded(
-                        message = state.error ?: "You've used all your free receipt scans for this month.",
+                        message = state.error ?: QuotaCopy.SCAN_EXHAUSTED,
                         onUpgrade = { openPro?.invoke() },
                         onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
                     )
@@ -211,7 +212,7 @@ private fun ReceiptQuotaExceeded(message: String, onUpgrade: () -> Unit, onManua
         ) {
             Text("Monthly Limit Reached", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             Text(message, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = Spacing.xl))
-            Text("Upgrade to Pro for unlimited scans.", style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(QuotaCopy.SCAN_UPGRADE, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(
