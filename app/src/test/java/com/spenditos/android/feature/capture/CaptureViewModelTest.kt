@@ -32,6 +32,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.spenditos.android.testing.FakeProAccess
+import com.spenditos.android.testing.FakeQuotaSource
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -103,17 +105,17 @@ class CaptureViewModelTest {
     }
 
     @Test
-    fun `a quota 403 shows the monthly limit screen instead of an error line`() = runTest {
+    fun `a voice quota 403 shows the monthly limit screen instead of an error line`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val actions = FakeCaptureActions().apply {
-            parseBlock = { _, _, _, _ -> throw com.spenditos.android.core.network.ApiError.Server(403, "QuotaExhausted") }
+            parseBlock = { _, _, _, _ -> throw com.spenditos.android.core.network.ApiError.Server(403, "QuotaExhausted", "voiceEntries") }
         }
         val vm = viewModel(actions, FakeCaptureDataSource(categories = categories()), FakeRecorder())
         advanceUntilIdle()
         vm.onTextChange("coffee 5")
         vm.parseTypedText()
         advanceUntilIdle()
-        assertTrue(vm.state.value.quotaExceeded)
+        assertTrue("a non-sentence 403 still shows the limit screen", vm.state.value.quotaExceeded)
         assertNull(vm.state.value.error)
         vm.dismissQuota()
         assertFalse(vm.state.value.quotaExceeded)
@@ -370,7 +372,174 @@ class CaptureViewModelTest {
         source: FakeCaptureDataSource,
         recorder: FakeRecorder,
         handle: SavedStateHandle = SavedStateHandle(),
-    ) = CaptureViewModel(actions, source, recorder, handle, Dispatchers.Main)
+        access: FakeProAccess = FakeProAccess(),
+        quota: FakeQuotaSource = FakeQuotaSource(access = access),
+    ) = CaptureViewModel(actions, source, recorder, handle, Dispatchers.Main, access, quota)
+
+    // --- Free tier: sentence metering ---
+
+    private fun exhaustedQuota(access: FakeProAccess) = FakeQuotaSource(FakeQuotaSource.overview(sentenceLeft = 0, sentenceUsed = 30), access)
+
+    @Test
+    fun `exhausted sentence quota opens the manual form with the typed text and amount, without calling the parser`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions()
+        val access = FakeProAccess()
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), access = access, quota = exhaustedQuota(access))
+        advanceUntilIdle()
+        val event = async { vm.events.first() }
+
+        vm.onTextChange("  groceries 42.10 at Costco  ")
+        vm.parseTypedText()
+        advanceUntilIdle()
+
+        val fallback = event.await() as CaptureEvent.ManualFallback
+        assertEquals("groceries 42.10 at Costco", fallback.prefill.description)
+        assertEquals(42.10, fallback.prefill.amount!!, 0.0)
+        assertTrue(fallback.prefill.smartEntriesUsed)
+        assertTrue("no sentence was sent to the server", actions.parseCalls.isEmpty())
+        assertEquals(CaptureStep.Input, vm.state.value.step)
+        assertEquals("the typed text stays", "  groceries 42.10 at Costco  ", vm.state.value.text)
+        assertTrue(vm.state.value.sentenceMeter!!.isExhausted)
+        assertFalse("not the voice limit screen", vm.state.value.quotaExceeded)
+    }
+
+    @Test
+    fun `exhausted sentence without a number still opens the form with the text`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val access = FakeProAccess()
+        val vm = viewModel(FakeCaptureActions(), FakeCaptureDataSource(categories()), FakeRecorder(), access = access, quota = exhaustedQuota(access))
+        advanceUntilIdle()
+        val event = async { vm.events.first() }
+        vm.onTextChange("coffee with Sam")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        val fallback = event.await() as CaptureEvent.ManualFallback
+        assertEquals("coffee with Sam", fallback.prefill.description)
+        assertNull(fallback.prefill.amount)
+    }
+
+    @Test
+    fun `a sentence 403 from the server routes to the manual form too`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().apply {
+            parseBlock = { _, _, _, _ -> throw ApiError.Server(403, "QuotaExhausted", "sentenceEntries") }
+        }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder()) // client thinks 30 are left
+        advanceUntilIdle()
+        val event = async { vm.events.first() }
+        vm.onTextChange("lunch 12")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        val fallback = event.await() as CaptureEvent.ManualFallback
+        assertEquals(12.0, fallback.prefill.amount!!, 0.0)
+        assertFalse(vm.state.value.quotaExceeded)
+        assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun `a stale zero is rechecked against the server before routing away`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions()
+        val access = FakeProAccess()
+        val quota = object : com.spenditos.android.data.quota.QuotaSource by FakeQuotaSource(access = access) {
+            var calls = 0
+            override suspend fun remainingSentenceEntries(): Int = if (calls++ == 0) 0 else 20
+            override suspend fun refresh(force: Boolean): com.spenditos.android.data.model.QuotaOverview? = null
+            override suspend fun sentenceMeter(forceRefresh: Boolean): com.spenditos.android.data.quota.SentenceMeter? = null
+        }
+        val vm = CaptureViewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), SavedStateHandle(), Dispatchers.Main, access, quota)
+        advanceUntilIdle()
+        vm.onTextChange("lunch 12")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        assertEquals(CaptureStep.Review, vm.state.value.step)
+        assertEquals(1, actions.parseCalls.size)
+    }
+
+    @Test
+    fun `pro users are never routed to the manual form and see no meter`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions()
+        val access = FakeProAccess().apply { setPro(true) }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), access = access, quota = exhaustedQuota(access))
+        advanceUntilIdle()
+        vm.onTextChange("lunch 12")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        assertEquals(CaptureStep.Review, vm.state.value.step)
+        assertTrue(vm.state.value.isPro)
+        assertNull(vm.state.value.sentenceMeter)
+    }
+
+    @Test
+    fun `an old server that does not meter sentences never blocks`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions()
+        val access = FakeProAccess()
+        val quota = FakeQuotaSource(FakeQuotaSource.overview(sentenceLeft = null), access)
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), access = access, quota = quota)
+        advanceUntilIdle()
+        vm.onTextChange("lunch 12")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        assertEquals(CaptureStep.Review, vm.state.value.step)
+        assertNull(vm.state.value.sentenceMeter?.remaining)
+    }
+
+    @Test
+    fun `voice transcripts are never blocked by the sentence bucket`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions()
+        val access = FakeProAccess()
+        val recorder = FakeRecorder().apply { amplitude = 120 }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), recorder, access = access, quota = exhaustedQuota(access))
+        advanceUntilIdle()
+        vm.onRecordPermissionResult(true)
+        runCurrent()
+        advanceTimeBy(100)
+        runCurrent()
+        vm.stopRecording()
+        advanceUntilIdle()
+        vm.parseTranscript()
+        advanceUntilIdle()
+        assertEquals(CaptureStep.Review, vm.state.value.step)
+        assertEquals("voice", actions.parseCalls.single().inputType)
+    }
+
+    @Test
+    fun `the counter appears after three uses and the banner at five left`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val access = FakeProAccess()
+        fun meterFor(used: Int, left: Int) = viewModel(
+            FakeCaptureActions(), FakeCaptureDataSource(categories()), FakeRecorder(), access = access,
+            quota = FakeQuotaSource(FakeQuotaSource.overview(sentenceLeft = left, sentenceUsed = used), access),
+        )
+
+        val fresh = meterFor(0, 30); advanceUntilIdle()
+        assertFalse(fresh.state.value.sentenceMeter!!.showsCounter)
+        val three = meterFor(3, 27); advanceUntilIdle()
+        assertEquals("27 smart entries left this month", three.state.value.sentenceMeter!!.counterText)
+        val five = meterFor(25, 5); advanceUntilIdle()
+        val banner = five.state.value.sentenceMeter!!
+        assertNull(banner.counterText)
+        assertEquals("Smart entries are a Pro feature \u2014 5 left this month.", banner.bannerText)
+    }
+
+    @Test
+    fun `a successful sentence parse refreshes the meter from the server`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val access = FakeProAccess()
+        val quota = FakeQuotaSource(FakeQuotaSource.overview(sentenceLeft = 28, sentenceUsed = 2), access)
+        val vm = viewModel(FakeCaptureActions(), FakeCaptureDataSource(categories()), FakeRecorder(), access = access, quota = quota)
+        advanceUntilIdle()
+        quota.fetched = FakeQuotaSource.overview(sentenceLeft = 27, sentenceUsed = 3)
+        vm.onTextChange("lunch 12")
+        vm.parseTypedText()
+        advanceUntilIdle()
+        assertEquals(27, vm.state.value.sentenceMeter!!.remaining)
+        assertTrue(quota.invalidations > 0)
+    }
 
     private fun categories() = listOf(
         Category("cat-food", "user-fake", "Food", "#000000", isIncome = false),

@@ -190,9 +190,9 @@ fun MainScaffold(
                 ) {
                     CaptureScreen(
                         onBack = { nav.popBackStack() },
-                        onFillManually = {
+                        onFillManually = { prefill ->
                             nav.popBackStack()
-                            receiptPrefill = null
+                            receiptPrefill = prefill
                             editTarget = null
                             showAdd = true
                         },
@@ -327,6 +327,13 @@ fun MainScaffold(
                         showAdd = false
                         nav.navigate(captureRoute("type"))
                     },
+                    onOpenPro = if (proAvailable) {
+                        {
+                            showAdd = false
+                            receiptPrefill = null
+                            nav.navigate(PRO_ROUTE)
+                        }
+                    } else null,
                     prefill = receiptPrefill,
                     editTarget = editTarget,
                 )

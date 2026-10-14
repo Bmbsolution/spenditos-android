@@ -74,6 +74,8 @@ import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
+import com.spenditos.android.data.quota.SentenceMeter
+import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import java.text.NumberFormat
 import java.util.Currency
 
@@ -81,7 +83,7 @@ import java.util.Currency
 fun CaptureScreen(
     onBack: () -> Unit,
     onSaved: (String) -> Unit,
-    onFillManually: () -> Unit = onBack,
+    onFillManually: (AddTransactionPrefill?) -> Unit = { onBack() },
 ) {
     val viewModel: CaptureViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -93,7 +95,13 @@ fun CaptureScreen(
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.events.collect { event -> if (event is CaptureEvent.Saved) onSaved(event.message) }
+        viewModel.events.collect { event ->
+            when (event) {
+                is CaptureEvent.Saved -> onSaved(event.message)
+                // Smart entries used up: the typed text moves into the manual form, never a dead end.
+                is CaptureEvent.ManualFallback -> { viewModel.cancel(); onFillManually(event.prefill) }
+            }
+        }
     }
     DisposableEffect(viewModel, context, lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -150,7 +158,7 @@ fun CaptureScreen(
                 if (state.quotaExceeded) {
                     QuotaExceededContent(
                         onUpgrade = com.spenditos.android.feature.pro.LocalOpenPro.current,
-                        onFillManually = { viewModel.dismissQuota(); viewModel.cancel(); onFillManually() },
+                        onFillManually = { viewModel.dismissQuota(); viewModel.cancel(); onFillManually(null) },
                     )
                 } else if (voiceTranscribeError) {
                     VoiceErrorContent(
@@ -178,6 +186,9 @@ fun CaptureScreen(
                                 modifier = Modifier.padding(horizontal = Spacing.screen),
                                 fieldModifier = Modifier.testTag("capture.text"),
                             )
+                            if (!state.isPro) {
+                                state.sentenceMeter?.let { SentenceMeterLine(it, com.spenditos.android.feature.pro.LocalOpenPro.current) }
+                            }
                             PillButton(
                                 text = "Use text",
                                 onClick = viewModel::parseTypedText,
@@ -702,6 +713,37 @@ private fun formatRecordingTime(milliseconds: Long): String {
 private fun formatCurrency(value: Double, currencyCode: String): String = runCatching {
     NumberFormat.getCurrencyInstance().apply { currency = Currency.getInstance(currencyCode.uppercase()) }.format(value)
 }.getOrDefault("${currencyCode.uppercase()} ${"%.2f".format(value)}")
+
+/** Quiet counter after 3 uses; a soft inline Pro banner at 5 left or fewer. Free users only, never a modal. */
+@Composable
+private fun SentenceMeterLine(meter: SentenceMeter, onUpgrade: (() -> Unit)?) {
+    val banner = meter.bannerText
+    val counter = meter.counterText
+    if (banner != null) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("quick-add-sentence-banner"),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Text(banner, style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+            if (onUpgrade != null) {
+                Text(
+                    "Upgrade",
+                    style = IosText.caption.w(FontWeight.SemiBold),
+                    color = IosColors.spendOrange,
+                    modifier = Modifier.clickable(role = Role.Button, onClick = onUpgrade).testTag("quick-add-sentence-upgrade"),
+                )
+            }
+        }
+    } else if (counter != null) {
+        Text(
+            counter,
+            style = IosText.caption,
+            color = IosColors.textTertiary,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("quick-add-sentence-counter"),
+        )
+    }
+}
 
 /** iOS VoiceEntryView `quotaExceededContent`. */
 @Composable
