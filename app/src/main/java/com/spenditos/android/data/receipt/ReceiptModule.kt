@@ -7,7 +7,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
-import retrofit2.Retrofit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -27,18 +26,9 @@ object ReceiptModule {
     @ReceiptIoDispatcher
     fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
-    @Provides
-    @Singleton
-    fun receiptApi(retrofit: Retrofit): ReceiptApi = retrofit.create(ReceiptApi::class.java)
-
     /** Direct S3 uploads never use the authenticated API client or its interceptors. */
     @Provides
     @Singleton
     @ReceiptUploadClient
     fun receiptUploadClient(): OkHttpClient = OkHttpClient.Builder().build()
-
-    @Provides
-    @Singleton
-    fun receiptScanner(repository: ReceiptRepository): ReceiptScanner = repository
-
 }
