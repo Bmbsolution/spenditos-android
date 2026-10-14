@@ -1,6 +1,6 @@
 # STATUS
 
-Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
+Last updated: 2026-10-14 (iOS catch-up, see below). Previously 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
 ## Catch-up: Rules (iOS #252, branch catchup/rules)
 - Settings "Merchant rules" is now **Rules** (`feature/settings/rules`): user rules only (`source == "user"`), tap to edit (category chips, "Skip it" switch, Delete with confirmation), "+" adds a rule (upsert by merchant), pull to refresh, empty state "No rules yet". The old statement-name editor (regex / "name to show") went away with the iOS view it mirrored.
@@ -12,6 +12,17 @@ Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; se
 - Settings "Import" + "Export" rows are one "Download my data" row (`feature/export/DownloadDataScreen`): Full copy (`GET /user/export`, JSON, saved via SAF `CreateDocument` under the server's `spenditos-data-YYYY-MM-DD.json`) and Spreadsheet (existing transactions CSV, iOS periods This month / This year / Last year / Custom, share sheet).
 - Full copy streams to a private temp file (the picker needs the name first), then to the chosen Uri; the request is tagged with the `SessionBinding` and each chunk re-checks it (account switch / sign-out writes nothing and deletes the partial document). No manual Accept-Encoding.
 - Removed with iOS: Transactions toolbar Export button, statement import (`feature/statements`, `data/statements`, `StatementImport` models, fixtures, tests). Scan takes statements over.
+
+## iOS catch-up (2026-10-14; Sonnet workers, Opus review + merge)
+Android now matches iOS develop as of 2026-10-13 (iOS `eaf1dc8`, #251, #252, #257, #259). Backend contracts used: `../.worktrees/CATCHUP-CONTRACTS.md` (spenditos develop @5104997).
+- **Free tier v2** (`030cfb0`): effective Pro = inert store entitlement OR server `premiumStatus` (`data/entitlement/ProAccess`, session-scoped); `QuotaSource` reads `sentence_entries` / `scan_credits` (old-server fallback); typed-sentence metering with the prefilled manual fallback; Settings "Welcome Premium · ends …". `ApiError.Server.quotaType` added (core, additive).
+- **Scan** (`8885dcb`): camera + one Upload (Photo Library | Files), PDFs rendered to JPEG pages with a shared `pdfGroupId`, `/scans` engine, Home cards, month-grouped review, bulk save in chunks of 100 (`source:"scan"`, item id = idempotency key, session-bound). Scan-ready = poll + realtime `user.data_changed` (aggregateType scan) + foreground re-read (the server sends no Android push). Picker cap reads `QuotaSource` via `ScanCreditsModule`. Saves need the network (iOS can queue offline; a retry is safe).
+- **Rules** (`8a23d38`): grouped merchants in the Scan review, Always / Just this once (rule write never blocks the save), Settings › Rules (user rules only) replaces Merchant rules.
+- **Download my data** (`a162c65`): Settings row replaces Import/Export; `GET /user/export` streamed to a SAF document, session-guarded. Statement import deleted (iOS moved statements into Scan).
+- **Cleanup** (`e0f1b0c`): Pro opens over the add sheet (prefill survives), paywall list = iOS `PaywallView`, dead analyze-image receipt path removed, shared CSV kept until the screen is left.
+- **Core fix** (`64a6e80`): an account switch / sign-out between a 401 and the refresh now defers the queued write (PENDING, owner kept) instead of discarding it; found as a flaky test under load.
+- **Emulator** (harness + sidecar, `ff4d9b7` adds Scan/Rules/export stubs to the sidecar): Settings, Download my data (error path), Rules, Scan → Upload → Files → review → group category → Always → Add → done, Home "ready to review" card all exercised. Fix from that pass (`de0e237`): rows missing an amount or date start unchecked so they don't disable "Add N".
+- Open: "Notify me when it's ready" keeps the iOS label but Android only leaves the scan on Home (no push); the e2e harness itself does not route `/scans` or `/user/export` (sidecar stubs them).
 
 ## Wave M (2026-10-07/08, GLM workers; Sonnet review done)
 - GLM round review of filters / Edit mode / receipt camera / widget: 11 findings applied (`8dacbe9`, `b25b214`, `afbb808`, `4419a23`). One was wrong and reverted: iOS `.headingM` is title3 SemiBold (20), `.headingL` is title2 Bold (22).
