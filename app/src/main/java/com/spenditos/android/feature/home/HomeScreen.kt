@@ -78,6 +78,11 @@ fun HomeScreen(
     onAddIncome: () -> Unit = {},
     onSeeAll: () -> Unit = {},
     onLogFirst: () -> Unit = {},
+    /** A ready scan with several rows was tapped: open its review. */
+    onOpenScanReview: (String) -> Unit = {},
+    /** A ready single-receipt scan was tapped: open the add form with these values. */
+    onOpenScanReceipt: (com.spenditos.android.feature.transactions.AddTransactionPrefill) -> Unit = {},
+    onScanMessage: (String) -> Unit = {},
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -150,6 +155,9 @@ fun HomeScreen(
                     attentionBill(state)?.let { bill ->
                         AttentionRow(bill, state.today, state.currency, locale, onReviewPlan)
                     }
+
+                    // Scans left running or finished and waiting for review (iOS: after the plan reminder).
+                    com.spenditos.android.feature.scan.ScanHomeCards(onOpenScanReview, onOpenScanReceipt, onScanMessage)
 
                     if (state.isEmpty) EmptyHomeState(onLogFirst)
 

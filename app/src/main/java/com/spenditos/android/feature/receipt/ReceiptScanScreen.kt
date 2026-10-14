@@ -1,12 +1,9 @@
 package com.spenditos.android.feature.receipt
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,12 +13,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,134 +32,273 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.spenditos.android.data.quota.QuotaCopy
+import com.spenditos.android.feature.scan.ScanToast
+import com.spenditos.android.feature.scan.ScanToastStyle
 import com.spenditos.android.feature.transactions.AddTransactionPrefill
+import com.spenditos.android.ui.components.IconChip
 import com.spenditos.android.ui.components.IosScreen
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.glassCardModifier
+import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
-import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.w
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
+/** Types the Files picker offers: PDF, CSV, Excel and images (iOS `fileTypes`). */
+private val FILE_MIME_TYPES = arrayOf(
+    "application/pdf",
+    "text/csv",
+    "text/comma-separated-values",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "image/*",
+)
+
+/**
+ * iOS `ScanReceiptView`: the Scan screen. The camera and one Upload button (Photo Library | Files); everything is read
+ * by the Scan engine, which decides whether it is one receipt ([onResult] opens the prefilled add form) or a list
+ * ([onOpenReview] opens its review). A scan that is still being read can be left running; Home picks it up.
+ */
 @Composable
 fun ReceiptScanScreen(
     onResult: (AddTransactionPrefill) -> Unit,
+    onOpenReview: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val viewModel: ReceiptScanViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val openPro = com.spenditos.android.feature.pro.LocalOpenPro.current
-    // A library pick lands in the camera's Retake / Use Photo preview, like iOS ScanReceiptView.
-    var libraryPhoto by remember { mutableStateOf<Uri?>(null) }
 
-    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) libraryPhoto = uri
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
+        viewModel.onPhotosPicked(uris)
     }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        viewModel.onFilesPicked(uris)
+    }
+    val pickPhotos = { photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
-            if (event is ReceiptScanEvent.Result) onResult(event.prefill)
+            when (event) {
+                is ReceiptScanEvent.Result -> onResult(event.prefill)
+                is ReceiptScanEvent.OpenReview -> onOpenReview(event.scanId)
+                ReceiptScanEvent.Close -> onBack()
+            }
         }
     }
-    BackHandler {
-        viewModel.cancel()
-        onBack()
-    }
+    BackHandler { viewModel.onBack() }
 
-    if (state.step == ReceiptScanStep.CHOOSE) {
-        ReceiptCamera(
-            onBack = {
-                viewModel.cancel()
-                onBack()
-            },
-            onPickLibrary = {
-                gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-            libraryPhoto = libraryPhoto,
-            onLibraryPhotoConfirmed = { uri ->
-                libraryPhoto = null
-                viewModel.onLibraryPhotoSelected(uri)
-            },
-            onLibraryPhotoDismissed = { libraryPhoto = null },
-            onUsePhoto = { file ->
-                try {
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                    viewModel.setPendingCameraUri(uri.toString())
-                    viewModel.onCameraCaptureResult(true)
-                } catch (_: Exception) {
-                    file.delete()
-                    viewModel.imagePreparationFailed()
-                }
-            },
-            onCaptureError = { viewModel.imagePreparationFailed() },
-        )
-        return
-    }
-
-    IosScreen {
-        val progressTitle = when (state.step) {
-            ReceiptScanStep.PREPARING -> "Preparing photo..."
-            ReceiptScanStep.UPLOADING -> "Uploading receipt..."
-            ReceiptScanStep.ANALYZING -> "Analyzing receipt..."
-            else -> null
-        }
-        if (progressTitle != null) {
-            ProgressState(
-                title = progressTitle,
-                detail = if (state.step == ReceiptScanStep.ANALYZING) "This may take a few seconds" else null,
-                backdropPath = state.backdropPath,
-                onCancel = { viewModel.cancel(); onBack() },
+    Box(Modifier.fillMaxSize()) {
+        when (state.step) {
+            ReceiptScanStep.CHOOSE -> ReceiptCamera(
+                onBack = viewModel::onBack,
+                onPickLibrary = pickPhotos,
+                onUsePhoto = { file ->
+                    try {
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        viewModel.setPendingCameraUri(uri.toString())
+                        viewModel.onCameraCaptureResult(true)
+                    } catch (_: Exception) {
+                        file.delete()
+                        viewModel.imagePreparationFailed()
+                    }
+                },
+                onCaptureError = { viewModel.imagePreparationFailed() },
+                uploadSection = {
+                    ScanUploadSection(
+                        onPhotoLibrary = pickPhotos,
+                        onFiles = { filePicker.launch(FILE_MIME_TYPES) },
+                    )
+                },
             )
-            return@IosScreen
+            ReceiptScanStep.PREPARING -> IosScreen {
+                Column(
+                    Modifier.fillMaxSize().padding(Spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(36.dp).testTag("receipt.loading"), color = IosColors.spendOrange, strokeWidth = 3.dp)
+                    Spacer(Modifier.height(Spacing.l))
+                    Text("Preparing photo…", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+                }
+            }
+            ReceiptScanStep.READING -> IosScreen {
+                ReadingContent(
+                    reading = state.reading,
+                    onNotifyMe = viewModel::leaveInBackground,
+                    onCancel = viewModel::cancelReading,
+                )
+            }
+            ReceiptScanStep.FAILURE -> IosScreen {
+                ReceiptFailure(
+                    offline = state.offline,
+                    message = state.error ?: ReceiptScanViewModel.MANUAL_FALLBACK,
+                    onRetry = viewModel::retry,
+                    // iOS "Fill Manually" opens the empty add form rather than just leaving.
+                    onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
+                )
+            }
+            ReceiptScanStep.QUOTA -> IosScreen {
+                ReceiptQuotaExceeded(
+                    message = state.error ?: ReceiptScanViewModel.QUOTA_MESSAGE,
+                    onUpgrade = { openPro?.invoke() },
+                    onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
+                )
+            }
+            ReceiptScanStep.DONE -> Box(Modifier.fillMaxSize())
         }
+        ScanToast(
+            text = state.toast,
+            style = ScanToastStyle.INFO,
+            onDismiss = viewModel::dismissToast,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+/** iOS `uploadSection`: the Upload card (menu: Photo Library | Files) and the line under it. */
+@Composable
+private fun ScanUploadSection(onPhotoLibrary: () -> Unit, onFiles: () -> Unit) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Column(
+        Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m, bottom = Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Box {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .then(glassCardModifier())
+                    .clickable(role = Role.Button) { menuOpen = true }
+                    .padding(Spacing.m)
+                    .heightIn(min = 44.dp)
+                    .semantics { contentDescription = "Upload. Choose from Photo Library or Files" }
+                    .testTag("scan.upload"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                IconChip(SfSymbols.icon("square.and.arrow.up"), IosColors.spendOrange, size = 44.dp)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Upload", style = IosText.headline, color = IosColors.textPrimary)
+                    Text("Screenshots, receipts, PDF, CSV, Excel", style = IosText.subheadline, color = IosColors.textSecondary)
+                }
+                Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.4.dp))
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("Photo Library", style = IosText.body) },
+                    onClick = {
+                        menuOpen = false
+                        onPhotoLibrary()
+                    },
+                    modifier = Modifier.testTag("scan.upload.photos"),
+                )
+                DropdownMenuItem(
+                    text = { Text("Files", style = IosText.body) },
+                    onClick = {
+                        menuOpen = false
+                        onFiles()
+                    },
+                    modifier = Modifier.testTag("scan.upload.files"),
+                )
+            }
+        }
+        Text(
+            "Any amount. Spenditos works out what's in it and shows you everything before saving.",
+            style = IosText.caption,
+            color = IosColors.textSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
+        )
+    }
+}
+
+/** iOS `readingView`: upload progress, then documents read by the server; leave it running or cancel it. */
+@Composable
+private fun ReadingContent(reading: ScanReadingState, onNotifyMe: () -> Unit, onCancel: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(bottom = Spacing.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
+    ) {
+        Spacer(Modifier.weight(1f))
+        Text(
+            reading.title,
+            style = IosText.title3.w(FontWeight.SemiBold),
+            color = IosColors.textPrimary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = Spacing.screen).testTag("scan.reading.title"),
+        )
         Column(
-            modifier = Modifier.fillMaxSize().padding(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.l),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Box(Modifier.fillMaxWidth().heightIn(min = 44.dp), contentAlignment = Alignment.Center) {
-                Text("Scan receipt", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            val fraction = reading.fraction
+            if (fraction != null) {
+                LinearProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier.fillMaxWidth().testTag("scan.reading.bar"),
+                    color = IosColors.spendOrange,
+                )
+            } else {
+                CircularProgressIndicator(Modifier.size(28.dp).testTag("scan.reading.spinner"), color = IosColors.spendOrange, strokeWidth = 3.dp)
             }
-            when (state.step) {
-                ReceiptScanStep.FAILURE -> {
-                    ReceiptFailure(
-                        offline = state.offline,
-                        message = state.error ?: "Couldn't read that receipt. You can enter it yourself.",
-                        onRetry = viewModel::retry,
-                        // iOS "Fill Manually" opens the empty add form rather than just leaving.
-                        onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
-                    )
+            Text(
+                reading.progressText,
+                style = IosText.subheadline,
+                color = IosColors.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag("scan.reading.progress"),
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            if (reading.offersBackground && reading.scanId != null) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(Radius.m))
+                        .background(IosColors.spendOrange)
+                        .clickable(role = Role.Button, onClick = onNotifyMe)
+                        .testTag("scan.notifyMe"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("Notify me when it's ready", style = IosText.headline, color = Color.Black)
                 }
-                ReceiptScanStep.QUOTA -> {
-                    ReceiptQuotaExceeded(
-                        message = state.error ?: QuotaCopy.SCAN_EXHAUSTED,
-                        onUpgrade = { openPro?.invoke() },
-                        onManual = { viewModel.cancel(); onResult(AddTransactionPrefill()) },
-                    )
-                }
-                else -> Unit
             }
+            Text(
+                "Cancel",
+                style = IosText.body,
+                color = IosColors.neutral,
+                modifier = Modifier
+                    .heightIn(min = 44.dp)
+                    .clickable(role = Role.Button, onClick = onCancel)
+                    .padding(horizontal = Spacing.m, vertical = 10.dp)
+                    .testTag("scan.reading.cancel"),
+            )
         }
     }
 }
@@ -171,7 +311,7 @@ private fun ReceiptFailure(offline: Boolean, message: String, onRetry: () -> Uni
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(48.dp))
-        Text("Couldn't read receipt", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text("Couldn't read your scan", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
         if (offline) {
             Text("You're offline. Check your connection and try again.", style = IosText.body, color = IosColors.warning, textAlign = TextAlign.Center)
         }
@@ -211,8 +351,8 @@ private fun ReceiptQuotaExceeded(message: String, onUpgrade: () -> Unit, onManua
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Text("Monthly Limit Reached", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-            Text(message, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = Spacing.xl))
-            Text(QuotaCopy.SCAN_UPGRADE, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(message, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = Spacing.xl).testTag("receipt.quota.message"))
+            Text("Upgrade to Pro to keep scanning.", style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(
@@ -263,45 +403,5 @@ private fun ReceiptSecondaryAction(text: String, onClick: () -> Unit, modifier: 
         contentAlignment = Alignment.Center,
     ) {
         Text(text, style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m), textAlign = TextAlign.Center)
-    }
-}
-
-/** iOS analyzingView: the photo behind the progress card, blurred under a scrim, card centered. */
-@Composable
-private fun ProgressState(title: String, detail: String?, backdropPath: String?, onCancel: () -> Unit) {
-    Box(Modifier.fillMaxSize()) {
-        if (backdropPath != null) ReceiptBackdrop(backdropPath)
-        Column(
-            Modifier.align(Alignment.Center).then(glassCardModifier(RoundedCornerShape(Radius.l))).padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.l),
-        ) {
-            CircularProgressIndicator(modifier = Modifier.size(36.dp).testTag("receipt.loading"), color = IosColors.spendOrange, strokeWidth = 3.dp)
-            Text(title, style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-            if (detail != null) Text(detail, color = IosColors.neutral, style = IosText.body, textAlign = TextAlign.Center)
-            PillButton("Cancel", onClick = onCancel, filled = false)
-        }
-    }
-}
-
-/** Decodes the scan's in-flight image for the backdrop; the ViewModel still owns and deletes the file. */
-@Composable
-private fun ReceiptBackdrop(path: String) {
-    var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(path) {
-        bitmap = withContext(Dispatchers.IO) {
-            runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
-        }?.asImageBitmap()
-    }
-    Box(Modifier.fillMaxSize()) {
-        bitmap?.let {
-            Image(
-                bitmap = it,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize().blur(6.dp),
-                contentScale = ContentScale.Fit,
-            )
-        }
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)))
     }
 }

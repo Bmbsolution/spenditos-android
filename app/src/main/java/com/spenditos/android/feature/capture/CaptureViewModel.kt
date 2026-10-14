@@ -73,6 +73,16 @@ data class CaptureReviewItem(
     val isFrozen: Boolean = false,
     val include: Boolean = true,
     val failureReason: String? = null,
+    // Scan rows only (#358): why a row starts unchecked and what it repeats. Voice and typed rows leave these empty.
+    /** `duplicate` / `payment` / `transfer` / `rule` (see [com.spenditos.android.data.model.ScanSkipReason]). */
+    val skipReason: String? = null,
+    /** The user rule that categorized or skipped the row. */
+    val ruleId: String? = null,
+    /** The bank still lists the charge as pending. */
+    val isPending: Boolean? = null,
+    /** The existing transaction this row probably repeats: its date and amount. */
+    val duplicateDate: String? = null,
+    val duplicateAmount: Double? = null,
 )
 
 data class CaptureUiState(
@@ -343,30 +353,15 @@ class CaptureViewModel @Inject constructor(
         }
     }
 
-    fun toggleInclude(key: String) = updateItem(key) { it.copy(include = !it.include, failureReason = null) }
-    fun onAmountChange(key: String, text: String) = updateItem(key) { it.copy(amountText = text.filter { char -> char.isDigit() || char == '.' || char == ',' }, failureReason = null) }
-    fun onDescriptionChange(key: String, text: String) = updateItem(key) { it.copy(description = text.take(200), failureReason = null) }
-    fun onDateChange(key: String, date: LocalDate) = updateItem(key) { it.copy(date = date.toString(), failureReason = null) }
-    /**
-     * iOS TransactionItemEditorView type picker. The category decides the saved kind, so switching
-     * kinds drops a category of the other kind instead of saving a mismatched pair.
-     */
-    fun onTypeChange(key: String, income: Boolean) = updateItem(key) { item ->
-        val wasIncome = item.transactionType.equals("income", ignoreCase = true)
-        if (wasIncome == income) return@updateItem item
-        item.copy(
-            transactionType = if (income) "income" else "expense",
-            categoryId = null,
-            categoryEdited = item.categoryId != null || item.categoryEdited,
-            failureReason = null,
-        )
-    }
+    fun toggleInclude(key: String) = updateItem(key, ReviewItemEditing::toggled)
+    fun onAmountChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withAmountText(it, text) }
+    fun onDescriptionChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withDescription(it, text) }
+    fun onDateChange(key: String, date: LocalDate) = updateItem(key) { ReviewItemEditing.withDate(it, date) }
 
-    fun onCategoryChange(key: String, categoryId: String?) = updateItem(key) { item ->
-        val wantsIncome = item.transactionType.equals("income", ignoreCase = true)
-        val valid = _state.value.categories.firstOrNull { it.id == categoryId && it.isIncome == wantsIncome }
-        item.copy(categoryId = valid?.id, categoryEdited = true, failureReason = null)
-    }
+    /** iOS TransactionItemEditorView type picker (see [ReviewItemEditing.withType]). */
+    fun onTypeChange(key: String, income: Boolean) = updateItem(key) { ReviewItemEditing.withType(it, income) }
+
+    fun onCategoryChange(key: String, categoryId: String?) = updateItem(key) { ReviewItemEditing.withCategory(it, categoryId, _state.value.categories) }
 
     fun save() {
         val current = _state.value

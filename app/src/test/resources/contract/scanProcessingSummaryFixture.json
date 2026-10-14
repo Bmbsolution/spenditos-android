@@ -1,0 +1,18 @@
+{
+  "data": {
+    "scanId": "scn_0001",
+    "status": "processing",
+    "progress": {
+      "done": 1,
+      "total": 2
+    },
+    "kind": null,
+    "itemCount": 0,
+    "flaggedCount": 0,
+    "ruleCount": 0,
+    "failedDocuments": 0,
+    "sourceLabel": "2 files",
+    "createdAt": "2026-10-11T10:00:05.000Z",
+    "updatedAt": "2026-10-11T10:00:20.000Z"
+  }
+}

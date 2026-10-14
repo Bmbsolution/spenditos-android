@@ -16,9 +16,34 @@ import java.io.FileOutputStream
 import kotlin.math.roundToInt
 import javax.inject.Singleton
 
+/** Long side of a receipt photo kept for upload (the legacy receipt flow). */
+const val DEFAULT_MAX_LONG_SIDE = 2048
+
+/** Long side kept for a Scan upload: a 2.5k-px phone screenshot stays legible (iOS `ScanService.maxLongEdge`). */
+const val SCAN_MAX_LONG_SIDE = 3000
+
+/** Scan uploads are limited to 10 MiB by the server; images stay well below it (iOS `maxImageBytes`). */
+const val SCAN_MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+/** JPEG at [firstQuality]; a result over the Scan upload cap is rewritten at lower qualities (iOS `jpegData(for:)`). */
+internal fun writeJpeg(bitmap: Bitmap, destination: File, firstQuality: Int = 80) {
+    for (quality in listOf(firstQuality, 60, 45, 30).distinct().filter { it <= firstQuality }) {
+        FileOutputStream(destination).use { output ->
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, quality, output)) {
+                throw IllegalStateException("Receipt image could not be compressed")
+            }
+        }
+        if (destination.length() <= SCAN_MAX_IMAGE_BYTES) return
+    }
+}
+
 interface ReceiptImageProcessing {
     fun createTempFile(): File
-    fun process(uri: Uri, destination: File)
+    /**
+     * Decodes [uri], applies the EXIF orientation, scales the long side down to [maxLongSide] and writes a JPEG.
+     * The Scan engine passes [SCAN_MAX_LONG_SIDE] (iOS `ScanService.maxLongEdge`): statements need more pixels than a receipt.
+     */
+    fun process(uri: Uri, destination: File, maxLongSide: Int = DEFAULT_MAX_LONG_SIDE)
     fun deleteCameraFile(uriString: String)
 }
 
@@ -53,7 +78,7 @@ class ReceiptImageProcessor(
         return File.createTempFile("receipt-scan-", ".jpg", directory)
     }
 
-    override fun process(uri: Uri, destination: File) {
+    override fun process(uri: Uri, destination: File, maxLongSide: Int) {
         try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             // decodeStream returns null when only bounds are requested, so the open check must not
@@ -65,17 +90,13 @@ class ReceiptImageProcessor(
 
             val orientation = context.contentResolver.openInputStream(uri)?.use { ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL) }
                 ?: ExifInterface.ORIENTATION_NORMAL
-            val options = BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight) }
+            val options = BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, maxLongSide) }
             val decoded = context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
                 ?: throw IllegalArgumentException("Receipt image could not be decoded")
 
             val oriented = orient(decoded, orientation)
-            val scaled = fit(oriented)
-            FileOutputStream(destination).use { output ->
-                if (!scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)) {
-                    throw IllegalStateException("Receipt image could not be compressed")
-                }
-            }
+            val scaled = fit(oriented, maxLongSide)
+            writeJpeg(scaled, destination, JPEG_QUALITY)
             if (scaled !== oriented) scaled.recycle()
             if (oriented !== decoded) oriented.recycle()
             decoded.recycle()
@@ -108,22 +129,21 @@ class ReceiptImageProcessor(
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
-    private fun fit(bitmap: Bitmap): Bitmap {
+    private fun fit(bitmap: Bitmap, maxLongSide: Int): Bitmap {
         val longest = maxOf(bitmap.width, bitmap.height)
-        if (longest <= MAX_LONG_SIDE) return bitmap
-        val ratio = MAX_LONG_SIDE.toFloat() / longest
+        if (longest <= maxLongSide) return bitmap
+        val ratio = maxLongSide.toFloat() / longest
         return Bitmap.createScaledBitmap(bitmap, (bitmap.width * ratio).roundToInt().coerceAtLeast(1), (bitmap.height * ratio).roundToInt().coerceAtLeast(1), true)
     }
 
-    private fun sampleSize(width: Int, height: Int): Int {
+    private fun sampleSize(width: Int, height: Int, maxLongSide: Int): Int {
         var sample = 1
-        while (maxOf(width, height) / (sample * 2) >= MAX_LONG_SIDE) sample *= 2
+        while (maxOf(width, height) / (sample * 2) >= maxLongSide) sample *= 2
         return sample
     }
 
     private companion object {
         const val RECEIPT_DIRECTORY = "receipts"
-        const val MAX_LONG_SIDE = 2048
         const val JPEG_QUALITY = 80
         const val STALE_CAMERA_FILE_MILLIS = 60 * 60 * 1000L
     }

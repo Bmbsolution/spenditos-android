@@ -1,0 +1,37 @@
+{
+  "data": {
+    "scanId": "scn_0003",
+    "status": "ready",
+    "progress": {
+      "done": 1,
+      "total": 1
+    },
+    "kind": "receipt",
+    "itemCount": 1,
+    "flaggedCount": 0,
+    "ruleCount": 0,
+    "failedDocuments": 0,
+    "sourceLabel": "1 file",
+    "createdAt": "2026-10-11T11:00:00.000Z",
+    "updatedAt": "2026-10-11T11:00:09.000Z",
+    "items": [
+      {
+        "id": "scn_0003-0-0",
+        "documentIndex": 0,
+        "amount": 38.74,
+        "currency": "CAD",
+        "date": "2026-10-10",
+        "categoryId": null,
+        "categoryHint": "groceries",
+        "merchantName": "Metro",
+        "description": "groceries",
+        "confidence": 1,
+        "transactionType": "expense",
+        "possibleDuplicateOf": null,
+        "skipReason": null,
+        "isPending": null,
+        "ruleId": null
+      }
+    ]
+  }
+}

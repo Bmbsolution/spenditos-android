@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -87,8 +88,9 @@ internal class BoundReceiptCamera(
 )
 
 /**
- * iOS `cameraView` / `permissionDeniedView` / `previewView` (ScanReceiptView.swift).
- * Live preview is edge to edge on black; controls sit in the safe area.
+ * iOS `cameraScreen` / `cameraView` / `permissionDeniedView` / `previewView` (ScanReceiptView.swift): a top bar,
+ * the live camera in a rounded card with the gallery shortcut, shutter and hint on top of it, and the Upload
+ * card below ([uploadSection]). A captured photo is confirmed on a full-screen Retake / Use Photo preview.
  */
 @Composable
 internal fun ReceiptCamera(
@@ -96,9 +98,7 @@ internal fun ReceiptCamera(
     onPickLibrary: () -> Unit,
     onUsePhoto: (File) -> Unit,
     onCaptureError: () -> Unit,
-    libraryPhoto: Uri? = null,
-    onLibraryPhotoConfirmed: (Uri) -> Unit = {},
-    onLibraryPhotoDismissed: () -> Unit = {},
+    uploadSection: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf<Boolean?>(null) }
@@ -143,24 +143,12 @@ internal fun ReceiptCamera(
     }
 
     val photo = capturedFile
-    val library = libraryPhoto
     val showDenied = permissionGranted == false || noCamera
     val showLive = permissionGranted == true && !noCamera && photo == null
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(if (photo == null && library == null && !showDenied) Color.Black else MaterialTheme.colorScheme.background),
-    ) {
-        when {
-            // A gallery pick confirms through the same Retake / Use Photo preview as a capture.
-            library != null -> ReceiptPhotoPreview(
-                source = library,
-                loadBitmap = { decodePreviewBitmap(context, library)?.asImageBitmap() },
-                onRetake = onLibraryPhotoDismissed,
-                onUse = { onLibraryPhotoConfirmed(library) },
-            )
-            photo != null -> ReceiptPhotoPreview(
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        if (photo != null) {
+            ReceiptPhotoPreview(
                 source = photo,
                 loadBitmap = { decodePreviewBitmap(context, photo)?.asImageBitmap() },
                 onRetake = {
@@ -173,75 +161,125 @@ internal fun ReceiptCamera(
                     onUsePhoto(photo)
                 },
             )
-            showDenied -> ReceiptPermissionDenied(
-                onOpenSettings = {
-                    val intent = Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.fromParts("package", context.packageName, null),
-                    )
-                    context.startActivity(intent)
-                },
-                onCancel = onBack,
-                // Photo library stays usable without the camera permission, like iOS.
-                onPickLibrary = onPickLibrary,
-            )
-            else -> {
-                if (showLive) {
-                    ReceiptViewfinder(
-                        onBound = { bound = it },
-                        onUnavailable = { noCamera = true },
-                    )
-                }
-                if (bound == null) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center).size(48.dp),
-                        color = Color.White,
-                        strokeWidth = 4.dp,
-                    )
-                } else {
-                    ReceiptCameraChrome(
-                        onBack = onBack,
-                        onPickLibrary = onPickLibrary,
-                        onShutter = {
-                            val camera = bound ?: return@ReceiptCameraChrome
-                            if (capturing) return@ReceiptCameraChrome
-                            val created = try {
-                                val directory = File(context.cacheDir, "receipts").apply { mkdirs() }
-                                File.createTempFile("receipt-camera-", ".jpg", directory)
-                            } catch (_: Exception) {
-                                onCaptureErrorState()
-                                return@ReceiptCameraChrome
+        } else {
+            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                ScanTopBar(onBack)
+                // iOS cameraView: a radiusL card inside the screen padding, black while the camera is live.
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.screen)
+                        .padding(top = Spacing.s)
+                        .clip(RoundedCornerShape(Radius.l))
+                        .background(if (bound != null && !showDenied) Color.Black else Color.Transparent),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when {
+                        showDenied -> ReceiptPermissionDenied(
+                            onOpenSettings = {
+                                val intent = Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null),
+                                )
+                                context.startActivity(intent)
+                            },
+                        )
+                        else -> {
+                            if (showLive) {
+                                ReceiptViewfinder(
+                                    onBound = { bound = it },
+                                    onUnavailable = { noCamera = true },
+                                )
                             }
-                            capturing = true
-                            val executor = ContextCompat.getMainExecutor(context)
-                            camera.imageCapture.takePicture(
-                                ImageCapture.OutputFileOptions.Builder(created).build(),
-                                executor,
-                                object : ImageCapture.OnImageSavedCallback {
-                                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                        capturing = false
-                                        if (disposed.get()) {
-                                            // Back was pressed while the JPEG was being written:
-                                            // nobody is left to own the file, so delete it now.
-                                            created.delete()
-                                            return
+                            if (bound == null) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.8.dp),
+                                    color = IosColors.neutral,
+                                    strokeWidth = 3.dp,
+                                )
+                            } else {
+                                ReceiptCameraChrome(
+                                    onPickLibrary = onPickLibrary,
+                                    onShutter = {
+                                        val camera = bound ?: return@ReceiptCameraChrome
+                                        if (capturing) return@ReceiptCameraChrome
+                                        val created = try {
+                                            val directory = File(context.cacheDir, "receipts").apply { mkdirs() }
+                                            File.createTempFile("receipt-camera-", ".jpg", directory)
+                                        } catch (_: Exception) {
+                                            onCaptureErrorState()
+                                            return@ReceiptCameraChrome
                                         }
-                                        camera.provider.unbindAll()
-                                        bound = null
-                                        capturedFile = created
-                                    }
+                                        capturing = true
+                                        val executor = ContextCompat.getMainExecutor(context)
+                                        camera.imageCapture.takePicture(
+                                            ImageCapture.OutputFileOptions.Builder(created).build(),
+                                            executor,
+                                            object : ImageCapture.OnImageSavedCallback {
+                                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                                    capturing = false
+                                                    if (disposed.get()) {
+                                                        // Back was pressed while the JPEG was being written:
+                                                        // nobody is left to own the file, so delete it now.
+                                                        created.delete()
+                                                        return
+                                                    }
+                                                    camera.provider.unbindAll()
+                                                    bound = null
+                                                    capturedFile = created
+                                                }
 
-                                    override fun onError(exception: ImageCaptureException) {
-                                        created.delete()
-                                        capturing = false
-                                        onCaptureErrorState()
-                                    }
-                                },
-                            )
-                        },
-                    )
+                                                override fun onError(exception: ImageCaptureException) {
+                                                    created.delete()
+                                                    capturing = false
+                                                    onCaptureErrorState()
+                                                }
+                                            },
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
+                uploadSection()
             }
+        }
+    }
+}
+
+/** iOS `topBar`: a centered "Scan" title and a Back button in the primary label color (44pt tall). */
+@Composable
+private fun ScanTopBar(onBack: () -> Unit) {
+    Box(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.s).padding(top = Spacing.xs),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "Scan",
+            style = IosText.headline,
+            color = IosColors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        Row(
+            Modifier
+                .align(Alignment.CenterStart)
+                .clickable(role = Role.Button, onClick = onBack)
+                .padding(horizontal = Spacing.m)
+                .heightIn(min = 44.dp)
+                .testTag("receipt.cancel")
+                .semantics { contentDescription = "Back" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            Icon(
+                SfSymbols.icon("chevron.left"),
+                contentDescription = null,
+                tint = IosColors.textPrimary,
+                modifier = Modifier.size(19.2.dp),
+            )
+            Text("Back", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
         }
     }
 }
@@ -312,50 +350,26 @@ private fun ReceiptViewfinder(
     }
 }
 
+/** The hint capsule and the gallery shortcut / shutter row on top of the live camera (iOS `cameraView`). */
 @Composable
 private fun ReceiptCameraChrome(
-    onBack: () -> Unit,
     onPickLibrary: () -> Unit,
     onShutter: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s),
-        ) {
-            Row(
-                Modifier
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(role = Role.Button, onClick = onBack)
-                    .padding(horizontal = Spacing.m)
-                    .heightIn(min = 44.dp)
-                    .testTag("receipt.cancel")
-                    .semantics { contentDescription = "Back" },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-            ) {
-                Icon(
-                    SfSymbols.icon("chevron.left"),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(19.2.dp),
-                )
-                Text("Back", style = IosText.callout.w(FontWeight.Medium), color = Color.White)
-            }
-        }
+    Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.weight(1f))
         Text(
-            "Position receipt within frame",
+            "Point at a receipt",
             style = IosText.callout,
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(bottom = Spacing.l)
+                .padding(bottom = Spacing.m)
                 .background(Color.Black.copy(alpha = 0.6f), CircleShape)
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
         )
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(bottom = 32.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.m).padding(bottom = Spacing.m),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -381,13 +395,14 @@ private fun ReceiptCameraChrome(
     }
 }
 
+/** The gallery shortcut opens the same multi-select picker as Upload > Photo Library. */
 @Composable
-private fun ReceiptGalleryButton(onPickLibrary: () -> Unit, onDark: Boolean = true) {
+private fun ReceiptGalleryButton(onPickLibrary: () -> Unit) {
     Box(
         Modifier
             .size(56.dp)
             .clip(CircleShape)
-            .background(if (onDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.12f))
+            .background(Color.White.copy(alpha = 0.2f))
             .clickable(role = Role.Button, onClick = onPickLibrary)
             .testTag("receipt.chooseFromLibrary")
             .semantics { contentDescription = "Choose from photo library" },
@@ -396,69 +411,49 @@ private fun ReceiptGalleryButton(onPickLibrary: () -> Unit, onDark: Boolean = tr
         Icon(
             SfSymbols.icon("photo.on.rectangle"),
             contentDescription = null,
-            tint = if (onDark) Color.White else IosColors.textPrimary,
+            tint = Color.White,
             modifier = Modifier.size(24.dp),
         )
     }
 }
 
+/** iOS `permissionDeniedView` (with Upload on offer): the Upload card below still works without the camera. */
 @Composable
-private fun ReceiptPermissionDenied(
-    onOpenSettings: () -> Unit,
-    onCancel: () -> Unit,
-    onPickLibrary: (() -> Unit)?,
-) {
+private fun ReceiptPermissionDenied(onOpenSettings: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.l),
-        ) {
-            Icon(
-                SfSymbols.icon("camera.fill"),
-                contentDescription = null,
-                tint = IosColors.neutral,
-                modifier = Modifier.size(67.2.dp),
-            )
-            Text(
-                "Camera Access Required",
-                style = IosText.title3.w(FontWeight.SemiBold),
-                color = IosColors.textPrimary,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                "Allow camera access in Settings to scan receipts.",
-                style = IosText.callout,
-                color = IosColors.neutral,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp),
-            )
-            Text(
-                "Open Settings",
-                style = IosText.headline,
-                color = Color.Black,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Radius.m))
-                    .background(IosColors.spendOrange)
-                    .clickable(role = Role.Button, onClick = onOpenSettings)
-                    .padding(horizontal = 32.dp, vertical = Spacing.m),
-            )
-            Text(
-                "Cancel",
-                style = IosText.body,
-                color = IosColors.neutral,
-                modifier = Modifier
-                    .clickable(role = Role.Button, onClick = onCancel)
-                    .padding(vertical = Spacing.s)
-                    .testTag("receipt.cancel"),
-            )
-            if (onPickLibrary != null) {
-                ReceiptGalleryButton(onPickLibrary, onDark = false)
-            }
-        }
+        Icon(
+            SfSymbols.icon("camera.fill"),
+            contentDescription = null,
+            tint = IosColors.neutral,
+            modifier = Modifier.size(52.8.dp),
+        )
+        Text(
+            "Camera Access Required",
+            style = IosText.title3.w(FontWeight.SemiBold),
+            color = IosColors.textPrimary,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            "Allow camera access in Settings to scan receipts. You can still upload below.",
+            style = IosText.callout,
+            color = IosColors.neutral,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 32.dp),
+        )
+        Text(
+            "Open Settings",
+            style = IosText.headline,
+            color = Color.Black,
+            modifier = Modifier
+                .clip(RoundedCornerShape(Radius.m))
+                .background(IosColors.spendOrange)
+                .clickable(role = Role.Button, onClick = onOpenSettings)
+                .padding(horizontal = 32.dp, vertical = Spacing.m)
+                .testTag("receipt.openSettings"),
+        )
     }
 }
 

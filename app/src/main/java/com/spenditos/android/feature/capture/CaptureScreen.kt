@@ -650,12 +650,15 @@ private fun VoiceErrorContent(message: String, onRetry: () -> Unit, onCancel: ()
 }
 
 @Composable
-private fun CaptureReviewFooter(
+internal fun CaptureReviewFooter(
     items: List<CaptureReviewItem>,
     currency: String,
     enabled: Boolean,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The button's text; "Add N" by default (the Scan review shows "Saving…" while it saves). */
+    buttonText: String? = null,
+    saveTag: String = "capture.save",
 ) {
     val net = items.sumOf { item ->
         val amount = item.amountText.trim().replace(',', '.').toDoubleOrNull() ?: 0.0
@@ -679,10 +682,10 @@ private fun CaptureReviewFooter(
             }
             Spacer(Modifier.weight(1f))
             PillButton(
-                text = "Add $count",
+                text = buttonText ?: "Add $count",
                 onClick = onSave,
                 enabled = enabled,
-                modifier = Modifier.weight(1f).then(modifier).testTag("capture.save"),
+                modifier = Modifier.weight(1f).then(modifier).testTag(saveTag),
             )
         }
     }

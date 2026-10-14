@@ -25,7 +25,14 @@ class RealtimeEvents @Inject constructor(
     private val processedEventIds = LinkedHashSet<String>(EVENT_ID_LIMIT)
     private val _gamificationUpdates = MutableSharedFlow<Unit>(extraBufferCapacity = 16)
 
+    // A scan finished (ready or failed): `aggregateType == "scan"`, `aggregateId` = scan id. It is not a finance
+    // aggregate (nothing to refetch for Home's numbers), so it has its own signal for the Scan coordinator.
+    private val _scanUpdates = MutableSharedFlow<String?>(extraBufferCapacity = 16)
+
     val gamificationUpdates: SharedFlow<Unit> = _gamificationUpdates.asSharedFlow()
+
+    /** Emits the scan id (null if the server omitted it) each time the server reports a scan changed. */
+    val scanUpdates: SharedFlow<String?> = _scanUpdates.asSharedFlow()
 
     /** Unknown and malformed messages are ignored so they cannot end the socket's receive loop. */
     fun accept(message: String) {
@@ -69,15 +76,24 @@ class RealtimeEvents @Inject constructor(
             return
         }
         if (event.eventId.isBlank() || event.eventId in processedEventIds) return
+        if (event.aggregateType == SCAN_AGGREGATE && event.mutationType in SUPPORTED_MUTATIONS) {
+            remember(event.eventId)
+            _scanUpdates.tryEmit(event.aggregateId)
+            return
+        }
         val aggregate = event.toAggregate() ?: return
 
-        processedEventIds.add(event.eventId)
+        remember(event.eventId)
+        invalidations.invalidate(aggregate)
+    }
+
+    private fun remember(eventId: String) {
+        processedEventIds.add(eventId)
         if (processedEventIds.size > EVENT_ID_LIMIT) {
             val oldest = processedEventIds.iterator()
             oldest.next()
             oldest.remove()
         }
-        invalidations.invalidate(aggregate)
     }
 
     private fun DataChangedEvent.toAggregate(): Aggregate? {
@@ -96,6 +112,7 @@ class RealtimeEvents @Inject constructor(
 
     private companion object {
         const val EVENT_ID_LIMIT = 512
+        const val SCAN_AGGREGATE = "scan"
         const val USER_DATA_CHANGED = "user.data_changed"
         const val GAMIFICATION_UPDATE = "gamification.update"
         val SUPPORTED_MUTATIONS = setOf("created", "updated", "deleted")
