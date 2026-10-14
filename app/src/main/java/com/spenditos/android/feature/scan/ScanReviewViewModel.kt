@@ -5,8 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.auth.SessionChangedException
 import com.spenditos.android.core.network.ApiError
+import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.data.capture.CaptureDataSource
+import com.spenditos.android.data.merchants.MerchantMappingActions
+import com.spenditos.android.data.merchants.MerchantMatcher
+import com.spenditos.android.data.merchants.RuleAsk
+import com.spenditos.android.data.merchants.RuleLearner
+import com.spenditos.android.data.merchants.normalizeMerchantKey
 import com.spenditos.android.data.model.Category
+import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.ScanOutcome
 import com.spenditos.android.data.model.ScanStatus
 import com.spenditos.android.data.scan.ScanActions
@@ -22,6 +29,7 @@ import com.spenditos.android.feature.capture.parseCaptureAmount
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +59,19 @@ data class ScanReviewUiState(
     val showDiscardDialog: Boolean = false,
     val addedCount: Int = 0,
     val failedCount: Int = 0,
+    /** Normalized merchant key of every row (by scan item id), computed once on open. */
+    val merchantKeys: Map<String, String> = emptyMap(),
+    /** Groups the user opened to see their individual rows (by [ReviewGroup.id]). */
+    val expandedGroups: Set<String> = emptySet(),
+    /** The user's own rules, to tell whether a choice already is one. Empty when they could not be loaded. */
+    val userRules: List<MerchantMapping> = emptyList(),
+    /** "Always file X under Y?" is waiting for an answer. */
+    val ruleAsk: RuleAsk? = null,
+    /** Past transactions the rule would change; null while loading. */
+    val askPastCount: Int? = null,
+    val askAlsoUpdate: Boolean = true,
+    val isSavingRule: Boolean = false,
+    val ruleMessage: RuleMessage? = null,
 ) {
     val includedItems: List<CaptureReviewItem> get() = items.filter { it.include }
 
@@ -72,6 +93,9 @@ data class ScanReviewUiState(
             return if (progress != null && progress.second > ScanRepository.BULK_CHUNK_SIZE) "Saving ${progress.first} of ${progress.second}…" else "Saving…"
         }
 }
+
+/** The light message after "Always" (iOS `RuleMessage`): what happened, or that the rule could not be saved. */
+data class RuleMessage(val id: Long, val text: String, val isError: Boolean)
 
 sealed interface ScanReviewEvent {
     /** Leave the review (done, discarded, or "Review later"). */
@@ -95,6 +119,9 @@ class ScanReviewViewModel @Inject constructor(
     private val scans: ScanActions,
     private val coordinator: ScanCoordinator,
     private val dataSource: CaptureDataSource,
+    private val mappings: MerchantMappingActions,
+    private val learner: RuleLearner,
+    private val connectivity: ConnectivityStatus,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val scanId: String = savedStateHandle.get<String>(ARG_SCAN_ID).orEmpty()
@@ -106,6 +133,9 @@ class ScanReviewViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var saveJob: Job? = null
+    private var askJob: Job? = null
+    private var messageJob: Job? = null
+    private var nextId = 0L
 
     init {
         coordinator.start()
@@ -136,8 +166,10 @@ class ScanReviewViewModel @Inject constructor(
                         flaggedCount = rows.count { row -> row.skip != null },
                         ruledCount = rows.count { row -> row.ruleId != null },
                         failedDocuments = detail.summary.failedDocuments,
+                        merchantKeys = rows.associate { row -> row.id to normalizeMerchantKey(row.merchantName) },
                     )
                 }
+                loadRules()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -154,8 +186,27 @@ class ScanReviewViewModel @Inject constructor(
     fun onDescriptionChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withDescription(it, text) }
     fun onDateChange(key: String, date: LocalDate) = updateItem(key) { ReviewItemEditing.withDate(it, date) }
     fun onTypeChange(key: String, income: Boolean) = updateItem(key) { ReviewItemEditing.withType(it, income) }
-    fun onCategoryChange(key: String, categoryId: String?) =
-        updateItem(key) { ReviewItemEditing.withCategory(it, categoryId, _state.value.categories) }
+    /** The row editor's category choice. A real category may start the "Always ...?" question; clearing it does not. */
+    fun onCategoryChange(key: String, categoryId: String?) {
+        if (categoryId == null) updateItem(key) { ReviewItemEditing.withCategory(it, null, _state.value.categories) } else categoryChosen(listOf(key), categoryId)
+    }
+
+    /** One checkbox for the whole group: everything on unless it all is. */
+    fun toggleGroup(keys: List<String>) {
+        if (_state.value.phase == ScanReviewPhase.SAVING) return
+        val wanted = keys.toSet()
+        _state.update { current ->
+            val group = current.items.filter { it.idempotencyKeyId in wanted }
+            val turnOn = !group.all { it.include }
+            current.copy(items = current.items.map { if (it.idempotencyKeyId in wanted && !it.isFrozen) it.copy(include = turnOn, failureReason = null) else it })
+        }
+    }
+
+    fun toggleGroupExpanded(groupId: String) =
+        _state.update { it.copy(expandedGroups = if (groupId in it.expandedGroups) it.expandedGroups - groupId else it.expandedGroups + groupId) }
+
+    /** A category picked for a whole group: every row gets it, then the same question as for one row. */
+    fun onGroupCategoryChosen(keys: List<String>, categoryId: String) = categoryChosen(keys, categoryId)
 
     private fun updateItem(key: String, transform: (CaptureReviewItem) -> CaptureReviewItem) {
         if (_state.value.phase == ScanReviewPhase.SAVING) return
@@ -163,6 +214,119 @@ class ScanReviewViewModel @Inject constructor(
             current.copy(items = current.items.map { if (it.idempotencyKeyId == key && !it.isFrozen) transform(it) else it })
         }
     }
+
+    // endregion
+
+    // region Rules (Always / Just this once)
+
+    /** The user's rules, to tell whether a choice already is one. Best effort: without them the question is asked and the server upserts anyway. */
+    private fun loadRules() {
+        if (!connectivity.isOnline.value) return
+        viewModelScope.launch {
+            try {
+                val rules = mappings.rules()
+                _state.update { it.copy(userRules = rules) }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                // Rules only avoid a redundant question.
+            }
+        }
+    }
+
+    /**
+     * A category was picked for these rows (a single row or a whole group). Sets it on every row, keeps "Your rule"
+     * only where a rule really files it that way, and queues the "Always ...?" question when it applies.
+     */
+    private fun categoryChosen(keys: List<String>, categoryId: String) {
+        val current = _state.value
+        if (current.phase == ScanReviewPhase.SAVING || categoryId.isEmpty()) return
+        val wanted = keys.toSet()
+        val identical = MerchantMatcher.identicalRule(current.items.firstOrNull { it.idempotencyKeyId in wanted }?.merchantName, categoryId, current.userRules)
+        var merchant: String? = null
+        val updated = current.items.map { item ->
+            if (item.idempotencyKeyId !in wanted || item.isFrozen) return@map item
+            if (merchant == null) merchant = item.merchantName?.trim()?.takeIf { it.isNotEmpty() }
+            var row = if (item.categoryId != categoryId) ReviewItemEditing.withCategory(item, categoryId, current.categories) else item
+            // A rule that files this merchant here already covers the row.
+            if (identical != null && row.skipReason != "rule") row = row.copy(ruleId = identical.id)
+            row
+        }
+        _state.update { it.copy(items = updated) }
+
+        val name = merchant ?: return
+        val category = current.categories.firstOrNull { it.id == categoryId } ?: return
+        if (!connectivity.isOnline.value || !MerchantMatcher.shouldOfferRule(name, categoryId, current.userRules)) return
+        val ask = RuleAsk(nextId++, name, categoryId, category.name, keys)
+        _state.update { it.copy(ruleAsk = ask, askPastCount = null, askAlsoUpdate = true, isSavingRule = false) }
+        askJob?.cancel()
+        askJob = viewModelScope.launch {
+            // The checkbox only exists when there is something to update. A failed count just means no checkbox.
+            val count = try {
+                mappings.matchCount(ask.merchant, ask.categoryId)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                null
+            }
+            _state.update { if (it.ruleAsk?.id == ask.id) it.copy(askPastCount = count ?: 0) else it }
+        }
+    }
+
+    fun toggleAskUpdatePast() = _state.update { it.copy(askAlsoUpdate = !it.askAlsoUpdate) }
+
+    /** "Just this once": the choice stays on the rows; no rule is written. */
+    fun answerOnce() {
+        if (_state.value.isSavingRule) return
+        askJob?.cancel()
+        _state.update { it.copy(ruleAsk = null, askPastCount = null) }
+    }
+
+    /**
+     * "Always": upsert the rule, optionally apply it to past transactions, mark the rows "Your rule" and say so. A
+     * failure shows a light message; the scan can still be saved (nothing here touches the reviewed rows' save).
+     */
+    fun answerAlways() {
+        val current = _state.value
+        val ask = current.ruleAsk ?: return
+        if (current.isSavingRule) return
+        _state.update { it.copy(isSavingRule = true) }
+        val alsoUpdate = current.askAlsoUpdate && (current.askPastCount ?: 0) > 0
+        viewModelScope.launch {
+            val outcome = learner.always(ask.merchant, ask.categoryId, ask.categoryName, alsoUpdate)
+            val rule = outcome.rule
+            _state.update { state ->
+                val keys = ask.itemKeys.toSet()
+                state.copy(
+                    isSavingRule = false,
+                    ruleAsk = null,
+                    askPastCount = null,
+                    userRules = if (rule != null) state.userRules.filterNot { it.id == rule.id } + rule else state.userRules,
+                    items = if (rule == null) state.items else state.items.map { item ->
+                        if (item.idempotencyKeyId in keys && item.categoryId == ask.categoryId) {
+                            // The category rule replaces any skip rule.
+                            item.copy(ruleId = rule.id, skipReason = item.skipReason.takeIf { it != "rule" })
+                        } else {
+                            item
+                        }
+                    },
+                )
+            }
+            showRuleMessage(outcome.message, isError = outcome.failed)
+        }
+    }
+
+    private fun showRuleMessage(text: String, isError: Boolean) {
+        val message = RuleMessage(nextId++, text, isError)
+        _state.update { it.copy(ruleMessage = message) }
+        messageJob?.cancel()
+        messageJob = viewModelScope.launch {
+            delay(RULE_MESSAGE_MILLIS)
+            _state.update { if (it.ruleMessage?.id == message.id) it.copy(ruleMessage = null) else it }
+        }
+    }
+
+    fun dismissRuleMessage() = _state.update { it.copy(ruleMessage = null) }
 
     // endregion
 
@@ -269,6 +433,9 @@ class ScanReviewViewModel @Inject constructor(
 
     companion object {
         const val ARG_SCAN_ID = "scanId"
+
+        /** How long the "Rule saved" message stays (iOS shows it for 6 s). */
+        const val RULE_MESSAGE_MILLIS = 6_000L
 
         internal fun openErrorMessage(error: Throwable): String = when {
             error is ScanFailure -> error.userMessage

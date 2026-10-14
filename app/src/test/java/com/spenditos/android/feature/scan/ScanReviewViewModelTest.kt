@@ -2,6 +2,9 @@ package com.spenditos.android.feature.scan
 
 import androidx.lifecycle.SavedStateHandle
 import com.spenditos.android.core.network.ApiError
+import com.spenditos.android.core.network.ConnectivityStatus
+import com.spenditos.android.data.merchants.RuleLearner
+import com.spenditos.android.testing.FakeMerchantMappings
 import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.capture.CaptureDataSource
 import com.spenditos.android.data.model.Category
@@ -50,6 +53,8 @@ import java.time.LocalDate
 class ScanReviewViewModelTest {
     private lateinit var scans: FakeScanActions
     private lateinit var coordinator: ScanCoordinator
+    private lateinit var mappings: FakeMerchantMappings
+    private val online = MutableStateFlow(true)
     private val categories = MutableStateFlow(
         listOf(
             Category("cat_dining", "u", "Dining", "#000000", isIncome = false),
@@ -66,6 +71,7 @@ class ScanReviewViewModelTest {
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
         scans = FakeScanActions()
+        mappings = FakeMerchantMappings()
     }
 
     @After
@@ -93,7 +99,11 @@ class ScanReviewViewModelTest {
             scope = backgroundScope,
         )
         handoff?.let(coordinator::handOff)
-        return ScanReviewViewModel(scans, coordinator, dataSource, SavedStateHandle(mapOf(ScanReviewViewModel.ARG_SCAN_ID to "scn_1")))
+        return ScanReviewViewModel(
+            scans, coordinator, dataSource, mappings, RuleLearner(mappings),
+            object : ConnectivityStatus { override val isOnline: StateFlow<Boolean> = online },
+            SavedStateHandle(mapOf(ScanReviewViewModel.ARG_SCAN_ID to "scn_1")),
+        )
     }
 
     // region Loading

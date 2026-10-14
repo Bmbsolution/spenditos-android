@@ -282,7 +282,7 @@ fun MainScaffold(
                 composable(CATEGORIES_ROUTE) { CategoriesManagementScreen(onBack = { nav.popBackStack() }) }
                 composable(CHANGE_PASSWORD_ROUTE) { ChangePasswordScreen(onBack = { nav.popBackStack() }) }
                 composable(PRO_ROUTE) { com.spenditos.android.feature.pro.ProScreen(onBack = { nav.popBackStack() }) }
-                composable(MERCHANTS_ROUTE) { com.spenditos.android.feature.settings.merchants.MerchantMappingsScreen(onBack = { nav.popBackStack() }) }
+                composable(MERCHANTS_ROUTE) { com.spenditos.android.feature.settings.rules.RulesScreen(onBack = { nav.popBackStack() }) }
                 composable(DOWNLOAD_DATA_ROUTE) { com.spenditos.android.feature.export.DownloadDataScreen(onBack = { nav.popBackStack() }) }
                 composable(PROGRESS_ROUTE) { ProgressScreen(onBack = { nav.popBackStack() }) }
                 composable(NOT_SYNCED_ROUTE) { NotSyncedScreen(onBack = { nav.popBackStack() }) }

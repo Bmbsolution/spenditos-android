@@ -78,6 +78,8 @@ data class CaptureReviewItem(
     val skipReason: String? = null,
     /** The user rule that categorized or skipped the row. */
     val ruleId: String? = null,
+    /** The merchant the scan read (groups rows in the review and names the rule "Always" creates). */
+    val merchantName: String? = null,
     /** The bank still lists the charge as pending. */
     val isPending: Boolean? = null,
     /** The existing transaction this row probably repeats: its date and amount. */

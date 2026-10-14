@@ -408,64 +408,90 @@ internal fun ReviewItemEditorSheet(
     }
 
     if (showCategoryPicker) {
-        val pickerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val filtered = choices.filter { it.name.contains(categorySearchText.trim(), ignoreCase = true) }
-        ModalBottomSheet(onDismissRequest = { showCategoryPicker = false }, sheetState = pickerState) {
-            Column(
-                Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = Spacing.screen),
-                verticalArrangement = Arrangement.spacedBy(Spacing.m),
-            ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(Modifier.width(44.dp))
-                    Text("Select Category", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                    TextButton(onClick = { showCategoryPicker = false }, modifier = Modifier.width(64.dp)) {
-                        Text("Done", style = IosText.body.w(FontWeight.Medium), color = IosColors.spendOrange)
-                    }
+        ReviewCategoryPickerSheet(
+            choices = choices,
+            selectedId = draftCategoryId,
+            searchText = categorySearchText,
+            onSearchChange = { categorySearchText = it },
+            onSelect = { id ->
+                draftCategoryId = id
+                showCategoryPicker = false
+                if (id != null) categorySearchText = ""
+            },
+            onDismiss = { showCategoryPicker = false },
+            tagKey = key,
+        )
+    }
+}
+
+/**
+ * iOS `CategoryPickerView`: a searchable grid of [choices] (already limited to one kind). Used by the row editor and,
+ * without the Uncategorized row ([allowNone] = false), to pick one category for a whole group of scan rows.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun ReviewCategoryPickerSheet(
+    choices: List<Category>,
+    selectedId: String?,
+    searchText: String,
+    onSearchChange: (String) -> Unit,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+    tagKey: String,
+    allowNone: Boolean = true,
+) {
+    val pickerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val filtered = choices.filter { it.name.contains(searchText.trim(), ignoreCase = true) }
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = pickerState) {
+        Column(
+            Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = Spacing.screen),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(44.dp))
+                Text("Select Category", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                TextButton(onClick = onDismiss, modifier = Modifier.width(64.dp)) {
+                    Text("Done", style = IosText.body.w(FontWeight.Medium), color = IosColors.spendOrange)
                 }
-                ReviewCategorySearch(value = categorySearchText, onValueChange = { categorySearchText = it })
+            }
+            ReviewCategorySearch(value = searchText, onValueChange = onSearchChange)
+            if (allowNone) {
                 ReviewChoice(
                     text = "Uncategorized",
                     symbol = "tag",
-                    onClick = {
-                        draftCategoryId = null
-                        showCategoryPicker = false
-                    },
-                    modifier = Modifier.testTag("capture.category.none.$key"),
-                    trailingSymbol = if (draftCategoryId == null) "checkmark.circle.fill" else null,
+                    onClick = { onSelect(null) },
+                    modifier = Modifier.testTag("capture.category.none.$tagKey"),
+                    trailingSymbol = if (selectedId == null) "checkmark.circle.fill" else null,
                 )
-                if (filtered.isEmpty()) {
-                    Column(
-                        Modifier.weight(1f).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-                        Spacer(Modifier.height(Spacing.m))
-                        Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
-                    }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 140.dp),
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.m),
-                    ) {
-                        items(filtered, key = { it.id }) { category ->
-                            ReviewCategoryCell(
-                                category = category,
-                                selected = draftCategoryId == category.id,
-                                onClick = {
-                                    draftCategoryId = category.id
-                                    showCategoryPicker = false
-                                    categorySearchText = ""
-                                },
-                                modifier = Modifier.testTag("capture.category.${category.id}"),
-                            )
-                        }
+            }
+            if (filtered.isEmpty()) {
+                Column(
+                    Modifier.weight(1f).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.height(Spacing.m))
+                    Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 140.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                ) {
+                    items(filtered, key = { it.id }) { category ->
+                        ReviewCategoryCell(
+                            category = category,
+                            selected = selectedId == category.id,
+                            onClick = { onSelect(category.id) },
+                            modifier = Modifier.testTag("capture.category.${category.id}"),
+                        )
                     }
                 }
-                Spacer(Modifier.height(Spacing.m))
             }
+            Spacer(Modifier.height(Spacing.m))
         }
     }
 }

@@ -46,6 +46,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.scan.counted
 import com.spenditos.android.feature.capture.CaptureReviewFooter
+import com.spenditos.android.feature.capture.ReviewCategoryPickerSheet
 import com.spenditos.android.feature.capture.ReviewItemEditorSheet
 import com.spenditos.android.feature.capture.ReviewSummaryRow
 import com.spenditos.android.ui.components.ErrorBanner
@@ -126,8 +127,13 @@ private fun ReviewTopBar(title: String, showCancel: Boolean, cancelEnabled: Bool
 @Composable
 private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel, modifier: Modifier) {
     var editingKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var pickingGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pickerSearch by rememberSaveable { mutableStateOf("") }
     val locale = LocalConfiguration.current.locales[0]
-    val sections = androidx.compose.runtime.remember(state.items, locale) { ScanReviewGrouping.monthSections(state.items, locale = locale) }
+    // Month, then merchant: same-merchant rows of a month collapse into one group row (merchant keys are cached on open).
+    val sections = androidx.compose.runtime.remember(state.items, state.merchantKeys, locale) {
+        ScanReviewGrouping.monthSections(state.items, locale = locale, grouping = true) { state.merchantKeys[it.idempotencyKeyId].orEmpty() }
+    }
 
     Column(modifier.fillMaxWidth()) {
         state.saveError?.let { message ->
@@ -172,20 +178,34 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
                             .testTag("scan.review.month.${section.key}"),
                     )
                 }
-                items(section.items, key = { it.idempotencyKeyId }) { item ->
+                items(section.entries, key = { it.key }) { entry ->
                     Column {
-                        ReviewSummaryRow(
-                            item = item,
-                            categories = state.categories,
-                            currency = state.currency,
-                            onToggle = { viewModel.toggleInclude(item.idempotencyKeyId) },
-                            onOpen = { editingKey = item.idempotencyKeyId },
-                        )
+                        when (entry) {
+                            is ReviewEntry.Single -> ReviewSummaryRow(
+                                item = entry.item,
+                                categories = state.categories,
+                                currency = state.currency,
+                                onToggle = { viewModel.toggleInclude(entry.item.idempotencyKeyId) },
+                                onOpen = { editingKey = entry.item.idempotencyKeyId },
+                            )
+                            is ReviewEntry.Group -> ReviewGroupRow(
+                                group = entry.group,
+                                categories = state.categories,
+                                currency = state.currency,
+                                isExpanded = entry.group.id in state.expandedGroups,
+                                onToggle = { viewModel.toggleGroup(entry.group.itemKeys) },
+                                onExpand = { viewModel.toggleGroupExpanded(entry.group.id) },
+                                onPickCategory = { pickingGroupId = entry.group.id },
+                                onToggleLine = { viewModel.toggleInclude(it.idempotencyKeyId) },
+                                onOpenLine = { editingKey = it.idempotencyKeyId },
+                            )
+                        }
                         HorizontalDivider(Modifier.padding(start = Spacing.m), color = IosColors.separator)
                     }
                 }
             }
         }
+        RuleBanner(state.ruleMessage, onDismiss = viewModel::dismissRuleMessage)
         CaptureReviewFooter(
             items = state.includedItems,
             currency = state.currency,
@@ -213,6 +233,45 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
                 if (editing.include) viewModel.toggleInclude(key)
                 editingKey = null
             },
+        )
+    }
+
+    // A whole group's category (iOS `.groupCategory` sheet): one choice for every row of the merchant.
+    val pickingGroup = pickingGroupId?.let { id ->
+        sections.firstNotNullOfOrNull { section ->
+            section.entries.firstNotNullOfOrNull { entry -> (entry as? ReviewEntry.Group)?.group?.takeIf { it.id == id } }
+        }
+    }
+    if (pickingGroup != null) {
+        ReviewCategoryPickerSheet(
+            choices = state.categories.filter { it.isIncome == pickingGroup.isIncome },
+            selectedId = pickingGroup.sharedCategoryId,
+            searchText = pickerSearch,
+            onSearchChange = { pickerSearch = it },
+            onSelect = { id ->
+                if (id != null) {
+                    viewModel.onGroupCategoryChosen(pickingGroup.itemKeys, id)
+                    pickerSearch = ""
+                    pickingGroupId = null
+                }
+            },
+            onDismiss = { pickingGroupId = null },
+            tagKey = "group",
+            allowNone = false,
+        )
+    }
+
+    // "Always ...?" waits until the editor or picker that started it has closed (iOS queues it the same way).
+    val ask = state.ruleAsk
+    if (ask != null && editing == null && pickingGroup == null) {
+        RuleAskSheet(
+            ask = ask,
+            pastCount = state.askPastCount,
+            alsoUpdatePast = state.askAlsoUpdate,
+            isSaving = state.isSavingRule,
+            onToggleUpdatePast = viewModel::toggleAskUpdatePast,
+            onAlways = viewModel::answerAlways,
+            onOnce = viewModel::answerOnce,
         )
     }
 }
