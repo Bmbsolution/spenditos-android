@@ -5,6 +5,7 @@ import com.spenditos.android.core.auth.SessionManager
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.io.IOException
 
 /**
  * Adds the bearer token and handles a 401 exactly like iOS `APIClient`:
@@ -26,7 +27,13 @@ class AuthInterceptor(private val session: SessionManager) : Interceptor {
         if (response.code != 401) return response
 
         response.close()
-        runBlocking { session.refresh() }
+        try {
+            runBlocking { session.refresh() }
+        } catch (e: IOException) {
+            // The refresh can fail only because the session this write belongs to ended or was
+            // replaced meanwhile (no refresh token left, or the server expired it).
+            session.rethrowUnlessSameSession(binding, e)
+        }
         val retryToken = runBlocking { tokenFor(binding) }
         val retry = chain.proceed(request.newBuilder().header("Authorization", "Bearer $retryToken").build())
         if (retry.code == 401) {
