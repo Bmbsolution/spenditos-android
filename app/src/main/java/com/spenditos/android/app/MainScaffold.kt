@@ -94,6 +94,12 @@ private const val MERCHANTS_ROUTE = "settings/merchant-names"
 private const val PRO_ROUTE = "settings/pro"
 
 /**
+ * Pro opened from the add sheet is shown over the sheet instead of closing it, so the form and its
+ * prefill survive the paywall (iOS QuickAddView). It only exists while the sheet is open.
+ */
+internal fun proOverAddVisible(addSheetOpen: Boolean, proRequested: Boolean): Boolean = addSheetOpen && proRequested
+
+/**
  * iOS MainTabView: five tabs; the FAB is the one global "add" entry point.
  * [linksEnabled] is false while the app lock is up: pending widget links wait, and the add sheet
  * (a ModalBottomSheet in its own window, which would render above the lock screen) is not shown.
@@ -110,6 +116,8 @@ fun MainScaffold(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showAdd by rememberSaveable { mutableStateOf(false) }
+    // iOS presents the paywall as a sheet over the add form; the form (and its prefill) stays underneath.
+    var showProOverAdd by rememberSaveable { mutableStateOf(false) }
     val pendingLink by deepLinks.pending.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(pendingLink) {
         val link = pendingLink ?: return@LaunchedEffect
@@ -130,6 +138,7 @@ fun MainScaffold(
         }
         WidgetDeepLinks.consume()
     }
+    androidx.compose.runtime.LaunchedEffect(showAdd) { if (!showAdd) showProOverAdd = false }
     // Values read from a receipt; the add form opens with them and the user reviews before saving.
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     var editTarget by remember { mutableStateOf<com.spenditos.android.feature.transactions.EditTarget?>(null) }
@@ -346,16 +355,21 @@ fun MainScaffold(
                         showAdd = false
                         nav.navigate(captureRoute("type"))
                     },
-                    onOpenPro = if (proAvailable) {
-                        {
-                            showAdd = false
-                            receiptPrefill = null
-                            nav.navigate(PRO_ROUTE)
-                        }
-                    } else null,
+                    onOpenPro = if (proAvailable) ({ showProOverAdd = true }) else null,
                     prefill = receiptPrefill,
                     editTarget = editTarget,
                 )
+                if (proOverAddVisible(showAdd, showProOverAdd)) {
+                    androidx.compose.ui.window.Dialog(
+                        onDismissRequest = { showProOverAdd = false },
+                        properties = androidx.compose.ui.window.DialogProperties(
+                            usePlatformDefaultWidth = false,
+                            decorFitsSystemWindows = false,
+                        ),
+                    ) {
+                        com.spenditos.android.feature.pro.ProScreen(onBack = { showProOverAdd = false })
+                    }
+                }
             }
         }
     }
