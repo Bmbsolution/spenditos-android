@@ -181,7 +181,7 @@ class ReceiptScanViewModelTest {
 
         override fun createTempFile(): File = File.createTempFile("fake-receipt-", ".jpg").also { createdFiles += it }
 
-        override fun process(uri: Uri, destination: File) {
+        override fun process(uri: Uri, destination: File, maxLongSide: Int) {
             destination.writeBytes(byteArrayOf(1, 2, 3))
         }
 
