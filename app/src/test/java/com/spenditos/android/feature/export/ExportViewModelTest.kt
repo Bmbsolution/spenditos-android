@@ -22,6 +22,10 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.io.IOException
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import kotlinx.coroutines.CoroutineScope
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -88,6 +92,25 @@ class ExportViewModelTest {
         vm.shared()
         advanceUntilIdle()
         assertNull(vm.state.value.file)
+        // The share target reads the file after startActivity returns: sharing must not delete it.
+        assertEquals(0, export.deleted)
+    }
+
+    @Test
+    fun `leaving the screen deletes the exported file`() = runTest {
+        val export = FakeExport()
+        val store = ViewModelStore()
+        val vm = ViewModelProvider(store, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = viewModel(export) as T
+        })[ExportViewModel::class.java]
+        vm.cleanupScope = CoroutineScope(Dispatchers.Unconfined)
+        vm.export()
+        advanceUntilIdle()
+        vm.shared()
+        advanceUntilIdle()
+        assertEquals(0, export.deleted)
+        store.clear()
         assertEquals(1, export.deleted)
     }
 

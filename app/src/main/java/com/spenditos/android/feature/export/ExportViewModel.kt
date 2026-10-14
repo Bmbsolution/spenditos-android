@@ -7,7 +7,10 @@ import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.export.ExportActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -93,15 +96,23 @@ class ExportViewModel @Inject constructor(
         _state.update { it.copy(isExporting = false) }
     }
 
-    /** The screen opened the share sheet (or the user left): drop the file from memory and disk. */
+    /**
+     * The screen opened the share sheet: forget the file so it is not shared twice. It stays on disk
+     * on purpose: the receiving app reads it through the FileProvider URI after this returns, and
+     * deleting now races with that read. It is removed when this screen is left ([onCleared]), when
+     * the next export starts, and at app start (ExportRepository init).
+     */
     fun shared() {
         _state.update { it.copy(file = null) }
-        viewModelScope.launch { export.deleteExports() }
     }
 
+    /** Outlives [viewModelScope], which is cancelled before [onCleared] runs. */
+    internal var cleanupScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCleared() {
-        // viewModelScope is cancelled here; clear files on a best-effort basis.
         job?.cancel()
+        // Financial data must not linger in cache: the screen is gone, so the exported file is too.
+        cleanupScope.launch { export.deleteExports() }
     }
 
     private fun message(error: Throwable): String = when (error) {

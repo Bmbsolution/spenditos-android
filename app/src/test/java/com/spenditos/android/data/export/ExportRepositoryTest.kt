@@ -157,6 +157,18 @@ class ExportRepositoryTest {
         assertFalse(file.exists())
     }
 
+    @Test
+    fun `a new export replaces an earlier one that was kept for sharing`() = runTest {
+        server.enqueue(MockResponse.Builder().body("one").addHeader("Content-Disposition", "attachment; filename=\"first.csv\"").build())
+        val first = repository.exportCsv(start, end)
+        assertTrue(first.exists())
+        server.enqueue(MockResponse.Builder().body("two").addHeader("Content-Disposition", "attachment; filename=\"second.csv\"").build())
+        val second = repository.exportCsv(start, end)
+        assertFalse(first.exists())
+        assertTrue(second.exists())
+        assertEquals(listOf(second.name), first.parentFile!!.list()!!.toList())
+    }
+
     private fun gzip(bytes: ByteArray): Buffer {
         val out = ByteArrayOutputStream()
         GZIPOutputStream(out).use { it.write(bytes) }

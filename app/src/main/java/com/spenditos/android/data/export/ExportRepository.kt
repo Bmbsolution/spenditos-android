@@ -58,7 +58,7 @@ class FullCopy internal constructor(
 class ExportSaveFailedException(cause: Throwable? = null) : Exception("Could not save the file", cause)
 
 interface ExportActions {
-    /** Downloads the CSV for [start]..[end] (inclusive) into the app's private export folder. */
+    /** Downloads the CSV for [start]..[end] (inclusive) into the app's private export folder, replacing earlier exports. */
     suspend fun exportCsv(start: LocalDate, end: LocalDate): File
 
     /** Removes exported files (financial data must not linger in cache). */
@@ -108,6 +108,9 @@ class ExportRepository @Inject constructor(
             fallback = "spenditos-transactions-$start-to-$end.csv",
             extension = ".csv",
         )
+        // A previous export may still be waiting for its share target to read it (the screen keeps it
+        // until it is left); a new export replaces it rather than piling up.
+        withContext(io) { directory.listFiles()?.forEach { it.delete() } }
         return download(body, binding, File(directory, name))
     }
 
