@@ -2,6 +2,11 @@
 
 Last updated: 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
+## Catch-up: Download my data (iOS #259, branch catchup/export)
+- Settings "Import" + "Export" rows are one "Download my data" row (`feature/export/DownloadDataScreen`): Full copy (`GET /user/export`, JSON, saved via SAF `CreateDocument` under the server's `spenditos-data-YYYY-MM-DD.json`) and Spreadsheet (existing transactions CSV, iOS periods This month / This year / Last year / Custom, share sheet).
+- Full copy streams to a private temp file (the picker needs the name first), then to the chosen Uri; the request is tagged with the `SessionBinding` and each chunk re-checks it (account switch / sign-out writes nothing and deletes the partial document). No manual Accept-Encoding.
+- Removed with iOS: Transactions toolbar Export button, statement import (`feature/statements`, `data/statements`, `StatementImport` models, fixtures, tests). Scan takes statements over.
+
 ## Wave M (2026-10-07/08, GLM workers; Sonnet review done)
 - GLM round review of filters / Edit mode / receipt camera / widget: 11 findings applied (`8dacbe9`, `b25b214`, `afbb808`, `4419a23`). One was wrong and reverted: iOS `.headingM` is title3 SemiBold (20), `.headingL` is title2 Bold (22).
 - List: Edit-mode button reads Cancel, iOS single-delete copy, pinned scroll-to-top overlay, empty-state CTA colour, doc.on.doc icon, 19.2dp row badge icon.
