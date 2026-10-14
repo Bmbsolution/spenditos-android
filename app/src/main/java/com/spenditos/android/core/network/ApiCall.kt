@@ -25,7 +25,8 @@ private suspend fun <R> mapErrors(block: suspend () -> R): R = try {
 } catch (e: HttpException) {
     // A 401 here means the interceptor already refreshed and retried once
     // (see AuthInterceptor); callers classify it, the session stays intact.
-    throw ApiError.Server(e.code(), serverMessage(e.response()?.errorBody()?.string()))
+    val body = e.response()?.errorBody()?.string()
+    throw ApiError.Server(e.code(), serverMessage(body), quotaType(body))
 } catch (e: AuthRequiredException) {
     throw ApiError.Unauthorized
 } catch (e: KeystoreUnavailableException) {
@@ -47,5 +48,19 @@ internal fun serverMessage(body: String?): String {
         envelope.error ?: envelope.message ?: "Unknown error"
     } catch (_: Exception) {
         "Unknown error"
+    }
+}
+
+/** `quotaType` of a flat 403 `QuotaExhausted` body (`{"error":"QuotaExhausted","quotaType":"sentenceEntries",...}`). */
+internal fun quotaType(body: String?): String? {
+    if (body.isNullOrBlank()) return null
+    return try {
+        (SpenditosJson.parseToJsonElement(body) as? kotlinx.serialization.json.JsonObject)
+            ?.get("quotaType")
+            ?.let { it as? kotlinx.serialization.json.JsonPrimitive }
+            ?.takeIf { it.isString }
+            ?.content
+    } catch (_: Exception) {
+        null
     }
 }

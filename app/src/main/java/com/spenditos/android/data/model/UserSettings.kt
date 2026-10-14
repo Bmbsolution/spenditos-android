@@ -16,6 +16,11 @@ data class UserSettings(
     val displayName: String? = null,
     val premium: PremiumAccess? = null,
     val language: String? = null,
+    /** Server-decided Premium (store, grant or welcome). Absent on old servers; a malformed value decodes as null. */
+    @Serializable(with = TolerantPremiumStatusSerializer::class)
+    val premiumStatus: PremiumStatus? = null,
+    @Serializable(with = TolerantWelcomePremiumSerializer::class)
+    val welcomePremium: WelcomePremium? = null,
 )
 
 /** `PremiumAccess` domain/user.ts:52. Server truth for Pro (webhook-driven). */
