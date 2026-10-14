@@ -86,6 +86,8 @@ data class AddTransactionUiState(
     val lastUsedCategoryId: String? = null,
     /** "Receipt scan" when values came from an assisted flow. */
     val assistedEntrySource: String? = null,
+    /** The monthly smart-entry quota ran out and the typed text was moved into this form. */
+    val smartEntriesUsed: Boolean = false,
     val editing: EditTarget? = null,
     // Make it recurring
     val makeRecurring: Boolean = false,
@@ -191,6 +193,8 @@ data class AddTransactionPrefill(
     val categoryHint: String? = null,
     /** Shown as "Suggested from …" above the form; null for a plain manual open. */
     val source: String? = null,
+    /** The typed sentence could not be parsed because this month's smart entries are used up. */
+    val smartEntriesUsed: Boolean = false,
 )
 
 sealed interface AddTransactionEvent {
@@ -298,6 +302,7 @@ class AddTransactionViewModel @Inject constructor(
                 description = prefill.description?.take(200) ?: f.description,
                 date = parsedDate ?: f.date,
                 assistedEntrySource = prefill.source ?: f.assistedEntrySource,
+                smartEntriesUsed = prefill.smartEntriesUsed || f.smartEntriesUsed,
                 error = null,
             )
         }

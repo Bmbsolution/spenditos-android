@@ -3,6 +3,7 @@ package com.spenditos.android.feature.pro
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.spenditos.android.data.entitlement.ProAccess
 import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.data.purchases.PurchaseResult
 import com.spenditos.android.data.purchases.PurchasesService
@@ -33,6 +34,7 @@ data class ProUiState(
 class ProViewModel @Inject constructor(
     private val purchases: PurchasesService,
     private val settings: UserSettingsActions,
+    private val proAccess: ProAccess,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProUiState(isAvailable = purchases.isAvailable))
     val state: StateFlow<ProUiState> = _state.asStateFlow()
@@ -106,8 +108,13 @@ class ProViewModel @Inject constructor(
         _state.update { it.copy(isBusy = false, notice = "Your purchase is processing. Pro will turn on shortly.") }
     }
 
+    /**
+     * Pro that needs no purchase (a subscription or an admin grant). Welcome Premium does not count:
+     * that user can still buy, like iOS where the welcome row leads to the paywall.
+     */
     private suspend fun currentlyPro(): Boolean? = try {
-        settings.refresh().premium?.active == true
+        settings.refresh() // applies the server's premium status to [proAccess]
+        proAccess.current().hasLastingPro
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {

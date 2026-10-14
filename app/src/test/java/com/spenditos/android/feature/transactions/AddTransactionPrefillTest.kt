@@ -64,7 +64,7 @@ class AddTransactionPrefillTest {
         vm = AddTransactionViewModel(
             transactions,
             CategoryRepository(unusedApi<CategoriesApi>(), db.categories(), session, bus),
-            UserSettingsRepository(ApplicationProvider.getApplicationContext(), unusedApi<UserApi>(), session),
+            UserSettingsRepository(ApplicationProvider.getApplicationContext(), unusedApi<UserApi>(), session, com.spenditos.android.testing.FakeProAccess()),
             com.spenditos.android.testing.FakeRecurring(),
             com.spenditos.android.testing.FakeMerchantMappings(),
             com.spenditos.android.testing.FakeLastUsed(),
@@ -97,6 +97,32 @@ class AddTransactionPrefillTest {
         assertEquals("Cafe", s.description)
         assertEquals(LocalDate.of(2026, 9, 30), s.date)
         assertEquals(EntryType.EXPENSE, s.type)
+    }
+
+    @Test
+    fun `an exhausted sentence fills the description and amount and flags the smart entries banner`() = runTest {
+        seed()
+        val fallback = com.spenditos.android.data.quota.SentenceManualFallback.from("  groceries 42.10 at Costco  ")
+        vm.applyPrefill(
+            AddTransactionPrefill(
+                amount = fallback.amount?.toDouble(),
+                description = fallback.description,
+                smartEntriesUsed = true,
+            ),
+        )
+        val s = vm.state.first { it.smartEntriesUsed }
+        assertEquals("42.10", s.amountText)
+        assertEquals("groceries 42.10 at Costco", s.description)
+        assertNull("no 'Suggested from' banner for a typed sentence", s.assistedEntrySource)
+        assertEquals("type and category are left alone", EntryType.EXPENSE, s.type)
+        assertNull(s.categoryId)
+    }
+
+    @Test
+    fun `a plain prefill does not flag the smart entries banner`() = runTest {
+        seed()
+        vm.applyPrefill(AddTransactionPrefill(amount = 5.0))
+        assertEquals(false, vm.state.first { it.amountText == "5.00" }.smartEntriesUsed)
     }
 
     @Test

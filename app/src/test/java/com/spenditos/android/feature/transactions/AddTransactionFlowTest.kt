@@ -85,7 +85,7 @@ class AddTransactionFlowTest {
         val bus = FinanceInvalidationBus()
         transactions = TransactionRepository(api, db, session, object : ConnectivityStatus { override val isOnline = online }, SyncRequester { }, bus)
         categories = CategoryRepository(unusedApi<CategoriesApi>(), db.categories(), session, bus)
-        settings = UserSettingsRepository(ApplicationProvider.getApplicationContext(), unusedApi<UserApi>(), session)
+        settings = UserSettingsRepository(ApplicationProvider.getApplicationContext(), unusedApi<UserApi>(), session, com.spenditos.android.testing.FakeProAccess())
     }
 
     @After

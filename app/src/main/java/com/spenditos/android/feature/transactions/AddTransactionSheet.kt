@@ -92,6 +92,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import com.spenditos.android.data.quota.QuotaCopy
 import java.util.Currency
 import java.util.Locale
 
@@ -103,6 +104,8 @@ fun AddTransactionSheet(
     onVoice: (() -> Unit)? = null,
     onSentence: (() -> Unit)? = null,
     onScanReceipt: (() -> Unit)? = null,
+    /** Opens the Pro screen; null where purchases are not available. */
+    onOpenPro: (() -> Unit)? = null,
     prefill: AddTransactionPrefill? = null,
     editTarget: EditTarget? = null,
     viewModel: AddTransactionViewModel = hiltViewModel(),
@@ -184,6 +187,7 @@ fun AddTransactionSheet(
                     )
                 }
                 state.assistedEntrySource?.let { AssistedEntryBanner(it) }
+                if (state.smartEntriesUsed) SmartEntriesUsedBanner(onSeePro = onOpenPro)
                 state.undo?.let { undo ->
                     UndoBanner(
                         description = undo.description,
@@ -569,6 +573,38 @@ private fun AssistedEntryBanner(source: String) {
                 style = IosText.caption,
                 color = IosColors.textSecondary,
             )
+        }
+    }
+}
+
+/**
+ * Shown after the smart-entry quota ran out: the typed text is already in the description, and the
+ * upgrade sits alongside (iOS `sentenceExhaustedBanner`).
+ */
+@Composable
+private fun SmartEntriesUsedBanner(onSeePro: (() -> Unit)?) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
+            .background(IosColors.spendOrange.copy(alpha = 0.10f))
+            .border(1.dp, IosColors.spendOrange.copy(alpha = 0.30f), RoundedCornerShape(Radius.m))
+            .padding(Spacing.m)
+            .testTag("quick-add-sentence-exhausted"),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(QuotaCopy.SENTENCE_EXHAUSTED_TITLE, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(QuotaCopy.SENTENCE_EXHAUSTED_BODY, style = IosText.caption, color = IosColors.textSecondary)
+            if (onSeePro != null) {
+                Text(
+                    "See Pro",
+                    style = IosText.caption.w(FontWeight.SemiBold),
+                    color = IosColors.spendOrange,
+                    modifier = Modifier.padding(top = 2.dp).clickable(role = Role.Button, onClick = onSeePro)
+                        .testTag("quick-add-sentence-exhausted-upgrade"),
+                )
+            }
         }
     }
 }

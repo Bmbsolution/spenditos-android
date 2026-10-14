@@ -45,7 +45,13 @@ class SettingsViewModel @Inject constructor(
     private val push: com.spenditos.android.data.push.PushRegistrar,
     private val userSettings: com.spenditos.android.data.user.UserSettingsActions,
     private val purchases: com.spenditos.android.data.purchases.PurchasesService,
+    private val proAccess: com.spenditos.android.data.entitlement.ProAccess,
 ) : ViewModel() {
+    /** Effective Pro (store OR server Premium) and the welcome-Premium row text. */
+    val plan: StateFlow<SettingsPlan> = proAccess.state
+        .map { SettingsPlanLabel.plan(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsPlanLabel.plan(proAccess.current()))
+
     private val _restoreMessage = MutableStateFlow<String?>(null)
 
     /** Result line under Restore Purchases; null while idle. */
@@ -106,6 +112,11 @@ class SettingsViewModel @Inject constructor(
         if (count == 0) return "Are you sure you want to sign out?"
         val noun = if (count == 1) "transaction" else "transactions"
         return "Are you sure you want to sign out?\n\n$count unsynced $noun will stay queued on this device and sync the next time you sign in to this account."
+    }
+
+    /** Entering Settings is a settings load: pick up Premium changes (throttled, best effort). */
+    fun refreshPremium() {
+        viewModelScope.launch { proAccess.refresh() }
     }
 
     fun signOut() = viewModelScope.launch { auth.signOut() }

@@ -12,7 +12,14 @@ import com.spenditos.android.data.capture.CaptureContext
 import com.spenditos.android.data.capture.CaptureDataSource
 import com.spenditos.android.data.capture.CaptureFailure
 import com.spenditos.android.data.capture.CaptureSaveItem
+import com.spenditos.android.data.entitlement.ProAccess
 import com.spenditos.android.data.model.CaptureAnalysisItem
+import com.spenditos.android.data.quota.QuotaCopy
+import com.spenditos.android.data.quota.QuotaSource
+import com.spenditos.android.data.quota.SentenceManualFallback
+import com.spenditos.android.data.quota.SentenceMeter
+import com.spenditos.android.data.quota.isSentenceQuota
+import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.data.receipt.ReceiptIoDispatcher
 import com.spenditos.android.data.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -90,6 +97,10 @@ data class CaptureUiState(
     val offline: Boolean = false,
     val error: String? = null,
     val savedCount: Int = 0,
+    /** Monthly smart-entry (typed sentence) quota; null until loaded, for Pro, or when the server is unreachable. */
+    val sentenceMeter: SentenceMeter? = null,
+    /** Effective Pro (store or server Premium): no counter, no banner. */
+    val isPro: Boolean = false,
 ) {
     val includedItems: List<CaptureReviewItem> get() = items.filter { it.include }
     val canSave: Boolean get() = step == CaptureStep.Review && includedItems.isNotEmpty() && includedItems.all {
@@ -99,6 +110,12 @@ data class CaptureUiState(
 
 sealed interface CaptureEvent {
     data class Saved(val message: String) : CaptureEvent
+
+    /**
+     * This month's smart entries are used up: open the manual form with the typed text (and the
+     * amount read on the device) so the entry can still be saved. Never a dead end.
+     */
+    data class ManualFallback(val prefill: AddTransactionPrefill) : CaptureEvent
 }
 
 @HiltViewModel
@@ -108,6 +125,8 @@ class CaptureViewModel @Inject constructor(
     private val recorder: AudioRecorder,
     private val savedStateHandle: SavedStateHandle,
     @ReceiptIoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val proAccess: ProAccess,
+    private val quota: QuotaSource,
 ) : ViewModel() {
     private val _state = MutableStateFlow(restoreState(savedStateHandle, dataSource.currentUserId))
     val state: StateFlow<CaptureUiState> = _state.asStateFlow()
@@ -131,6 +150,21 @@ class CaptureViewModel @Inject constructor(
         viewModelScope.launch {
             dataSource.currency().collect { currency -> _state.update { it.copy(currency = currency) } }
         }
+        viewModelScope.launch {
+            proAccess.state.collect { access -> _state.update { it.copy(isPro = access.effectiveIsPro) } }
+        }
+        refreshSentenceMeter()
+    }
+
+    /** Loads the counter shown under the sentence field. Free users only; best effort. */
+    fun refreshSentenceMeter(force: Boolean = false) {
+        viewModelScope.launch {
+            val meter = runCatching {
+                if (force) quota.invalidate()
+                if (proAccess.effectiveIsPro) null else quota.sentenceMeter(forceRefresh = force)
+            }.getOrNull()
+            _state.update { it.copy(sentenceMeter = meter) }
+        }
     }
 
     fun onModeChange(mode: CaptureMode) {
@@ -150,14 +184,56 @@ class CaptureViewModel @Inject constructor(
         persist()
         operationJob = viewModelScope.launch {
             try {
+                // A fresh typed sentence costs one smart entry for free users (a re-parse with a parent
+                // analysis, and every voice transcript, is never blocked by this bucket).
+                if (!proAccess.effectiveIsPro) {
+                    var remaining = quota.remainingSentenceEntries()
+                    if (remaining <= 0) {
+                        // A cached zero may be stale (new month, admin change).
+                        quota.refresh(force = true)
+                        remaining = quota.remainingSentenceEntries()
+                    }
+                    if (remaining <= 0) {
+                        routeSentenceToManualForm(current.text)
+                        return@launch
+                    }
+                }
                 val parsed = capture.parseText(current.text, CaptureContext(current.currency), inputType = "typed", parentAnalysisId = null)
                 showReview(parsed, source = "text")
+                refreshSentenceMeter(force = true)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                showError(error, CaptureStep.Input)
+                // Server safety net: same never-dead-end path as the pre-check.
+                if (error is ApiError.Server && error.isQuotaExhausted && isSentenceQuota(error.quotaType) && !proAccess.effectiveIsPro) {
+                    routeSentenceToManualForm(current.text)
+                } else {
+                    showError(error, CaptureStep.Input)
+                }
             }
         }
+    }
+
+    private suspend fun routeSentenceToManualForm(sentence: String) {
+        val fallback = SentenceManualFallback.from(sentence)
+        _state.update {
+            it.copy(
+                step = CaptureStep.Input,
+                error = null,
+                offline = false,
+                sentenceMeter = SentenceMeter(used = it.sentenceMeter?.used ?: 0, remaining = 0),
+            )
+        }
+        persist()
+        _events.send(
+            CaptureEvent.ManualFallback(
+                AddTransactionPrefill(
+                    amount = fallback.amount?.toDoubleOrNull(),
+                    description = fallback.description.takeIf { it.isNotEmpty() },
+                    smartEntriesUsed = true,
+                ),
+            ),
+        )
     }
 
     /** Called only after ActivityResultContracts.RequestPermission grants RECORD_AUDIO. */
@@ -436,23 +512,23 @@ class CaptureViewModel @Inject constructor(
     private fun showError(error: Throwable, returnTo: CaptureStep) {
         val message = when (error) {
             is ApiError.Network -> "You're offline. Try again when you're connected."
-            is ApiError.Server -> if (error.status == 403 && error.serverMessage.contains("QuotaExhausted", ignoreCase = true)) "You've used this month's free voice captures." else "Couldn't complete that. Try again."
+            is ApiError.Server -> if (error.isQuotaExhausted) QuotaCopy.VOICE_EXHAUSTED else "Couldn't complete that. Try again."
             CaptureFailure.NoSpeechDetected -> "No speech was detected. Please speak clearly and try again."
             CaptureFailure.EmptyTranscript -> "No transcript was returned. Try again."
             is CaptureFailure.AnalysisFailed -> error.userMessage
             CaptureFailure.AnalysisTimeout -> "Analysis timed out. Try again."
             else -> "Couldn't complete that. Try again."
         }
-        val quota = error is ApiError.Server && error.status == 403 && error.serverMessage.contains("QuotaExhausted", ignoreCase = true)
+        val quotaHit = error is ApiError.Server && error.isQuotaExhausted
         _state.update { current ->
             val knownNoCommit = error is ApiError.Server && error.status in 400..499
             current.copy(
                 step = returnTo,
                 isRecording = false,
                 items = if (knownNoCommit) current.items.map { it.copy(isFrozen = false) } else current.items,
-                error = if (quota) null else message,
+                error = if (quotaHit) null else message,
                 offline = error is ApiError.Network,
-                quotaExceeded = quota,
+                quotaExceeded = quotaHit,
             )
         }
         persist()

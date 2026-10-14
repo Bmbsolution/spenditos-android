@@ -49,15 +49,19 @@ class ProViewModelTest {
         override suspend fun restore(): PurchaseResult = restoreResult
     }
 
+    private fun proVm(purchases: PurchasesService, settings: FakeSettings) = ProViewModel(purchases, settings, settings.access)
+
     /** Pro turns on after [activeAfter] refreshes (the webhook lag); never when null. */
     private class FakeSettings(var activeAfter: Int?) : UserSettingsActions {
+        val access = com.spenditos.android.testing.FakeProAccess()
+        var status: com.spenditos.android.data.model.PremiumStatus? = null
         var refreshes = 0
         var failure: Throwable? = null
         override fun currency(): Flow<String> = flowOf("USD")
         override suspend fun refresh(): UserSettings {
             failure?.let { throw it }
             refreshes++
-            return UserSettings("u", premium = PremiumAccess(active = activeAfter?.let { refreshes > it } == true))
+            return UserSettings("u", premium = PremiumAccess(active = activeAfter?.let { refreshes > it } == true), premiumStatus = status).also { access.apply(it, null) }
         }
         override suspend fun updateSettings(update: UserSettingsUpdate): UserSettings = error("unused")
         override suspend fun changePassword(currentPassword: String, newPassword: String) = error("unused")
@@ -70,7 +74,7 @@ class ProViewModelTest {
 
     @Test
     fun `loads plans and preselects the best value`() = runTest {
-        val vm = ProViewModel(FakePurchases(), FakeSettings(activeAfter = null))
+        val vm = proVm(FakePurchases(), FakeSettings(activeAfter = null))
         advanceUntilIdle()
         assertEquals(2, vm.state.value.packages.size)
         assertEquals("yearly", vm.state.value.selectedId)
@@ -80,7 +84,7 @@ class ProViewModelTest {
 
     @Test
     fun `an unavailable build says so and sells nothing`() = runTest {
-        val vm = ProViewModel(FakePurchases(isAvailable = false), FakeSettings(activeAfter = null))
+        val vm = proVm(FakePurchases(isAvailable = false), FakeSettings(activeAfter = null))
         advanceUntilIdle()
         assertFalse(vm.state.value.isAvailable)
         assertTrue(vm.state.value.packages.isEmpty())
@@ -88,16 +92,30 @@ class ProViewModelTest {
 
     @Test
     fun `already Pro is shown as Pro`() = runTest {
-        val vm = ProViewModel(FakePurchases(), FakeSettings(activeAfter = 0))
+        val vm = proVm(FakePurchases(), FakeSettings(activeAfter = 0))
         advanceUntilIdle()
         assertTrue(vm.state.value.isPro)
+    }
+
+    @Test
+    fun `welcome premium still shows the plans, a grant counts as pro`() = runTest {
+        val welcome = FakeSettings(activeAfter = null).apply { status = com.spenditos.android.data.model.PremiumStatus(true, "2026-11-12T00:00:00Z", "welcome") }
+        val welcomeVm = proVm(FakePurchases(), welcome)
+        advanceUntilIdle()
+        assertFalse("a welcome user can still buy", welcomeVm.state.value.isPro)
+        assertEquals(2, welcomeVm.state.value.packages.size)
+
+        val grant = FakeSettings(activeAfter = null).apply { status = com.spenditos.android.data.model.PremiumStatus(true, null, "grant") }
+        val grantVm = proVm(FakePurchases(), grant)
+        advanceUntilIdle()
+        assertTrue(grantVm.state.value.isPro)
     }
 
     @Test
     fun `a purchase waits for the server to flip Pro and then confirms`() = runTest {
         val purchases = FakePurchases()
         val settings = FakeSettings(activeAfter = 3) // initial load = refresh 1, then lag
-        val vm = ProViewModel(purchases, settings)
+        val vm = proVm(purchases, settings)
         advanceUntilIdle()
         vm.select("monthly")
         vm.buy(activity)
@@ -111,7 +129,7 @@ class ProViewModelTest {
     @Test
     fun `if the server never flips, the user is told it is processing`() = runTest {
         val settings = FakeSettings(activeAfter = null)
-        val vm = ProViewModel(FakePurchases(), settings)
+        val vm = proVm(FakePurchases(), settings)
         advanceUntilIdle()
         val before = settings.refreshes
         vm.buy(activity)
@@ -124,7 +142,7 @@ class ProViewModelTest {
     @Test
     fun `cancelled, pending and failed purchases are calm`() = runTest {
         val purchases = FakePurchases(purchaseResult = PurchaseResult.Cancelled)
-        val vm = ProViewModel(purchases, FakeSettings(activeAfter = null))
+        val vm = proVm(purchases, FakeSettings(activeAfter = null))
         advanceUntilIdle()
         vm.buy(activity); advanceUntilIdle()
         assertNull(vm.state.value.error); assertNull(vm.state.value.notice); assertFalse(vm.state.value.isBusy)
@@ -138,7 +156,7 @@ class ProViewModelTest {
 
     @Test
     fun `restore confirms through the server too`() = runTest {
-        val vm = ProViewModel(FakePurchases(), FakeSettings(activeAfter = 1))
+        val vm = proVm(FakePurchases(), FakeSettings(activeAfter = 1))
         advanceUntilIdle()
         vm.restore(); advanceUntilIdle()
         assertTrue(vm.state.value.isPro)
@@ -147,7 +165,7 @@ class ProViewModelTest {
     @Test
     fun `no plans and a settings failure still render something sensible`() = runTest {
         val settings = FakeSettings(activeAfter = null).apply { failure = IOException("offline") }
-        val vm = ProViewModel(FakePurchases(packages = emptyList()), settings)
+        val vm = proVm(FakePurchases(packages = emptyList()), settings)
         advanceUntilIdle()
         assertFalse(vm.state.value.isPro)
         assertEquals("No plans are available right now. Try again later.", vm.state.value.error)

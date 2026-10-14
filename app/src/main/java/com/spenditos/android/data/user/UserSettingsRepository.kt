@@ -36,19 +36,25 @@ class UserSettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val api: UserApi,
     private val session: SessionManager,
+    private val proAccess: com.spenditos.android.data.entitlement.ProAccess,
 ) : UserSettingsActions {
     override fun currency(): Flow<String> = context.userPrefs.data.map { prefs ->
         session.currentUserId?.let { prefs[currencyKey(it)] } ?: DEFAULT_CURRENCY
     }
 
     override suspend fun refresh(): UserSettings {
+        // Bound before the request: a response that lands after an account switch is not applied.
+        val binding = session.currentBinding
         val settings = apiCall { api.settings() }
+        proAccess.apply(settings, binding)
         cacheCurrency(settings)
         return settings
     }
 
     override suspend fun updateSettings(update: UserSettingsUpdate): UserSettings {
+        val binding = session.currentBinding
         val updated = apiCall { api.updateSettings(update) }
+        proAccess.apply(updated, binding)
         var refreshed = updated
         try {
             cacheCurrency(updated)

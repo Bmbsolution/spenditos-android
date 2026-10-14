@@ -77,6 +77,7 @@ class OnboardingRepositoryTest {
                 ApplicationProvider.getApplicationContext(),
                 retrofit.create(UserApi::class.java),
                 session,
+                com.spenditos.android.testing.FakeProAccess(),
             ),
             CategoryRepository(retrofit.create(CategoriesApi::class.java), database.categories(), session, FinanceInvalidationBus()),
             session,

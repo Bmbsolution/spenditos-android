@@ -5,7 +5,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
+import com.spenditos.android.data.entitlement.ProAccess
+import com.spenditos.android.data.model.QuotaOverview
 import com.spenditos.android.data.model.ReceiptResult
+import com.spenditos.android.data.quota.QuotaCopy
+import com.spenditos.android.data.quota.QuotaSource
 import com.spenditos.android.data.receipt.ReceiptScanFailure
 import com.spenditos.android.data.receipt.ReceiptScanStage
 import com.spenditos.android.data.receipt.ReceiptScanner
@@ -33,6 +37,8 @@ data class ReceiptScanUiState(
     val offline: Boolean = false,
     /** The processed image (already resized, owned by the scan job) shown behind the progress card. */
     val backdropPath: String? = null,
+    /** Scan credits left this month (the `scan_credits` bucket); null for Pro, unmetered, or not known yet. */
+    val scanCreditsLeft: Int? = null,
 )
 
 sealed interface ReceiptScanEvent {
@@ -55,12 +61,35 @@ class ReceiptScanViewModel @Inject constructor(
     private val imageProcessor: ReceiptImageProcessing,
     private val savedStateHandle: SavedStateHandle,
     @ReceiptIoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val proAccess: ProAccess,
+    private val quota: QuotaSource,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ReceiptScanUiState())
     val state: StateFlow<ReceiptScanUiState> = _state.asStateFlow()
 
     private val _events = Channel<ReceiptScanEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
+    init {
+        viewModelScope.launch { checkScanCredits() }
+    }
+
+    /**
+     * Free users with no scan credits left see the exhausted screen right away instead of finding out
+     * after an upload (iOS ScanReceiptView `.task`). The server stays the source of truth: an unknown
+     * (offline) count never blocks.
+     */
+    private suspend fun checkScanCredits() {
+        if (proAccess.effectiveIsPro) return
+        val remaining = quota.remainingScanCredits()
+        val left = remaining.takeIf { it != QuotaOverview.UNLIMITED }
+        if (_state.value.step != ReceiptScanStep.CHOOSE) return
+        _state.value = if (left != null && left <= 0) {
+            ReceiptScanUiState(step = ReceiptScanStep.QUOTA, error = QuotaCopy.SCAN_EXHAUSTED, scanCreditsLeft = 0)
+        } else {
+            _state.value.copy(scanCreditsLeft = left)
+        }
+    }
 
     private var scanJob: Job? = null
     private var activeSource: Uri? = null
@@ -132,22 +161,25 @@ class ReceiptScanViewModel @Inject constructor(
                     )
                 }
                 _state.value = ReceiptScanUiState(step = ReceiptScanStep.DONE)
+                // One scan credit was spent: the next read of the quota hits the server.
+                quota.invalidate()
                 _events.send(ReceiptScanEvent.Result(result.toPrefill()))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
                 // Class name only: no image, URL or server text reaches the log.
                 android.util.Log.w("ReceiptScan", "scan failed: ${error::class.java.simpleName}")
-                val quotaUsed = error is ApiError.Server && error.status == 403 && error.serverMessage == QUOTA_EXHAUSTED
+                val quotaUsed = error is ApiError.Server && error.isQuotaExhausted
                 val offline = error is ApiError.Network
                 _state.value = ReceiptScanUiState(
                     step = if (quotaUsed) ReceiptScanStep.QUOTA else ReceiptScanStep.FAILURE,
                     error = when {
-                        quotaUsed -> QUOTA_MESSAGE
+                        quotaUsed -> QuotaCopy.SCAN_EXHAUSTED
                         offline -> MANUAL_FALLBACK
                         else -> MANUAL_FALLBACK
                     },
                     offline = offline,
+                    scanCreditsLeft = if (quotaUsed) 0 else null,
                 )
             } finally {
                 temp?.delete()
@@ -172,8 +204,6 @@ class ReceiptScanViewModel @Inject constructor(
 
     private companion object {
         const val KEY_PENDING_CAMERA_URI = "receipt.pendingCameraUri"
-        const val QUOTA_EXHAUSTED = "QuotaExhausted"
-        const val QUOTA_MESSAGE = "You've used all your free receipt scans for this month."
         const val MANUAL_FALLBACK = "Couldn't read that receipt. You can enter it yourself."
     }
 }
