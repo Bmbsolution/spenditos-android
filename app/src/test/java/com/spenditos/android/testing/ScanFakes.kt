@@ -107,7 +107,9 @@ class RecordingUploader : ScanFileUploader {
 class FakeScanActions : ScanActions {
     var listResult: () -> List<ScanSummary> = { emptyList() }
     var getResult: (String) -> ScanDetail = { error("no scan $it") }
-    var submitResult: () -> ScanSubmission = { ScanSubmission("scn_new", 1, "1 file") }
+    var submitResult: suspend (List<ScanInput>) -> ScanSubmission = { inputs ->
+        ScanSubmission("scn_1", inputs.size, com.spenditos.android.data.scan.ScanRules.sourceLabel(inputs))
+    }
     var waitResult: suspend (String, (ScanSummary) -> Unit) -> ScanDetail = { id, _ -> getResult(id) }
     var saveResult: suspend (String, List<ScanSaveItem>) -> ScanSaveOutcome = { _, items -> ScanSaveOutcome(saved = items.size) }
     var completeError: Throwable? = null
@@ -121,7 +123,7 @@ class FakeScanActions : ScanActions {
     override suspend fun submit(inputs: List<ScanInput>, context: ScanContext, onProgress: (ScanUploadProgress) -> Unit): ScanSubmission {
         submitted += inputs
         onProgress(ScanUploadProgress(0, inputs.size))
-        return submitResult()
+        return submitResult(inputs)
     }
 
     override suspend fun waitUntilReady(scanId: String, onProgress: (ScanSummary) -> Unit): ScanDetail = waitResult(scanId, onProgress)
@@ -141,4 +143,25 @@ class FakeScanActions : ScanActions {
         saveResult(scanId, items).also { onChunk(items.size, items.size) }
 
     override suspend fun estimateCredits(inputs: List<ScanInput>): Int = creditEstimate(inputs)
+}
+
+/** Classifies by file name like the real factory, without a ContentResolver. */
+class FakeScanInputFactory : com.spenditos.android.data.scan.ScanInputFactory {
+    override fun photo(uri: android.net.Uri) = ScanInput(
+        com.spenditos.android.data.scan.ScanInputKind.IMAGE,
+        com.spenditos.android.data.scan.ScanInputOrigin.PHOTO_LIBRARY,
+        com.spenditos.android.data.scan.ScanSource.Content(uri),
+    )
+
+    override fun file(uri: android.net.Uri): ScanInput? {
+        val name = uri.lastPathSegment
+        val kind = com.spenditos.android.data.scan.ScanFileTypes.classify(name, null) ?: return null
+        return ScanInput(kind, com.spenditos.android.data.scan.ScanInputOrigin.FILES, com.spenditos.android.data.scan.ScanSource.Content(uri), name)
+    }
+
+    override fun camera(file: File) = ScanInput(
+        com.spenditos.android.data.scan.ScanInputKind.IMAGE,
+        com.spenditos.android.data.scan.ScanInputOrigin.CAMERA,
+        com.spenditos.android.data.scan.ScanSource.OwnedFile(file),
+    )
 }

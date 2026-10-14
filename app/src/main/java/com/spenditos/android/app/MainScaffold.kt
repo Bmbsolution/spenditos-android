@@ -79,6 +79,8 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
 private const val RECEIPT_SCAN_ROUTE = "receipt-scan"
+private const val SCAN_REVIEW_ROUTE = "scan-review/{scanId}"
+private fun scanReviewRoute(scanId: String) = "scan-review/${android.net.Uri.encode(scanId)}"
 private const val CAPTURE_ROUTE = "capture?mode={mode}"
 private fun captureRoute(mode: String) = "capture?mode=$mode"
 private const val REPORTS_DAILY_ROUTE = "reports/daily"
@@ -163,6 +165,13 @@ fun MainScaffold(
                                 restoreState = true
                             }
                         },
+                        onOpenScanReview = { scanId -> nav.navigate(scanReviewRoute(scanId)) },
+                        onOpenScanReceipt = { values ->
+                            receiptPrefill = values
+                            editTarget = null
+                            showAdd = true
+                        },
+                        onScanMessage = { message -> scope.launch { snackbar.showSnackbar(message) } },
                     )
                 }
                 composable(Tab.TRANSACTIONS.route) {
@@ -210,7 +219,22 @@ fun MainScaffold(
                             nav.popBackStack()
                             showAdd = true
                         },
+                        onOpenReview = { scanId ->
+                            // The scan screen is done: the review replaces it, so Back from the review returns to where Scan was opened.
+                            nav.navigate(scanReviewRoute(scanId)) { popUpTo(RECEIPT_SCAN_ROUTE) { inclusive = true } }
+                        },
                         onBack = { nav.popBackStack() },
+                    )
+                }
+                composable(
+                    SCAN_REVIEW_ROUTE,
+                    arguments = listOf(androidx.navigation.navArgument("scanId") { type = androidx.navigation.NavType.StringType }),
+                ) {
+                    com.spenditos.android.feature.scan.ScanReviewScreen(
+                        onClose = { nav.popBackStack() },
+                        onScanMore = {
+                            nav.navigate(RECEIPT_SCAN_ROUTE) { popUpTo(SCAN_REVIEW_ROUTE) { inclusive = true } }
+                        },
                     )
                 }
                 composable(Tab.REPORTS.route) {
