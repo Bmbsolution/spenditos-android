@@ -95,6 +95,8 @@ class ExportRepository @Inject constructor(
         // Leftovers of a process that died after an export: never kept across launches.
         directory.listFiles()?.forEach { it.delete() }
         fullCopyDirectory.listFiles()?.forEach { it.delete() }
+        // Statement import is gone (Scan takes statements): drop temp copies it may have left behind.
+        File(context.cacheDir, "statements").deleteRecursively()
     }
 
     override suspend fun exportCsv(start: LocalDate, end: LocalDate): File {
