@@ -1,0 +1,18 @@
+{
+  "documents": [
+    {
+      "documentKey": "users/user-123/scans/2026-10-11T10-00-00-000Z_a1.png",
+      "kind": "image",
+      "filename": "IMG_0001.PNG"
+    },
+    {
+      "documentKey": "users/user-123/scans/2026-10-11T10-00-01-000Z_b2.csv",
+      "kind": "spreadsheet",
+      "filename": "Visa-September.csv"
+    }
+  ],
+  "referenceDate": "2026-10-11",
+  "locale": "en-CA",
+  "userCurrency": "CAD",
+  "sourceLabel": "2 files"
+}

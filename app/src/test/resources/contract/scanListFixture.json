@@ -1,0 +1,38 @@
+{
+  "data": {
+    "scans": [
+      {
+        "scanId": "scn_0001",
+        "status": "processing",
+        "progress": {
+          "done": 1,
+          "total": 2
+        },
+        "kind": null,
+        "itemCount": 0,
+        "flaggedCount": 0,
+        "ruleCount": 0,
+        "failedDocuments": 0,
+        "sourceLabel": "2 files",
+        "createdAt": "2026-10-11T10:00:05.000Z",
+        "updatedAt": "2026-10-11T10:00:20.000Z"
+      },
+      {
+        "scanId": "scn_0002",
+        "status": "ready",
+        "progress": {
+          "done": 3,
+          "total": 3
+        },
+        "kind": "list",
+        "itemCount": 6,
+        "flaggedCount": 3,
+        "ruleCount": 2,
+        "failedDocuments": 1,
+        "sourceLabel": "3 screenshots",
+        "createdAt": "2026-10-11T09:00:05.000Z",
+        "updatedAt": "2026-10-11T09:01:10.000Z"
+      }
+    ]
+  }
+}
