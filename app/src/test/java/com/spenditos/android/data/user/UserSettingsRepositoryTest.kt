@@ -36,6 +36,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 class UserSettingsRepositoryTest {
     private val server = MockWebServer()
     private lateinit var repository: UserSettingsRepository
+    private val proAccess = com.spenditos.android.testing.FakeProAccess()
 
     @Before
     fun setUp() {
@@ -49,7 +50,7 @@ class UserSettingsRepositoryTest {
             EpochClock { NOW },
             AppEnvironment(),
         )
-        repository = UserSettingsRepository(ApplicationProvider.getApplicationContext<Context>(), api, session)
+        repository = UserSettingsRepository(ApplicationProvider.getApplicationContext<Context>(), api, session, proAccess)
     }
 
     @After
@@ -90,6 +91,26 @@ class UserSettingsRepositoryTest {
 
         offline.failNext = 1
         assertTrue(failure { repository.refresh() } is ApiError.Network)
+    }
+
+    @Test
+    fun `settings loads and saves feed the server premium status`() = runTest {
+        val premium = """"premiumStatus":{"isPremium":true,"expiresAt":"2026-11-12T00:00:00.000Z","reason":"welcome"}"""
+        server.enqueue(MockResponse(body = """{"data":{"userId":"user-1","currency":"USD","timezone":"UTC",$premium}}"""))
+        repository.refresh()
+        assertTrue(proAccess.current().effectiveIsPro)
+        assertTrue(proAccess.current().isWelcomeOnly)
+
+        // An old server sends no premiumStatus: the state is replaced, not kept.
+        server.enqueue(MockResponse(body = settings()))
+        repository.refresh()
+        assertEquals(false, proAccess.current().effectiveIsPro)
+
+        server.enqueue(MockResponse(body = """{"data":{"userId":"user-1","currency":"CAD","timezone":"UTC",$premium}}"""))
+        server.enqueue(MockResponse(body = """{"data":{"userId":"user-1","currency":"CAD","timezone":"UTC",$premium}}"""))
+        proAccess.clear()
+        repository.updateSettings(UserSettingsUpdate("CAD", JsonNull))
+        assertTrue("the PUT response and its follow-up read carry premiumStatus too", proAccess.current().effectiveIsPro)
     }
 
     @Test

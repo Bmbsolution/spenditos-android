@@ -166,7 +166,7 @@ class SessionLifecycleTest {
             FinanceInvalidationBus(),
         )
         val categories = CategoryRepository(categoriesApi, db.categories(), session, FinanceInvalidationBus())
-        val settings = UserSettingsRepository(ApplicationProvider.getApplicationContext<Context>(), userApi, session)
+        val settings = UserSettingsRepository(ApplicationProvider.getApplicationContext<Context>(), userApi, session, com.spenditos.android.testing.FakeProAccess())
         return SessionLifecycle(session, transactions, categories, settings, SyncRequester {}, push, purchases)
     }
 

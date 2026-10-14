@@ -15,6 +15,7 @@ class SpenditosApplication : Application(), Configuration.Provider {
     @Inject lateinit var appLock: com.spenditos.android.core.lock.AppLockController
     @Inject lateinit var reconciliation: com.spenditos.android.core.sync.FinanceReconciliationCoordinator
     @Inject lateinit var realtime: com.spenditos.android.data.realtime.RealtimeManager
+    @Inject lateinit var proAccess: com.spenditos.android.data.entitlement.ProAccessRepository
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -22,6 +23,8 @@ class SpenditosApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         sessionLifecycle.start()
+        // Foreground refresh (throttled) of server Premium: welcome expiry, admin grants.
+        proAccess.start()
         appLock.start()
         // Before realtime.start() so the socket's reconnect signal is observed; runs with no
         // WebSocket configuration too (foreground reconciliation is independent of the socket).

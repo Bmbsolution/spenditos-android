@@ -120,6 +120,7 @@ class TransactionListViewModelTest {
                 override suspend fun deleteAccount() = error("not used")
             },
             session,
+            com.spenditos.android.testing.FakeProAccess(),
         )
         return TransactionListViewModel(
             transactionRepository,
