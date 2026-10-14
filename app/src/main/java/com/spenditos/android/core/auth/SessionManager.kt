@@ -155,9 +155,21 @@ class SessionManager @Inject constructor(
      * one account's payload can never leave the device with another account's bearer token.
      */
     suspend fun accessTokenFor(binding: SessionBinding): String {
-        val token = validAccessToken()
+        if (currentBinding != binding) throw SessionChangedException()
+        val token = try {
+            validAccessToken()
+        } catch (e: IOException) {
+            // A sign-out/expiry mid-switch leaves no tokens to read (AuthRequiredException); that is
+            // the session changing, not this session's credentials being refused.
+            throw if (currentBinding != binding) SessionChangedException() else e
+        }
         if (currentBinding != binding) throw SessionChangedException()
         return token
+    }
+
+    /** Throws [SessionChangedException] instead of [cause] when [binding]'s session is gone. */
+    fun rethrowUnlessSameSession(binding: SessionBinding?, cause: IOException): Nothing {
+        throw if (binding != null && currentBinding != binding) SessionChangedException() else cause
     }
 
     /** A second 401 after a refresh: drop only the access token, keep the refresh token. */

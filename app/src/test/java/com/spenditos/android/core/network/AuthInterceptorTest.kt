@@ -114,41 +114,85 @@ class AuthInterceptorTest {
         assertEquals(0, server.requestCount)
     }
 
+    /**
+     * A client whose inner interceptor runs [afterResponse] once the server's reply is read but
+     * before [AuthInterceptor] handles it, so a session change lands at an exact point (no timing).
+     */
+    private fun clientChangingSessionOnReply(afterResponse: () -> Unit): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(session))
+            .addInterceptor { chain -> chain.proceed(chain.request()).also { afterResponse() } }
+            .build()
+
+    private fun executeBound(client: OkHttpClient, binding: SessionBinding) {
+        client.newCall(Request.Builder().url(server.url("/transactions")).tag(SessionBinding::class.java, binding).build())
+            .execute().close()
+    }
+
     @Test
-    fun `the 401 retry of a bound request aborts when the session changed during the refresh`() {
-        val gate = CompletableDeferred<Unit>()
-        val gatedStore = FakeTokenStore.signedIn()
-        val gatedSession = SessionManager(
-            gatedStore,
-            { gate.await(); RefreshedTokens(newAccess, TestJwt.token("user-1", NOW + 7200, nonce = "id2")) },
+    fun `a bound request is refused, not rejected as unauthenticated, when the session ended before it was sent`() {
+        val binding = session.currentBinding!!
+        session.signOut() // tokens gone: an unbound request would fail with AuthRequiredException
+        try {
+            getBound("/transactions", binding).close()
+            fail("expected SessionChangedException")
+        } catch (_: SessionChangedException) {
+        }
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `the 401 retry of a bound request aborts when the account switched before the refresh`() {
+        val binding = session.currentBinding!!
+        server.enqueue(MockResponse(code = 401))
+        val client = clientChangingSessionOnReply(::switchToSecondAccount)
+
+        try {
+            executeBound(client, binding)
+            fail("expected SessionChangedException")
+        } catch (_: SessionChangedException) {
+        }
+        assertEquals(1, server.requestCount) // no retry with the new account's token
+        assertTrue(store.values.containsKey(TokenKey.ACCESS)) // the new session's tokens are untouched
+    }
+
+    @Test
+    fun `the 401 retry of a bound request aborts when the session ended before the refresh`() {
+        val binding = session.currentBinding!!
+        server.enqueue(MockResponse(code = 401))
+        val client = clientChangingSessionOnReply(session::signOut)
+
+        try {
+            executeBound(client, binding)
+            fail("expected SessionChangedException")
+        } catch (_: SessionChangedException) {
+        }
+        assertEquals(1, server.requestCount)
+        assertEquals(0, refreshes.get())
+    }
+
+    @Test
+    fun `the 401 retry of a bound request aborts when the account switched during the refresh`() {
+        lateinit var switching: SessionManager
+        switching = SessionManager(
+            store,
+            {
+                switching.signOut()
+                switching.signIn(AuthTokens(TestJwt.token("user-2", NOW + 3600, nonce = "b"), "refresh-user-2", TestJwt.token("user-2", NOW + 3600, nonce = "bid")))
+                RefreshedTokens(newAccess, TestJwt.token("user-1", NOW + 7200, nonce = "id2"))
+            },
             EpochClock { NOW },
             AppEnvironment(),
         )
-        val gatedClient = OkHttpClient.Builder().addInterceptor(AuthInterceptor(gatedSession)).build()
-        val binding = gatedSession.currentBinding!!
+        val binding = switching.currentBinding!!
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(switching)).build()
         server.enqueue(MockResponse(code = 401))
 
-        val call = gatedClient.newCall(
-            Request.Builder().url(server.url("/transactions")).tag(SessionBinding::class.java, binding).build(),
-        )
-        val response = CompletableFuture<Unit>()
-        executor.execute {
-            try {
-                call.execute().close()
-                response.complete(Unit)
-            } catch (_: SessionChangedException) {
-                response.complete(Unit)
-            } catch (t: Throwable) {
-                response.completeExceptionally(t)
-            }
+        try {
+            executeBound(client, binding)
+            fail("expected SessionChangedException")
+        } catch (_: SessionChangedException) {
         }
-
-        server.takeRequest(10, TimeUnit.SECONDS)!! // the first attempt, with user-1's token
-        gatedSession.signOut()
-        gatedSession.signIn(AuthTokens(TestJwt.token("user-2", NOW + 3600, nonce = "b"), "refresh-user-2", TestJwt.token("user-2", NOW + 3600, nonce = "bid")))
-        gate.complete(Unit)
-        response.get(10, TimeUnit.SECONDS)
-        assertEquals(1, server.requestCount) // no retry with the new account's token
-        assertTrue(gatedStore.values.containsKey(TokenKey.ACCESS)) // the new session's tokens are untouched
+        assertEquals(1, server.requestCount)
     }
 }

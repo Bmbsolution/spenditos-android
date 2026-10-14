@@ -33,13 +33,10 @@ import com.spenditos.android.testing.FakeTokenStore
 import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
 import com.spenditos.android.testing.TestJwt
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
@@ -52,7 +49,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -62,7 +58,6 @@ import org.robolectric.RobolectricTestRunner
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.time.LocalDate
-import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 class TransactionRepositoryTest {
@@ -454,10 +449,17 @@ class TransactionRepositoryTest {
 
     private fun repoWithSession(
         store: FakeTokenStore,
+        onResponse: ((okhttp3.Response) -> Unit)? = null,
         refresher: com.spenditos.android.core.auth.TokenRefresher,
     ): Pair<TransactionRepository, SessionManager> {
         val session = SessionManager(store, refresher, EpochClock { NOW }, AppEnvironment())
-        val client = okhttp3.OkHttpClient.Builder().addInterceptor(AuthInterceptor(session)).build()
+        val builder = okhttp3.OkHttpClient.Builder().addInterceptor(AuthInterceptor(session))
+        // Runs on OkHttp's thread once a response is read but before AuthInterceptor sees it, so a
+        // test can land a session change at an exact point of the send.
+        if (onResponse != null) {
+            builder.addInterceptor { chain -> chain.proceed(chain.request()).also(onResponse) }
+        }
+        val client = builder.build()
         val api = Retrofit.Builder().baseUrl(server.url("/")).client(client)
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
             .build().create(TransactionsApi::class.java)
@@ -527,26 +529,56 @@ class TransactionRepositoryTest {
     @Test
     fun `a session switch during the 401 refresh keeps the create queued and never retries with the new token`() = runTest {
         val store = FakeTokenStore.signedIn("user-1")
-        val gate = CompletableDeferred<Unit>()
-        val (repo, session) = repoWithSession(store) {
-            gate.await()
+        lateinit var session: SessionManager
+        // The switch lands while the refresh request is in flight (after the 401 was handled).
+        val (repo, created) = repoWithSession(store) {
+            signInAs(session, store, "user-2", "b")
             RefreshedTokens(TestJwt.token("user-1", NOW + 7200, nonce = "new"), TestJwt.token("user-1", NOW + 7200, nonce = "newid"))
         }
+        session = created
         server.enqueue(MockResponse(code = 401, body = """{"error":"expired"}"""))
 
-        val saving = async { repo.create(draft) }
-        testScheduler.advanceUntilIdle()
-        // Read (and receive) the first attempt off the test thread: while this suspends,
-        // the scheduler advances the save coroutine through Room and the network call.
-        val firstAttempt = withContext(Dispatchers.IO) { server.takeRequest(10, TimeUnit.SECONDS) }
-        assertNotNull(firstAttempt) // the first attempt went out with user-1's bearer token
-        signInAs(session, store, "user-2", "b")
-        gate.complete(Unit)
-
-        assertEquals(CreateResult.SavedOffline, saving.await())
+        assertEquals(CreateResult.SavedOffline, repo.create(draft))
         assertEquals(1, server.requestCount) // no retry was sent at all
+        assertQueuedForUser1()
+    }
+
+    @Test
+    fun `a sign-out between the 401 and the refresh keeps the create queued instead of rejecting it`() = runTest {
+        val store = FakeTokenStore.signedIn("user-1")
+        lateinit var session: SessionManager
+        // First half of an account switch: the tokens are gone and no one is signed in yet.
+        val (repo, created) = repoWithSession(store, onResponse = { if (it.code == 401) session.signOut() }) {
+            RefreshedTokens(TestJwt.token("user-1", NOW + 7200, nonce = "new"), TestJwt.token("user-1", NOW + 7200, nonce = "newid"))
+        }
+        session = created
+        server.enqueue(MockResponse(code = 401, body = """{"error":"expired"}"""))
+
+        assertEquals(CreateResult.SavedOffline, repo.create(draft))
+        assertEquals(1, server.requestCount)
+        assertQueuedForUser1()
+    }
+
+    @Test
+    fun `a full account switch between the 401 and the refresh keeps the create queued`() = runTest {
+        val store = FakeTokenStore.signedIn("user-1")
+        lateinit var session: SessionManager
+        val (repo, created) = repoWithSession(store, onResponse = { if (it.code == 401) signInAs(session, store, "user-2", "b") }) {
+            RefreshedTokens(TestJwt.token("user-2", NOW + 7200, nonce = "new"), TestJwt.token("user-2", NOW + 7200, nonce = "newid"))
+        }
+        session = created
+        server.enqueue(MockResponse(code = 401, body = """{"error":"expired"}"""))
+
+        assertEquals(CreateResult.SavedOffline, repo.create(draft))
+        assertEquals(1, server.requestCount) // user-2's token never carried user-1's payload
+        assertQueuedForUser1()
+    }
+
+    private suspend fun assertQueuedForUser1() {
         val row = queue().single()
         assertEquals(MutationStatus.PENDING, row.status)
+        assertEquals("user-1", row.userId)
         assertNull(row.failureCode)
+        assertEquals(SyncStatus.PENDING, rows().single().syncStatus)
     }
 }
