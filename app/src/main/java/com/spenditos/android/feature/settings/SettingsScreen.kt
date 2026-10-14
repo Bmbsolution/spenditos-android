@@ -137,7 +137,7 @@ fun SettingsScreen(
                 GroupedCard {
                     IosRow("Currency", icon = SfSymbols.icon("dollarsign.circle.fill"), iconTint = finance.income, value = state.currency.ifBlank { null }, chevron = false, onClick = onOpenProfile)
                     IosRow("Categories", icon = SfSymbols.icon("tag.fill"), iconTint = emerald, onClick = onOpenCategories, modifier = Modifier.testTag("settings.categories"))
-                    IosRow("Merchant rules", icon = SfSymbols.icon("storefront.fill"), iconTint = IosColors.spendOrange, onClick = onOpenMerchants, divider = false, modifier = Modifier.testTag("settings.merchants"))
+                    IosRow("Rules", icon = SfSymbols.icon("storefront.fill"), iconTint = IosColors.spendOrange, onClick = onOpenMerchants, divider = false, modifier = Modifier.testTag("settings.merchants"))
                 }
             }
 
