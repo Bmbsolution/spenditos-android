@@ -1,7 +1,10 @@
 package com.spenditos.android.feature.export
 
 import com.spenditos.android.core.network.ApiError
+import android.net.Uri
+import com.spenditos.android.core.auth.SessionChangedException
 import com.spenditos.android.data.export.ExportActions
+import com.spenditos.android.data.export.FullCopy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -36,6 +39,9 @@ class ExportViewModelTest {
             return File("transactions.csv")
         }
         override suspend fun deleteExports() { deleted++ }
+        override suspend fun prepareFullCopy(): FullCopy = error("not used")
+        override suspend fun saveFullCopy(copy: FullCopy, target: Uri) = error("not used")
+        override fun discardFullCopy(copy: FullCopy) = error("not used")
     }
 
     @Before fun setUp() { Dispatchers.setMain(StandardTestDispatcher()) }
@@ -45,15 +51,16 @@ class ExportViewModelTest {
     private fun viewModel(export: FakeExport, today: String = "2026-10-20") = ExportViewModel(export, clock(today))
 
     @Test
-    fun `presets compute the calendar ranges, last month crossing a year`() = runTest {
+    fun `presets match iOS and last year crosses a year boundary`() = runTest {
         val vm = viewModel(FakeExport(), today = "2027-01-10")
+        // iOS defaults to "This year".
+        assertEquals(ExportRange.THIS_YEAR, vm.state.value.range)
         assertEquals(LocalDate.of(2027, 1, 1) to LocalDate.of(2027, 1, 10), vm.state.value.start to vm.state.value.end)
-        vm.selectRange(ExportRange.LAST_MONTH)
-        assertEquals(LocalDate.of(2026, 12, 1) to LocalDate.of(2026, 12, 31), vm.state.value.start to vm.state.value.end)
-        vm.selectRange(ExportRange.LAST_30_DAYS)
-        assertEquals(LocalDate.of(2026, 12, 12) to LocalDate.of(2027, 1, 10), vm.state.value.start to vm.state.value.end)
-        vm.selectRange(ExportRange.THIS_YEAR)
+        vm.selectRange(ExportRange.THIS_MONTH)
         assertEquals(LocalDate.of(2027, 1, 1) to LocalDate.of(2027, 1, 10), vm.state.value.start to vm.state.value.end)
+        vm.selectRange(ExportRange.LAST_YEAR)
+        assertEquals(LocalDate.of(2026, 1, 1) to LocalDate.of(2026, 12, 31), vm.state.value.start to vm.state.value.end)
+        assertEquals(listOf("This month", "This year", "Last year", "Custom"), ExportRange.entries.map { it.label })
     }
 
     @Test
@@ -96,7 +103,12 @@ class ExportViewModelTest {
         assertEquals("Date range must not exceed 2 years.", vm.state.value.error)
         export.failure = ApiError.Server(503, "x")
         vm.export(); advanceUntilIdle()
-        assertEquals("Export is temporarily unavailable. Try again.", vm.state.value.error)
+        assertEquals("Downloads are temporarily unavailable. Try again.", vm.state.value.error)
+        export.failure = SessionChangedException()
+        vm.export(); advanceUntilIdle()
+        assertEquals("The signed-in account changed, so nothing was downloaded. Try again.", vm.state.value.error)
+        vm.dismissError()
+        assertNull(vm.state.value.error)
         export.failure = null
         vm.export(); advanceUntilIdle()
         assertNull(vm.state.value.error)

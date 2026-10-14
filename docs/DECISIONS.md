@@ -38,3 +38,4 @@ Format: ID · date · decision · why · who decided.
 - Approved 2026-10-06: plan, dependency downloads, local `git init`.
 - Approved 2026-10-06: local commits (no remote, never push). Baseline `8d26aba`.
 - Done 2026-10-06: owner signed in to staging on the emulator (D14).
+- D15 superseded (iOS #259) · Statement import removed from Android; statements and CSVs come in through Scan. Settings has "Download my data" instead of Import/Export. · Claude (follows iOS)

@@ -54,9 +54,8 @@ fun SettingsScreen(
     onOpenProfile: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenChangePassword: () -> Unit,
-    onOpenStatementImport: () -> Unit,
     onOpenProgress: () -> Unit,
-    onOpenExport: () -> Unit,
+    onOpenDownloadData: () -> Unit,
     onOpenMerchants: () -> Unit,
     onOpenPro: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -201,8 +200,16 @@ fun SettingsScreen(
             item { SectionHeader("Your data") }
             item {
                 GroupedCard {
-                    IosRow("Import", subtitle = "Bank statement or CSV", icon = SfSymbols.icon("square.and.arrow.down"), iconTint = finance.income, onClick = onOpenStatementImport, modifier = Modifier.testTag("settings.importStatement"))
-                    IosRow("Export", icon = SfSymbols.icon("square.and.arrow.up"), iconTint = Color(0xFF3B82F6), onClick = onOpenExport, divider = state.unsyncedCount > 0, modifier = Modifier.testTag("settings.export"))
+                    // Statements and CSVs come in through Scan; this is the way out.
+                    IosRow(
+                        "Download my data",
+                        subtitle = "Spreadsheet or a full copy",
+                        icon = SfSymbols.icon("square.and.arrow.down"),
+                        iconTint = IosColors.info,
+                        onClick = onOpenDownloadData,
+                        divider = state.unsyncedCount > 0,
+                        modifier = Modifier.testTag("settings.downloadData"),
+                    )
                     if (state.unsyncedCount > 0) {
                         IosRow(
                             "Waiting to sync (${state.unsyncedCount})",
@@ -216,7 +223,7 @@ fun SettingsScreen(
                 }
                 Text(
                     if (state.unsyncedCount > 0) "Saved on this phone. They upload when you're back online."
-                    else "Everything is synced. Changes saved offline show up here until they upload.",
+                    else "Everything is saved to your account, so a new phone just needs you to sign in. To add a bank statement, use Scan.",
                     style = IosText.footnote,
                     color = IosColors.textSecondary,
                     modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),

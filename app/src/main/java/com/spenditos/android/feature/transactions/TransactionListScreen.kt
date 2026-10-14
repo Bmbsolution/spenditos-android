@@ -100,7 +100,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun TransactionListScreen(
     onOpenNotSynced: () -> Unit,
-    onOpenExport: () -> Unit = {},
     onAdd: () -> Unit = {},
     onEdit: (EditTarget) -> Unit = {},
     onDuplicate: (AddTransactionPrefill) -> Unit = {},
@@ -226,7 +225,6 @@ fun TransactionListScreen(
                                         isSearchActive = !isSearchActive
                                     },
                                     onOpenFilter = { showFilterSheet = true },
-                                    onOpenExport = onOpenExport,
                                 )
                             }),
                         )
@@ -465,7 +463,6 @@ private fun TransactionsToolbarCapsule(
     filtersActive: Boolean,
     onToggleSearch: () -> Unit,
     onOpenFilter: () -> Unit,
-    onOpenExport: () -> Unit,
 ) {
     val capsule = CircleShape
     Row(
@@ -474,22 +471,6 @@ private fun TransactionsToolbarCapsule(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Row(
-            modifier = Modifier
-                .clip(capsule)
-                .clickable(role = Role.Button, onClick = onOpenExport)
-                .padding(horizontal = Spacing.s, vertical = Spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-        ) {
-            Icon(
-                SfSymbols.icon("square.and.arrow.up"),
-                contentDescription = null,
-                tint = IosColors.spendOrange,
-                modifier = Modifier.size(22.dp),
-            )
-            Text("Export", style = IosText.body, color = IosColors.spendOrange)
-        }
         Box(
             // 40dp visual like iOS; the 48dp touch target overflows it without changing the layout.
             modifier = Modifier
