@@ -262,8 +262,17 @@ class ScanCoordinator @Inject constructor(
         return resolution
     }
 
-    /** The detail [resolve] fetched for this scan, once. */
-    fun takeDetail(scanId: String): ScanDetail? = handoff.remove(scanId)
+    /** Keeps a freshly read list scan for the review screen that opens next (see [takeDetail]). */
+    fun handOff(detail: ScanDetail) {
+        adoptOwner()
+        handoff[detail.scanId] = detail
+    }
+
+    /** The detail [resolve] or [handOff] kept for this scan, once. */
+    fun takeDetail(scanId: String): ScanDetail? {
+        adoptOwner()
+        return handoff.remove(scanId)
+    }
 
     // endregion
 
