@@ -207,6 +207,15 @@ class StatementImportViewModelTest {
     }
 
     @Test
+    fun `welcome premium unlocks the import like any other Pro`() = runTest {
+        val importer = FakeImporter()
+        val settings = FakeSettings(active = false).apply { status = com.spenditos.android.data.model.PremiumStatus(true, "2026-11-12T00:00:00Z", "welcome") }
+        val viewModel = viewModel(importer, settings)
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.premiumActive)
+    }
+
+    @Test
     fun `settings check failure shows offline state and blocks statement calls`() = runTest {
         val importer = FakeImporter()
         val viewModel = viewModel(importer, FakeSettings(failure = ApiError.Network(IllegalStateException("offline"))))
@@ -343,16 +352,18 @@ class StatementImportViewModelTest {
         importer: FakeImporter,
         settings: FakeSettings = FakeSettings(),
         handle: SavedStateHandle = SavedStateHandle(),
-    ) = StatementImportViewModel(importer, settings, handle, FinanceInvalidationBus())
+    ) = StatementImportViewModel(importer, settings, handle, FinanceInvalidationBus(), settings.access)
 
     private class FakeSettings(
         private val active: Boolean = true,
         var failure: Throwable? = null,
     ) : UserSettingsActions {
+        val access = com.spenditos.android.testing.FakeProAccess()
+        var status: com.spenditos.android.data.model.PremiumStatus? = null
         override fun currency(): Flow<String> = flowOf("USD")
         override suspend fun refresh(): UserSettings {
             failure?.let { throw it }
-            return UserSettings("fake-user", premium = PremiumAccess(active = active))
+            return UserSettings("fake-user", premium = PremiumAccess(active = active), premiumStatus = status).also { access.apply(it, null) }
         }
         override suspend fun updateSettings(update: UserSettingsUpdate): UserSettings = UserSettings("fake-user", premium = PremiumAccess(active = active))
         override suspend fun changePassword(currentPassword: String, newPassword: String) = Unit

@@ -73,6 +73,7 @@ class StatementImportViewModel @Inject constructor(
     private val settings: UserSettingsActions,
     private val savedStateHandle: SavedStateHandle,
     private val invalidations: FinanceInvalidationBus,
+    private val proAccess: com.spenditos.android.data.entitlement.ProAccess,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
         StatementImportUiState(
@@ -182,9 +183,10 @@ class StatementImportViewModel @Inject constructor(
         update { it.copy(isCheckingSettings = true, settingsError = null, settingsOffline = false) }
         viewModelScope.launch {
             try {
-                val userSettings = settings.refresh()
-                update { it.copy(isCheckingSettings = false, premiumActive = userSettings.premium?.active == true) }
-                if (userSettings.premium?.active == true) restoreSavedFlow()
+                settings.refresh() // applies the server's premium status to [proAccess]
+                val pro = proAccess.current().effectiveIsPro
+                update { it.copy(isCheckingSettings = false, premiumActive = pro) }
+                if (pro) restoreSavedFlow()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {

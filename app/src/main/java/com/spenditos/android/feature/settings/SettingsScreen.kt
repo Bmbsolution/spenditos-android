@@ -39,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosRow
+import androidx.compose.ui.text.font.FontWeight
+import com.spenditos.android.ui.theme.w
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.SectionHeader
@@ -62,6 +64,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val plan by viewModel.plan.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(viewModel) { viewModel.refreshPremium() }
     val restoreMessage by viewModel.restoreMessage.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -98,12 +102,28 @@ fun SettingsScreen(
                             )
                         }
                         Column(Modifier.weight(1f).testTag("settings.account"), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                            Text(
-                                "Spenditos User",
-                                style = IosText.headline,
-                                color = IosColors.textPrimary,
-                                maxLines = 1,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                Text(
+                                    "Spenditos User",
+                                    style = IosText.headline,
+                                    color = IosColors.textPrimary,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                                if (plan.isPro) {
+                                    // iOS: caption2 bold white on a gold-to-orange capsule.
+                                    Text(
+                                        "PRO",
+                                        style = IosText.caption2.w(FontWeight.Bold),
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(IosColors.spendGold, IosColors.spendOrange)))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                            .testTag("settings.proBadge"),
+                                    )
+                                }
+                            }
                             state.email?.takeIf(String::isNotBlank)?.let {
                                 Text(it, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1)
                             }
@@ -226,14 +246,34 @@ fun SettingsScreen(
             item { SectionHeader("Subscription") }
             item {
                 GroupedCard {
-                    IosRow(
-                        "Upgrade to Pro",
-                        subtitle = "See how voice, receipt scan & insights can help",
-                        icon = SfSymbols.icon("sparkles"),
-                        iconTint = IosColors.spendGold,
-                        onClick = onOpenPro,
-                        modifier = Modifier.testTag("settings.pro"),
-                    )
+                    when {
+                        // Server-granted welcome Premium: no subscription yet, so the row leads to the Pro screen.
+                        plan.welcomeText != null -> IosRow(
+                            requireNotNull(plan.welcomeText),
+                            subtitle = "Keep Pro after it ends",
+                            icon = SfSymbols.icon("sparkles"),
+                            iconTint = IosColors.spendGold,
+                            onClick = onOpenPro,
+                            modifier = Modifier.testTag("settings.welcomePremium"),
+                        )
+                        // Pro from a subscription or a grant by Spenditos.
+                        plan.isPro -> IosRow(
+                            "Spenditos Pro",
+                            value = "Active",
+                            icon = SfSymbols.icon("sparkles"),
+                            iconTint = IosColors.spendGold,
+                            chevron = false,
+                            modifier = Modifier.testTag("settings.proActive"),
+                        )
+                        else -> IosRow(
+                            "Upgrade to Pro",
+                            subtitle = "See how voice, receipt scan & insights can help",
+                            icon = SfSymbols.icon("sparkles"),
+                            iconTint = IosColors.spendGold,
+                            onClick = onOpenPro,
+                            modifier = Modifier.testTag("settings.pro"),
+                        )
+                    }
                     IosRow(
                         "Restore Purchases",
                         subtitle = restoreMessage,
