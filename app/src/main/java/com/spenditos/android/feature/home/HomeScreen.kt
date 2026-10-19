@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -45,8 +46,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -121,13 +124,13 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.l),
             ) {
                 if (state.isLoading) {
-                    GreetingHeader(state.today, locale)
+                    GreetingHeader(state.today, state.displayName, locale)
                     Box(Modifier.fillMaxWidth().padding(vertical = 56.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(Modifier.testTag("home.loading"))
                     }
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        GreetingHeader(state.today, locale)
+                        GreetingHeader(state.today, state.displayName, locale)
                         state.status?.let { status ->
                             PulseHero(
                                 status = status,
@@ -305,13 +308,14 @@ private fun EmptyHomeState(onLogFirst: () -> Unit) {
 }
 
 @Composable
-private fun GreetingHeader(today: LocalDate, locale: Locale) {
+private fun GreetingHeader(today: LocalDate, displayName: String, locale: Locale) {
     val hour = LocalTime.now().hour
     val greeting = when {
         hour < 12 -> "Good morning"
         hour < 18 -> "Good afternoon"
         else -> "Good evening"
     }
+    val name = displayName.trim()
     val (symbol, colors) = when (hour) {
         in 5..11 -> "sun.horizon.fill" to listOf(Color(0xFFFFB347), Color(0xFFFF7A45))
         in 12..16 -> "sun.max.fill" to listOf(Color(0xFFFFD24D), Color(0xFFFF9F1C))
@@ -338,14 +342,33 @@ private fun GreetingHeader(today: LocalDate, locale: Locale) {
                 letterSpacing = 0.8.sp,
             )
         }
-        Text(
-            greeting,
-            style = IosText.rounded(30, FontWeight.Bold),
-            color = IosColors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.testTag("home.greeting"),
-        )
+        // One line when "Good morning, Sam Lee" fits; otherwise the greeting becomes a label and the
+        // full name takes the line below (ellipsis only if the name alone is still too wide).
+        val greetingStyle = IosText.rounded(30, FontWeight.Bold)
+        if (name.isEmpty()) {
+            Text(greeting, style = greetingStyle, color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home.greeting"))
+        } else {
+            val measurer = rememberTextMeasurer()
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val fitsOneLine = remember(greeting, name, constraints.maxWidth, greetingStyle) {
+                    !measurer.measure(
+                        "$greeting, $name",
+                        style = greetingStyle,
+                        softWrap = false,
+                        maxLines = 1,
+                        constraints = Constraints(maxWidth = constraints.maxWidth),
+                    ).didOverflowWidth
+                }
+                if (fitsOneLine) {
+                    Text("$greeting, $name", style = greetingStyle, color = IosColors.textPrimary, maxLines = 1, modifier = Modifier.testTag("home.greeting"))
+                } else {
+                    Column(Modifier.testTag("home.greeting")) {
+                        Text("$greeting,", style = IosText.rounded(17, FontWeight.SemiBold), color = IosColors.textSecondary, maxLines = 1)
+                        Text(name, style = greetingStyle, color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
     }
 }
 

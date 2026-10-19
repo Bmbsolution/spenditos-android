@@ -48,6 +48,7 @@ data class HomeUiState(
     val today: LocalDate,
     val month: YearMonth,
     val currency: String = "USD",
+    val displayName: String = "",
     val transactionCount: Int = 0,
     val status: CashFlowStatus? = null,
     val breakdown: CashFlowBreakdown? = null,
@@ -78,7 +79,7 @@ data class RecentActivity(
 )
 
 private data class HomeData(val transactions: List<TransactionEntity>, val week: List<TransactionEntity>, val categories: List<Category>)
-private data class HomeSettings(val currency: String, val refresh: HomeRefreshState)
+private data class HomeSettings(val currency: String, val displayName: String, val refresh: HomeRefreshState)
 private data class HomeRefreshState(
     val isRefreshing: Boolean = true,
     val hasLoaded: Boolean = false,
@@ -130,7 +131,7 @@ class HomeViewModel @Inject constructor(
         today,
         dayTicks,
         combine(monthRows, weekRows, categories.observe()) { rows, week, categoryRows -> HomeData(rows, week, categoryRows) },
-        combine(settings.currency(), refreshState) { currency, refresh -> HomeSettings(currency, refresh) },
+        combine(settings.currency(), settings.displayName(), refreshState) { currency, name, refresh -> HomeSettings(currency, name, refresh) },
     ) { today, _, data, settingsState ->
         val models = data.transactions.map { it.toModel() }
         val weekModels = data.week.map { it.toModel() }
@@ -138,6 +139,7 @@ class HomeViewModel @Inject constructor(
             today = today,
             month = YearMonth.from(today),
             currency = settingsState.currency,
+            displayName = settingsState.displayName,
             transactionCount = models.size,
             status = CashFlowStatus.make(models, data.categories, today),
             breakdown = CashFlowBreakdown.make(models, data.categories, today),

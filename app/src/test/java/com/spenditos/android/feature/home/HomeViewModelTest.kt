@@ -95,6 +95,7 @@ class HomeViewModelTest {
 
         assertEquals(LocalDate.parse("2026-10-01"), state.today)
         assertEquals("CAD", state.currency)
+        assertEquals("Abdourahamane Diallo", state.displayName)
         assertEquals("2026-10", state.month.toString())
         assertEquals(1200.0, state.status!!.expected.toDouble(), 0.0)
         assertEquals("Dentist", state.upcomingBills.first().name)
@@ -278,6 +279,7 @@ class HomeViewModelTest {
 
     private class FakeSettings : UserSettingsActions {
         override fun currency(): Flow<String> = flowOf("CAD")
+        override fun displayName(): Flow<String> = flowOf("Abdourahamane Diallo")
         override suspend fun refresh(): UserSettings = error("not used")
         override suspend fun updateSettings(update: UserSettingsUpdate): UserSettings = error("not used")
         override suspend fun changePassword(currentPassword: String, newPassword: String) = error("not used")
