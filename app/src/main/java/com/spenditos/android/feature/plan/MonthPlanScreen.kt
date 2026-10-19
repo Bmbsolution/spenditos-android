@@ -691,9 +691,45 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
         }
         GlassCard {
             Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                if (state.draft.entries.isEmpty()) {
-                    Text("No one-time items in this draft.", Modifier.padding(vertical = 10.dp), style = IosText.subheadline, color = IosColors.textSecondary)
+                val saved = viewModel.savedEntries(state)
+                if (state.draft.entries.isEmpty() && saved.isEmpty()) {
+                    Text("No one-time items yet.", Modifier.padding(vertical = 10.dp), style = IosText.subheadline, color = IosColors.textSecondary)
                 } else {
+                    saved.forEach { row ->
+                        val transaction = row.transaction
+                        Row(
+                            Modifier.fillMaxWidth().testTag("monthPlan.savedRow.${transaction.id}").padding(vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        transaction.description.ifEmpty { "Transaction" },
+                                        style = IosText.subheadline.w(FontWeight.SemiBold),
+                                        color = IosColors.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        "Saved",
+                                        style = IosText.caption2.w(FontWeight.Bold),
+                                        color = IosColors.textSecondary,
+                                        modifier = Modifier.clip(CircleShape).background(IosColors.textSecondary.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
+                                Text(
+                                    runCatching { LocalDate.parse(transaction.date).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(transaction.date),
+                                    style = IosText.caption,
+                                    color = IosColors.textSecondary,
+                                )
+                            }
+                            Text(
+                                Money.signed(transaction.amount, row.isIncome, state.currency),
+                                style = IosText.subheadline.w(FontWeight.SemiBold),
+                                color = if (row.isIncome) finance.income else finance.expense,
+                            )
+                        }
+                    }
                     state.draft.entries.forEach { entry ->
                         val isIncome = state.snapshot?.categories?.firstOrNull { it.id == entry.categoryId }?.isIncome ?: false
                         Row(

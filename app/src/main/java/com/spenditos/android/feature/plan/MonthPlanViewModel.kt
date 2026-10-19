@@ -528,6 +528,16 @@ class MonthPlanViewModel @Inject constructor(
             }
     }
 
+    /** One-time entries already saved for the month; a bill's own entries are counted through its schedule. */
+    fun savedEntries(current: MonthPlanUiState = mutableState.value): List<MonthPlanTransactionRow> {
+        val snapshot = current.snapshot ?: return emptyList()
+        val categories = categoryTypes(snapshot)
+        return snapshot.transactions
+            .filter { it.templateId == null }
+            .sortedWith(compareBy<Transaction> { it.date }.thenBy { it.description })
+            .map { MonthPlanTransactionRow(it, isIncome = categories[it.categoryId] ?: false, isDeleted = false) }
+    }
+
     fun summary(current: MonthPlanUiState = mutableState.value): MonthPlanSummary? {
         val snapshot = current.snapshot ?: return null
         val categories = categoryTypes(snapshot)
@@ -556,15 +566,28 @@ class MonthPlanViewModel @Inject constructor(
             if (isIncome) draftIncome = draftIncome.add(BigDecimal.valueOf(entry.amount))
             else oneTime = oneTime.add(BigDecimal.valueOf(entry.amount))
         }
+        // Saved one-time entries are part of the records and of the draft alike.
+        var savedOneTime = BigDecimal.ZERO
+        for (row in savedEntries(current)) {
+            val amount = BigDecimal.valueOf(row.transaction.amount)
+            if (row.isIncome) {
+                recordsIncome = recordsIncome.add(amount)
+                draftIncome = draftIncome.add(amount)
+            } else {
+                savedOneTime = savedOneTime.add(amount)
+                oneTime = oneTime.add(amount)
+            }
+        }
         recordsIncome = recordsIncome.moneyScale()
         recordsBills = recordsBills.moneyScale()
         draftIncome = draftIncome.moneyScale()
         draftBills = draftBills.moneyScale()
         oneTime = oneTime.moneyScale()
+        savedOneTime = savedOneTime.moneyScale()
         return MonthPlanSummary(
             recordsIncome = recordsIncome,
             recordsBills = recordsBills,
-            recordsLeft = recordsIncome.subtract(recordsBills).moneyScale(),
+            recordsLeft = recordsIncome.subtract(recordsBills).subtract(savedOneTime).moneyScale(),
             draftIncome = draftIncome,
             draftBills = draftBills,
             draftOneTime = oneTime,

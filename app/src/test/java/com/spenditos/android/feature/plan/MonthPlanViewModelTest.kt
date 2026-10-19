@@ -133,6 +133,23 @@ class MonthPlanViewModelTest {
     }
 
     @Test
+    fun `saved one-time entries count in both summaries and bill entries do not`() = runTest {
+        val month = viewModel.state.value.month
+        api.records += Transaction("saved-gift", "fake-user", "fake-expense", null, "Gift", 200.0, month.atDay(10).toString())
+        api.records += Transaction("saved-bonus", "fake-user", "fake-income", null, "Bonus", 500.0, month.atDay(12).toString())
+        // A bill's own entry is already counted through its schedule.
+        api.records += Transaction("rent-entry", "fake-user", "fake-expense", "fake-rent", "Fake rent", 400.0, month.atDay(3).toString())
+        viewModel.load()
+        val without = viewModel.summary()!!
+
+        assertEquals(listOf("saved-gift", "saved-bonus"), viewModel.savedEntries().map { it.transaction.id })
+        assertEquals(BigDecimal("2500.00"), without.draftIncome)
+        assertEquals(BigDecimal("200.00"), without.draftOneTime)
+        assertEquals(BigDecimal("1840.00"), without.recordsLeft)
+        assertEquals(without.recordsLeft, without.draftLeft)
+    }
+
+    @Test
     fun `draft hydration restores skip and month-only amount changes`() = runTest {
         val month = viewModel.state.value.month
         api.savedDraft = MonthlyPlanDraftData(

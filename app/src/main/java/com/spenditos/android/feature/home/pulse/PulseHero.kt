@@ -73,6 +73,8 @@ fun PulseHero(
     onReviewPlan: () -> Unit,
     onAddIncome: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Opens the upcoming expenses behind "Bills left". */
+    onOpenBillsLeft: () -> Unit = {},
 ) {
     val weather = FinancialWeather.from(status.state)
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -207,9 +209,9 @@ fun PulseHero(
 
         StatsStrip(
             listOf(
-                Triple("arrow.down.circle.fill", "Income", whole(status.income, currency, locale)),
-                Triple("cart.fill", "Spent", whole(status.spent, currency, locale)),
-                Triple("calendar.badge.clock", "Bills left", whole(status.billsLeft, currency, locale)),
+                StripEntry("arrow.down.circle.fill", "Income", whole(status.income, currency, locale)),
+                StripEntry("cart.fill", "Spent", whole(status.spent, currency, locale)),
+                StripEntry("calendar.badge.clock", "Bills left", whole(status.billsLeft, currency, locale), onOpenBillsLeft, "home.billsLeft"),
             ),
         )
 
@@ -273,17 +275,30 @@ private fun HealthBadge(score: Int, onOpen: () -> Unit) {
     }
 }
 
+private data class StripEntry(
+    val icon: String,
+    val title: String,
+    val value: String,
+    val onClick: (() -> Unit)? = null,
+    val tag: String? = null,
+)
+
 @Composable
-private fun StatsStrip(items: List<Triple<String, String, String>>) {
+private fun StatsStrip(items: List<StripEntry>) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.12f))
             .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(16.dp)).padding(vertical = 10.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEachIndexed { index, (icon, title, value) ->
+        items.forEachIndexed { index, (icon, title, value, onClick, tag) ->
             if (index > 0) Box(Modifier.width(1.dp).height(30.dp).background(Color.White.copy(alpha = 0.2f)))
-            Column(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Column(
+                Modifier.weight(1f)
+                    .then(if (onClick != null) Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick) else Modifier)
+                    .then(if (tag != null) Modifier.testTag(tag) else Modifier)
+                    .padding(horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(SfSymbols.icon(icon), contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(13.2.dp))
                     Text(title, color = Color.White.copy(alpha = 0.85f), style = IosText.caption2.w(FontWeight.SemiBold))

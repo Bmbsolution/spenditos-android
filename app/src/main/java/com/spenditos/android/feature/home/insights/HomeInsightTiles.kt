@@ -51,9 +51,10 @@ private fun BentoTile(
     icon: String,
     tint: Color,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    GlassCard(modifier = modifier) {
+    GlassCard(modifier = modifier, onClick = onClick) {
         Column(
             Modifier.fillMaxWidth().fillMaxHeight().padding(14.dp).heightIn(min = 156.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -70,8 +71,19 @@ private fun BentoTile(
 }
 
 @Composable
-fun NextBillTile(pin: HomeInsights.Pin?, today: LocalDate, currency: String, locale: Locale, modifier: Modifier = Modifier) {
-    BentoTile("Next bill", "calendar.badge.clock", IosColors.spendOrange, modifier.testTag("home.nextBill")) {
+fun NextBillTile(
+    pin: HomeInsights.Pin?,
+    today: LocalDate,
+    currency: String,
+    locale: Locale,
+    modifier: Modifier = Modifier,
+    /** Opens the logged transaction behind the pin. */
+    onOpen: (HomeInsights.Pin) -> Unit = {},
+) {
+    BentoTile(
+        "Next bill", "calendar.badge.clock", IosColors.spendOrange, modifier.testTag("home.nextBill"),
+        onClick = pin?.let { { onOpen(it) } },
+    ) {
         if (pin == null) {
             Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(36.dp))
             Text("No more bills this month", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)

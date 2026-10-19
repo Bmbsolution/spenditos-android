@@ -20,6 +20,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import com.spenditos.android.feature.transactions.toEditTarget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -96,6 +98,12 @@ class HomeViewModel @Inject constructor(
     // Today advances with the clock (refresh, invalidation, a midnight rollover while Home
     // stays alive) so a ViewModel created yesterday never keeps yesterday's month and ranges.
     private val today = MutableStateFlow(LocalDate.now(clock))
+
+    /** The saved transaction a Home pin stands for, as the edit form opens it (null if it is gone). */
+    suspend fun editTargetFor(id: String, date: LocalDate): com.spenditos.android.feature.transactions.EditTarget? =
+        transactions.observeRange(date, date).first().firstOrNull { it.id == id }
+            ?.toEditTarget()
+
     private val refreshState = MutableStateFlow(HomeRefreshState())
     private val monthRows = today.flatMapLatest { t ->
         val month = YearMonth.from(t)

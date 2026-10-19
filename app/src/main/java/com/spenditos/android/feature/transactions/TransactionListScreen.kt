@@ -97,9 +97,14 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.launch
 
+/** Home's Bills left asks the list for the expenses between two days. */
+data class UpcomingExpensesRequest(val start: java.time.LocalDate, val end: java.time.LocalDate)
+
 @Composable
 fun TransactionListScreen(
     onOpenNotSynced: () -> Unit,
+    request: UpcomingExpensesRequest? = null,
+    onRequestHandled: () -> Unit = {},
     onAdd: () -> Unit = {},
     onEdit: (EditTarget) -> Unit = {},
     onDuplicate: (AddTransactionPrefill) -> Unit = {},
@@ -109,6 +114,12 @@ fun TransactionListScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var deleteTarget by remember { mutableStateOf<TransactionRowUi?>(null) }
     var isEditMode by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(request) {
+        if (request != null) {
+            viewModel.showExpensesBetween(request.start, request.end)
+            onRequestHandled()
+        }
+    }
     androidx.compose.runtime.LaunchedEffect(isEditMode) { onEditModeChange(isEditMode) }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onEditModeChange(false) } }
     var selectedIds by rememberSaveable { mutableStateOf<Set<String>>(emptySet()) }

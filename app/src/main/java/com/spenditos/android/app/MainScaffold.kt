@@ -143,6 +143,8 @@ fun MainScaffold(
     var receiptPrefill by remember { mutableStateOf<AddTransactionPrefill?>(null) }
     var editTarget by remember { mutableStateOf<com.spenditos.android.feature.transactions.EditTarget?>(null) }
     var transactionsEditing by remember { mutableStateOf(false) }
+    // Home's Bills left: the Transactions tab applies it once, then clears it.
+    var upcomingRequest by remember { mutableStateOf<com.spenditos.android.feature.transactions.UpcomingExpensesRequest?>(null) }
     val onTab = backStack?.destination?.route in Tab.entries.map { it.route }
 
     Scaffold(
@@ -179,11 +181,26 @@ fun MainScaffold(
                             showAdd = true
                         },
                         onScanMessage = { message -> scope.launch { snackbar.showSnackbar(message) } },
+                        onOpenBillsLeft = { start, end ->
+                            upcomingRequest = com.spenditos.android.feature.transactions.UpcomingExpensesRequest(start, end)
+                            nav.navigate(Tab.TRANSACTIONS.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onOpenTransaction = { target ->
+                            receiptPrefill = null
+                            editTarget = target
+                            showAdd = true
+                        },
                     )
                 }
                 composable(Tab.TRANSACTIONS.route) {
                     TransactionListScreen(
                         onOpenNotSynced = { nav.navigate(NOT_SYNCED_ROUTE) },
+                        request = upcomingRequest,
+                        onRequestHandled = { upcomingRequest = null },
                         onAdd = { showAdd = true },
                         onEdit = { target ->
                             receiptPrefill = null

@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,8 +84,13 @@ fun HomeScreen(
     /** A ready single-receipt scan was tapped: open the add form with these values. */
     onOpenScanReceipt: (com.spenditos.android.feature.transactions.AddTransactionPrefill) -> Unit = {},
     onScanMessage: (String) -> Unit = {},
+    /** Bills left was tapped: the expenses from tomorrow through month end. */
+    onOpenBillsLeft: (start: LocalDate, end: LocalDate) -> Unit = { _, _ -> },
+    /** Next bill was tapped: open the logged transaction in the edit form. */
+    onOpenTransaction: (com.spenditos.android.feature.transactions.EditTarget) -> Unit = {},
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val locale = LocalConfiguration.current.locales[0]
     var showMath by rememberSaveable { mutableStateOf(false) }
@@ -132,6 +138,10 @@ fun HomeScreen(
                                 onOpenHealth = { showHealth = true },
                                 onReviewPlan = onReviewPlan,
                                 onAddIncome = onAddIncome,
+                                onOpenBillsLeft = {
+                                    val end = status.monthEnd
+                                    onOpenBillsLeft(minOf(state.today.plusDays(1), end), end)
+                                },
                             )
                         }
                     }
@@ -165,7 +175,15 @@ fun HomeScreen(
                         MonthRiverCard(insights, hero?.gradient?.getOrNull(1) ?: IosColors.spendOrange, state.currency, locale)
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                NextBillTile(insights.nextBill, state.today, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
+                                NextBillTile(
+                                    insights.nextBill, state.today, state.currency, locale, Modifier.weight(1f).fillMaxHeight(),
+                                    onOpen = { pin ->
+                                        scope.launch {
+                                            val target = viewModel.editTargetFor(pin.id, pin.date)
+                                            if (target != null) onOpenTransaction(target) else onSeeAll()
+                                        }
+                                    },
+                                )
                                 WeekTile(insights.week, hero?.gradient?.getOrNull(1) ?: IosColors.spendOrange, state.currency, locale, Modifier.weight(1f).fillMaxHeight())
                             }
                             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -308,6 +308,22 @@ class TransactionListViewModel @Inject constructor(
         }
     }
 
+    /** Home's Bills left: only expenses from [start] through [end], other filters cleared. */
+    fun showExpensesBetween(start: LocalDate, end: LocalDate) {
+        monthPinned = true
+        criteria.update {
+            it.copy(
+                dateRange = DateRangeFilter.CUSTOM,
+                customStart = start,
+                customEnd = maxOf(start, end),
+                selectedType = EntryType.EXPENSE,
+                selectedCategoryIds = emptySet(),
+                minAmount = null,
+                maxAmount = null,
+            )
+        }
+    }
+
     fun setType(type: EntryType?) = criteria.update { it.copy(selectedType = type) }
 
     fun toggleCategory(id: String) = criteria.update { current ->
