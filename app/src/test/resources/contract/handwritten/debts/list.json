@@ -1,0 +1,117 @@
+{
+    "data": {
+        "debts": [
+            {
+                "debt": {
+                    "id": "debt-car",
+                    "userId": "user-1",
+                    "name": "Car loan",
+                    "startingBalance": 10000,
+                    "startDate": "2026-01-01",
+                    "apr": 7.5,
+                    "billId": "bill-car",
+                    "categoryId": "cat-debt",
+                    "createdAt": "2026-01-01T09:00:00Z",
+                    "updatedAt": "2026-09-10T09:00:00Z"
+                },
+                "summary": {
+                    "status": "active",
+                    "balance": 6040,
+                    "paidTotal": 3960,
+                    "interestTotal": 212.4,
+                    "progress": 0.396,
+                    "lastPaymentDate": "2026-09-10",
+                    "paidOffDate": null,
+                    "nextPaymentDate": "2026-10-01",
+                    "payment": 320,
+                    "frequency": "monthly",
+                    "repeatInterval": 1
+                },
+                "projection": {
+                    "paymentsLeft": 19,
+                    "payoffDate": "2028-04-01",
+                    "lastPaymentAmount": 140,
+                    "interestRemaining": 590.1,
+                    "neverPaysOff": false,
+                    "schedule": [
+                        { "date": "2026-10-01", "amount": 320 },
+                        { "date": "2026-11-01", "amount": 320 }
+                    ]
+                }
+            },
+            {
+                "debt": {
+                    "id": "debt-laptop",
+                    "userId": "user-1",
+                    "name": "Laptop from Sam",
+                    "startingBalance": 1200,
+                    "startDate": "2026-08-01",
+                    "apr": null,
+                    "billId": "bill-laptop",
+                    "categoryId": "cat-debt",
+                    "createdAt": "2026-08-01T09:00:00Z",
+                    "updatedAt": "2026-08-01T09:00:00Z"
+                },
+                "summary": {
+                    "status": "active",
+                    "balance": 900,
+                    "paidTotal": 300,
+                    "interestTotal": 0,
+                    "progress": 0.25,
+                    "lastPaymentDate": "2026-09-05",
+                    "paidOffDate": null,
+                    "nextPaymentDate": "2026-10-05",
+                    "payment": 100,
+                    "frequency": "monthly",
+                    "repeatInterval": 1
+                },
+                "projection": {
+                    "paymentsLeft": 9,
+                    "payoffDate": "2027-06-05",
+                    "lastPaymentAmount": 100,
+                    "interestRemaining": 0,
+                    "neverPaysOff": false,
+                    "schedule": [
+                        { "date": "2026-10-05", "amount": 100 },
+                        { "date": "2026-11-05", "amount": 100 }
+                    ]
+                }
+            },
+            {
+                "debt": {
+                    "id": "debt-phone",
+                    "userId": "user-1",
+                    "name": "Phone plan",
+                    "startingBalance": 800,
+                    "startDate": "2026-02-01",
+                    "apr": null,
+                    "billId": null,
+                    "categoryId": "cat-debt",
+                    "createdAt": "2026-02-01T09:00:00Z",
+                    "updatedAt": "2026-08-15T09:00:00Z"
+                },
+                "summary": {
+                    "status": "paid_off",
+                    "balance": 0,
+                    "paidTotal": 800,
+                    "interestTotal": 0,
+                    "progress": 1,
+                    "lastPaymentDate": "2026-08-15",
+                    "paidOffDate": "2026-08-15",
+                    "nextPaymentDate": null,
+                    "payment": null,
+                    "frequency": null,
+                    "repeatInterval": null
+                },
+                "projection": {
+                    "paymentsLeft": 0,
+                    "payoffDate": null,
+                    "lastPaymentAmount": null,
+                    "interestRemaining": 0,
+                    "neverPaysOff": false,
+                    "schedule": []
+                }
+            }
+        ]
+    }
+}

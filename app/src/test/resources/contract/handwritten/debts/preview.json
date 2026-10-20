@@ -1,0 +1,10 @@
+{
+    "data": {
+        "payment": 320,
+        "paymentsCount": 20,
+        "payoffDate": "2028-05-01",
+        "lastPaymentAmount": 180,
+        "totalInterest": 612,
+        "neverPaysOff": false
+    }
+}

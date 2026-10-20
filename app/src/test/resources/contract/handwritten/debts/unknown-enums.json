@@ -1,0 +1,46 @@
+{
+    "data": {
+        "debt": {
+            "id": "debt-x",
+            "userId": "user-1",
+            "name": "Mystery",
+            "startingBalance": 100,
+            "startDate": "2026-01-01",
+            "apr": null,
+            "billId": null,
+            "categoryId": "cat-debt",
+            "createdAt": "2026-01-01T09:00:00Z",
+            "updatedAt": "2026-01-01T09:00:00Z"
+        },
+        "summary": {
+            "status": "archived",
+            "balance": 100,
+            "paidTotal": 0,
+            "interestTotal": 0,
+            "progress": 0,
+            "lastPaymentDate": null,
+            "paidOffDate": null,
+            "nextPaymentDate": null,
+            "payment": null,
+            "frequency": null,
+            "repeatInterval": null
+        },
+        "projection": {
+            "paymentsLeft": 0,
+            "payoffDate": null,
+            "lastPaymentAmount": null,
+            "interestRemaining": 0,
+            "neverPaysOff": false,
+            "schedule": []
+        },
+        "history": [
+            {
+                "kind": "refund",
+                "date": "2026-01-02",
+                "amount": 10,
+                "interest": 0,
+                "balanceAfter": 110
+            }
+        ]
+    }
+}

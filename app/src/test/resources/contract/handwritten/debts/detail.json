@@ -1,0 +1,65 @@
+{
+    "data": {
+        "debt": {
+            "id": "debt-car",
+            "userId": "user-1",
+            "name": "Car loan",
+            "startingBalance": 10000,
+            "startDate": "2026-01-01",
+            "apr": 7.5,
+            "billId": "bill-car",
+            "categoryId": "cat-debt",
+            "createdAt": "2026-01-01T09:00:00Z",
+            "updatedAt": "2026-09-10T09:00:00Z"
+        },
+        "summary": {
+            "status": "active",
+            "balance": 6040,
+            "paidTotal": 3960,
+            "interestTotal": 212.4,
+            "progress": 0.396,
+            "lastPaymentDate": "2026-09-10",
+            "paidOffDate": null,
+            "nextPaymentDate": "2026-10-01",
+            "payment": 320,
+            "frequency": "monthly",
+            "repeatInterval": 1
+        },
+        "projection": {
+            "paymentsLeft": 19,
+            "payoffDate": "2028-04-01",
+            "lastPaymentAmount": 140,
+            "interestRemaining": 590.1,
+            "neverPaysOff": false,
+            "schedule": [
+                { "date": "2026-10-01", "amount": 320 }
+            ]
+        },
+        "history": [
+            {
+                "kind": "extra_payment",
+                "date": "2026-09-10",
+                "amount": 200,
+                "interest": 0,
+                "balanceAfter": 6040,
+                "transactionId": "txn-extra-1"
+            },
+            {
+                "kind": "payment",
+                "date": "2026-09-01",
+                "amount": 320,
+                "interest": 33.75,
+                "balanceAfter": 6240,
+                "transactionId": "txn-bill-sep"
+            },
+            {
+                "kind": "adjustment",
+                "date": "2026-06-01",
+                "amount": 6500,
+                "interest": 0,
+                "balanceAfter": 6500,
+                "adjustmentId": "adj-1"
+            }
+        ]
+    }
+}
