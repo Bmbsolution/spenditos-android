@@ -33,6 +33,10 @@ Format: ID · date · decision · why · who decided.
 - D20 · On a duplicate reply from `/transactions/bulk` (idempotent resend), the optimistic row is dropped and the next refresh brings the server row; the bulk response carries no id for duplicates and recomputing the server's deterministic id client-side is fragile (JS number formatting). · Claude
 - D21 · `harnessDebug` flavor: base URL `http://127.0.0.1:4310` (via `adb reverse`), fixed synthetic token from the harness seed, cleartext allowed only for 127.0.0.1 in that flavor. · Claude
 
+## Debts (2026-10-20)
+
+- D22 · A debt's "Add extra payment" is the one financial write that uses single `POST /transactions` (new `TransactionsApi.createSingle`, body `CreateTransactionRequest` with `debtId`) instead of the bulk route. Exception to ANDROID_STYLE rule 4 / D2. · `/transactions/bulk` does not accept `debtId` (`BulkTransactionItem` has no such field and the server must not be changed), and iOS records the payment through the single create. Trade-off: the single route has no retry protection, so Android sends it once per tap, never queues or auto-retries it, works online only, and keeps the Add button disabled while the request is in flight; a timed-out request can still have succeeded, so the user checks the debt's history before trying again. Revisit if the server honors `Idempotency-Key` on single create. · owner (approved for the Android debts port)
+
 ## Still open
 
 - Approved 2026-10-06: plan, dependency downloads, local `git init`.

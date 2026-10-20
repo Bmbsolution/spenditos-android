@@ -7,6 +7,9 @@ import com.spenditos.android.core.network.apiCall
 import com.spenditos.android.core.network.apiCallUnit
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FinanceInvalidationBus
+import com.spenditos.android.data.model.Transaction
+import com.spenditos.android.data.transactions.CreateTransactionRequest
+import com.spenditos.android.data.transactions.TransactionsApi
 import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
@@ -41,6 +44,13 @@ interface DebtActions {
 
     /** `POST /debts/preview` (stateless, nothing saved). */
     suspend fun preview(request: DebtPreviewRequest): DebtPreviewResponse
+
+    /**
+     * "Add extra payment": a normal expense with this debt's id, filed under the debt's category and
+     * named after the debt (iOS `recordExtraPayment`). Online only. The single-create route has no
+     * retry protection (docs/DECISIONS.md D22): send it once per tap and never resend it automatically.
+     */
+    suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction
 }
 
 /**
@@ -53,6 +63,7 @@ interface DebtActions {
 @Singleton
 class DebtRepository @Inject constructor(
     private val api: DebtApi,
+    private val transactionsApi: TransactionsApi,
     private val session: SessionManager,
     private val connectivity: ConnectivityStatus,
     private val invalidations: FinanceInvalidationBus,
@@ -99,6 +110,18 @@ class DebtRepository @Inject constructor(
         val response = apiCall { api.preview(request) }
         ensureCurrentUser(userId)
         return response
+    }
+
+    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction {
+        val binding = requireOnlineWrite()
+        val body = CreateTransactionRequest(
+            amount = amount,
+            date = date.toString(),
+            categoryId = debt.categoryId,
+            description = debt.name,
+            debtId = debt.id,
+        )
+        return apiCall { transactionsApi.createSingle(body, binding) }.also { changed() }
     }
 
     private fun requireUser(): String = session.currentUserId ?: throw ApiError.Unauthorized

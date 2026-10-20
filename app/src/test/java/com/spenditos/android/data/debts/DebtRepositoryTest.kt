@@ -10,6 +10,7 @@ import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FinanceInvalidationBus
+import com.spenditos.android.data.transactions.TransactionsApi
 import com.spenditos.android.testing.FakeTokenStore
 import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
 import com.spenditos.android.testing.OfflineInterceptor
@@ -54,7 +55,7 @@ class DebtRepositoryTest {
     @Before
     fun setUp() {
         server.start()
-        val api = Retrofit.Builder()
+        val retrofit = Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(
                 OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(offline)
@@ -62,10 +63,11 @@ class DebtRepositoryTest {
                     .build(),
             )
             .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
-            .build().create(DebtApi::class.java)
+            .build()
+        val api = retrofit.create(DebtApi::class.java)
         session = SessionManager(FakeTokenStore.signedIn("user-fake-1"), { RefreshedTokens("access", "id") }, EpochClock { NOW }, AppEnvironment())
         val connectivity = object : ConnectivityStatus { override val isOnline = online }
-        repository = DebtRepository(api, session, connectivity, invalidations)
+        repository = DebtRepository(api, retrofit.create(TransactionsApi::class.java), session, connectivity, invalidations)
     }
 
     @After
@@ -257,6 +259,75 @@ class DebtRepositoryTest {
         assertEquals("2026-10-20", (body["date"] as JsonPrimitive).content)
         assertEquals("5900.0", (body["balance"] as JsonPrimitive).content)
         assertEquals(setOf(Aggregate.TRANSACTION, Aggregate.RECURRING), event.await())
+    }
+
+    // endregion
+
+    // region Extra payment (single create, docs/DECISIONS.md D22)
+
+    private val carDebt = Debt(
+        id = "debt-car", userId = "user-1", name = "Car loan", startingBalance = 10000.0, startDate = "2026-01-01",
+        apr = 7.5, billId = "bill-car", categoryId = "cat-debt", createdAt = "2026-01-01T09:00:00Z", updatedAt = "2026-09-10T09:00:00Z",
+    )
+    private val createdTransaction = """
+        {"data":{"id":"txn-extra","userId":"user-1","categoryId":"cat-debt","description":"Car loan","amount":150,
+        "date":"2026-10-20","debtId":"debt-car"},"details":null}
+    """.trimIndent()
+
+    @Test
+    fun `extra payment is one POST to transactions carrying the debt category name and id`() = runTest {
+        server.enqueue(MockResponse(code = 201, body = createdTransaction))
+        val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
+
+        val transaction = repository.recordExtraPayment(carDebt, 150.0, today)
+
+        assertEquals("txn-extra", transaction.id)
+        assertEquals("debt-car", transaction.debtId)
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/transactions", request.url.encodedPath)
+        assertNull("The single-create route ignores idempotency keys", request.headers["Idempotency-Key"])
+        val body = SpenditosJson.parseToJsonElement(request.body!!.utf8()).jsonObject
+        assertEquals(setOf("amount", "date", "categoryId", "description", "debtId"), body.keys)
+        assertEquals("150.0", (body["amount"] as JsonPrimitive).content)
+        assertEquals("2026-10-20", (body["date"] as JsonPrimitive).content)
+        assertEquals("cat-debt", (body["categoryId"] as JsonPrimitive).content)
+        assertEquals("Car loan", (body["description"] as JsonPrimitive).content)
+        assertEquals("debt-car", (body["debtId"] as JsonPrimitive).content)
+        assertEquals(1, server.requestCount)
+        assertEquals(setOf(Aggregate.TRANSACTION, Aggregate.RECURRING), event.await())
+    }
+
+    @Test
+    fun `extra payment while offline sends nothing and announces nothing`() = runTest {
+        online.value = false
+        val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
+
+        assertTrue(failure { repository.recordExtraPayment(carDebt, 150.0, today) } is ApiError.Network)
+
+        assertEquals(0, server.requestCount)
+        assertTrue(event.isActive)
+        event.cancel()
+    }
+
+    @Test
+    fun `a failed extra payment is not resent and does not announce a change`() = runTest {
+        server.enqueue(MockResponse(code = 400, body = """{"message":"no debt","error":"DebtNotFound"}"""))
+        val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
+
+        val error = failure { repository.recordExtraPayment(carDebt, 150.0, today) } as ApiError.Server
+
+        assertEquals("DebtNotFound", error.serverMessage)
+        assertEquals(1, server.requestCount)
+        assertTrue(event.isActive)
+        event.cancel()
+    }
+
+    @Test
+    fun `extra payment without a session fails before any request`() = runTest {
+        session.signOut()
+        assertTrue(failure { repository.recordExtraPayment(carDebt, 150.0, today) } === ApiError.Unauthorized)
+        assertEquals(0, server.requestCount)
     }
 
     // endregion

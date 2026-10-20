@@ -7,6 +7,7 @@ import com.spenditos.android.data.model.BulkCreateResult
 import com.spenditos.android.data.model.TransactionsPage
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.UpdateTransactionRequest
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -39,6 +40,20 @@ interface TransactionsApi {
         @Tag sessionBinding: SessionBinding? = null,
     ): ApiEnvelope<BulkCreateResult>
 
+    /**
+     * `POST /transactions` (handler `createTransactionHandlerImpl`; schema `CreateTransactionSchema`):
+     * required `amount`, `date`, `categoryId`; this client also sends `description` and `debtId`.
+     * ONLY for a debt's extra payment (docs/DECISIONS.md D22): the bulk endpoint cannot carry `debtId`.
+     * Unlike bulk this route has no retry protection, so a repeated request creates a second
+     * transaction; callers send it once per user tap and never resend it automatically.
+     * [sessionBinding] works as on [createBulk].
+     */
+    @POST("transactions")
+    suspend fun createSingle(
+        @Body body: CreateTransactionRequest,
+        @Tag sessionBinding: SessionBinding? = null,
+    ): ApiEnvelope<Transaction>
+
     /** `PUT /transactions/{id}` (sst.config.ts:143); `UpdateTransactionRequest` api/index.ts:422. */
     @PUT("transactions/{id}")
     suspend fun update(@Path("id") id: String, @Body body: UpdateTransactionRequest): ApiEnvelope<Transaction>
@@ -57,3 +72,18 @@ interface TransactionsApi {
 
 @kotlinx.serialization.Serializable
 data class BulkDeleteRequest(val transactionIds: List<String>)
+
+/**
+ * Body of `POST /transactions` (`CreateTransactionSchema` without `userId`, which the server takes
+ * from the token). Null fields are omitted from the JSON.
+ */
+@Serializable
+data class CreateTransactionRequest(
+    val amount: Double,
+    /** `YYYY-MM-DD`. */
+    val date: String,
+    val categoryId: String,
+    val description: String? = null,
+    /** The debt this expense pays toward (docs/features/debts.md). */
+    val debtId: String? = null,
+)

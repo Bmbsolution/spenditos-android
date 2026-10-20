@@ -77,6 +77,11 @@ class SessionLifecycleTest {
         override suspend fun createBulk(body: BulkCreateRequest, sessionBinding: SessionBinding?): ApiEnvelope<BulkCreateResult> =
             error("not used")
 
+        override suspend fun createSingle(
+            body: com.spenditos.android.data.transactions.CreateTransactionRequest,
+            sessionBinding: SessionBinding?,
+        ): ApiEnvelope<Transaction> = error("not used")
+
         override suspend fun update(id: String, body: UpdateTransactionRequest): ApiEnvelope<Transaction> = error("not used")
         override suspend fun delete(id: String) = error("not used")
         override suspend fun bulkDelete(body: BulkDeleteRequest): retrofit2.Response<okhttp3.ResponseBody> = error("not used")
