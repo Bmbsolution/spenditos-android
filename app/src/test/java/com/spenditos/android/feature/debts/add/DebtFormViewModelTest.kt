@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.debts.add
 
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.data.debts.CreateDebtRequest
@@ -520,6 +521,7 @@ internal class FakeDebtActions : DebtActions {
     override suspend fun update(id: String, request: UpdateDebtRequest): DebtDetail = error("not used")
     override suspend fun delete(id: String) = error("not used")
     override suspend fun addAdjustment(id: String, date: LocalDate, balance: Double): DebtDetail = error("not used")
+    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction = error("not used")
 }
 
 internal object DebtTestData {

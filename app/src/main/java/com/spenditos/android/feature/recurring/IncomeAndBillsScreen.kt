@@ -62,7 +62,6 @@ import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
 import com.spenditos.android.feature.debts.DebtAddSheetHost
 import com.spenditos.android.feature.debts.DebtListViewModel
 import com.spenditos.android.feature.debts.debtsSection
-import com.spenditos.android.ui.components.ScopedViewModels
 import com.spenditos.android.ui.components.FloatingTabBarHeight
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.tabBarBottomPadding
@@ -307,13 +306,11 @@ fun IncomeAndBillsScreen(
     }
 
     if (showAddDebt) {
-        // Its own ViewModelStore: the add form must not reopen with the last attempt's input.
-        ScopedViewModels {
-            DebtAddSheetHost(
-                onDismiss = { showAddDebt = false },
-                onCreated = { debtId -> showAddDebt = false; onOpenDebt(debtId) },
-            )
-        }
+        // AddDebtSheet scopes its own ViewModelStore, so the form never reopens with the last attempt's input.
+        DebtAddSheetHost(
+            onDismiss = { showAddDebt = false },
+            onCreated = { debtId -> showAddDebt = false; onOpenDebt(debtId) },
+        )
     }
 
     if (showEditor) {
