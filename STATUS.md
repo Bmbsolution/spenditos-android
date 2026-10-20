@@ -2,6 +2,12 @@
 
 Last updated: 2026-10-14 (iOS catch-up, see below). Previously 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
+## Debts (2026-10-20, branch feature/debts; port of iOS #273 / backend #383)
+- Data (`data/debts`): wire models, 7-route `DebtApi`, online-only `DebtRepository` (writes bound to the session, `ApiError.Network` offline, TRANSACTION + RECURRING invalidated), `debtId` on Transaction / RecurringTemplate / MonthlyPlanOccurrence. Room v1 -> v2 (`MIGRATION_1_2`, first migration; `transactions.debtId`).
+- UI (`feature/debts`): Debts section in Income & bills (debt bills hidden from Bills), debt page (`plan/debts/{debtId}`: what-if, extra payment, correct balance, history, delete), Add a debt sheet, Debt tag + per-payment amounts in Month plan.
+- Decision D22: extra payments use the single `POST /transactions` with `debtId` (bulk create does not accept it; same as iOS). No retry protection: Pay is disabled while in flight, never retried or queued.
+- Needs backend #383 deployed. `scripts/verify.sh`: 860 tests, 0 failures. Not run on an emulator (the e2e harness has no debts routes), so visual parity with iOS is unchecked, light and dark.
+
 ## Catch-up: Rules (iOS #252, branch catchup/rules)
 - Settings "Merchant rules" is now **Rules** (`feature/settings/rules`): user rules only (`source == "user"`), tap to edit (category chips, "Skip it" switch, Delete with confirmation), "+" adds a rule (upsert by merchant), pull to refresh, empty state "No rules yet". The old statement-name editor (regex / "name to show") went away with the iOS view it mirrored.
 - Scan review: same-merchant rows of a month collapse into a group row ("Tim Hortons ×4": one total, one include toggle, one category control, expandable lines; `ReviewGrouping`, keyed by `normalizeMerchantKey(merchantName)`). Picking a category for a row or group asks "Always file X under Y?" (`RuleAskSheet`): **Always** upserts the user rule (+ optional "Also update N past transactions" via `match-count` then `apply`), **Just this once** keeps the choice only. Skipped offline, for nameless merchants and when an identical user rule exists.
