@@ -55,9 +55,16 @@ data class MonthPlanRecurringRow(
     val hasDraftChange: Boolean,
     val isLogged: Boolean,
     val hasAmountChange: Boolean,
+    /** Set when this payment belongs to a debt (shown with a "Debt" tag). */
+    val debtId: String? = null,
 ) {
+    /** The month's amount: every occurrence's own amount (a debt's last payment is smaller than the rest). */
     val total: BigDecimal get() = amounts.fold(BigDecimal.ZERO, BigDecimal::add).moneyScale()
     val occurrenceCount: Int get() = dates.size
+    val isDebtPayment: Boolean get() = debtId != null
+
+    /** True when every occurrence has the same amount (the usual "3 × $50"). */
+    val hasUniformAmounts: Boolean get() = amounts.map { it.setScale(2, java.math.RoundingMode.HALF_UP) }.toSet().size <= 1
 }
 
 data class MonthPlanSummary(
@@ -509,6 +516,7 @@ class MonthPlanViewModel @Inject constructor(
                 hasDraftChange = skip != null || log != null,
                 isLogged = log != null,
                 hasAmountChange = log?.overrides?.isNotEmpty() == true,
+                debtId = sorted.firstNotNullOfOrNull { it.debtId },
             )
         }.sortedWith(compareBy<MonthPlanRecurringRow> { !it.isIncome }.thenBy { it.dates.firstOrNull() }.thenBy { it.description })
     }

@@ -51,6 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -577,15 +579,19 @@ private fun RecurringPlanRow(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                row.description,
-                Modifier.weight(1f),
-                style = IosText.subheadline.w(FontWeight.SemiBold),
-                color = if (row.isSkipped) IosColors.textSecondary else IosColors.textPrimary,
-                textDecoration = if (row.isSkipped) TextDecoration.LineThrough else TextDecoration.None,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // iOS HStack(spacing: 6) { name, Debt tag }: the tag sits right after the name.
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    row.description,
+                    Modifier.weight(1f, fill = false),
+                    style = IosText.subheadline.w(FontWeight.SemiBold),
+                    color = if (row.isSkipped) IosColors.textSecondary else IosColors.textPrimary,
+                    textDecoration = if (row.isSkipped) TextDecoration.LineThrough else TextDecoration.None,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (row.isDebtPayment) DebtTag(Modifier.testTag("monthPlan.debtTag.${row.templateId}"))
+            }
             if (row.amountVaries) Text("≈", style = IosText.subheadline, color = IosColors.textSecondary)
             if (row.hasDraftChange) {
                 Spacer(Modifier.width(6.dp))
@@ -599,8 +605,11 @@ private fun RecurringPlanRow(
                 textDecoration = if (row.isSkipped) TextDecoration.LineThrough else TextDecoration.None,
             )
         }
-        val dates = if (row.occurrenceCount > 1) "${row.occurrenceCount} × ${Money.format(row.usualAmount.toDouble(), state.currency)}"
-        else row.dates.firstOrNull()?.format(DateTimeFormatter.ofPattern("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
+        // A debt's last payment is smaller than the rest: then the count alone is honest.
+        val dates = if (row.occurrenceCount > 1) {
+            if (row.hasUniformAmounts) "${row.occurrenceCount} × ${Money.format(row.amounts.first().toDouble(), state.currency)}"
+            else "${row.occurrenceCount} payments"
+        } else row.dates.firstOrNull()?.format(DateTimeFormatter.ofPattern("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
         Text(dates, style = IosText.caption, color = IosColors.textSecondary)
         if (!state.isPast) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -640,6 +649,19 @@ private fun RecurringPlanRow(
             }
         }
     }
+}
+
+/** iOS `DebtTag`: the small "Debt" tag on a Month plan payment. */
+@Composable
+private fun DebtTag(modifier: Modifier = Modifier) {
+    Text(
+        "Debt",
+        modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .semantics { contentDescription = "Debt payment" },
+        style = IosText.caption2.w(FontWeight.Bold),
+        color = IosColors.spendOrange,
+    )
 }
 
 @Composable

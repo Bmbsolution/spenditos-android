@@ -149,6 +149,90 @@ class MonthPlanViewModelTest {
         assertEquals(without.recordsLeft, without.draftLeft)
     }
 
+    // region Debt payments (the server's plan already follows the debt)
+
+    private fun debtOccurrence(day: String, amount: Double, month: String, debtId: String? = "debt-car") =
+        MonthlyPlanOccurrence("bill-car", "fake-expense", "Car loan", "$month-$day", amount, false, "fixed", debtId)
+
+    @Test
+    fun `debt payments carry the debt id and get the Debt tag`() = runTest {
+        api.scheduledOverride = { month ->
+            listOf(
+                MonthlyPlanOccurrence("tpl-rent", "fake-expense", "Rent", "$month-03", 1_500.0, false),
+                debtOccurrence("01", 320.0, month),
+            )
+        }
+
+        viewModel.load()
+
+        val car = viewModel.rows().first { it.templateId == "bill-car" }
+        assertEquals("debt-car", car.debtId)
+        assertTrue(car.isDebtPayment)
+        assertFalse(viewModel.rows().first { it.templateId == "tpl-rent" }.isDebtPayment)
+    }
+
+    @Test
+    fun `the final month shows the smaller last payment and the total follows it`() = runTest {
+        // Two payments this month: the usual 320, then the real last one, 140.
+        api.scheduledOverride = { month -> listOf(debtOccurrence("01", 320.0, month), debtOccurrence("15", 140.0, month)) }
+
+        viewModel.load()
+
+        val row = viewModel.rows().single()
+        assertEquals(listOf(BigDecimal("320.00"), BigDecimal("140.00")), row.amounts)
+        assertEquals(BigDecimal("460.00"), row.total)
+        assertFalse(row.hasUniformAmounts)
+        assertEquals(BigDecimal("460.00"), viewModel.summary()!!.recordsBills)
+        assertEquals(BigDecimal("460.00"), viewModel.summary()!!.draftBills)
+    }
+
+    @Test
+    fun `equal payments stay uniform`() = runTest {
+        api.scheduledOverride = { month -> listOf(debtOccurrence("01", 320.0, month), debtOccurrence("15", 320.0, month)) }
+
+        viewModel.load()
+
+        assertTrue(viewModel.rows().single().hasUniformAmounts)
+    }
+
+    @Test
+    fun `nothing appears for a paid-off debt`() = runTest {
+        api.scheduledOverride = { emptyList() }
+
+        viewModel.load()
+
+        assertTrue(viewModel.rows().isEmpty())
+    }
+
+    @Test
+    fun `a month-only change still replaces every payment of the month`() = runTest {
+        api.scheduledOverride = { month -> listOf(debtOccurrence("01", 320.0, month), debtOccurrence("15", 140.0, month)) }
+        viewModel.load()
+
+        viewModel.stageAmountChange("bill-car", viewModel.rows().single().dates, BigDecimal("200.00"))
+
+        val row = viewModel.rows().single()
+        assertEquals(BigDecimal("400.00"), row.total)
+        assertTrue(row.hasUniformAmounts)
+        assertEquals(BigDecimal("460.00"), viewModel.summary()!!.recordsBills)
+        assertEquals(BigDecimal("400.00"), viewModel.summary()!!.draftBills)
+    }
+
+    @Test
+    fun `occurrences decode the debt id when the server sends it`() {
+        val json = """{"templateId":"bill-car","categoryId":"cat","description":"Car loan","date":"2026-11-01","amount":320,"isIncome":false,"type":"fixed","debtId":"debt-car"}"""
+        val withDebt = com.spenditos.android.core.network.SpenditosJson.decodeFromString(MonthlyPlanOccurrence.serializer(), json)
+        assertEquals("debt-car", withDebt.debtId)
+
+        val older = com.spenditos.android.core.network.SpenditosJson.decodeFromString(
+            MonthlyPlanOccurrence.serializer(),
+            json.replace(""","debtId":"debt-car"""", ""),
+        )
+        assertNull(older.debtId)
+    }
+
+    // endregion
+
     @Test
     fun `draft hydration restores skip and month-only amount changes`() = runTest {
         val month = viewModel.state.value.month
@@ -383,6 +467,8 @@ private class FakePlanningApi : PlanningApi {
     var saveCalls = 0
     var draftDeleteCalls = 0
     var lastPlanMonth: String? = null
+    /** Replaces the default scheduled occurrences (month key -> occurrences) when set. */
+    var scheduledOverride: ((String) -> List<MonthlyPlanOccurrence>)? = null
 
     private fun fail(operation: String) { failures[operation]?.let { throw it } }
 
@@ -468,7 +554,7 @@ private class FakePlanningApi : PlanningApi {
                 MonthlyPlanCategory("fake-income", "Income", true),
                 MonthlyPlanCategory("fake-expense", "Bills", false),
             ),
-            scheduled = listOf(
+            scheduled = scheduledOverride?.invoke(month) ?: listOf(
                 MonthlyPlanOccurrence("fake-pay", "fake-income", "Fake income", incomeDate, 1000.0, true),
                 MonthlyPlanOccurrence("fake-pay", "fake-income", "Fake income", "$month-15", 1000.0, true),
                 MonthlyPlanOccurrence("fake-rent", "fake-expense", "Fake rent", rentDate, 400.0, false),
