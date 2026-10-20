@@ -46,6 +46,8 @@ data class MonthlyPlanOccurrence(
     val amount: Double,
     val isIncome: Boolean = false,
     val type: String = "fixed",
+    /** The debt this occurrence pays (amount already follows the debt's plan). Absent on older servers. */
+    val debtId: String? = null,
 )
 
 /** `MonthlyPlanDraftEntry` packages/types/src/api/index.ts:129. */

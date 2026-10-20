@@ -451,7 +451,7 @@ class TransactionRepository @Inject constructor(
     private fun Transaction.toEntity() = TransactionEntity(
         id = id, userId = userId, amount = amount, categoryId = categoryId, description = description,
         date = date, mood = mood?.name, templateId = templateId, source = source, createdAt = createdAt,
-        updatedAt = updatedAt, syncStatus = SyncStatus.SYNCED,
+        updatedAt = updatedAt, syncStatus = SyncStatus.SYNCED, debtId = debtId,
     )
 
     private companion object {

@@ -23,6 +23,8 @@ data class RecurringTemplate(
     val skippedDates: List<String> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    /** Set on a debt's payment bill (docs/features/debts.md). Absent on older servers. */
+    val debtId: String? = null,
 )
 
 /** `CreateRecurringTemplateRequest` packages/types/src/api/index.ts:443. */

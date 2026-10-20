@@ -32,6 +32,8 @@ data class Transaction(
     val imageKey: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    /** The debt this payment counts toward (docs/features/debts.md). Absent on older servers. */
+    val debtId: String? = null,
 )
 
 /** `PaginatedTransactionsData` packages/types/src/api/index.ts:375. */
@@ -95,4 +97,6 @@ data class UpdateTransactionRequest(
     val description: String? = null,
     val mood: kotlinx.serialization.json.JsonElement? = null,
     val templateId: kotlinx.serialization.json.JsonElement? = null,
+    /** `PUT /transactions/{id}` accepts `debtId`; JsonNull unlinks, null (omitted) leaves it alone. */
+    val debtId: kotlinx.serialization.json.JsonElement? = null,
 )

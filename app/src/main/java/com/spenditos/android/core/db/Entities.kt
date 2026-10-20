@@ -27,6 +27,8 @@ data class TransactionEntity(
     val syncStatus: SyncStatus,
     /** Set on optimistic rows; links to [PendingMutationEntity.id]. */
     val clientMutationId: String? = null,
+    /** Debt this payment counts toward (added in DB version 2). Null for rows cached before. */
+    val debtId: String? = null,
 )
 
 @Entity(tableName = "categories", indices = [Index("userId")])
