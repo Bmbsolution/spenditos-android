@@ -49,6 +49,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -79,7 +80,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
-import java.util.Locale
 
 /**
  * "Add a debt" (docs/features/debts.md; iOS `AddDebtSheet`): name, I owe, plan by (what I pay or when
@@ -290,7 +290,7 @@ private fun PlanBySection(state: DebtFormUiState, viewModel: DebtFormViewModel) 
 
 @Composable
 private fun TargetMonthPicker(state: DebtFormUiState, viewModel: DebtFormViewModel) {
-    val locale = Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     val years = (state.today.year..(state.today.year + 40)).toList()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         FieldLabel("Paid off by")
