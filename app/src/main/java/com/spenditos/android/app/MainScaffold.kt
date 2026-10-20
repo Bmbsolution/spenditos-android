@@ -92,6 +92,8 @@ private const val PROGRESS_ROUTE = "settings/progress"
 private const val DOWNLOAD_DATA_ROUTE = "settings/download-data"
 private const val MERCHANTS_ROUTE = "settings/merchant-names"
 private const val PRO_ROUTE = "settings/pro"
+private const val DEBT_ROUTE = "plan/debts/{debtId}"
+private fun debtRoute(debtId: String) = "plan/debts/${android.net.Uri.encode(debtId)}"
 
 /**
  * Pro opened from the add sheet is shown over the sheet instead of closing it, so the form and its
@@ -215,7 +217,11 @@ fun MainScaffold(
                         },
                     )
                 }
-                composable(Tab.PLAN.route) { PlanHubScreen() }
+                composable(Tab.PLAN.route) { PlanHubScreen(onOpenDebt = { nav.navigate(debtRoute(it)) }) }
+                composable(
+                    DEBT_ROUTE,
+                    arguments = listOf(androidx.navigation.navArgument("debtId") { type = androidx.navigation.NavType.StringType }),
+                ) { com.spenditos.android.feature.debts.DebtDetailScreen(onBack = { nav.popBackStack() }) }
                 composable(
                     CAPTURE_ROUTE,
                     arguments = listOf(androidx.navigation.navArgument("mode") { type = androidx.navigation.NavType.StringType; defaultValue = "type" }),

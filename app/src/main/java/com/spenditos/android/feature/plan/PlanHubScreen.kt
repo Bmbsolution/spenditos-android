@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
  * section, matching the hierarchy of the native iOS tab.
  */
 @Composable
-fun PlanHubScreen() {
+fun PlanHubScreen(onOpenDebt: (debtId: String) -> Unit = {}) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var addOneTimeRequest by rememberSaveable { mutableIntStateOf(0) }
     val labels = listOf("Income & bills", "Month plan")
@@ -76,7 +76,7 @@ fun PlanHubScreen() {
             )
             Box(Modifier.weight(1f)) {
                 when (selected) {
-                    0 -> IncomeAndBillsScreen()
+                    0 -> IncomeAndBillsScreen(onOpenDebt = onOpenDebt)
                     else -> MonthPlanScreen(
                         addOneTimeRequest = addOneTimeRequest,
                         onAddOneTimeRequestHandled = { handled ->

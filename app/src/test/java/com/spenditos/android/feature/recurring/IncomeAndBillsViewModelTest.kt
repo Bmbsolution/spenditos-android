@@ -168,6 +168,31 @@ class IncomeAndBillsViewModelTest {
         assertEquals(initial + 1, recurring.refreshCount)
     }
 
+    @Test
+    fun `a debt's bill is not listed under Bills but still counts as a template`() {
+        val templates = listOf(
+            RecurringTemplate("rent", "u", "bill-cat", "rent", 100.0, "fixed", "monthly", "2026-10-05"),
+            RecurringTemplate("car-payment", "u", "bill-cat", "car-payment", 100.0, "fixed", "monthly", "2026-10-05", debtId = "debt-car"),
+            RecurringTemplate("phone", "u", "bill-cat", "phone", 100.0, "fixed", "monthly", "2026-10-05"),
+        )
+        val categories = listOf(Category("bill-cat", "u", "Bills", "#B85F42", isIncome = false))
+        val state = IncomeAndBillsUiState(templates = templates, categories = categories, isLoading = false)
+
+        assertEquals(listOf("rent", "phone"), state.billTemplates.map { it.id })
+        assertFalse(state.isEmpty)
+    }
+
+    @Test
+    fun `a debt's bill without a category is still hidden from Bills`() {
+        val state = IncomeAndBillsUiState(
+            templates = listOf(RecurringTemplate("car-payment", "u", "missing", "car-payment", 100.0, "fixed", "monthly", "2026-10-05", debtId = "debt-car")),
+            isLoading = false,
+        )
+
+        assertTrue(state.billTemplates.isEmpty())
+        assertTrue(state.incomeTemplates.isEmpty())
+    }
+
     private fun viewModel(recurring: FakeRecurring, bus: FinanceInvalidationBus = FinanceInvalidationBus()) = IncomeAndBillsViewModel(
         recurring,
         FakeCategories(),

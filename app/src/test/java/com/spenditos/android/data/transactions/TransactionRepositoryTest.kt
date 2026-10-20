@@ -394,6 +394,9 @@ class TransactionRepositoryTest {
             cursor: String?,
         ): ApiEnvelope<TransactionsPage> = error("not used")
 
+        override suspend fun createSingle(body: CreateTransactionRequest, sessionBinding: SessionBinding?): ApiEnvelope<Transaction> =
+            error("not used")
+
         override suspend fun update(id: String, body: UpdateTransactionRequest): ApiEnvelope<Transaction> = error("not used")
         override suspend fun delete(id: String) = error("not used")
         override suspend fun bulkDelete(body: BulkDeleteRequest): retrofit2.Response<okhttp3.ResponseBody> = error("not used")

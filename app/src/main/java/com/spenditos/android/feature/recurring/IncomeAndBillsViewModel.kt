@@ -42,8 +42,9 @@ data class IncomeAndBillsUiState(
     private val categoryById get() = categories.associateBy { it.id }
     val incomeTemplates: List<RecurringTemplate>
         get() = templates.filter { categoryById[it.categoryId]?.isIncome == true }
+    /** A debt's payment bill lives under Debts, not Bills (docs/features/debts.md "Clients"). */
     val billTemplates: List<RecurringTemplate>
-        get() = templates.filter { categoryById[it.categoryId]?.isIncome != true }
+        get() = templates.filter { it.debtId == null && categoryById[it.categoryId]?.isIncome != true }
     val isEmpty: Boolean get() = !isLoading && error == null && templates.isEmpty()
 }
 

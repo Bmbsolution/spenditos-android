@@ -59,6 +59,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
+import com.spenditos.android.feature.debts.DebtAddSheetHost
+import com.spenditos.android.feature.debts.DebtListViewModel
+import com.spenditos.android.feature.debts.debtsSection
+import com.spenditos.android.ui.components.ScopedViewModels
 import com.spenditos.android.ui.components.FloatingTabBarHeight
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.tabBarBottomPadding
@@ -85,8 +89,14 @@ internal val YearMonthSaver = Saver<YearMonth, String>(
 )
 
 @Composable
-fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
+fun IncomeAndBillsScreen(
+    viewModel: IncomeAndBillsViewModel = hiltViewModel(),
+    debtsViewModel: DebtListViewModel = hiltViewModel(),
+    onOpenDebt: (debtId: String) -> Unit = {},
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val debts by debtsViewModel.state.collectAsStateWithLifecycle()
+    var showAddDebt by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     var showEditor by rememberSaveable { mutableStateOf(false) }
     // Recreations keep only ids; the templates are resolved from the current state below and
@@ -130,7 +140,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                 contentPadding = PaddingValues(top = 0.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-            if (state.isLoading && state.templates.isEmpty()) {
+            if (state.isLoading && state.templates.isEmpty() && !debts.hasDebts) {
                 item("loading") {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -163,7 +173,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     }
                 }
             }
-            if (state.isEmpty) {
+            if (state.isEmpty && !debts.hasDebts) {
                 item("empty") {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
@@ -193,6 +203,14 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                                 Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
                                 Text("Add income", style = IosText.headline, color = IosColors.textPrimary)
                             }
+                            Row(
+                                Modifier.clickable(role = Role.Button) { showAddDebt = true }.testTag("debts.empty.add"),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(SfSymbols.icon("creditcard"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(19.2.dp))
+                                Text("Add a debt", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                            }
                         }
                     }
                 }
@@ -205,7 +223,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                         TextButton(onClick = { addPresetIncome = false; templateToEditId = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text("Add") }
                     }
                 }
-                if (!state.isLoading && state.billTemplates.isEmpty() && state.templates.isNotEmpty()) {
+                if (!state.isLoading && state.billTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
                     item("bills.empty") { SectionEmptyMessage("No bills yet.", Modifier.testTag("recurring.bills.empty")) }
                 }
                 items(state.billTemplates, key = RecurringTemplate::id) { template ->
@@ -224,8 +242,10 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                     )
                 }
 
+                debtsSection(debts, onOpen = onOpenDebt, onAdd = { showAddDebt = true }, onRetry = debtsViewModel::retry)
+
                 item("income.header") { RecurringSectionHeader("Income", Modifier.testTag("recurring.section.income")) }
-                if (!state.isLoading && state.incomeTemplates.isEmpty() && state.templates.isNotEmpty()) {
+                if (!state.isLoading && state.incomeTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
                     item("income.empty") { SectionEmptyMessage("No income yet.", Modifier.testTag("recurring.income.empty")) }
                 }
                 items(state.incomeTemplates, key = RecurringTemplate::id) { template ->
@@ -245,7 +265,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                 }
             }
             }
-            if (state.templates.isNotEmpty()) {
+            if (state.templates.isNotEmpty() || debts.hasDebts) {
                 // Same spot as the Home add button: 10dp above the floating tab bar.
                 Box(
                     Modifier.align(Alignment.BottomEnd).padding(
@@ -261,7 +281,7 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                             .testTag("recurring.fab"),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(SfSymbols.icon("plus"), contentDescription = "Add income or bill", tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                        Icon(SfSymbols.icon("plus"), contentDescription = "Add income, bill or debt", tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
                     }
                     DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }, offset = DpOffset(0.dp, (-8).dp)) {
                         DropdownMenuItem(
@@ -274,9 +294,25 @@ fun IncomeAndBillsScreen(viewModel: IncomeAndBillsViewModel = hiltViewModel()) {
                             leadingIcon = { Icon(SfSymbols.icon("arrow.up.circle"), contentDescription = null) },
                             onClick = { showAddMenu = false; addPresetIncome = false; templateToEditId = null; showEditor = true },
                         )
+                        DropdownMenuItem(
+                            text = { Text("Add a debt", style = IosText.subheadline) },
+                            leadingIcon = { Icon(SfSymbols.icon("creditcard"), contentDescription = null) },
+                            onClick = { showAddMenu = false; showAddDebt = true },
+                            modifier = Modifier.testTag("recurring.fab.addDebt"),
+                        )
                     }
                 }
             }
+        }
+    }
+
+    if (showAddDebt) {
+        // Its own ViewModelStore: the add form must not reopen with the last attempt's input.
+        ScopedViewModels {
+            DebtAddSheetHost(
+                onDismiss = { showAddDebt = false },
+                onCreated = { debtId -> showAddDebt = false; onOpenDebt(debtId) },
+            )
         }
     }
 
