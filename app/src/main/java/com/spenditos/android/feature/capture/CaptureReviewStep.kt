@@ -64,9 +64,15 @@ import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosSegmented
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -276,9 +282,13 @@ internal fun ReviewItemEditorSheet(
     var categorySearchText by rememberSaveable(key) { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editable = !item.isFrozen
-
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight().verticalScroll(rememberScrollState())) {
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showCategoryPicker)
+        Column(
+            Modifier.fillMaxWidth().fillMaxHeight().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                .verticalScroll(rememberScrollState()),
+        ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text("Cancel", style = IosText.body, color = IosColors.spendOrange) }
                 Text(
@@ -305,7 +315,7 @@ internal fun ReviewItemEditorSheet(
                                 onValueChange = { draftAmount = it },
                                 label = "Amount",
                                 enabled = editable,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
                                 modifier = Modifier.testTag("capture.amount.$key"),
                                 textStyle = IosText.rounded(20, FontWeight.SemiBold),
                                 textAlign = TextAlign.Center,
@@ -443,8 +453,10 @@ internal fun ReviewCategoryPickerSheet(
     val pickerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val filtered = choices.filter { it.name.contains(searchText.trim(), ignoreCase = true) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = pickerState) {
+        DismissKeyboardWhenInactive()
         Column(
-            Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = Spacing.screen),
+            Modifier.fillMaxWidth().fillMaxHeight().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                .padding(horizontal = Spacing.screen),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -503,7 +515,7 @@ private fun ReviewInputField(
     label: String,
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardOptions: KeyboardOptions = doneKeyboardOptions(),
     textStyle: TextStyle = IosText.body,
     textAlign: TextAlign = TextAlign.Start,
 ) {
@@ -516,6 +528,7 @@ private fun ReviewInputField(
                 enabled = enabled,
                 singleLine = true,
                 keyboardOptions = keyboardOptions,
+                keyboardActions = rememberKeyboardDoneActions(),
                 textStyle = textStyle.copy(color = IosColors.textPrimary, textAlign = textAlign),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 15.dp).then(modifier),
             )
@@ -594,6 +607,8 @@ private fun ReviewCategorySearch(value: String, onValueChange: (String) -> Unit)
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            keyboardOptions = doneKeyboardOptions(),
+            keyboardActions = rememberKeyboardDoneActions(),
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->

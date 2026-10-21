@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -58,6 +59,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.EnvBadge
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.rememberKeyboardDismisser
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
@@ -73,6 +77,8 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val dismissKeyboard = rememberKeyboardDismisser()
+    DismissKeyboardWhenInactive()
     IosScreen {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -81,6 +87,7 @@ fun LoginScreen(
         ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding)
+                    .dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
                     .verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -114,7 +121,7 @@ fun LoginScreen(
                         placeholder = "Password",
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { viewModel.signIn() }),
+                        keyboardActions = KeyboardActions(onDone = { dismissKeyboard(); viewModel.signIn() }),
                         modifier = Modifier.fillMaxWidth().testTag("login.password"),
                     )
                     if (state.error != null) {

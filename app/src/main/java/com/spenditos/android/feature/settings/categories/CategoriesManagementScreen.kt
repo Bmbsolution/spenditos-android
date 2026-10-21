@@ -50,9 +50,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
@@ -92,9 +97,10 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
     val visible = state.categories.filter { it.isIncome == selectedIncome }
         .filter { searchText.trim().isEmpty() || it.name.contains(searchText.trim(), ignoreCase = true) }
 
+    DismissKeyboardWhenInactive()
     IosScreen {
         LazyColumn(
-            Modifier.fillMaxSize().navigationBarsPadding(),
+            Modifier.fillMaxSize().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().navigationBarsPadding(),
             contentPadding = PaddingValues(bottom = 120.dp),
         ) {
             item { CategoriesHeader(onBack) { categoryToEditId = null; showEditor = true } }
@@ -242,6 +248,8 @@ private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            keyboardOptions = doneKeyboardOptions(),
+            keyboardActions = rememberKeyboardDoneActions(),
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             modifier = Modifier.weight(1f).testTag("categories.search"),
             decorationBox = { inner ->

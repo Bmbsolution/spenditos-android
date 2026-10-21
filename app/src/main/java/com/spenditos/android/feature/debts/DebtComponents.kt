@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -41,6 +40,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.debts.DebtWithPlan
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -177,7 +178,8 @@ internal fun DebtAmountField(
                 onValueChange = onTextChange,
                 modifier = Modifier.weight(1f).testTag(tag).semantics { contentDescription = title },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                keyboardActions = rememberKeyboardDoneActions(),
                 textStyle = IosText.rounded(22, FontWeight.SemiBold).copy(color = IosColors.textPrimary),
                 cursorBrush = SolidColor(IosColors.spendOrange),
                 decorationBox = { inner ->

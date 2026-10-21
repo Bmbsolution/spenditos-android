@@ -44,6 +44,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
 import com.spenditos.android.ui.components.IosRow
@@ -51,6 +53,10 @@ import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SectionHeader
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -129,9 +135,12 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
     val finance = LocalFinanceColors.current
     var deleteStep by rememberSaveable { mutableStateOf(0) }
 
+    DismissKeyboardWhenInactive()
+    DismissKeyboardWhen(showCurrencyPicker || deleteStep != 0)
+
     IosScreen {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+            modifier = Modifier.fillMaxSize().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().navigationBarsPadding(),
             contentPadding = PaddingValues(bottom = Spacing.l),
         ) {
             item { ProfileHeader(onBack) }
@@ -172,6 +181,8 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                                     value = state.displayName,
                                     onValueChange = viewModel::onDisplayNameChange,
                                     singleLine = true,
+                                    keyboardOptions = doneKeyboardOptions(),
+                                    keyboardActions = rememberKeyboardDoneActions(),
                                     textStyle = IosText.subheadline.copy(color = IosColors.textPrimary, textAlign = TextAlign.End),
                                     modifier = Modifier.width(160.dp).testTag("profile.displayName"),
                                     decorationBox = { inner ->
@@ -302,7 +313,8 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
             shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
             dragHandle = { BottomSheetDefaults.DragHandle() },
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen)) {
+            DismissKeyboardWhenInactive()
+            Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(horizontal = Spacing.screen)) {
                 Text("Currency", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(horizontal = Spacing.m, vertical = Spacing.s),
@@ -314,6 +326,8 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                     value = currencySearch,
                     onValueChange = { currencySearch = it },
                     singleLine = true,
+                    keyboardOptions = doneKeyboardOptions(),
+                    keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.body.copy(color = IosColors.textPrimary),
                     modifier = Modifier.weight(1f).testTag("profile.currency.search"),
                     decorationBox = { inner ->

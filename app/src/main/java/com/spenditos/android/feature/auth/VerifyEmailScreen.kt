@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.w
@@ -66,10 +70,12 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
         }
     }
 
+    DismissKeyboardWhenInactive()
     IosScreen {
         Box(Modifier.fillMaxSize()) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
+                Modifier.fillMaxSize().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -141,7 +147,8 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
         singleLine = true,
         textStyle = IosText.rounded(28, FontWeight.Bold).copy(color = Color.Transparent, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(Color.Transparent),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = doneKeyboardOptions(KeyboardType.Number),
+        keyboardActions = rememberKeyboardDoneActions(),
         interactionSource = interactionSource,
         decorationBox = { innerTextField ->
             Box(contentAlignment = Alignment.Center) {

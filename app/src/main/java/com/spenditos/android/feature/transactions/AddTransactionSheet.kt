@@ -30,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Link
@@ -52,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,8 +80,16 @@ import com.spenditos.android.data.transactions.BillCandidate
 import com.spenditos.android.data.transactions.RecurrencePreset
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDismisser
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
+import com.spenditos.android.ui.components.rememberKeyboardSettler
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
@@ -95,6 +103,7 @@ import java.time.format.DateTimeFormatter
 import com.spenditos.android.data.quota.QuotaCopy
 import java.util.Currency
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -120,6 +129,7 @@ fun AddTransactionSheet(
     var showDiscardConfirmation by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var categorySearchText by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(editTarget) { editTarget?.let(viewModel::startEdit) }
     LaunchedEffect(prefill, state.categories.isNotEmpty(), editTarget) {
@@ -160,7 +170,22 @@ fun AddTransactionSheet(
             )
         },
     ) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight()) {
+        // The sheet is its own window with its own focus manager, so everything that closes the
+        // keyboard is created here, inside its content, not in the outer scope.
+        val dismissKeyboard = rememberKeyboardDismisser()
+        val settleKeyboard = rememberKeyboardSettler()
+        DismissKeyboardWhenInactive()
+        // Pickers, sheets and dialogs that code opens (paywall, async results) have no tap on the
+        // form to close the keyboard first.
+        DismissKeyboardWhen(showDatePicker)
+        DismissKeyboardWhen(showCategoryPicker)
+        DismissKeyboardWhen(showAddCategory)
+        DismissKeyboardWhen(showNextDuePicker)
+        DismissKeyboardWhen(showDiscardConfirmation)
+        DismissKeyboardWhen(showDeleteConfirmation)
+        DismissKeyboardWhen(state.billChoices.isNotEmpty())
+        DismissKeyboardWhen(state.existingBill != null)
+        Column(Modifier.fillMaxWidth().fillMaxHeight().dismissKeyboardOnTapOutside()) {
             QuickAddHeader(
                 title = if (state.isEditMode) "Edit Transaction"
                 else if (state.type == EntryType.INCOME) "Add income" else "Add expense",
@@ -171,7 +196,7 @@ fun AddTransactionSheet(
             )
 
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                Modifier.weight(1f).fillMaxWidth().dismissKeyboardOnScroll().verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.screen).padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(
                     if (WindowInsets.isImeVisible) Spacing.xs else Spacing.l,
@@ -187,7 +212,7 @@ fun AddTransactionSheet(
                     )
                 }
                 state.assistedEntrySource?.let { AssistedEntryBanner(it) }
-                if (state.smartEntriesUsed) SmartEntriesUsedBanner(onSeePro = onOpenPro)
+                if (state.smartEntriesUsed) SmartEntriesUsedBanner(onSeePro = onOpenPro?.let { open -> { dismissKeyboard(); open() } })
                 state.undo?.let { undo ->
                     UndoBanner(
                         description = undo.description,
@@ -222,11 +247,11 @@ fun AddTransactionSheet(
                 )
                 DateChoices(
                     date = state.date,
-                    showPicker = showDatePicker,
-                    onToday = { viewModel.onDateChange(LocalDate.now()); showDatePicker = false },
-                    onYesterday = { viewModel.onDateChange(LocalDate.now().minusDays(1)); showDatePicker = false },
-                    onPickDate = { showDatePicker = !showDatePicker },
-                    onDatePicked = viewModel::onDateChange,
+                    onToday = { viewModel.onDateChange(LocalDate.now()) },
+                    onYesterday = { viewModel.onDateChange(LocalDate.now().minusDays(1)) },
+                    // Closing the keyboard moves the chips, so the dialog opens only once the form
+                    // has settled (iOS anchored its popover to the old chip position otherwise).
+                    onPickDate = { scope.launch { settleKeyboard(); showDatePicker = true } },
                 )
                 if (!state.isEditMode) {
                     RecurringSection(
@@ -253,9 +278,9 @@ fun AddTransactionSheet(
 
             QuickAddBottomBar(
                 state = state,
-                onVoice = onVoice,
-                onSentence = onSentence,
-                onScanReceipt = onScanReceipt,
+                onVoice = onVoice?.let { open -> { dismissKeyboard(); open() } },
+                onSentence = onSentence?.let { open -> { dismissKeyboard(); open() } },
+                onScanReceipt = onScanReceipt?.let { open -> { dismissKeyboard(); open() } },
                 onSave = { viewModel.save() },
                 onSaveAndContinue = { viewModel.save(andContinue = true) },
                 modifier = Modifier.fillMaxWidth().imePadding().navigationBarsPadding(),
@@ -285,8 +310,10 @@ fun AddTransactionSheet(
             sheetState = pickerState,
             containerColor = MaterialTheme.colorScheme.background,
         ) {
+            DismissKeyboardWhenInactive()
             Column(
-                Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = Spacing.screen),
+                Modifier.fillMaxWidth().fillMaxHeight().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .padding(horizontal = Spacing.screen),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -458,6 +485,17 @@ fun AddTransactionSheet(
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissBillQuestion) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (showDatePicker) {
+        EntryDatePickerDialog(
+            date = state.date,
+            onDismiss = { showDatePicker = false },
+            onPicked = { picked ->
+                viewModel.onDateChange(picked)
+                showDatePicker = false
             },
         )
     }
@@ -668,7 +706,8 @@ private fun HeroAmountField(
                 onValueChange = onValueChange,
                 enabled = enabled,
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                keyboardActions = rememberKeyboardDoneActions(),
                 interactionSource = interactionSource,
                 textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = IosColors.textPrimary),
                 modifier = Modifier.weight(1f).alignBy(FirstBaseline).focusRequester(focusRequester)
@@ -741,6 +780,8 @@ private fun DescriptionField(
                 onValueChange = onValueChange,
                 enabled = enabled,
                 singleLine = true,
+                keyboardOptions = doneKeyboardOptions(),
+                keyboardActions = rememberKeyboardDoneActions(),
                 textStyle = IosText.callout.copy(color = IosColors.textPrimary),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 24.dp).then(modifier),
                 decorationBox = { innerTextField ->
@@ -854,45 +895,76 @@ private fun FormChip(
 @Composable
 private fun DateChoices(
     date: LocalDate,
-    showPicker: Boolean,
     onToday: () -> Unit,
     onYesterday: () -> Unit,
     onPickDate: () -> Unit,
-    onDatePicked: (LocalDate) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text("Date", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         val today = date == LocalDate.now()
         val yesterday = date == LocalDate.now().minusDays(1)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        // The Pick date chip lights up only for a custom date (and then shows it), never because
+        // the dialog is open.
+        val custom = !today && !yesterday
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
             DateChip("Today", today, onToday)
             DateChip("Yesterday", yesterday, onYesterday)
             DateChip(
-                if (!today && !yesterday) formatShortDate(date.toString()) else "Pick date",
-                !today && !yesterday || showPicker,
+                if (custom) formatShortDate(date.toString()) else "Pick date",
+                custom,
                 onPickDate,
                 symbol = "calendar",
             )
         }
-        if (showPicker) {
-            val maxDate = LocalDate.now().plusDays(365)
-            val pickerState = rememberDatePickerState(
-                initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-                selectableDates = remember(maxDate) {
-                    object : SelectableDates {
-                        override fun isSelectableDate(utcTimeMillis: Long): Boolean =
-                            Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate() <= maxDate
-                        override fun isSelectableYear(year: Int): Boolean = true
-                    }
-                },
-            )
-            LaunchedEffect(pickerState.selectedDateMillis) {
-                val millis = pickerState.selectedDateMillis ?: return@LaunchedEffect
-                val picked = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                if (picked != date) onDatePicked(picked)
+    }
+}
+
+/**
+ * The Date row's calendar: a Material3 dialog that floats over the form instead of an inline
+ * calendar that pushes the fields below it down. Picking a day applies it and closes the dialog
+ * (so no OK button), up to one year ahead.
+ */
+@Composable
+private fun EntryDatePickerDialog(date: LocalDate, onDismiss: () -> Unit, onPicked: (LocalDate) -> Unit) {
+    val maxDate = remember { LocalDate.now().plusDays(365) }
+    val today = LocalDate.now()
+    // Today and Yesterday have their own chips, so nothing is pre-selected for them: tapping
+    // either day is then a real selection change that closes the dialog.
+    val custom = date != today && date != today.minusDays(1)
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = if (custom) date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() else null,
+        initialDisplayedMonthMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        selectableDates = remember(maxDate) {
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate() <= maxDate
+                override fun isSelectableYear(year: Int): Boolean = year <= maxDate.year
             }
-            DatePicker(state = pickerState, title = null, headline = null, showModeToggle = false, colors = datePickerColors())
-        }
+        },
+    )
+    val initialMillis = remember { pickerState.selectedDateMillis }
+    LaunchedEffect(pickerState.selectedDateMillis) {
+        val millis = pickerState.selectedDateMillis ?: return@LaunchedEffect
+        if (millis == initialMillis) return@LaunchedEffect
+        onPicked(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+    }
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DatePicker(
+            state = pickerState,
+            title = null,
+            headline = null,
+            showModeToggle = false,
+            colors = datePickerColors(),
+            modifier = Modifier.testTag("add.date.picker"),
+        )
     }
 }
 
@@ -1220,6 +1292,8 @@ private fun CategorySearchField(value: String, onValueChange: (String) -> Unit, 
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            keyboardOptions = doneKeyboardOptions(),
+            keyboardActions = rememberKeyboardDoneActions(),
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->

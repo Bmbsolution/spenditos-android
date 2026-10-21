@@ -38,7 +38,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -147,8 +151,9 @@ private fun DebtSheetFrame(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
+        DismissKeyboardWhenInactive()
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
+            Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
                 .padding(top = Spacing.s, bottom = Spacing.l).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
@@ -173,6 +178,7 @@ private fun DebtSheetFrame(
 @Composable
 private fun DebtDateField(epochDay: Long, onChange: (Long) -> Unit, tag: String) {
     var showPicker by remember { mutableStateOf(false) }
+    DismissKeyboardWhen(showPicker)
     val date = LocalDate.ofEpochDay(epochDay)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text("Date", style = IosText.subheadline, color = IosColors.textSecondary)

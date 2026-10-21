@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOrScroll
 import com.spenditos.android.ui.theme.SpenditosTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +27,9 @@ class MainActivity : FragmentActivity() {
             WidgetDeepLinks.offer(intent)
         }
         enableEdgeToEdge()
-        setContent { SpenditosTheme { AppRoot() } }
+        // Tap-outside and scroll close the keyboard for everything in this window. Sheets and
+        // dialogs are their own windows and install the same modifiers in their content.
+        setContent { SpenditosTheme { Box(Modifier.fillMaxSize().dismissKeyboardOnTapOrScroll()) { AppRoot() } } }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {

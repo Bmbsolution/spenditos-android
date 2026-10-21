@@ -69,10 +69,17 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
 import com.spenditos.android.ui.components.glassCardModifier
+import com.spenditos.android.ui.components.rememberKeyboardDismisser
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -124,9 +131,14 @@ fun OnboardingScreen(
         viewModel.events.collect { event -> if (event == OnboardingEvent.Finished) onFinished() }
     }
 
+    DismissKeyboardWhenInactive()
+    DismissKeyboardWhen(showCurrencyPicker)
+    // Moving to another page must not carry the keyboard along.
+    val dismissKeyboard = rememberKeyboardDismisser()
+    LaunchedEffect(state.page) { dismissKeyboard() }
     IosScreen {
         Column(
-            Modifier.fillMaxSize().imePadding().navigationBarsPadding().testTag("onboarding.screen"),
+            Modifier.fillMaxSize().dismissKeyboardOnTapOutside().imePadding().navigationBarsPadding().testTag("onboarding.screen"),
         ) {
             OnboardingPageIndicator(currentPage = state.page)
 
@@ -308,7 +320,7 @@ private fun PreferencesPage(
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen),
+            modifier = Modifier.fillMaxWidth().dismissKeyboardOnScroll().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
@@ -527,7 +539,7 @@ private fun OnboardingTextField(
     modifier: Modifier = Modifier,
     style: androidx.compose.ui.text.TextStyle = IosText.body,
     centered: Boolean = false,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardOptions: KeyboardOptions = doneKeyboardOptions(),
 ) {
     val shape = RoundedCornerShape(if (centered) Radius.m else 12.dp)
     BasicTextField(
@@ -539,6 +551,7 @@ private fun OnboardingTextField(
         textStyle = style.copy(color = IosColors.textPrimary, textAlign = if (centered) TextAlign.Center else TextAlign.Start),
         cursorBrush = SolidColor(IosColors.spendOrange),
         keyboardOptions = keyboardOptions,
+        keyboardActions = rememberKeyboardDoneActions(),
         decorationBox = { innerTextField ->
             Box(contentAlignment = if (centered) Alignment.Center else Alignment.CenterStart) {
                 if (value.isEmpty()) Text(placeholder, style = style, color = IosColors.textSecondary, textAlign = if (centered) TextAlign.Center else TextAlign.Start)
@@ -603,13 +616,16 @@ private fun OnboardingCurrencyPicker(selectedCurrency: String, onCurrencySelecte
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).padding(horizontal = Spacing.screen)) {
+        DismissKeyboardWhenInactive()
+        Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(horizontal = Spacing.screen)) {
             Text("Currency", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.m))
             BasicTextField(
                 value = search,
                 onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth().height(44.dp).then(subtleGlassModifier(RoundedCornerShape(12.dp))).padding(horizontal = Spacing.m),
                 singleLine = true,
+                keyboardOptions = doneKeyboardOptions(),
+                keyboardActions = rememberKeyboardDoneActions(),
                 textStyle = IosText.body.copy(color = IosColors.textPrimary),
                 cursorBrush = SolidColor(IosColors.spendOrange),
                 decorationBox = { inner ->

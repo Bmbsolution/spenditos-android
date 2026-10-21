@@ -62,11 +62,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.IosSegmented
 import com.spenditos.android.ui.components.IosSwitch
 import com.spenditos.android.ui.components.ScopedViewModels
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDismisser
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -101,7 +108,6 @@ private fun AddDebtSheetContent(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val focusManager = LocalFocusManager.current
     var showDiscardAlert by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -124,8 +130,14 @@ private fun AddDebtSheetContent(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
+        // The sheet is its own window, so its focus manager is not the screen's.
+        val focusManager = LocalFocusManager.current
+        val dismissKeyboard = rememberKeyboardDismisser()
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showDiscardAlert || showDatePicker)
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
+            Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                .verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
                 .padding(top = Spacing.m, bottom = Spacing.xl).imePadding().navigationBarsPadding()
                 .testTag("debts.add.sheet"),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
@@ -165,7 +177,7 @@ private fun AddDebtSheetContent(
                 text = "Add debt",
                 isLoading = state.isSaving,
                 onClick = {
-                    focusManager.clearFocus()
+                    dismissKeyboard()
                     viewModel.save()
                 },
                 modifier = Modifier.testTag("debts.add.save"),
@@ -392,7 +404,8 @@ private fun InterestSection(state: DebtFormUiState, viewModel: DebtFormViewModel
                         modifier = Modifier.weight(1f).testTag("debts.add.apr")
                             .semantics { contentDescription = "Interest rate, percent a year" },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = AMOUNT_STYLE.copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
                         decorationBox = { inner ->
@@ -520,7 +533,8 @@ private fun DebtAmountField(
                 onValueChange = { onValueChange(it.filter(::isAmountChar)) },
                 modifier = Modifier.weight(1f).testTag(tag).semantics { contentDescription = title },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                keyboardActions = rememberKeyboardDoneActions(),
                 textStyle = AMOUNT_STYLE.copy(color = IosColors.textPrimary),
                 cursorBrush = SolidColor(IosColors.spendOrange),
                 decorationBox = { inner ->

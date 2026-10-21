@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,10 +39,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -64,10 +69,15 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
     }
     val finance = LocalFinanceColors.current
 
+    DismissKeyboardWhenInactive()
+    DismissKeyboardWhen(state.success)
     IosScreen {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             PasswordHeader(onBack)
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = Spacing.l)) {
+            Column(
+                Modifier.weight(1f).dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .verticalScroll(rememberScrollState()).padding(bottom = Spacing.l),
+            ) {
                 Column(
                     Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.l),
                     verticalArrangement = Arrangement.spacedBy(Spacing.l),
@@ -207,7 +217,8 @@ private fun PasswordField(value: String, onValueChange: (String) -> Unit, placeh
         onValueChange = onValueChange,
         singleLine = true,
         textStyle = IosText.callout.copy(color = IosColors.textPrimary),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        keyboardOptions = doneKeyboardOptions(KeyboardType.Password),
+        keyboardActions = rememberKeyboardDoneActions(),
         visualTransformation = PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag(tag),
         decorationBox = { inner ->

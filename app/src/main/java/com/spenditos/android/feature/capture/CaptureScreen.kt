@@ -64,10 +64,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -126,10 +130,14 @@ fun CaptureScreen(
         !state.isRecording &&
         !state.offline &&
         state.error != null
+    DismissKeyboardWhenInactive()
+    // Parse results arrive on their own; the keyboard must not stay up behind the review step.
+    DismissKeyboardWhen(state.step != CaptureStep.Input)
     IosScreen {
         Column(Modifier.fillMaxSize().padding(bottom = 120.dp)) {
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                Modifier.weight(1f).fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 CaptureHeader(

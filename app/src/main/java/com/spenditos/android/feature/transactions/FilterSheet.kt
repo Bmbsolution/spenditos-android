@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
@@ -60,8 +59,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -116,7 +121,9 @@ fun FilterSheet(
         containerColor = MaterialTheme.colorScheme.background,
         modifier = Modifier.testTag("transaction-filter-sheet"),
     ) {
-        Column(Modifier.fillMaxWidth().testTag("transaction-filter-sheet")) {
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showSave || pickingStart || pickingEnd)
+        Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().testTag("transaction-filter-sheet")) {
             Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.s)) {
                 Text(
                     "Filters",
@@ -133,6 +140,7 @@ fun FilterSheet(
             }
             Column(
                 modifier = Modifier
+                    .dismissKeyboardOnScroll()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.screen)
                     .padding(top = Spacing.m, bottom = 32.dp),
@@ -439,7 +447,8 @@ private fun AmountField(
             modifier = Modifier.weight(1f).semantics { contentDescription = amountFieldDescription(placeholder, symbol) },
             singleLine = true,
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+            keyboardActions = rememberKeyboardDoneActions(),
             decorationBox = { inner ->
                 Box {
                     if (value.isEmpty()) {
@@ -653,6 +662,8 @@ private fun SavePresetDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
+                    keyboardOptions = doneKeyboardOptions(),
+                    keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.body.copy(color = IosColors.textPrimary),
                     modifier = Modifier
                         .fillMaxWidth()

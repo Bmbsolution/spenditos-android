@@ -63,6 +63,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.RuleAction
 import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
@@ -70,7 +71,11 @@ import com.spenditos.android.ui.components.IosSwitch
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
 import com.spenditos.android.ui.components.glassCardModifier
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -402,7 +407,8 @@ private fun AddRuleSheet(
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
-        Column(Modifier.fillMaxSize().navigationBarsPadding().testTag("rules.add.sheet")) {
+        DismissKeyboardWhenInactive()
+        Column(Modifier.fillMaxSize().dismissKeyboardOnTapOutside().navigationBarsPadding().testTag("rules.add.sheet")) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss, modifier = Modifier.width(80.dp)) {
                     Text("Cancel", style = IosText.body, color = IosColors.textSecondary)
@@ -411,7 +417,7 @@ private fun AddRuleSheet(
                 Box(Modifier.width(80.dp))
             }
             Column(
-                Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())
+                Modifier.fillMaxWidth().weight(1f).dismissKeyboardOnScroll().verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.screen).padding(top = Spacing.m, bottom = Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.l),
             ) {
@@ -423,6 +429,8 @@ private fun AddRuleSheet(
                         value = merchant,
                         onValueChange = { merchant = it.take(200) },
                         singleLine = true,
+                        keyboardOptions = doneKeyboardOptions(),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary),
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(IosColors.spendOrange),
                         modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("rule-add-merchant"),

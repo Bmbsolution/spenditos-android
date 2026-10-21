@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -35,7 +34,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.Money
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
@@ -63,8 +66,9 @@ fun ChangeAmountSheet(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
+        DismissKeyboardWhenInactive()
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(bottom = Spacing.l).imePadding().navigationBarsPadding(),
+            modifier = Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().padding(horizontal = Spacing.screen).padding(bottom = Spacing.l).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -95,7 +99,8 @@ fun ChangeAmountSheet(
                         onValueChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
                         modifier = Modifier.fillMaxWidth(0.45f).testTag("monthPlan.changeAmount.value"),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary, textAlign = TextAlign.End),
                         cursorBrush = SolidColor(IosColors.spendOrange),
                     )

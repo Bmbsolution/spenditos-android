@@ -2,6 +2,12 @@
 
 Last updated: 2026-10-14 (iOS catch-up, see below). Previously 2026-10-07. Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
+## Keyboard and date picker (2026-10-21, port of iOS #277 / eb31c5d; local branch only)
+- Shared helper `ui/components/KeyboardDismiss.kt`: `rememberKeyboardDismisser()` (clear focus + hide IME), `dismissKeyboardOnScroll()` (nested scroll, first user scroll), `dismissKeyboardOnTapOutside()` (Final pointer pass: taps on buttons and text fields are consumed, so they and field-to-field moves are untouched), `DismissKeyboardWhenInactive()` (leaves composition + ON_STOP), `DismissKeyboardWhen(visible)` (before a sheet/dialog/picker opens, and again just after it closes), `rememberKeyboardSettler()`, `doneKeyboardOptions()` + `rememberKeyboardDoneActions()` (Done key on number, password and single-line fields).
+- Installed at the activity root (tap + scroll) and inside every `ModalBottomSheet` content: a sheet is its own window with its own focus manager, so outer calls do not reach its fields.
+- Add transaction: "Pick date" opens a Material3 `DatePickerDialog` after the keyboard has closed and the layout settled; picking a day closes it; the chip lights up only for a custom date ("Oct 14"); range unchanged (up to a year ahead); Date row fills the width. Other forms already used `DatePickerDialog` (with OK) and are unchanged apart from closing the keyboard first.
+- Verified on the emulator (local flavor): scroll, tap outside (screen and sheet), field-to-field, Done key, Pick date with the keyboard up. `KeyboardDismissTest` covers when the dismiss fires (Robolectric cannot model IME focus).
+
 ## Debts (2026-10-20, branch feature/debts; port of iOS #273 / backend #383)
 - Data (`data/debts`): wire models, 7-route `DebtApi`, online-only `DebtRepository` (writes bound to the session, `ApiError.Network` offline, TRANSACTION + RECURRING invalidated), `debtId` on Transaction / RecurringTemplate / MonthlyPlanOccurrence. Room v1 -> v2 (`MIGRATION_1_2`, first migration; `transactions.debtId`).
 - UI (`feature/debts`): Debts section in Income & bills (debt bills hidden from Bills), debt page (`plan/debts/{debtId}`: what-if, extra payment, correct balance, history, delete), Add a debt sheet, Debt tag + per-payment amounts in Month plan.

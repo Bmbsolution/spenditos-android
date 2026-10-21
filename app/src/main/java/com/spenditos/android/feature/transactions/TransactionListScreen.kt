@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +77,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.core.db.SyncStatus
 import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.FloatingTabBarHeight
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.GroupedCard
@@ -84,7 +87,10 @@ import com.spenditos.android.ui.components.LargeTitle
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
 import com.spenditos.android.ui.components.glassCardModifier
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.components.tabBarBottomPadding
 import com.spenditos.android.ui.theme.IosColors
@@ -198,6 +204,8 @@ fun TransactionListScreen(
     val upcomingCount = upcomingDays.sumOf { (_, rows) -> rows.size }
     val historyCount = historyDays.sumOf { (_, rows) -> rows.size }
 
+    DismissKeyboardWhenInactive()
+    DismissKeyboardWhen(showFilterSheet)
     IosScreen {
         val listState = rememberLazyListState()
         val density = LocalDensity.current
@@ -220,7 +228,8 @@ fun TransactionListScreen(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 132.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
-                modifier = Modifier.fillMaxSize().testTag("transactions.list"),
+                modifier = Modifier.fillMaxSize().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .testTag("transactions.list"),
             ) {
                 item(key = "title") {
                     Box {
@@ -601,7 +610,9 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
                 autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
             ),
+            keyboardActions = rememberKeyboardDoneActions(),
             decorationBox = { innerTextField ->
                 Box {
                     if (query.isEmpty()) {

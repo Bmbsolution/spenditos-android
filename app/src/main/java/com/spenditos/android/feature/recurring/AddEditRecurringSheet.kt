@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -61,10 +60,16 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.WheelPicker
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -181,8 +186,10 @@ fun AddEditRecurringSheet(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showDatePicker || showCategoryPicker || showSecondDayPicker)
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
+            Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen)
                 .padding(top = Spacing.s, bottom = 32.dp).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
@@ -226,7 +233,8 @@ fun AddEditRecurringSheet(
                         onValueChange = { draft = draft.copy(amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' }) },
                         modifier = Modifier.weight(1f).testTag("recurring.form.amount"),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.rounded(34, FontWeight.Bold).copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
                         decorationBox = { inner ->
@@ -475,7 +483,8 @@ private fun RecurringCategoryPickerSheet(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
-        Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).navigationBarsPadding()) {
+        DismissKeyboardWhenInactive()
+        Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(bottom = 32.dp).navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.width(48.dp))
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -520,6 +529,8 @@ private fun RecurringCategoryPickerSheet(
                     onValueChange = { search = it },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
+                    keyboardOptions = doneKeyboardOptions(),
+                    keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.callout.copy(color = IosColors.textPrimary),
                     cursorBrush = SolidColor(IosColors.spendOrange),
                     decorationBox = { inner ->
@@ -640,6 +651,8 @@ private fun RecurringTextField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth().testTag(tag),
             singleLine = true,
+            keyboardOptions = doneKeyboardOptions(),
+            keyboardActions = rememberKeyboardDoneActions(),
             textStyle = IosText.callout.copy(color = IosColors.textPrimary),
             cursorBrush = SolidColor(IosColors.spendOrange),
             decorationBox = { inner ->
@@ -675,7 +688,8 @@ private fun AdvancedNumberRow(
             onValueChange = onValueChange,
             modifier = Modifier.width(if (suffix == "times") 70.dp else 50.dp).testTag(tag),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = doneKeyboardOptions(KeyboardType.Number),
+            keyboardActions = rememberKeyboardDoneActions(),
             textStyle = IosText.body.copy(color = IosColors.textPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.End),
             cursorBrush = SolidColor(IosColors.spendOrange),
             decorationBox = { inner ->

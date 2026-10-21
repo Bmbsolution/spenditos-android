@@ -56,9 +56,15 @@ import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategoryIcons
 import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
@@ -197,8 +203,11 @@ fun AddEditCategorySheet(
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showIconLibrary || typeMenu)
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding()
+            modifier = Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                .verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding()
                 .padding(horizontal = Spacing.screen).padding(bottom = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
@@ -222,6 +231,8 @@ fun AddEditCategorySheet(
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
+                    keyboardOptions = doneKeyboardOptions(),
+                    keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.body.copy(color = IosColors.textPrimary),
                     modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("categories.editor.name"),
                     decorationBox = { inner ->
@@ -446,7 +457,8 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
-        Column(Modifier.fillMaxWidth().padding(bottom = Spacing.l)) {
+        DismissKeyboardWhenInactive()
+        Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(bottom = Spacing.l)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(64.dp))
                 Text("Choose Icon", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
@@ -462,6 +474,8 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                     value = searchText,
                     onValueChange = { searchText = it },
                     singleLine = true,
+                    keyboardOptions = doneKeyboardOptions(),
+                    keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.callout.copy(color = IosColors.textPrimary),
                     modifier = Modifier.weight(1f).testTag("categories.iconSearch"),
                     decorationBox = { inner -> Box { if (searchText.isEmpty()) Text("Search icons", style = IosText.callout, color = IosColors.textTertiary); inner() } },

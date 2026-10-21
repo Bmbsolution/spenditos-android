@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,6 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Spacing
@@ -64,10 +69,12 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
         }
     }
 
+    DismissKeyboardWhenInactive()
     IosScreen {
         Box(Modifier.fillMaxSize()) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
+                Modifier.fillMaxSize().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
+                    .verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -109,7 +116,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                             value = state.code,
                             onValueChange = viewModel::onCodeChange,
                             placeholder = "6-digit code",
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = doneKeyboardOptions(KeyboardType.Number),
                             textStyle = IosText.rounded(22),
                             textAlign = TextAlign.Center,
                             heightDp = 58,
@@ -120,7 +127,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                             onValueChange = { if (it.length <= 128) viewModel.onNewPasswordChange(it) },
                             placeholder = "New password (min 8 characters)",
                             visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Password),
+                            keyboardOptions = doneKeyboardOptions(KeyboardType.Password),
                             modifier = Modifier.fillMaxWidth().testTag("forgot.newPassword"),
                         )
                     }
@@ -190,6 +197,7 @@ private fun RoundedForgotTextField(
         textStyle = textStyle.copy(color = IosColors.textPrimary, textAlign = textAlign),
         cursorBrush = SolidColor(IosColors.spendOrange),
         keyboardOptions = keyboardOptions,
+        keyboardActions = rememberKeyboardDoneActions(),
         visualTransformation = visualTransformation,
         decorationBox = { innerTextField ->
             Box(contentAlignment = if (textAlign == TextAlign.Center) Alignment.Center else Alignment.CenterStart) {

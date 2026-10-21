@@ -19,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -51,13 +50,19 @@ import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.GlassCard
-import com.spenditos.android.ui.components.SfSymbols
-import com.spenditos.android.ui.components.subtleGlassModifier
+import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.components.categoryColor
+import com.spenditos.android.ui.components.subtleGlassModifier
+import com.spenditos.android.ui.components.DismissKeyboardWhen
+import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
+import com.spenditos.android.ui.components.SfSymbols
+import com.spenditos.android.ui.components.dismissKeyboardOnScroll
+import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
+import com.spenditos.android.ui.components.doneKeyboardOptions
+import com.spenditos.android.ui.components.rememberKeyboardDoneActions
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
-import com.spenditos.android.ui.components.PillButton
 import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
 import java.math.BigDecimal
@@ -114,8 +119,10 @@ fun AddOneTimeEntrySheet(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
+        DismissKeyboardWhenInactive()
+        DismissKeyboardWhen(showDatePicker || showCategoryPicker || showTypeMenu)
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.l).imePadding().navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
@@ -173,6 +180,8 @@ fun AddOneTimeEntrySheet(
                         onValueChange = { description = it.take(200); error = null },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        keyboardOptions = doneKeyboardOptions(),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
                         decorationBox = { inner -> Box { if (description.isEmpty()) Text("Description", style = IosText.body, color = IosColors.textTertiary); inner() } },
@@ -185,7 +194,8 @@ fun AddOneTimeEntrySheet(
                         onValueChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' }; error = null },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
+                        keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
                         decorationBox = { inner -> Box { if (amountText.isEmpty()) Text("Amount", style = IosText.body, color = IosColors.textTertiary); inner() } },
