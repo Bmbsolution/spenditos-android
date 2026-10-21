@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.transactions
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -192,8 +194,8 @@ fun AddTransactionSheet(
         DismissKeyboardWhen(state.existingBill != null)
         Column(Modifier.fillMaxWidth().fillMaxHeight().dismissKeyboardOnTapOutside()) {
             QuickAddHeader(
-                title = if (state.isEditMode) "Edit Transaction"
-                else if (state.type == EntryType.INCOME) "Add income" else "Add expense",
+                type = state.type,
+                onTypeChange = viewModel::onTypeChange,
                 onClose = {
                     if (state.hasUnsavedChanges) showDiscardConfirmation = true else onDismiss()
                 },
@@ -207,7 +209,6 @@ fun AddTransactionSheet(
                     if (WindowInsets.isImeVisible) Spacing.xs else Spacing.l,
                 ),
             ) {
-                EntryTypeSelector(state.type, viewModel::onTypeChange)
                 state.error?.let { message ->
                     ErrorBanner(
                         message = message,
@@ -231,6 +232,7 @@ fun AddTransactionSheet(
                 HeroAmountField(
                     value = state.amountText,
                     currency = state.currency,
+                    tint = if (state.type == EntryType.INCOME) IosColors.income else IosColors.expense,
                     missing = state.amountMissing,
                     enabled = !state.paymentSaved,
                     keyboardVisible = WindowInsets.isImeVisible,
@@ -535,18 +537,20 @@ fun AddTransactionSheet(
     }
 }
 
+/**
+ * One row: close on the left, the Expense | Income switch centered in what is left. The switch is
+ * the title: it says what is being added and flips it in one tap (create and edit mode alike).
+ */
 @Composable
-private fun QuickAddHeader(title: String, onClose: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(44.dp)) {
-        Text(
-            title,
-            style = IosText.body.w(FontWeight.SemiBold),
-            color = IosColors.textPrimary,
-            modifier = Modifier.align(Alignment.Center).padding(horizontal = Spacing.l),
-            textAlign = TextAlign.Center,
-        )
+private fun QuickAddHeader(
+    type: EntryType,
+    onTypeChange: (EntryType) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.align(Alignment.CenterStart).size(44.dp)
+            Modifier.size(44.dp)
                 .clickable(role = Role.Button, onClick = onClose)
                 .testTag("quick-add-close"),
             contentAlignment = Alignment.Center,
@@ -558,40 +562,52 @@ private fun QuickAddHeader(title: String, onClose: () -> Unit, modifier: Modifie
                 modifier = Modifier.size(19.dp),
             )
         }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            EntryTypeSwitch(type, onTypeChange)
+        }
+        // Mirrors the close button so the switch stays centered in the sheet.
+        Spacer(Modifier.size(44.dp))
     }
 }
 
+/** Compact Expense | Income switch; the picked side wears its money color (red out, green in). */
 @Composable
-private fun EntryTypeSelector(selected: EntryType, onSelect: (EntryType) -> Unit) {
+private fun EntryTypeSwitch(selected: EntryType, onSelect: (EntryType) -> Unit) {
     val tertiary = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
     Row(
-        Modifier.fillMaxWidth().clip(CircleShape).background(tertiary).padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        Modifier.clip(CircleShape).background(tertiary).padding(3.dp)
+            .semantics { contentDescription = "Transaction type" }
+            .testTag("quick-add-type-picker"),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         EntryType.entries.forEach { type ->
             val isSelected = selected == type
             val tint = if (type == EntryType.EXPENSE) IosColors.expense else IosColors.income
+            val fill by animateColorAsState(if (isSelected) tint.copy(alpha = 0.15f) else Color.Transparent, tween(200), label = "typeFill")
+            val outline by animateColorAsState(if (isSelected) tint.copy(alpha = 0.35f) else Color.Transparent, tween(200), label = "typeOutline")
+            val content by animateColorAsState(if (isSelected) tint else IosColors.textSecondary, tween(200), label = "typeContent")
             Row(
-                Modifier.weight(1f).height(42.dp).clip(CircleShape)
-                    .background(if (isSelected) tint.copy(alpha = 0.15f) else Color.Transparent)
-                    .border(1.dp, if (isSelected) tint.copy(alpha = 0.35f) else Color.Transparent, CircleShape)
+                Modifier.height(34.dp).clip(CircleShape)
+                    .background(fill)
+                    .border(1.dp, outline, CircleShape)
                     .semantics { this.selected = isSelected }
                     .clickable(role = Role.Tab) { onSelect(type) }
+                    .padding(horizontal = 10.dp)
                     .testTag("add.type." + type.name.lowercase()),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     SfSymbols.icon(if (type == EntryType.EXPENSE) "arrow.down" else "arrow.up"),
                     contentDescription = null,
-                    tint = if (isSelected) tint else IosColors.textSecondary,
+                    tint = content,
                     modifier = Modifier.size(14.dp),
                 )
-                Spacer(Modifier.width(Spacing.s))
                 Text(
                     if (type == EntryType.EXPENSE) "Expense" else "Income",
-                    style = IosText.callout.w(FontWeight.SemiBold),
-                    color = if (isSelected) tint else IosColors.textSecondary,
+                    style = IosText.subheadline.w(FontWeight.SemiBold),
+                    color = content,
+                    maxLines = 1,
                 )
             }
         }
@@ -688,6 +704,7 @@ private fun UndoBanner(
 private fun HeroAmountField(
     value: String,
     currency: String,
+    tint: Color,
     missing: Boolean,
     enabled: Boolean,
     keyboardVisible: Boolean,
@@ -697,12 +714,14 @@ private fun HeroAmountField(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
+    // The amount follows the type: the symbol at 70%, the digits at full strength.
+    val amountTint by animateColorAsState(tint, tween(200), label = "amountTint")
     Column(modifier.fillMaxWidth().padding(top = Spacing.s).padding(bottom = if (missing) Spacing.m else 0.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 currencySymbol(currency),
                 style = IosText.rounded(34, FontWeight.Bold),
-                color = IosColors.textSecondary,
+                color = amountTint.copy(alpha = 0.7f),
                 modifier = Modifier.alignBy(FirstBaseline),
             )
             Spacer(Modifier.width(Spacing.s))
@@ -714,7 +733,7 @@ private fun HeroAmountField(
                 keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
                 keyboardActions = rememberKeyboardDoneActions(),
                 interactionSource = interactionSource,
-                textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = IosColors.textPrimary),
+                textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = amountTint),
                 modifier = Modifier.weight(1f).alignBy(FirstBaseline).focusRequester(focusRequester)
                     .semantics { contentDescription = "Amount in $currency. Enter the transaction amount" },
                 decorationBox = { innerTextField ->
