@@ -76,6 +76,7 @@ class FakeDebtActions : DebtActions {
     val deleteCalls = mutableListOf<String>()
     val adjustmentCalls = mutableListOf<Triple<String, LocalDate, Double>>()
     val previewRequests = mutableListOf<DebtPreviewRequest>()
+    val extraPaymentKeys = mutableListOf<String?>()
     val extraPaymentCalls = mutableListOf<Triple<Debt, Double, LocalDate>>()
 
     override suspend fun list(asOf: LocalDate): List<DebtWithPlan> {
@@ -112,7 +113,8 @@ class FakeDebtActions : DebtActions {
         return previewResult.getOrThrow()
     }
 
-    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction {
+    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate, idempotencyKey: String?): Transaction {
+        extraPaymentKeys += idempotencyKey
         extraPaymentCalls += Triple(debt, amount, date)
         extraPaymentGate?.invoke()
         extraPaymentResult.getOrThrow()

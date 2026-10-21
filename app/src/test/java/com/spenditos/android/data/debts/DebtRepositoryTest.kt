@@ -279,14 +279,14 @@ class DebtRepositoryTest {
         server.enqueue(MockResponse(code = 201, body = createdTransaction))
         val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
 
-        val transaction = repository.recordExtraPayment(carDebt, 150.0, today)
+        val transaction = repository.recordExtraPayment(carDebt, 150.0, today, "extra-attempt-1")
 
         assertEquals("txn-extra", transaction.id)
         assertEquals("debt-car", transaction.debtId)
         val request = server.takeRequest()
         assertEquals("POST", request.method)
         assertEquals("/transactions", request.url.encodedPath)
-        assertNull("The single-create route ignores idempotency keys", request.headers["Idempotency-Key"])
+        assertEquals("extra-attempt-1", request.headers["Idempotency-Key"])
         val body = SpenditosJson.parseToJsonElement(request.body!!.utf8()).jsonObject
         assertEquals(setOf("amount", "date", "categoryId", "description", "debtId"), body.keys)
         assertEquals("150.0", (body["amount"] as JsonPrimitive).content)

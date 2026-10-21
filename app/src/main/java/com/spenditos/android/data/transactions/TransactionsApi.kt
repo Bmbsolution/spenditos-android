@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -43,15 +44,15 @@ interface TransactionsApi {
     /**
      * `POST /transactions` (handler `createTransactionHandlerImpl`; schema `CreateTransactionSchema`):
      * required `amount`, `date`, `categoryId`; this client also sends `description` and `debtId`.
-     * ONLY for a debt's extra payment (docs/DECISIONS.md D22): the bulk endpoint cannot carry `debtId`.
-     * Unlike bulk this route has no retry protection, so a repeated request creates a second
-     * transaction; callers send it once per user tap and never resend it automatically.
+     * Used for a debt's online extra payment; matched bill payments use bulk with both links.
+     * Reuse the same idempotency key after an uncertain result to avoid a second expense.
      * [sessionBinding] works as on [createBulk].
      */
     @POST("transactions")
     suspend fun createSingle(
         @Body body: CreateTransactionRequest,
         @Tag sessionBinding: SessionBinding? = null,
+        @Header("Idempotency-Key") idempotencyKey: String? = null,
     ): ApiEnvelope<Transaction>
 
     /** `PUT /transactions/{id}` (sst.config.ts:143); `UpdateTransactionRequest` api/index.ts:422. */

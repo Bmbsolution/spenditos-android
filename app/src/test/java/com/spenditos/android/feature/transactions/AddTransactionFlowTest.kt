@@ -17,6 +17,7 @@ import com.spenditos.android.data.categories.CategoriesApi
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.TransactionMood
+import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.transactions.TransactionRepository
 import com.spenditos.android.data.transactions.TransactionsApi
 import com.spenditos.android.data.user.UserApi
@@ -35,6 +36,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -120,6 +122,32 @@ class AddTransactionFlowTest {
     private fun single(json: String) = MockResponse(code = 200, body = """{"data":$json}""")
 
     private fun take() = server.takeRequest(5, TimeUnit.SECONDS)!!
+
+    @Test
+    fun `using an existing debt bill with no generated entry saves both links`() = runTest {
+        recurring.templates.value = listOf(RecurringTemplate(
+            id = "tpl-loan", userId = "user-1", categoryId = "bills", description = "Loan", amount = 300.0,
+            type = "fixed", frequency = "monthly", firstOccurrenceDate = LocalDate.now().plusMonths(2).toString(), debtId = "debt-1",
+        ))
+        val vm = newVm()
+        vm.onAmountChange("300")
+        vm.onCategorySelect("bills")
+        vm.onDescriptionChange("Loan")
+        vm.onMakeRecurringChange(true)
+        vm.save()
+        vm.state.first { it.existingBill != null }
+        server.enqueue(list())
+        val payment = txn("paid-loan", 300.0, LocalDate.now().toString(), "bills", "Loan", "tpl-loan").dropLast(1) + ",\"debtId\":\"debt-1\"}"
+        server.enqueue(MockResponse(code = 201, body = """{"data":{"results":[{"transaction":$payment}]}}"""))
+        vm.useExistingBill()
+        assertEquals(AddTransactionEvent.Done("Saved"), vm.events.first())
+        assertEquals("GET", take().method)
+        val request = take()
+        val item = SpenditosJson.parseToJsonElement(request.body!!.utf8()).jsonObject["transactions"]!!.jsonArray.single().jsonObject
+        assertEquals("tpl-loan", item["templateId"]!!.jsonPrimitive.content)
+        assertEquals("debt-1", item["debtId"]!!.jsonPrimitive.content)
+        assertTrue(recurring.created.isEmpty())
+    }
 
     @Test
     fun `save with nothing entered marks the missing fields and sends nothing`() = runTest {

@@ -68,6 +68,7 @@ data class BulkTransactionItem(
     val mood: TransactionMood? = null,
     val templateId: String? = null,
     val idempotencyKeyId: String,
+    val debtId: String? = null,
 )
 
 /** `CreateBulkTransactionsResponse` api/index.ts:705. Duplicates carry no ids. */

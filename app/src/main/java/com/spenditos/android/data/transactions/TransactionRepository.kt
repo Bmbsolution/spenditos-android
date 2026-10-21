@@ -51,6 +51,7 @@ data class NewTransaction(
     val mood: TransactionMood? = null,
     /** Links the payment to an existing bill ("Use existing bill"). */
     val templateId: String? = null,
+    val debtId: String? = null,
 )
 
 sealed interface CreateResult {
@@ -128,6 +129,7 @@ class TransactionRepository @Inject constructor(
             mood = draft.mood,
             templateId = draft.templateId,
             idempotencyKeyId = mutationId,
+            debtId = draft.debtId,
         )
         val now = System.currentTimeMillis()
         db.withTransaction {
@@ -138,6 +140,7 @@ class TransactionRepository @Inject constructor(
                         description = item.description, date = item.date, mood = draft.mood?.name, templateId = draft.templateId,
                         source = "manual", createdAt = null, updatedAt = null, syncStatus = SyncStatus.PENDING,
                         clientMutationId = mutationId,
+                        debtId = draft.debtId,
                     ),
                 ),
             )

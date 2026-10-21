@@ -133,6 +133,16 @@ class TransactionRepositoryTest {
     }
 
     @Test
+    fun `matched debt payment preserves both links in the queued bulk request`() = runTest {
+        online.value = false
+        repo.create(draft.copy(templateId = "bill-debt", debtId = "debt-1"))
+        val item = SpenditosJson.decodeFromString(BulkTransactionItem.serializer(), queue().single().payloadJson)
+        assertEquals("bill-debt", item.templateId)
+        assertEquals("debt-1", item.debtId)
+        assertEquals("debt-1", rows().single().debtId)
+    }
+
+    @Test
     fun `lost connection keeps the create queued for the worker`() = runTest {
         server.enqueue(MockResponse.Builder().onRequestStart(SocketEffect.CloseSocket()).build())
         assertEquals(CreateResult.SavedOffline, repo.create(draft))
@@ -394,7 +404,7 @@ class TransactionRepositoryTest {
             cursor: String?,
         ): ApiEnvelope<TransactionsPage> = error("not used")
 
-        override suspend fun createSingle(body: CreateTransactionRequest, sessionBinding: SessionBinding?): ApiEnvelope<Transaction> =
+        override suspend fun createSingle(body: CreateTransactionRequest, sessionBinding: SessionBinding?, idempotencyKey: String?): ApiEnvelope<Transaction> =
             error("not used")
 
         override suspend fun update(id: String, body: UpdateTransactionRequest): ApiEnvelope<Transaction> = error("not used")

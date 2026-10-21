@@ -562,6 +562,7 @@ class AddTransactionViewModel @Inject constructor(
             date = current.date,
             mood = current.mood,
             templateId = linkedTemplate?.id,
+            debtId = linkedTemplate?.debtId,
         )
         try {
             // The payment already exists; only its repeat is pending. Never create it again.

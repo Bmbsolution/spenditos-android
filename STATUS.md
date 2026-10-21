@@ -5,7 +5,7 @@ Last updated: 2026-10-14 (iOS catch-up, see below). Previously 2026-10-07. Corre
 ## Debts (2026-10-20, branch feature/debts; port of iOS #273 / backend #383)
 - Data (`data/debts`): wire models, 7-route `DebtApi`, online-only `DebtRepository` (writes bound to the session, `ApiError.Network` offline, TRANSACTION + RECURRING invalidated), `debtId` on Transaction / RecurringTemplate / MonthlyPlanOccurrence. Room v1 -> v2 (`MIGRATION_1_2`, first migration; `transactions.debtId`).
 - UI (`feature/debts`): Debts section in Income & bills (debt bills hidden from Bills), debt page (`plan/debts/{debtId}`: what-if, extra payment, correct balance, history, delete), Add a debt sheet, Debt tag + per-payment amounts in Month plan.
-- Decision D22: extra payments use the single `POST /transactions` with `debtId` (bulk create does not accept it; same as iOS). No retry protection: Pay is disabled while in flight, never retried or queued.
+- Review fixes (D23): extra payments stay online-only and send a stable `Idempotency-Key` across retries of the same amount/date. Matched bill payments keep both debt and bill links through the persisted bulk queue. Requires the backend debt review fixes before release.
 - Needs backend #383 deployed. `scripts/verify.sh`: 860 tests, 0 failures. Not run on an emulator (the e2e harness has no debts routes), so visual parity with iOS is unchecked, light and dark.
 
 ## Catch-up: Rules (iOS #252, branch catchup/rules)

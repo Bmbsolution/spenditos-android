@@ -282,7 +282,7 @@ class ProfileViewModelTest {
 
             override suspend fun createSingle(
                 body: com.spenditos.android.data.transactions.CreateTransactionRequest,
-                sessionBinding: com.spenditos.android.core.auth.SessionBinding?,
+                sessionBinding: com.spenditos.android.core.auth.SessionBinding?, idempotencyKey: String?,
             ): ApiEnvelope<com.spenditos.android.data.model.Transaction> = error("not used")
 
             override suspend fun update(

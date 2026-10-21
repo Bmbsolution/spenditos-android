@@ -79,7 +79,7 @@ class SessionLifecycleTest {
 
         override suspend fun createSingle(
             body: com.spenditos.android.data.transactions.CreateTransactionRequest,
-            sessionBinding: SessionBinding?,
+            sessionBinding: SessionBinding?, idempotencyKey: String?,
         ): ApiEnvelope<Transaction> = error("not used")
 
         override suspend fun update(id: String, body: UpdateTransactionRequest): ApiEnvelope<Transaction> = error("not used")

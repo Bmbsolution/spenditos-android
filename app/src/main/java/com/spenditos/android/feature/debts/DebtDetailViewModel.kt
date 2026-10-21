@@ -37,6 +37,7 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.time.Clock
 import java.time.LocalDate
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.max
@@ -313,6 +314,7 @@ class DebtDetailViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var whatIfJob: Job? = null
+    private var extraPaymentAttempt: Triple<Double, LocalDate, String>? = null
 
     init {
         viewModelScope.launch {
@@ -444,17 +446,20 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     /**
-     * "Add extra payment": a normal expense with this debt's id. The route has no retry protection
-     * (docs/DECISIONS.md D22), so this sends one request per call and never resends: while it is in
-     * flight [isWorking][DebtDetailUiState.isWorking] disables the button and a second call is refused.
+     * One key survives retries of the same extra payment after an uncertain response.
      */
     suspend fun addExtraPayment(amount: Double, date: LocalDate): Boolean {
         val debt = mutableState.value.debt ?: return false
+        val attempt = extraPaymentAttempt?.takeIf { it.first == amount && it.second == date }
+            ?: Triple(amount, date, UUID.randomUUID().toString()).also { extraPaymentAttempt = it }
         val succeeded = write {
-            debts.recordExtraPayment(debt, amount, date)
+            debts.recordExtraPayment(debt, amount, date, attempt.third)
             null
         }
-        if (succeeded) resetWhatIf()
+        if (succeeded) {
+            extraPaymentAttempt = null
+            resetWhatIf()
+        }
         return succeeded
     }
 

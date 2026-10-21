@@ -47,10 +47,9 @@ interface DebtActions {
 
     /**
      * "Add extra payment": a normal expense with this debt's id, filed under the debt's category and
-     * named after the debt (iOS `recordExtraPayment`). Online only. The single-create route has no
-     * retry protection (docs/DECISIONS.md D22): send it once per tap and never resend it automatically.
+     * named after the debt. Online only. Reuse the key when retrying the same payment.
      */
-    suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction
+    suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate, idempotencyKey: String? = null): Transaction
 }
 
 /**
@@ -112,7 +111,7 @@ class DebtRepository @Inject constructor(
         return response
     }
 
-    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate): Transaction {
+    override suspend fun recordExtraPayment(debt: Debt, amount: Double, date: LocalDate, idempotencyKey: String?): Transaction {
         val binding = requireOnlineWrite()
         val body = CreateTransactionRequest(
             amount = amount,
@@ -121,7 +120,7 @@ class DebtRepository @Inject constructor(
             description = debt.name,
             debtId = debt.id,
         )
-        return apiCall { transactionsApi.createSingle(body, binding) }.also { changed() }
+        return apiCall { transactionsApi.createSingle(body, binding, idempotencyKey) }.also { changed() }
     }
 
     private fun requireUser(): String = session.currentUserId ?: throw ApiError.Unauthorized

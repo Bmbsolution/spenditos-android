@@ -309,6 +309,22 @@ class DebtDetailViewModelTest {
     }
 
     @Test
+    fun `retrying the same extra payment keeps its key until success`() = runTest {
+        val service = FakeDebtActions().apply { extraPaymentResult = Result.failure(ApiError.Network(IOException("timeout"))) }
+        val vm = viewModel(service)
+        assertFalse(vm.addExtraPayment(150.0, today))
+        assertFalse(vm.addExtraPayment(150.0, today))
+        val key = service.extraPaymentKeys.first()
+        assertNotNull(key)
+        assertEquals(key, service.extraPaymentKeys[1])
+        service.extraPaymentResult = Result.success(Unit)
+        assertTrue(vm.addExtraPayment(150.0, today))
+        assertEquals(key, service.extraPaymentKeys[2])
+        assertTrue(vm.addExtraPayment(150.0, today))
+        assertTrue(key != service.extraPaymentKeys[3])
+    }
+
+    @Test
     fun `correct balance sends the date and balance`() = runTest {
         val service = FakeDebtActions().apply { adjustmentResult = Result.success(DebtTestData.detail) }
         val vm = viewModel(service)

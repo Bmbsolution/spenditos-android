@@ -43,3 +43,5 @@ Format: ID · date · decision · why · who decided.
 - Approved 2026-10-06: local commits (no remote, never push). Baseline `8d26aba`.
 - Done 2026-10-06: owner signed in to staging on the emulator (D14).
 - D15 superseded (iOS #259) · Statement import removed from Android; statements and CSVs come in through Scan. Settings has "Download my data" instead of Import/Export. · Claude (follows iOS)
+
+- D23 · 2026-10-21 · Debt review fixes supersede D22's retry limitation. The backend now honors `Idempotency-Key` on single transaction creates with an atomic user-scoped marker, financial write, counter and outbox. Extra payments remain online-only and reuse one key per unchanged attempt, including after a timeout. Matched debt bill payments keep `templateId` and `debtId` in the existing persisted bulk queue; the backend ownership-checks and preserves that field and resyncs the debt. Release the backend support before this client. Plain queued creates otherwise retain D2's bulk path. · owner-requested review fixes
