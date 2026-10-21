@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -38,6 +39,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -68,9 +71,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -1147,104 +1152,159 @@ private fun QuickAddBottomBar(
                 legacyTestTag = "add.save",
             )
         } else {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                MethodBarButton(
-                    icon = "square.and.pencil",
-                    label = "Form",
-                    selected = true,
-                    onClick = {},
-                    modifier = Modifier.weight(1f).testTag("quick-add-method-manual"),
-                )
-                onVoice?.let { callback ->
-                    MethodBarButton(
-                        icon = "mic.fill",
-                        label = "Voice",
-                        selected = false,
-                        onClick = callback,
-                        modifier = Modifier.weight(1f).testTag("quick-add-method-voice"),
-                        legacyTestTag = "add.capture",
-                    )
-                }
-                onSentence?.let { callback ->
-                    MethodBarButton(
-                        icon = "text.alignleft",
-                        label = "Sentence",
-                        selected = false,
-                        onClick = callback,
-                        modifier = Modifier.weight(1f).testTag("quick-add-method-text"),
-                    )
-                }
-                if (state.type == EntryType.EXPENSE) {
-                    onScanReceipt?.let { callback ->
+            // One line: icon-only methods, then Save with a chevron menu holding "Save and add
+            // another". On a 320dp phone the icons and the chevron shrink so Save keeps its width.
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val compact = maxWidth < COMPACT_BAR_WIDTH
+                val iconWidth = if (compact) 40.dp else 44.dp
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                         MethodBarButton(
-                            icon = "doc.viewfinder",
-                            label = "Scan",
-                            selected = false,
-                            onClick = callback,
-                            modifier = Modifier.weight(1f).testTag("quick-add-method-photo"),
-                            legacyTestTag = "add.scanReceipt",
+                            icon = "square.and.pencil",
+                            label = "Form",
+                            selected = true,
+                            width = iconWidth,
+                            onClick = {},
+                            modifier = Modifier.testTag("quick-add-method-manual"),
                         )
+                        onVoice?.let { callback ->
+                            MethodBarButton(
+                                icon = "mic.fill",
+                                label = "Voice",
+                                selected = false,
+                                width = iconWidth,
+                                onClick = callback,
+                                modifier = Modifier.testTag("quick-add-method-voice"),
+                                legacyTestTag = "add.capture",
+                            )
+                        }
+                        onSentence?.let { callback ->
+                            MethodBarButton(
+                                icon = "text.alignleft",
+                                label = "Sentence",
+                                selected = false,
+                                width = iconWidth,
+                                onClick = callback,
+                                modifier = Modifier.testTag("quick-add-method-text"),
+                            )
+                        }
+                        if (state.type == EntryType.EXPENSE) {
+                            onScanReceipt?.let { callback ->
+                                MethodBarButton(
+                                    icon = "doc.viewfinder",
+                                    label = "Scan",
+                                    selected = false,
+                                    width = iconWidth,
+                                    onClick = callback,
+                                    modifier = Modifier.testTag("quick-add-method-photo"),
+                                    legacyTestTag = "add.scanReceipt",
+                                )
+                            }
+                        }
                     }
+                    SaveSplitButton(
+                        isSaving = state.isSaving,
+                        chevronWidth = if (compact) 36.dp else 44.dp,
+                        onSave = onSave,
+                        onSaveAndContinue = onSaveAndContinue,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Box(
-                    Modifier.weight(1f).heightIn(min = 50.dp).clip(RoundedCornerShape(Radius.m))
-                        .background(surfaceTertiary())
-                        .clickable(enabled = !state.isSaving, role = Role.Button, onClick = onSaveAndContinue)
-                        .testTag("quick-add-save-another"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "Save and add another",
-                        style = IosText.callout.w(FontWeight.SemiBold),
-                        color = IosColors.textPrimary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = Spacing.s),
-                    )
-                }
-                QuickAddLoadingButton(
-                    text = "Save",
-                    isSaving = state.isSaving,
-                    onClick = onSave,
-                    modifier = Modifier.weight(1f).testTag("quick-add-save"),
-                    legacyTestTag = "add.save",
+        }
+    }
+}
+
+/** Below this much room (a 320dp phone), the method icons and the chevron shrink to keep Save wide. */
+private val COMPACT_BAR_WIDTH = 300.dp
+
+/**
+ * Save fills the row; a chevron after a thin divider opens a menu with "Save and add another"
+ * (the batch flow, with its added count and undo, is unchanged: only its entry point moved).
+ */
+@Composable
+private fun SaveSplitButton(
+    isSaving: Boolean,
+    chevronWidth: Dp,
+    onSave: () -> Unit,
+    onSaveAndContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(Radius.m)
+    val background = if (isSaving) IosColors.spendOrange.copy(alpha = 0.72f) else IosColors.spendOrange
+    Row(
+        modifier.height(52.dp).clip(shape).background(background),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            Modifier.weight(1f).fillMaxHeight()
+                .clickable(enabled = !isSaving, role = Role.Button, onClick = onSave)
+                .semantics { if (isSaving) stateDescription = "Saving" }
+                .testTag("quick-add-save"),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                Spacer(Modifier.width(Spacing.s))
+            }
+            Text("Save", style = IosText.headline, color = Color.White, maxLines = 1, modifier = Modifier.testTag("add.save"))
+        }
+        Box(Modifier.width(1.dp).height(24.dp).background(Color.White.copy(alpha = 0.3f)))
+        Box {
+            Box(
+                Modifier.width(chevronWidth).fillMaxHeight()
+                    .clickable(role = Role.Button) { menuOpen = true }
+                    .semantics { contentDescription = "More save options" }
+                    .testTag("quick-add-save-menu"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(SfSymbols.icon("chevron.up"), contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("Save and add another", style = IosText.callout) },
+                    leadingIcon = { Icon(SfSymbols.icon("plus.circle"), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    enabled = !isSaving,
+                    onClick = {
+                        menuOpen = false
+                        onSaveAndContinue()
+                    },
+                    modifier = Modifier.testTag("quick-add-save-another"),
                 )
             }
         }
     }
 }
 
+/** Icon-only capture method; TalkBack still reads [label]. */
 @Composable
 private fun MethodBarButton(
     icon: String,
     label: String,
     selected: Boolean,
+    width: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     legacyTestTag: String? = null,
 ) {
-    Column(
-        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(Radius.m))
+    Box(
+        modifier.size(width = width, height = 48.dp).clip(RoundedCornerShape(Radius.m))
             .background(if (selected) IosColors.spendOrange.copy(alpha = 0.12f) else Color.Transparent)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 3.dp)
-            .then(modifier),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .semantics { this.selected = selected; contentDescription = label }
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             SfSymbols.icon(icon),
             contentDescription = null,
             tint = if (selected) IosColors.spendOrange else IosColors.textSecondary,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            label,
-            style = IosText.caption2.w(if (selected) FontWeight.SemiBold else FontWeight.Normal),
-            color = if (selected) IosColors.spendOrange else IosColors.textSecondary,
-            maxLines = 1,
-            modifier = legacyTestTag?.let { Modifier.testTag(it) } ?: Modifier,
+            modifier = Modifier.size(22.dp).let { if (legacyTestTag != null) it.testTag(legacyTestTag) else it },
         )
     }
 }
@@ -1361,10 +1421,6 @@ private fun datePickerColors() = DatePickerDefaults.colors(
 @Composable
 private fun barMaterial(): Color =
     if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xF01C1C1E) else Color(0xF0E4E6EB)
-
-@Composable
-private fun surfaceTertiary(): Color =
-    if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
 
 private fun currencySymbol(currency: String): String = when (currency.uppercase()) {
     "CAD" -> "CA$"
