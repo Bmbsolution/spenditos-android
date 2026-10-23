@@ -395,8 +395,9 @@ private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, 
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                     ) {
-                        IconChip(
-                            com.spenditos.android.ui.components.CategoryIcons.symbol(row.icon, row.category),
+                        com.spenditos.android.ui.components.CategoryIconChip(
+                            row.icon,
+                            row.category,
                             com.spenditos.android.ui.components.categoryColor(row.colorHex),
                             size = 42.dp,
                         )

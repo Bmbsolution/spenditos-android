@@ -62,7 +62,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
@@ -160,7 +160,6 @@ internal fun ReviewSummaryRow(
         // Android saves the parsed number in the user's currency (no conversion), so say what was parsed, not "→".
         sourceCurrency?.let { "Parsed as $it" },
     ).joinToString(" · ")
-    val symbol = selectedCategory?.icon ?: CategoryIcons.sfSymbolName(null, categoryLabel)
     Row(
         Modifier.fillMaxWidth()
             .padding(horizontal = Spacing.m, vertical = Spacing.s)
@@ -187,7 +186,7 @@ internal fun ReviewSummaryRow(
             Modifier.size(44.dp).clip(RoundedCornerShape(Radius.s)).background(IosColors.spendOrange.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(CategoryIcons.symbol(symbol, categoryLabel), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
+            CategoryIcon(selectedCategory?.icon, categoryLabel, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
         }
         Column(
             Modifier.weight(1f).clickable(enabled = !item.isFrozen, role = Role.Button, onClick = onOpen),

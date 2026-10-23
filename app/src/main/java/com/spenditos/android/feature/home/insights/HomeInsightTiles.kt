@@ -169,7 +169,7 @@ fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Lo
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconChip(com.spenditos.android.ui.components.CategoryIcons.symbol(top.symbol, top.name), color, size = 38.dp)
+                com.spenditos.android.ui.components.CategoryIconChip(top.icon, top.name, color, size = 38.dp)
                 Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(top.name, style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(Money.format(top.amount.toDouble(), currency, locale), style = IosText.rounded(15, FontWeight.Bold), color = IosColors.textPrimary)
@@ -200,12 +200,11 @@ internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp =
             .border(if (size > 18.dp) 2.dp else 1.5.dp, Color.White, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            SfSymbols.icon(if (pin.isIncome) "arrow.down" else pin.symbol),
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(size * 0.45f),
-        )
+        if (pin.isIncome) {
+            Icon(SfSymbols.icon("arrow.down"), contentDescription = null, tint = Color.White, modifier = Modifier.size(size * 0.45f))
+        } else {
+            com.spenditos.android.ui.components.CategoryIcon(pin.icon, pin.categoryName, tint = Color.White, modifier = Modifier.size(size * 0.45f))
+        }
     }
 }
 

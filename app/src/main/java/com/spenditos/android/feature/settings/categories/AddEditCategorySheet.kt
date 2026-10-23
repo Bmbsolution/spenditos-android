@@ -54,7 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spenditos.android.data.model.Category
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
@@ -414,7 +414,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
                 contentAlignment = Alignment.Center,
             ) {
                 if (value == "None") Text("None", style = IosText.caption2, color = IosColors.textSecondary)
-                else Icon(CategoryIcons.symbol(value, iconLibrary.firstOrNull { it.value == value }?.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                else CategoryIcon(value, iconLibrary.firstOrNull { it.value == value }?.name, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
             }
             if (selected) {
                 Box(Modifier.align(Alignment.TopEnd).size(18.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer)) {

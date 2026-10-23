@@ -62,7 +62,7 @@ import com.spenditos.android.data.merchants.normalizeMerchantKey
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.RuleAction
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.GlassCard
@@ -351,9 +351,9 @@ private fun CategoryChip(category: Category, selected: Boolean, onClick: () -> U
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Icon(
-            CategoryIcons.symbol(category.icon, category.name),
-            contentDescription = null,
+        CategoryIcon(
+            category.icon,
+            category.name,
             tint = if (selected) Color.White else IosColors.textPrimary,
             modifier = Modifier.size(14.4.dp),
         )
@@ -497,7 +497,7 @@ private fun CategorySection(title: String, categories: List<Category>, selectedI
                     horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor(category.color)))
-                    Icon(CategoryIcons.symbol(category.icon, category.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                    CategoryIcon(category.icon, category.name, tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
                     Text(category.name, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                     if (selectedId == category.id) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange)
                 }

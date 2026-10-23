@@ -67,7 +67,7 @@ import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.tabBarBottomPadding
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.categoryColor
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
@@ -473,9 +473,9 @@ private fun IncomeBillRow(
                 Modifier.size(44.dp).clip(CircleShape).background(tint.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    CategoryIcons.symbol(categoryIcon, categoryName),
-                    contentDescription = null,
+                CategoryIcon(
+                    categoryIcon,
+                    categoryName,
                     tint = IosColors.textPrimary,
                     modifier = Modifier.size(20.dp),
                 )

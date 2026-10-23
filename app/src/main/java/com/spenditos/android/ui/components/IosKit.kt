@@ -159,12 +159,30 @@ fun GroupedCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.
  */
 @Composable
 fun IconChip(icon: ImageVector, tint: Color, modifier: Modifier = Modifier, size: Dp = 40.dp, shape: Shape = RoundedCornerShape(size * 0.3f)) {
+    IconChipFrame(tint, modifier, size, shape) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.42f)) }
+}
+
+/** [IconChip] drawing a category's Phosphor icon (see [CategoryIcon]). */
+@Composable
+fun CategoryIconChip(
+    icon: String?,
+    categoryName: String?,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    shape: Shape = RoundedCornerShape(size * 0.3f),
+) {
+    IconChipFrame(tint, modifier, size, shape) { CategoryIcon(icon, categoryName, tint = tint, modifier = Modifier.size(size * 0.42f)) }
+}
+
+@Composable
+private fun IconChipFrame(tint: Color, modifier: Modifier, size: Dp, shape: Shape, glyph: @Composable () -> Unit) {
     Box(
         modifier.size(size).clip(shape)
             .background(Brush.linearGradient(listOf(tint.copy(alpha = 0.24f), tint.copy(alpha = 0.10f))))
             .border(1.dp, tint.copy(alpha = 0.18f), shape),
         contentAlignment = Alignment.Center,
-    ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.42f)) }
+    ) { glyph() }
 }
 
 /**
@@ -178,9 +196,9 @@ fun CategorySymbolBadge(icon: String?, name: String, colorHex: String?, modifier
         modifier.size(size).clip(shape).background(categoryColor(colorHex).copy(alpha = 0.10f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            CategoryIcons.symbol(icon, name),
-            contentDescription = null,
+        CategoryIcon(
+            icon,
+            name,
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(size * 0.45f),
         )

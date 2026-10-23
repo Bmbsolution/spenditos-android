@@ -3,7 +3,6 @@ package com.spenditos.android.feature.home.insights
 import com.spenditos.android.feature.home.CashFlowStatus
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
-import com.spenditos.android.ui.components.CategoryIcons
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -37,7 +36,8 @@ data class HomeInsights(
         val amount: BigDecimal,
         val isIncome: Boolean,
         val isPast: Boolean,
-        val symbol: String,
+        val icon: String?,
+        val categoryName: String?,
         val colorHex: String?,
         val level: BigDecimal,
     )
@@ -48,7 +48,7 @@ data class HomeInsights(
 
     data class TopCategory(
         val name: String,
-        val symbol: String,
+        val icon: String?,
         val colorHex: String?,
         val amount: BigDecimal,
         val share: BigDecimal,
@@ -116,8 +116,8 @@ data class HomeInsights(
                         amount = CashFlowStatus.cashAmount(transaction.amount),
                         isIncome = income,
                         isPast = transactionDay <= today,
-                        // The iOS symbol name for the category (IconMapper.sfSymbolName), not the stored emoji.
-                        symbol = CategoryIcons.sfSymbolName(category?.icon, category?.name),
+                        icon = category?.icon,
+                        categoryName = category?.name,
                         colorHex = category?.color,
                         level = (if (income) inByDay else outByDay)[transactionDay] ?: BigDecimal.ZERO,
                     )
@@ -151,7 +151,7 @@ data class HomeInsights(
                 val category = sampleByCategory[largest.key]?.let { categoryById[it.categoryId] }
                 TopCategory(
                     name = category?.name ?: "Other",
-                    symbol = CategoryIcons.sfSymbolName(category?.icon, category?.name),
+                    icon = category?.icon,
                     colorHex = category?.color,
                     amount = largest.value,
                     share = largest.value.divide(everydayTotal, SHARE_SCALE, RoundingMode.HALF_UP),

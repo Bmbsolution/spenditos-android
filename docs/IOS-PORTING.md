@@ -95,10 +95,12 @@ left out, or use `autoSize = TextAutoSize.StepBased(...)` on `BasicText`.
 ## Symbols (`ui/components/SfSymbols.kt`)
 
 `Image(systemName: "name")` → `Icon(SfSymbols.icon("name"), contentDescription = null, tint = ...)`.
-An SF symbol at font size `n` is `Modifier.size((n * 1.2).dp)`. Category icons: iOS shows the monochrome
-SF symbol, not the emoji. Use `CategoryIcons.symbol(category.icon, category.name)` (or
-`CategorySymbolBadge(icon, name, colorHex, size)` for the rounded tile rows use). `IconChip(icon, tint, size)`
-is the iOS `IconChip`. If a symbol is missing from `SfSymbols`, use the closest `Icons.Outlined.*` (or
+An SF symbol at font size `n` is `Modifier.size((n * 1.2).dp)`. Category icons are the shared Phosphor
+duotone icons (same on web, iOS and Android; the emoji stays the stored value). Use
+`CategoryIcon(category.icon, category.name, tint = ..., modifier = ...)` (or
+`CategorySymbolBadge(icon, name, colorHex, size)` for the rounded tile rows use, `CategoryIconChip` for the chip).
+The drawables and catalog are generated from `packages/types` by `scripts/generate-phosphor-category-icons.py`.
+`IconChip(icon, tint, size)` is the iOS `IconChip`. If a symbol is missing from `SfSymbols`, use the closest `Icons.Outlined.*` (or
 `Icons.Rounded.*` for `.fill`) icon directly in your file.
 
 ## Checking your port

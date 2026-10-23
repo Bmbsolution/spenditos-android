@@ -76,7 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.core.db.SyncStatus
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.FloatingTabBarHeight
@@ -920,9 +920,9 @@ private fun RowCategoryBadge(icon: String?, name: String, tint: Color) {
         Modifier.size(44.dp).clip(shape).background(tint.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            CategoryIcons.symbol(icon, name),
-            contentDescription = null,
+        CategoryIcon(
+            icon,
+            name,
             tint = IosColors.textPrimary,
             modifier = Modifier.size(19.2.dp),
         )

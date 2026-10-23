@@ -38,7 +38,7 @@ import com.spenditos.android.feature.capture.CaptureReviewItem
 import com.spenditos.android.feature.capture.reviewFlagLabels
 import com.spenditos.android.feature.capture.SKIPPED_BY_RULE_LABEL
 import com.spenditos.android.feature.capture.YOUR_RULE_LABEL
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosColors
@@ -93,7 +93,6 @@ private fun GroupHeader(
     val selected = group.sharedCategoryId?.let { id -> categories.firstOrNull { it.id == id } }
     val needsCategory = group.items.any { it.categoryId.isNullOrEmpty() }
     val categoryTitle = selected?.name ?: if (group.hasMixedCategories) "Mixed categories" else "Choose category"
-    val symbol = selected?.icon ?: CategoryIcons.sfSymbolName(null, categoryTitle)
     val badge = when {
         group.allSkippedByRule -> SKIPPED_BY_RULE_LABEL
         group.allRuleFiled -> YOUR_RULE_LABEL
@@ -129,7 +128,7 @@ private fun GroupHeader(
             Modifier.size(44.dp).clip(RoundedCornerShape(Radius.s)).background(IosColors.spendOrange.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(CategoryIcons.symbol(symbol, categoryTitle), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
+            CategoryIcon(selected?.icon, categoryTitle, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {

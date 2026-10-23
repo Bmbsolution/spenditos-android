@@ -85,7 +85,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.TransactionMood
 import com.spenditos.android.data.transactions.BillCandidate
 import com.spenditos.android.data.transactions.RecurrencePreset
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.CategorySymbolBadge
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
@@ -893,9 +893,9 @@ private fun FormChip(
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         when {
-            category != null -> Icon(
-                CategoryIcons.symbol(category.icon, category.name),
-                contentDescription = null,
+            category != null -> CategoryIcon(
+                category.icon,
+                category.name,
                 tint = if (isSelected) IosColors.spendOrange else IosColors.textSecondary,
                 modifier = Modifier.size(19.dp),
             )

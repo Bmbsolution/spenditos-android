@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.RecurringTemplate
-import com.spenditos.android.ui.components.CategoryIcons
+import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
@@ -317,7 +317,7 @@ fun AddEditRecurringSheet(
                     val selectedCategory = categories.firstOrNull { it.id == draft.categoryId }
                     if (selectedCategory != null) {
                         Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor(selectedCategory.color)))
-                        Icon(CategoryIcons.symbol(selectedCategory.icon, selectedCategory.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
+                        CategoryIcon(selectedCategory.icon, selectedCategory.name, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
                         Text(selectedCategory.name, style = IosText.body, color = IosColors.textPrimary)
                     } else {
                         Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textSecondary)
@@ -571,7 +571,7 @@ private fun RecurringCategoryPickerSheet(
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
                             Box(Modifier.size(48.dp).clip(CircleShape).background(tint.copy(alpha = if (selected) 0.4f else 0.15f)), contentAlignment = Alignment.Center) {
-                                Icon(CategoryIcons.symbol(category.icon, category.name), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(22.dp))
+                                CategoryIcon(category.icon, category.name, tint = IosColors.textPrimary, modifier = Modifier.size(22.dp))
                             }
                             Text(
                                 category.name,
