@@ -89,7 +89,7 @@ class CategoryIconsTest {
 
     @Test
     fun everyIconParsesAsAVectorDrawableInBothWeights() {
-        assertEquals(252, CategoryIcons.allNames.size)
+        assertEquals(265, CategoryIcons.allNames.size)
         for (name in CategoryIcons.allNames) {
             for (weight in CategoryIconWeight.values()) {
                 val drawable = ResourcesCompat.getDrawable(context.resources, CategoryIcons.drawableForName(name, weight), null)
