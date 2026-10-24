@@ -53,11 +53,14 @@ class CategoryRepository @Inject constructor(
         return updated
     }
 
-    suspend fun delete(id: String) {
+    /** With [reassignTo], the category's transactions, bills and debts move to that category first. */
+    suspend fun delete(id: String, reassignTo: String? = null) {
         val userId = session.currentUserId ?: throw ApiError.Unauthorized
-        apiCallUnit { api.delete(id) }
+        apiCallUnit { api.delete(id, reassignTo) }
         val current = dao.observe(userId).first().map { it.toModel() }
         refreshAfterWrite(userId, current.filterNot { it.id == id })
+        // Reassigning rewrote other records; screens showing them must refetch.
+        if (reassignTo != null) invalidations.invalidate(Aggregate.TRANSACTION, Aggregate.RECURRING)
     }
 
     private suspend fun refreshAfterWrite(userId: String, categories: List<Category>) {

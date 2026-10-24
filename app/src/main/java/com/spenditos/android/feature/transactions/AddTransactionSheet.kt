@@ -87,6 +87,7 @@ import com.spenditos.android.data.transactions.BillCandidate
 import com.spenditos.android.data.transactions.RecurrencePreset
 import com.spenditos.android.ui.components.CategoryIcon
 import com.spenditos.android.ui.components.CategorySymbolBadge
+import com.spenditos.android.ui.components.DiscardChangesSheet
 import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.ErrorBanner
@@ -410,18 +411,11 @@ fun AddTransactionSheet(
     }
 
     if (showDiscardConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDiscardConfirmation = false },
-            title = { Text("Discard this transaction?") },
-            text = { Text("What you entered won't be saved.") },
-            confirmButton = {
-                TextButton(onClick = { showDiscardConfirmation = false; onDismiss() }) {
-                    Text("Discard", color = IosColors.expense)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDiscardConfirmation = false }) { Text("Keep editing") }
-            },
+        DiscardChangesSheet(
+            title = if (state.isEditMode) "Discard your changes?" else "Discard this transaction?",
+            message = if (state.isEditMode) "Your edits won't be saved." else "What you entered won't be saved.",
+            onKeep = { showDiscardConfirmation = false },
+            onDiscard = { showDiscardConfirmation = false; onDismiss() },
         )
     }
 

@@ -179,6 +179,6 @@ class FinanceReconciliationCoordinatorTest {
 
         override suspend fun create(body: CategoryCreateRequest): ApiEnvelope<Category> = error("unused")
         override suspend fun update(id: String, body: CategoryUpdateRequest): ApiEnvelope<Category> = error("unused")
-        override suspend fun delete(id: String) = error("unused")
+        override suspend fun delete(id: String, reassignTo: String?) = error("unused")
     }
 }
