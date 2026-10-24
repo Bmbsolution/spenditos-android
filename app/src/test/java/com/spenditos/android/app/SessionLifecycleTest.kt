@@ -95,7 +95,7 @@ class SessionLifecycleTest {
 
         override suspend fun create(body: CategoryCreateRequest): ApiEnvelope<Category> = error("not used")
         override suspend fun update(id: String, body: CategoryUpdateRequest): ApiEnvelope<Category> = error("not used")
-        override suspend fun delete(id: String) = error("not used")
+        override suspend fun delete(id: String, reassignTo: String?) = error("not used")
     }
 
     private val userApi = object : UserApi {

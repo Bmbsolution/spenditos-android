@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
@@ -191,7 +193,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             error = state.error,
             onDismiss = { showEditor = false; categoryToEditId = null },
             onSave = { draft -> viewModel.saveCategory(categoryToEdit?.id, draft) },
-            onDelete = categoryToEdit?.takeUnless { it.isSystemSuggestion }?.let { current ->
+            onDelete = categoryToEdit?.let { current ->
                 {
                     showEditor = false
                     categoryToEditId = null
@@ -201,7 +203,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
         )
     }
 
-    categoryToDelete?.let { category ->
+    categoryToDelete?.takeIf { state.reassignFor == null }?.let { category ->
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
             title = { Text("Delete Category", style = IosText.headline) },
@@ -218,6 +220,88 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             dismissButton = { TextButton(onClick = { categoryToDelete = null }, modifier = Modifier.testTag("categories.cancelDelete")) { Text("Cancel") } },
         )
     }
+
+    // The category is still used by transactions, bills or debts: pick where they move, then delete.
+    state.reassignFor?.let { id ->
+        val inUse = state.categories.firstOrNull { it.id == id }
+        if (inUse == null) {
+            LaunchedEffect(id) { viewModel.dismissReassign(); categoryToDelete = null }
+        } else {
+            ReassignCategoryDialog(
+                category = inUse,
+                candidates = state.categories.filter { it.isIncome == inUse.isIncome && it.id != inUse.id },
+                isSaving = state.isSaving,
+                error = state.error,
+                onConfirm = { target -> viewModel.deleteCategory(inUse.id, target.id) },
+                onDismiss = { viewModel.dismissReassign(); categoryToDelete = null },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReassignCategoryDialog(
+    category: Category,
+    candidates: List<Category>,
+    isSaving: Boolean,
+    error: String?,
+    onConfirm: (Category) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = candidates.firstOrNull { it.id == selectedId }
+    AlertDialog(
+        onDismissRequest = { if (!isSaving) onDismiss() },
+        modifier = Modifier.testTag("categories.reassign"),
+        title = { Text("Move before deleting", style = IosText.headline) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(
+                    "\"${category.name}\" is still in use. Choose where its transactions and bills should go. They keep their amounts and dates.",
+                    style = IosText.body,
+                )
+                if (candidates.isEmpty()) {
+                    Text(
+                        "Add another ${if (category.isIncome) "income" else "expense"} category first, so there is somewhere to move them.",
+                        style = IosText.footnote,
+                        color = IosColors.textSecondary,
+                    )
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 280.dp)) {
+                        items(candidates, key = { it.id }) { candidate ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable(role = Role.RadioButton) { selectedId = candidate.id }
+                                    .padding(vertical = Spacing.s).testTag("categories.reassign.${candidate.id}"),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                            ) {
+                                CategorySymbolBadge(candidate.icon, candidate.name, candidate.color, size = 36.dp)
+                                Text(candidate.name, style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                                val chosen = candidate.id == selectedId
+                                Icon(
+                                    SfSymbols.icon(if (chosen) "checkmark.circle" else "circle"),
+                                    contentDescription = if (chosen) "Selected" else null,
+                                    tint = if (chosen) IosColors.spendOrange else IosColors.textTertiary,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+                error?.let { Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.reassign.error")) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { selected?.let(onConfirm) },
+                enabled = selected != null && !isSaving,
+                modifier = Modifier.testTag("categories.reassign.confirm"),
+            ) { Text(selected?.let { "Move to ${it.name} and delete" } ?: "Choose a category") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSaving, modifier = Modifier.testTag("categories.reassign.cancel")) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable

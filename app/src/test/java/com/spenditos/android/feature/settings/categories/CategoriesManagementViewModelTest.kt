@@ -192,7 +192,7 @@ class CategoriesManagementViewModelTest {
     }
 
     @Test
-    fun `delete of a category in use explains the conflict`() = runTest {
+    fun `delete of a category in use asks for a category to move to`() = runTest {
         val graph = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
         loaded(vm)
@@ -200,8 +200,59 @@ class CategoriesManagementViewModelTest {
         graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
         vm.deleteCategory("c1")
         runCurrent()
-        assertTrue(vm.state.first { it.error != null }.error!!.startsWith("This category is still used"))
-        assertEquals(1, vm.state.value.categories.size)
+        val state = vm.state.first { it.reassignFor != null }
+        assertEquals("c1", state.reassignFor)
+        assertEquals(null, state.error) // not an error: the screen opens the move-first dialog
+        assertEquals(1, state.categories.size)
+    }
+
+    @Test
+    fun `delete with a target moves records then deletes and closes the dialog`() = runTest {
+        val graph = graph(listOf(category(), category(id = "c2", name = "Other")))
+        val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
+        loaded(vm)
+        graph.api.failureFor = "delete"
+        graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
+        vm.deleteCategory("c1")
+        runCurrent()
+        vm.state.first { it.reassignFor != null }
+
+        graph.api.failureFor = null
+        val deleted = async { vm.events.first() }
+        vm.deleteCategory("c1", reassignTo = "c2")
+        runCurrent()
+        assertEquals(CategoriesManagementEvent.Deleted, deleted.await())
+        assertEquals("c2", graph.api.lastReassignTo)
+        assertEquals(null, vm.state.first { it.reassignFor == null }.reassignFor)
+        assertTrue(vm.state.first { it.categories.none { c -> c.id == "c1" } }.categories.isNotEmpty())
+    }
+
+    @Test
+    fun `other delete conflicts still show their message instead of the move dialog`() = runTest {
+        val graph = graph(listOf(category()))
+        val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
+        loaded(vm)
+        graph.api.failureFor = "delete"
+        graph.api.failure = ApiError.Server(409, "CategoryDeleteInProgress")
+        vm.deleteCategory("c1")
+        runCurrent()
+        val state = vm.state.first { it.error != null }
+        assertEquals(null, state.reassignFor)
+        assertTrue(state.error!!.startsWith("This category is already being deleted"))
+    }
+
+    @Test
+    fun `dismissing the move dialog clears it`() = runTest {
+        val graph = graph(listOf(category()))
+        val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
+        loaded(vm)
+        graph.api.failureFor = "delete"
+        graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
+        vm.deleteCategory("c1")
+        runCurrent()
+        vm.state.first { it.reassignFor != null }
+        vm.dismissReassign()
+        assertEquals(null, vm.state.first { it.reassignFor == null }.reassignFor)
     }
 
     private inner class FakeCategoriesApi(var rows: MutableList<Category>) : CategoriesApi {
@@ -242,9 +293,12 @@ class CategoriesManagementViewModelTest {
             return ApiEnvelope(changed)
         }
 
-        override suspend fun delete(id: String) {
+        var lastReassignTo: String? = null
+
+        override suspend fun delete(id: String, reassignTo: String?) {
             fail("delete")
             deleteCalls++
+            lastReassignTo = reassignTo
             rows.removeAll { it.id == id }
         }
     }

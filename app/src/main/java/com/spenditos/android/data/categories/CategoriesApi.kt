@@ -10,6 +10,7 @@ import retrofit2.http.GET
 import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface CategoriesApi {
     @GET("categories")
@@ -21,6 +22,10 @@ interface CategoriesApi {
     @PUT("categories/{id}")
     suspend fun update(@Path("id") id: String, @Body body: CategoryUpdateRequest): ApiEnvelope<Category>
 
+    /**
+     * A category that still has transactions, bills or debts is refused with 409
+     * `CategoryHasReferences` until [reassignTo] names the category they move to.
+     */
     @DELETE("categories/{id}")
-    suspend fun delete(@Path("id") id: String)
+    suspend fun delete(@Path("id") id: String, @Query("reassignTo") reassignTo: String? = null)
 }

@@ -42,6 +42,8 @@ data class CategoriesManagementUiState(
     val isSaving: Boolean = false,
     val error: String? = null,
     val isOffline: Boolean = false,
+    /** Id of a category the server refused to delete because it is still in use. */
+    val reassignFor: String? = null,
 )
 
 sealed interface CategoriesManagementEvent {
@@ -147,30 +149,44 @@ class CategoriesManagementViewModel @Inject constructor(
         }
     }
 
-    fun deleteCategory(id: String) {
+    /**
+     * Without [reassignTo], a category that is still in use does not fail: it asks the screen
+     * for a target through [CategoriesManagementUiState.reassignFor]. With it, the category's
+     * transactions, bills and debts move there and the category is deleted.
+     */
+    fun deleteCategory(id: String, reassignTo: String? = null) {
         screen.update { it.copy(isSaving = true, error = null, isOffline = false) }
         viewModelScope.launch {
-            val result = runCatching { categories.delete(id) }
+            val result = runCatching { categories.delete(id, reassignTo) }
             result.fold(
                 onSuccess = {
-                    screen.update { it.copy(isSaving = false) }
+                    screen.update { it.copy(isSaving = false, reassignFor = null) }
                     _events.send(CategoriesManagementEvent.Deleted)
                 },
                 onFailure = { error ->
+                    val inUse = reassignTo == null && error is ApiError.Server && error.serverMessage == CATEGORY_IN_USE
                     screen.update {
-                        it.copy(
-                            isSaving = false,
-                            isOffline = error is ApiError.Network,
-                            error = when (error) {
-                                is ApiError.Network -> "You're offline. Try again when you're connected."
-                                is ApiError.Server -> DELETE_ERROR_COPY[error.serverMessage] ?: error.serverMessage
-                                else -> "Couldn't delete this category. Try again."
-                            },
-                        )
+                        if (inUse) {
+                            it.copy(isSaving = false, reassignFor = id)
+                        } else {
+                            it.copy(
+                                isSaving = false,
+                                isOffline = error is ApiError.Network,
+                                error = when (error) {
+                                    is ApiError.Network -> "You're offline. Try again when you're connected."
+                                    is ApiError.Server -> DELETE_ERROR_COPY[error.serverMessage] ?: error.serverMessage
+                                    else -> "Couldn't delete this category. Try again."
+                                },
+                            )
+                        }
                     }
                 },
             )
         }
+    }
+
+    fun dismissReassign() {
+        screen.update { it.copy(reassignFor = null, error = null, isOffline = false) }
     }
 }
 
@@ -180,7 +196,9 @@ internal fun normalizeCategoryName(value: String): String =
         .lowercase(Locale.getDefault())
 
 /** 409 codes of `DELETE /categories/{id}` (packages/functions/src/api/categories.ts:472, 564-576). */
+private const val CATEGORY_IN_USE = "CategoryHasReferences"
+
 private val DELETE_ERROR_COPY = mapOf(
-    "CategoryHasReferences" to "This category is still used by transactions or income and bills. Move them to another category first.",
+    CATEGORY_IN_USE to "This category is still used by transactions or income and bills. Move them to another category first.",
     "CategoryDeleteInProgress" to "This category is already being deleted. Try again in a moment.",
 )
