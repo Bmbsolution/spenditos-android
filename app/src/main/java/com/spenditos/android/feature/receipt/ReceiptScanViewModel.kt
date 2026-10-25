@@ -10,6 +10,7 @@ import com.spenditos.android.data.model.ReceiptResult
 import com.spenditos.android.data.model.ScanOutcome
 import com.spenditos.android.data.model.ScanProgress
 import com.spenditos.android.data.receipt.ReceiptIoDispatcher
+import com.spenditos.android.data.scan.ClipboardImages
 import com.spenditos.android.data.scan.ScanActions
 import com.spenditos.android.data.scan.ScanContext
 import com.spenditos.android.data.scan.ScanCoordinator
@@ -118,6 +119,7 @@ class ReceiptScanViewModel @Inject constructor(
     private val scans: ScanActions,
     private val coordinator: ScanCoordinator,
     private val inputs: ScanInputFactory,
+    private val clipboard: ClipboardImages,
     private val imageProcessor: ReceiptImageProcessing,
     private val credits: ScanCreditsProvider,
     private val dataSource: CaptureDataSource,
@@ -205,6 +207,24 @@ class ReceiptScanViewModel @Inject constructor(
     fun onPhotosPicked(uris: List<Uri>) {
         if (uris.isEmpty()) return
         startChecked(uris.take(ScanRules.MAX_DOCUMENTS_PER_UPLOAD).map(inputs::photo))
+    }
+
+    /** Whether the Upload menu should offer "Paste screenshot": only when the clipboard holds an image. */
+    fun clipboardHasImage(): Boolean = clipboard.hasImage()
+
+    /**
+     * "Paste screenshot" (#394): the images on the clipboard are read exactly like library photos picked in that order
+     * (same limits, credit check, errors and review). An empty clipboard only shows a short message.
+     * Counts only are logged, never the clipboard or the image.
+     */
+    fun onPasteScreenshot() {
+        val uris = clipboard.imageUris()
+        android.util.Log.i("ScanSheet", "paste: ${uris.size} image(s)")
+        if (uris.isEmpty()) {
+            _state.update { it.copy(toast = NO_CLIPBOARD_IMAGE) }
+            return
+        }
+        onPhotosPicked(uris)
     }
 
     /** The document picker returned [uris]: PDF, CSV, Excel and images are read; anything else is explained. */
@@ -404,7 +424,8 @@ class ReceiptScanViewModel @Inject constructor(
         const val BACKGROUND_OFFER_AFTER = 3
         const val QUOTA_MESSAGE = "You've used all your free scan credits for this month."
         const val RATE_LIMIT_MESSAGE = "Too many attempts in a short time — wait a few seconds and try again."
-        const val MANUAL_FALLBACK = "Couldn't read your scan. You can enter it yourself."
+        const val NO_CLIPBOARD_IMAGE = "There's no image on the clipboard."
+        const val MANUAL_FALLBACK ="Couldn't read your scan. You can enter it yourself."
 
         /** What the failure screen says for [error]. A 403 `QuotaExhausted` is the friendly limit screen, never the raw code. */
         fun failureState(error: Throwable): ReceiptScanUiState = when {

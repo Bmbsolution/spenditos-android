@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.data.merchants.RuleLearner
+import com.spenditos.android.testing.FakeExchangeRates
 import com.spenditos.android.testing.FakeMerchantMappings
 import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.capture.CaptureDataSource
@@ -54,6 +55,7 @@ class ScanReviewViewModelTest {
     private lateinit var scans: FakeScanActions
     private lateinit var coordinator: ScanCoordinator
     private lateinit var mappings: FakeMerchantMappings
+    private val rates = FakeExchangeRates()
     private val online = MutableStateFlow(true)
     private val categories = MutableStateFlow(
         listOf(
@@ -100,7 +102,7 @@ class ScanReviewViewModelTest {
         )
         handoff?.let(coordinator::handOff)
         return ScanReviewViewModel(
-            scans, coordinator, dataSource, mappings, RuleLearner(mappings),
+            scans, coordinator, dataSource, rates, mappings, RuleLearner(mappings),
             object : ConnectivityStatus { override val isOnline: StateFlow<Boolean> = online },
             SavedStateHandle(mapOf(ScanReviewViewModel.ARG_SCAN_ID to "scn_1")),
         )
@@ -162,6 +164,102 @@ class ScanReviewViewModelTest {
         vm.load()
         advanceUntilIdle()
         assertEquals(ScanReviewPhase.REVIEW, vm.state.value.phase)
+    }
+
+    // endregion
+
+    // region Foreign currencies
+
+    private fun usd(id: String, amount: Double? = 10.0) =
+        ScanItem(id = id, amount = amount, currency = "USD", date = "2026-10-09", description = "Row $id", categoryId = "cat_dining")
+
+    @Test
+    fun `rows in another currency are converted into the user's currency and saving waits for it`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        rates.onRate = { gate.await() }
+        rates.rates = mapOf("USD" to 1.37)
+        val vm = newViewModel(detail(usd("a"), row("b")))
+        runCurrent()
+
+        assertTrue(vm.state.value.preparingCurrencies)
+        assertFalse(vm.state.value.canSave)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertFalse(state.preparingCurrencies)
+        assertTrue(state.canSave)
+        assertEquals("13.7", state.items[0].amountText)
+        assertEquals("CAD", state.items[0].convertedTo)
+        assertNull(state.items[0].reviewCurrency)
+        // A row in the user's currency is untouched, and each currency is asked once.
+        assertEquals("10", state.items[1].amountText)
+        assertNull(state.items[1].convertedTo)
+        assertEquals(listOf("USD" to "CAD"), rates.asked)
+    }
+
+    @Test
+    fun `a row with no rate keeps its own currency and blocks saving until it is fixed or left out`() = runTest {
+        val vm = newViewModel(detail(usd("a"), row("b")))
+        advanceUntilIdle()
+
+        var state = vm.state.value
+        assertEquals("10", state.items[0].amountText)
+        assertEquals("USD", state.items[0].reviewCurrency)
+        assertEquals(1, state.conversionUnavailableCount)
+        assertEquals("Some foreign-currency amounts need review before they can be saved.", state.preparationMessage)
+        assertFalse(state.canSave)
+
+        vm.toggleInclude("a")
+        assertTrue(vm.state.value.canSave)
+        vm.toggleInclude("a")
+        assertFalse(vm.state.value.canSave)
+
+        // Typing the amount in the user's currency settles the row.
+        vm.onAmountChange("a", "13.5")
+        state = vm.state.value
+        assertNull(state.items[0].reviewCurrency)
+        assertEquals(0, state.conversionUnavailableCount)
+        assertTrue(state.canSave)
+    }
+
+    @Test
+    fun `an amount the user edited while rates loaded is kept`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        rates.onRate = { gate.await() }
+        rates.rates = mapOf("USD" to 2.0)
+        val vm = newViewModel(detail(usd("a")))
+        runCurrent()
+
+        vm.onAmountChange("a", "5")
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("5", vm.state.value.items[0].amountText)
+        assertNull(vm.state.value.items[0].convertedTo)
+    }
+
+    @Test
+    fun `a converted amount is what gets saved`() = runTest {
+        var sent: List<ScanSaveItem> = emptyList()
+        scans.saveResult = { _, items -> sent = items; ScanSaveOutcome(saved = items.size) }
+        rates.rates = mapOf("USD" to 1.5)
+        val vm = newViewModel(detail(usd("a", amount = 10.01)))
+        advanceUntilIdle()
+
+        vm.save()
+        advanceUntilIdle()
+
+        assertEquals(15.02, sent.single().amount, 0.0)
+    }
+
+    @Test
+    fun `scans with no currency on any row never wait for rates`() = runTest {
+        val vm = newViewModel(detail(row("a")))
+        runCurrent()
+        assertFalse(vm.state.value.preparingCurrencies)
+        assertTrue(rates.asked.isEmpty())
     }
 
     // endregion

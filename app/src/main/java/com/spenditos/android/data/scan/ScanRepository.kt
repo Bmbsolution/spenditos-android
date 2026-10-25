@@ -281,8 +281,11 @@ class ScanRepository @Inject constructor(
         /** Largest batch `/transactions/bulk` accepts. */
         const val BULK_CHUNK_SIZE = 100
 
-        /** The server fails a scan that has been processing for 30 minutes, so polling never needs to outlast that. */
-        const val MAX_POLL_MILLIS = 30 * 60 * 1000L
+        /**
+         * How long one reading screen waits before leaving the scan to finish in the background (iOS `maxPollDuration`,
+         * 20 minutes). The server itself fails a scan after 30, so Home still shows its final state.
+         */
+        const val MAX_POLL_MILLIS = 20 * 60 * 1000L
         const val MAX_CONSECUTIVE_FAILURES = 8
         private val FINAL_STATUSES = setOf(401, 403, 404, 429)
 

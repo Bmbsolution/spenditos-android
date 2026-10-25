@@ -21,6 +21,7 @@ import com.spenditos.android.data.scan.ScanFailure
 import com.spenditos.android.data.scan.ScanInputOrigin
 import com.spenditos.android.data.scan.ScanSource
 import com.spenditos.android.data.scan.ScanSubmission
+import com.spenditos.android.testing.FakeClipboardImages
 import com.spenditos.android.testing.FakeScanActions
 import com.spenditos.android.testing.FakeScanInputFactory
 import com.spenditos.android.testing.FakeScanSession
@@ -66,6 +67,7 @@ class ReceiptScanViewModelTest {
     private lateinit var coordinator: ScanCoordinator
     private lateinit var viewModel: ReceiptScanViewModel
     private var remainingCredits: Int? = null
+    private val clipboard = FakeClipboardImages()
 
     private val dataSource = object : CaptureDataSource {
         override fun categories() = flowOf(emptyList<Category>())
@@ -113,6 +115,7 @@ class ReceiptScanViewModelTest {
             scans = scans,
             coordinator = coordinator,
             inputs = FakeScanInputFactory(),
+            clipboard = clipboard,
             imageProcessor = processor,
             credits = ScanCreditsProvider { remainingCredits },
             dataSource = dataSource,
@@ -277,6 +280,104 @@ class ReceiptScanViewModelTest {
         vm.onPhotosPicked(photos("2.png"))
         runCurrent()
         assertEquals(2, scans.submitted.size)
+        vm.cancelReading()
+    }
+
+    // endregion
+
+    // region Paste screenshot (#394)
+
+    @Test
+    fun `the menu offers paste only while the clipboard holds an image and asking never reads its data`() = runTest {
+        val vm = newViewModel()
+        assertFalse(vm.clipboardHasImage())
+        clipboard.uris = photos("shot.png")
+        assertTrue(vm.clipboardHasImage())
+        assertEquals(0, clipboard.reads)
+    }
+
+    @Test
+    fun `a pasted screenshot is read like a picked library photo`() = runTest {
+        val vm = newViewModel()
+        scans.submitResult = { ScanSubmission("scn_1", 1, "1 screenshot") }
+        scans.waitResult = { _, _ -> awaitCancellation() }
+        clipboard.uris = photos("shot.png")
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        assertEquals(ReceiptScanStep.READING, vm.state.value.step)
+        val inputs = scans.submitted.single()
+        assertEquals(listOf("shot.png"), inputs.map { (it.source as ScanSource.Content).uri.lastPathSegment })
+        assertEquals(listOf(ScanInputOrigin.PHOTO_LIBRARY), inputs.map { it.origin })
+        assertEquals("1 screenshot", vm.state.value.reading.label)
+        vm.cancelReading()
+    }
+
+    @Test
+    fun `several pasted images are read together in clipboard order and labelled as screenshots`() = runTest {
+        val vm = newViewModel()
+        scans.waitResult = { _, _ -> awaitCancellation() }
+        clipboard.uris = photos("b.png", "a.png", "c.png")
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        val inputs = scans.submitted.single()
+        assertEquals(listOf("b.png", "a.png", "c.png"), inputs.map { (it.source as ScanSource.Content).uri.lastPathSegment })
+        assertEquals("3 screenshots", vm.state.value.reading.label)
+        vm.cancelReading()
+    }
+
+    @Test
+    fun `pasting with no image on the clipboard shows a short message and starts nothing`() = runTest {
+        val vm = newViewModel()
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        assertEquals("There's no image on the clipboard.", vm.state.value.toast)
+        assertEquals(ReceiptScanStep.CHOOSE, vm.state.value.step)
+        assertTrue(scans.submitted.isEmpty())
+    }
+
+    @Test
+    fun `pasted images are held to the same credit check as picked ones`() = runTest {
+        val vm = newViewModel()
+        remainingCredits = 1
+        scans.creditEstimate = { 2 }
+        clipboard.uris = photos("1.png", "2.png")
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        assertEquals("You have 1 scan left — pick up to 1", vm.state.value.toast)
+        assertTrue(scans.submitted.isEmpty())
+    }
+
+    @Test
+    fun `a pasted image that cannot be read shows the same error as a picked one`() = runTest {
+        val vm = newViewModel()
+        scans.submitResult = { throw ScanFailure.UnreadableImage(null) }
+        clipboard.uris = photos("broken.png")
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        assertEquals(ReceiptScanStep.FAILURE, vm.state.value.step)
+        assertEquals("Couldn't read one of the images.", vm.state.value.error)
+    }
+
+    @Test
+    fun `more pasted images than one upload takes are capped like picked photos`() = runTest {
+        val vm = newViewModel()
+        scans.waitResult = { _, _ -> awaitCancellation() }
+        clipboard.uris = (1..310).map { Uri.parse("content://clip/$it.png") }
+
+        vm.onPasteScreenshot()
+        runCurrent()
+
+        assertEquals(300, scans.submitted.single().size)
         vm.cancelReading()
     }
 
