@@ -125,6 +125,8 @@ fun ReceiptScanScreen(
                     ScanUploadSection(
                         onPhotoLibrary = pickPhotos,
                         onFiles = { filePicker.launch(FILE_MIME_TYPES) },
+                        clipboardHasImage = viewModel::clipboardHasImage,
+                        onPaste = viewModel::onPasteScreenshot,
                     )
                 },
             )
@@ -173,10 +175,19 @@ fun ReceiptScanScreen(
     }
 }
 
-/** iOS `uploadSection`: the Upload card (menu: Photo Library | Files) and the line under it. */
+/**
+ * iOS `uploadSection`: the Upload card (menu: Photo Library | Files) and the line under it. Android adds
+ * "Paste screenshot" (#394) to the menu, shown only while the clipboard holds an image.
+ */
 @Composable
-private fun ScanUploadSection(onPhotoLibrary: () -> Unit, onFiles: () -> Unit) {
+private fun ScanUploadSection(
+    onPhotoLibrary: () -> Unit,
+    onFiles: () -> Unit,
+    clipboardHasImage: () -> Boolean,
+    onPaste: () -> Unit,
+) {
     var menuOpen by remember { mutableStateOf(false) }
+    var canPaste by remember { mutableStateOf(false) }
     Column(
         Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m, bottom = Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -186,7 +197,11 @@ private fun ScanUploadSection(onPhotoLibrary: () -> Unit, onFiles: () -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .then(glassCardModifier())
-                    .clickable(role = Role.Button) { menuOpen = true }
+                    .clickable(role = Role.Button) {
+                        // Asked when the menu opens, so the item follows what was just copied.
+                        canPaste = clipboardHasImage()
+                        menuOpen = true
+                    }
                     .padding(Spacing.m)
                     .heightIn(min = 44.dp)
                     .semantics { contentDescription = "Upload. Choose from Photo Library or Files" }
@@ -218,6 +233,16 @@ private fun ScanUploadSection(onPhotoLibrary: () -> Unit, onFiles: () -> Unit) {
                     },
                     modifier = Modifier.testTag("scan.upload.files"),
                 )
+                if (canPaste) {
+                    DropdownMenuItem(
+                        text = { Text("Paste screenshot", style = IosText.body) },
+                        onClick = {
+                            menuOpen = false
+                            onPaste()
+                        },
+                        modifier = Modifier.testTag("scan.upload.paste"),
+                    )
+                }
             }
         }
         Text(

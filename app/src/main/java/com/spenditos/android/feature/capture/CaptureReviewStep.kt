@@ -157,8 +157,9 @@ internal fun ReviewSummaryRow(
     val subtitle = listOfNotNull(
         categoryLabel,
         item.date.takeIf { it.isNotBlank() },
-        // Android saves the parsed number in the user's currency (no conversion), so say what was parsed, not "→".
-        sourceCurrency?.let { "Parsed as $it" },
+        // Scan rows are converted into the user's currency (iOS "USD → CAD"); voice and typed amounts are saved as
+        // parsed, so those say what was parsed.
+        sourceCurrency?.let { source -> item.convertedTo?.let { "$source → $it" } ?: "Parsed as $source" },
     ).joinToString(" · ")
     Row(
         Modifier.fillMaxWidth()
@@ -223,7 +224,8 @@ internal fun ReviewSummaryRow(
             }
         }
         Text(
-            summaryAmountText(item.amountText, currency, income),
+            // A row that could not be converted is still in its own currency: show it as that.
+            summaryAmountText(item.amountText, item.reviewCurrency ?: currency, income),
             style = IosText.rounded(17, FontWeight.Medium),
             color = if (income) IosColors.income else IosColors.expense,
             maxLines = 1,
@@ -345,7 +347,11 @@ internal fun ReviewItemEditorSheet(
                     )
                     if (!item.currency.isNullOrBlank() && !item.currency.equals(currency, ignoreCase = true)) {
                         Text(
-                            "Parsed as ${item.currency.uppercase()}",
+                            if (item.convertedTo != null && item.reviewCurrency == null) {
+                                "Converted from ${item.currency.uppercase()}"
+                            } else {
+                                "Parsed as ${item.currency.uppercase()}"
+                            },
                             style = IosText.footnote,
                             color = IosColors.textSecondary,
                             modifier = Modifier.testTag("capture.currency.$key"),

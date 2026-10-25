@@ -165,3 +165,30 @@ class FakeScanInputFactory : com.spenditos.android.data.scan.ScanInputFactory {
         com.spenditos.android.data.scan.ScanSource.OwnedFile(file),
     )
 }
+
+/** A clipboard that holds whatever the test puts in [uris]; [reads] counts how often the data was read. */
+class FakeClipboardImages(var uris: List<android.net.Uri> = emptyList()) : com.spenditos.android.data.scan.ClipboardImages {
+    var reads = 0
+        private set
+
+    override fun hasImage() = uris.isNotEmpty()
+
+    override fun imageUris(): List<android.net.Uri> {
+        reads++
+        return uris
+    }
+}
+
+/** Rates by currency code (to whatever the test converts into); a code without an entry has no rate. */
+class FakeExchangeRates(var rates: Map<String, Double> = emptyMap()) : com.spenditos.android.data.scan.ExchangeRates {
+    val asked = mutableListOf<Pair<String, String>>()
+
+    /** Runs before each answer, e.g. to hold the rates back until a test lets them through. */
+    var onRate: suspend () -> Unit = {}
+
+    override suspend fun rate(from: String, to: String): Double {
+        asked += from to to
+        onRate()
+        return rates[from] ?: throw com.spenditos.android.data.scan.ExchangeRateUnavailable("no rate")
+    }
+}

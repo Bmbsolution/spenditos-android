@@ -85,6 +85,10 @@ data class CaptureReviewItem(
     /** The existing transaction this row probably repeats: its date and amount. */
     val duplicateDate: String? = null,
     val duplicateAmount: Double? = null,
+    /** Scan rows in another currency (#358): the user's currency the row was converted to ("USD → CAD"). */
+    val convertedTo: String? = null,
+    /** Set only when [amountText] could not be converted and is still in [currency]: shown in that currency, not the user's. */
+    val reviewCurrency: String? = null,
 )
 
 data class CaptureUiState(

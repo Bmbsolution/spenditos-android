@@ -16,6 +16,7 @@ import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.ScanOutcome
 import com.spenditos.android.data.model.ScanStatus
+import com.spenditos.android.data.scan.ExchangeRates
 import com.spenditos.android.data.scan.ScanActions
 import com.spenditos.android.data.scan.ScanCoordinator
 import com.spenditos.android.data.scan.ScanFailure
@@ -34,6 +35,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -72,6 +74,10 @@ data class ScanReviewUiState(
     val askAlsoUpdate: Boolean = true,
     val isSavingRule: Boolean = false,
     val ruleMessage: RuleMessage? = null,
+    /** Rows in another currency are being converted into [currency]; saving waits (iOS `isPreparing`). */
+    val preparingCurrencies: Boolean = false,
+    /** Why some amounts need a look, shown under the banners. */
+    val preparationMessage: String? = null,
 ) {
     val includedItems: List<CaptureReviewItem> get() = items.filter { it.include }
 
@@ -81,7 +87,14 @@ data class ScanReviewUiState(
 
     val missingCategoryCount: Int get() = includedItems.count { it.categoryId == null }
 
-    val canSave: Boolean get() = phase == ScanReviewPhase.REVIEW && includedItems.isNotEmpty() && incompleteCount == 0
+    /** Rows still in another currency because no rate was found (iOS `conversionUnavailableIDs`). */
+    val conversionUnavailableCount: Int get() = items.count { it.reviewCurrency != null }
+
+    private val includedUnavailable: Boolean get() = includedItems.any { it.reviewCurrency != null }
+
+    val canSave: Boolean
+        get() = phase == ScanReviewPhase.REVIEW && includedItems.isNotEmpty() && incompleteCount == 0 &&
+            !preparingCurrencies && !includedUnavailable
 
     val skippedCount: Int get() = maxOf(0, foundCount - addedCount - failedCount)
 
@@ -119,6 +132,7 @@ class ScanReviewViewModel @Inject constructor(
     private val scans: ScanActions,
     private val coordinator: ScanCoordinator,
     private val dataSource: CaptureDataSource,
+    private val rates: ExchangeRates,
     private val mappings: MerchantMappingActions,
     private val learner: RuleLearner,
     private val connectivity: ConnectivityStatus,
@@ -135,6 +149,7 @@ class ScanReviewViewModel @Inject constructor(
     private var saveJob: Job? = null
     private var askJob: Job? = null
     private var messageJob: Job? = null
+    private var currencyJob: Job? = null
     private var nextId = 0L
 
     init {
@@ -158,10 +173,13 @@ class ScanReviewViewModel @Inject constructor(
                 val rows = detail.items.orEmpty()
                 if (rows.isEmpty()) throw ScanFailure.NoTransactionsFound
                 val categories = _state.value.categories
+                val reviewItems = resolveScanCategories(rows.map { row -> row.toReviewItem(categories) }, categories)
                 _state.update {
                     it.copy(
                         phase = ScanReviewPhase.REVIEW,
-                        items = resolveScanCategories(rows.map { row -> row.toReviewItem(categories) }, categories),
+                        items = reviewItems,
+                        preparingCurrencies = reviewItems.any { item -> !item.currency.isNullOrBlank() },
+                        preparationMessage = null,
                         foundCount = rows.size,
                         flaggedCount = rows.count { row -> row.skip != null },
                         ruledCount = rows.count { row -> row.ruleId != null },
@@ -170,6 +188,7 @@ class ScanReviewViewModel @Inject constructor(
                     )
                 }
                 loadRules()
+                prepareCurrencies(reviewItems)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -179,10 +198,43 @@ class ScanReviewViewModel @Inject constructor(
         }
     }
 
+    // region Currencies
+
+    /**
+     * Rows read in another currency are converted into the user's (iOS `prepareCurrencyAmounts`). Saving waits for it.
+     * A row the user edited in the meantime keeps their value; a row with no rate stays in its own currency and
+     * blocks saving until it is fixed or left out.
+     */
+    private fun prepareCurrencies(snapshot: List<CaptureReviewItem>) {
+        currencyJob?.cancel()
+        currencyJob = viewModelScope.launch {
+            try {
+                val target = runCatching { dataSource.currency().first() }.getOrDefault(_state.value.currency)
+                val result = prepareCurrencyAmounts(snapshot, target, rates)
+                val original = snapshot.associate { it.idempotencyKeyId to it.amountText }
+                _state.update { current ->
+                    current.copy(
+                        items = current.items.map { item ->
+                            val prepared = result.items[item.idempotencyKeyId]
+                            if (prepared == null || item.amountText != original[item.idempotencyKeyId]) item
+                            else item.copy(amountText = prepared.amountText, convertedTo = prepared.convertedTo, reviewCurrency = prepared.reviewCurrency)
+                        },
+                        preparationMessage = if (result.rateFailed) "Some foreign-currency amounts need review before they can be saved." else null,
+                    )
+                }
+            } finally {
+                _state.update { it.copy(preparingCurrencies = false) }
+            }
+        }
+    }
+
+    // endregion
+
     // region Editing
 
     fun toggleInclude(key: String) = updateItem(key, ReviewItemEditing::toggled)
-    fun onAmountChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withAmountText(it, text) }
+    /** A typed amount is in the user's currency: it settles a row that could not be converted. */
+    fun onAmountChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withAmountText(it, text).copy(reviewCurrency = null) }
     fun onDescriptionChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withDescription(it, text) }
     fun onDateChange(key: String, date: LocalDate) = updateItem(key) { ReviewItemEditing.withDate(it, date) }
     fun onTypeChange(key: String, income: Boolean) = updateItem(key) { ReviewItemEditing.withType(it, income) }

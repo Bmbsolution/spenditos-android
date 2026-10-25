@@ -99,7 +99,7 @@ class ScanReviewRulesTest {
         )
         coordinator.handOff(scan)
         return ScanReviewViewModel(
-            scans, coordinator, dataSource, mappings, RuleLearner(mappings),
+            scans, coordinator, dataSource, com.spenditos.android.testing.FakeExchangeRates(), mappings, RuleLearner(mappings),
             object : ConnectivityStatus { override val isOnline: StateFlow<Boolean> = online },
             SavedStateHandle(mapOf(ScanReviewViewModel.ARG_SCAN_ID to "scn_1")),
         ).also { runCurrent() }
