@@ -8,6 +8,8 @@ import com.spenditos.android.data.model.GenerateTransactionsResult
 import com.spenditos.android.data.model.PatchMainIncomeTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -75,5 +77,55 @@ class RecurringContractTest {
         val explicitNullUpdate = UpdateRecurringTemplateRequest(occurrencesRemaining = kotlinx.serialization.json.JsonNull)
         val serialized = SpenditosJson.encodeToString(UpdateRecurringTemplateRequest.serializer(), explicitNullUpdate)
         assertTrue(SpenditosJson.parseToJsonElement(serialized).jsonObject["occurrencesRemaining"] is kotlinx.serialization.json.JsonNull)
+    }
+
+    @Test
+    fun `ended template fixture decodes as Ended`() {
+        val ended = SpenditosJson.decodeFromString(RecurringTemplate.serializer(), fixture("handwritten/endedRecurringTemplateFixture"))
+        assertFalse(ended.isActive)
+        assertEquals("2026-10-20T14:00:00.000Z", ended.endedAt)
+        assertEquals(0, ended.occurrencesRemaining)
+        assertEquals(com.spenditos.android.data.model.BillLifecycle.ENDED, ended.lifecycle)
+        // Older payloads without endedAt/pausedAt still decode, and an active row stays active.
+        val ordinary = SpenditosJson.decodeFromString(RecurringTemplate.serializer(), fixture("recurringTemplateFixture"))
+        assertNull(ordinary.endedAt)
+        assertEquals(com.spenditos.android.data.model.BillLifecycle.ACTIVE, ordinary.lifecycle)
+        val paused = SpenditosJson.decodeFromString(RecurringTemplate.serializer(), fixture("pausedRecurringTemplateFixture"))
+        assertEquals(com.spenditos.android.data.model.BillLifecycle.PAUSED, paused.lifecycle)
+    }
+
+    @Test
+    fun `bill history fixture decodes counts totals dates and entries`() {
+        val history = SpenditosJson.decodeFromString(
+            ApiEnvelope.serializer(
+                MapSerializer(String.serializer(), com.spenditos.android.data.model.BillHistorySummary.serializer()),
+            ),
+            fixture("handwritten/billHistoryFixture"),
+        ).data!!
+        val summary = history.getValue("tmpl-rent-001")
+        assertEquals(2, summary.count)
+        assertEquals(229.72, summary.total, 0.0)
+        assertEquals("2026-09-30", summary.firstDate)
+        assertEquals("2026-10-14", summary.lastDate)
+        assertEquals(listOf("txn-hist-2", "txn-hist-1"), summary.entries!!.map { it.id })
+        assertEquals("Klarna Airbnb", summary.entries!!.first().description)
+        assertEquals(114.86, summary.entries!!.first().amount, 0.0)
+    }
+
+    @Test
+    fun `lifecycle update requests write the fields the backend schema names`() {
+        val end = SpenditosJson.encodeToString(
+            UpdateRecurringTemplateRequest.serializer(),
+            UpdateRecurringTemplateRequest(
+                isActive = false,
+                endedAt = kotlinx.serialization.json.JsonPrimitive("2026-10-20T14:00:00Z"),
+                pausedAt = kotlinx.serialization.json.JsonNull,
+                upcomingEntries = "sync",
+            ),
+        )
+        val body = SpenditosJson.parseToJsonElement(end).jsonObject
+        assertEquals("2026-10-20T14:00:00Z", body["endedAt"]!!.toString().trim('"'))
+        assertTrue(body["pausedAt"] is kotlinx.serialization.json.JsonNull)
+        assertEquals("\"sync\"", body["upcomingEntries"].toString())
     }
 }

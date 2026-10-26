@@ -2,10 +2,12 @@ package com.spenditos.android.feature.recurring
 
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.sync.FinanceInvalidationBus
+import com.spenditos.android.data.model.BillHistorySummary
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.GenerateTransactionsResult
 import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.UserSettings
 import com.spenditos.android.data.model.UserSettingsUpdate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
@@ -34,6 +36,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 
 class IncomeAndBillsViewModelTest {
@@ -53,8 +57,10 @@ class IncomeAndBillsViewModelTest {
 
         assertFalse(vm.state.value.isLoading)
         assertEquals("CAD", vm.state.value.currency)
-        assertEquals(listOf("income-1", "inactive-income"), vm.state.value.incomeTemplates.map { it.id })
+        assertEquals(listOf("income-1"), vm.state.value.incomeTemplates.map { it.id })
         assertEquals(listOf("bill-1"), vm.state.value.billTemplates.map { it.id })
+        // A switched-off item without any marker stays Paused: visible, not in Income.
+        assertEquals(listOf("inactive-income"), vm.state.value.pausedTemplates.map { it.id })
         assertNull(vm.state.value.error)
     }
 
@@ -236,11 +242,18 @@ class IncomeAndBillsViewModelTest {
         }
         override suspend fun delete(id: String) { fail("delete"); deleted++; rows.value = rows.value.filterNot { it.id == id } }
         override suspend fun setMainIncome(id: String?) { fail("main-income"); mainIncomeSelections += id; selected.value = id }
-        override suspend fun generate(month: YearMonth): GenerateTransactionsResult {
+        override suspend fun generate(month: YearMonth, templateIds: List<String>?): GenerateTransactionsResult {
             fail("generate")
             generatedMonths += month
             return GenerateTransactionsResult(generated = 1)
         }
+        override suspend fun pause(id: String, now: Instant): RecurringTemplate = rows.value.first { it.id == id }
+        override suspend fun resume(id: String): RecurringTemplate = rows.value.first { it.id == id }
+        override suspend fun end(id: String, keepUpcoming: Boolean, now: Instant): RecurringTemplate = rows.value.first { it.id == id }
+        override suspend fun endAfterNextPayment(id: String): RecurringTemplate = rows.value.first { it.id == id }
+        override suspend fun startAgain(id: String, nextDate: LocalDate): RecurringTemplate = rows.value.first { it.id == id }
+        override suspend fun history(ids: List<String>, includeEntries: Boolean): Map<String, BillHistorySummary> = emptyMap()
+        override suspend fun monthEntries(month: YearMonth): List<Transaction> = emptyList()
         private fun fail(operation: String) { failures[operation]?.let { throw it } }
     }
 

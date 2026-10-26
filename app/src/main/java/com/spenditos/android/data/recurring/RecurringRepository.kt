@@ -9,11 +9,13 @@ import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.auth.SessionState
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FinanceInvalidationBus
+import com.spenditos.android.data.model.BillHistorySummary
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.GenerateTransactionsRequest
 import com.spenditos.android.data.model.GenerateTransactionsResult
 import com.spenditos.android.data.model.PatchMainIncomeTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +36,61 @@ interface RecurringActions {
     suspend fun update(id: String, request: UpdateRecurringTemplateRequest): RecurringTemplate
     suspend fun delete(id: String)
     suspend fun setMainIncome(id: String?)
-    suspend fun generate(month: YearMonth): GenerateTransactionsResult
+    /** Logs [month]'s entries for the given bills (all active items when [templateIds] is null). */
+    suspend fun generate(month: YearMonth, templateIds: List<String>? = null): GenerateTransactionsResult
+
+    // Lifecycle (#403): request bodies in [BillLifecycleRequests].
+    /** Pause: coming back later. Upcoming unlogged entries are removed. */
+    suspend fun pause(id: String, now: Instant = Instant.now()): RecurringTemplate
+    /** Resume a paused bill, or undo an end. The server logs the missing entries from today. */
+    suspend fun resume(id: String): RecurringTemplate
+    /** End for good. [keepUpcoming] leaves this month's entries in place (the last payment is still coming). */
+    suspend fun end(id: String, keepUpcoming: Boolean = false, now: Instant = Instant.now()): RecurringTemplate
+    /** End after one more payment: the generator ends it once that entry is made. */
+    suspend fun endAfterNextPayment(id: String): RecurringTemplate
+    /** Start an ended bill again from [nextDate], with no end. */
+    suspend fun startAgain(id: String, nextDate: LocalDate): RecurringTemplate
+    /** What each bill has logged so far (`GET /recurring/history`, at most 50 ids). */
+    suspend fun history(ids: List<String>, includeEntries: Boolean = false): Map<String, BillHistorySummary>
+    /** Logged entries dated in [month] (paged), for the summary strip and the Generate sheet. */
+    suspend fun monthEntries(month: YearMonth): List<Transaction>
+}
+
+/**
+ * Request bodies for the Paused / Ended lifecycle, exactly as iOS `RecurringTemplateService` sends
+ * them (#403). Explicit JSON nulls are real `JsonNull` values: `SpenditosJson` omits only Kotlin nulls.
+ */
+object BillLifecycleRequests {
+    /** `ISO8601DateFormatter` style: whole seconds, `Z`. */
+    fun timestamp(now: Instant): String = now.truncatedTo(ChronoUnit.SECONDS).toString()
+
+    fun pause(now: Instant) = UpdateRecurringTemplateRequest(
+        isActive = false,
+        pausedAt = JsonPrimitive(timestamp(now)),
+        upcomingEntries = "sync",
+    )
+
+    fun resume() = UpdateRecurringTemplateRequest(isActive = true, upcomingEntries = "sync")
+
+    fun end(now: Instant, keepUpcoming: Boolean) = UpdateRecurringTemplateRequest(
+        isActive = false,
+        endedAt = JsonPrimitive(timestamp(now)),
+        pausedAt = JsonNull,
+        upcomingEntries = if (keepUpcoming) null else "sync",
+    )
+
+    fun endAfterNextPayment() = UpdateRecurringTemplateRequest(occurrencesRemaining = JsonPrimitive(1))
+
+    /** Undo of [endAfterNextPayment]: back to the previous cap, or none. */
+    fun restoreOccurrences(previous: Int?) =
+        UpdateRecurringTemplateRequest(occurrencesRemaining = previous?.let { JsonPrimitive(it) } ?: JsonNull)
+
+    fun startAgain(nextDate: LocalDate) = UpdateRecurringTemplateRequest(
+        isActive = true,
+        firstOccurrenceDate = nextDate.toString(),
+        occurrencesRemaining = JsonNull,
+        upcomingEntries = "sync",
+    )
 }
 
 /** In-memory cache for the online recurring screen; it remains available while the app is open offline. */
@@ -88,7 +145,7 @@ class RecurringRepository @Inject constructor(
                 created = apiCall {
                     api.update(
                         created.id,
-                        UpdateRecurringTemplateRequest(isActive = false, pausedAt = Instant.now().toString()),
+                        UpdateRecurringTemplateRequest(isActive = false, pausedAt = JsonPrimitive(BillLifecycleRequests.timestamp(Instant.now()))),
                     )
                 }
                 ensureCurrentUser(userId)
@@ -150,16 +207,53 @@ class RecurringRepository @Inject constructor(
         afterWriteRefresh()
     }
 
-    override suspend fun generate(month: YearMonth): GenerateTransactionsResult {
+    override suspend fun generate(month: YearMonth, templateIds: List<String>?): GenerateTransactionsResult {
         val userId = activateUser()
         // The handler creates each template/date pair idempotently, so retrying this same month is safe.
         // Mid-month like iOS (YearMonth.date, day 15) and web ("<month>-15"): the handler parses the
         // date as UTC midnight and reads the month in the Lambda's local zone, so day 1 would
         // generate the previous month in any runtime whose zone is behind UTC.
-        val result = apiCall { api.generate(GenerateTransactionsRequest(generateTargetDate(month))) }
+        val result = apiCall { api.generate(GenerateTransactionsRequest(generateTargetDate(month), templateIds)) }
         ensureCurrentUser(userId)
         afterWriteRefresh()
         return result
+    }
+
+    override suspend fun pause(id: String, now: Instant) = update(id, BillLifecycleRequests.pause(now))
+
+    override suspend fun resume(id: String) = update(id, BillLifecycleRequests.resume())
+
+    override suspend fun end(id: String, keepUpcoming: Boolean, now: Instant) =
+        update(id, BillLifecycleRequests.end(now, keepUpcoming))
+
+    override suspend fun endAfterNextPayment(id: String) = update(id, BillLifecycleRequests.endAfterNextPayment())
+
+    override suspend fun startAgain(id: String, nextDate: LocalDate) = update(id, BillLifecycleRequests.startAgain(nextDate))
+
+    override suspend fun history(ids: List<String>, includeEntries: Boolean): Map<String, BillHistorySummary> {
+        val wanted = ids.take(HISTORY_MAX_IDS)
+        if (wanted.isEmpty()) return emptyMap()
+        val userId = activateUser()
+        val result = apiCall { api.history(wanted.joinToString(","), includeEntries.takeIf { it }) }
+        ensureCurrentUser(userId)
+        return result
+    }
+
+    override suspend fun monthEntries(month: YearMonth): List<Transaction> {
+        val userId = activateUser()
+        val all = mutableListOf<Transaction>()
+        var cursor: String? = null
+        repeat(ENTRY_PAGES) {
+            val page = apiCall { api.entries(month.atDay(1).toString(), month.atEndOfMonth().toString(), cursor = cursor) }
+            all += page.transactions
+            cursor = page.pagination.nextCursor
+            if (!page.pagination.hasMore || cursor == null) {
+                ensureCurrentUser(userId)
+                return all
+            }
+        }
+        ensureCurrentUser(userId)
+        return all
     }
 
     private suspend fun afterWriteRefresh() {
@@ -199,6 +293,9 @@ class RecurringRepository @Inject constructor(
         val mainIncomeTemplateId: String?,
     )
 }
+
+private const val HISTORY_MAX_IDS = 50
+private const val ENTRY_PAGES = 5
 
 /** `POST /transactions/generate` target for [month]: its 15th, never near a month boundary. */
 internal fun generateTargetDate(month: YearMonth): String = month.atDay(15).toString()
