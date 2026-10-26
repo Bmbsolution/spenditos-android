@@ -12,7 +12,13 @@ import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.transactions.TransactionRepository
+import com.spenditos.android.core.network.ConnectivityStatus
+import com.spenditos.android.data.monthbalance.MonthBalanceActions
+import com.spenditos.android.data.monthbalance.MonthBalanceChoice
 import com.spenditos.android.data.user.UserSettingsActions
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCard
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCopy
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceTracker
 import com.spenditos.android.feature.home.insights.HomeInsights
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,6 +65,8 @@ data class HomeUiState(
     val hasLoaded: Boolean = false,
     val isOffline: Boolean = false,
     val refreshError: String? = null,
+    /** The month-start card (docs/features/month-balance.md); null when there is nothing to ask. Home only. */
+    val monthBalance: MonthBalanceCard? = null,
 ) {
     val isLoading: Boolean get() = isRefreshing && !hasLoaded && transactionCount == 0
     val isEmpty: Boolean get() = hasLoaded && transactionCount == 0
@@ -95,7 +103,12 @@ class HomeViewModel @Inject constructor(
     settings: UserSettingsActions,
     invalidations: FinanceInvalidationBus,
     private val clock: Clock,
+    monthBalanceActions: MonthBalanceActions,
+    connectivity: ConnectivityStatus,
 ) : ViewModel() {
+    // Best-effort side panel: a failed load hides the card and never blocks Home.
+    private val monthBalance = MonthBalanceTracker(monthBalanceActions) { connectivity.isOnline.value }
+
     // Today advances with the clock (refresh, invalidation, a midnight rollover while Home
     // stays alive) so a ViewModel created yesterday never keeps yesterday's month and ranges.
     private val today = MutableStateFlow(LocalDate.now(clock))
@@ -132,7 +145,11 @@ class HomeViewModel @Inject constructor(
         dayTicks,
         combine(monthRows, weekRows, categories.observe()) { rows, week, categoryRows -> HomeData(rows, week, categoryRows) },
         combine(settings.currency(), settings.displayName(), refreshState) { currency, name, refresh -> HomeSettings(currency, name, refresh) },
-    ) { today, _, data, settingsState ->
+        monthBalance.state,
+    ) { today, _, data, settingsState, monthBalanceState ->
+        // The card (and its carried-in amount) belongs to the LOCAL month it was loaded for; at the month
+        // rollover an unanswered card simply stops being shown.
+        val monthKey = MonthBalanceCopy.monthKey(today)
         val models = data.transactions.map { it.toModel() }
         val weekModels = data.week.map { it.toModel() }
         HomeUiState(
@@ -141,7 +158,10 @@ class HomeViewModel @Inject constructor(
             currency = settingsState.currency,
             displayName = settingsState.displayName,
             transactionCount = models.size,
-            status = CashFlowStatus.make(models, data.categories, today),
+            status = CashFlowStatus.make(
+                models, data.categories, today,
+                carriedIn = CashFlowStatus.cashAmount(monthBalanceState.carriedInFor(monthKey)),
+            ),
             breakdown = CashFlowBreakdown.make(models, data.categories, today),
             history = CashFlowHistory.make(weekModels, data.categories, today),
             recent = recentActivity(models, data.categories, today),
@@ -150,6 +170,7 @@ class HomeViewModel @Inject constructor(
             hasLoaded = settingsState.refresh.hasLoaded,
             isOffline = settingsState.refresh.isOffline,
             refreshError = settingsState.refresh.error?.let(::refreshMessage),
+            monthBalance = monthBalanceState.cardFor(monthKey),
         )
     }.stateIn(
         viewModelScope,
@@ -168,8 +189,22 @@ class HomeViewModel @Inject constructor(
         today.drop(1).onEach { refresh() }.launchIn(viewModelScope)
     }
 
+    /** The device's local month, `YYYY-MM` (never UTC's), read from the clock. */
+    private fun currentMonthKey(): String = MonthBalanceCopy.monthKey(LocalDate.now(clock))
+
+    /** "Add debt" on a shortfall card finished: ask again, the prompt is answered by the new debt. */
+    fun onDebtCreated() {
+        viewModelScope.launch { monthBalance.load(currentMonthKey()) }
+    }
+
+    /** Answers the month-start card ("Carry over", "No thanks", "Not needed"). Ignored for an expired card. */
+    fun answerMonthBalance(choice: MonthBalanceChoice) {
+        viewModelScope.launch { monthBalance.answer(currentMonthKey(), choice) }
+    }
+
     /** Refreshes the Room-backed current month; Room remains the source shown while offline. */
     fun refresh() {
+        viewModelScope.launch { monthBalance.load(currentMonthKey()) }
         viewModelScope.launch {
             advanceToday()
             refreshState.update { it.copy(isRefreshing = true, isOffline = false, error = null) }

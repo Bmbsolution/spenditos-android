@@ -481,6 +481,105 @@ class DebtFormViewModelTest {
 
     // endregion
 
+    // region Month-start shortfall prefill (docs/features/month-balance.md; iOS DebtFormViewModelTests)
+
+    private val shortfall = DebtPrefill(name = "September shortfall", owed = 200.0, shortfallMonth = "2026-09")
+
+    @Test
+    fun `a shortfall prefill is September shortfall, I owe 200, no interest, when I can`() {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall)
+        val state = viewModel.state.value
+        assertEquals("September shortfall", state.name)
+        assertEquals("200", state.owedText)
+        assertEquals(DebtPlanMode.WHEN_I_CAN, state.mode)
+        assertFalse(state.chargesInterest)
+        assertEquals("2026-09", state.shortfallMonth)
+        assertTrue(state.isValid)
+        assertNull("No payment plan means no plan preview", state.previewRequest)
+    }
+
+    @Test
+    fun `cents in the shortfall are kept`() {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall.copy(owed = 199.5))
+        assertEquals("199.50", viewModel.state.value.owedText)
+    }
+
+    @Test
+    fun `the prefill applies once and never overwrites what the user typed`() {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall)
+        viewModel.onNameChange("Edited")
+        viewModel.applyPrefill(shortfall)
+        assertEquals("Edited", viewModel.state.value.name)
+    }
+
+    @Test
+    fun `when I can saves a debt with no bill, no interest and the shortfall month`() = runTest {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall)
+
+        assertNotNull(viewModel.saveNow())
+
+        val (request, key) = service.createCalls.single()
+        assertEquals("September shortfall", request.name)
+        assertEquals(200.0, request.startingBalance, 0.0)
+        assertEquals("2026-10-20", request.startDate)
+        assertNull(request.apr)
+        assertNull("When I can has no bill", request.payment)
+        assertEquals("2026-09", request.shortfallMonth)
+        assertTrue(key.isNotEmpty())
+        assertTrue("No plan is previewed for a debt without a bill", service.previewRequests.isEmpty())
+    }
+
+    @Test
+    fun `a retry of the same shortfall debt reuses the key`() = runTest {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall)
+        service.createResult = Result.failure(ApiError.Network(IOException("timeout")))
+        assertNull(viewModel.saveNow())
+        service.createResult = Result.success(DebtTestData.detail)
+        assertNotNull(viewModel.saveNow())
+        val keys = service.createCalls.map { it.second }
+        assertEquals(2, keys.size)
+        assertEquals(keys[0], keys[1])
+    }
+
+    @Test
+    fun `when I can needs no payment, frequency or next payment date`() {
+        val viewModel = makeViewModel()
+        viewModel.onNameChange("Laptop from Sam")
+        viewModel.onOwedChange("300")
+        viewModel.onFirstPaymentDateChange(LocalDate.of(2020, 1, 1)) // in the past: only matters with a plan
+        viewModel.setMode(DebtPlanMode.WHEN_I_CAN)
+        val state = viewModel.state.value
+        assertNull(state.firstPaymentError)
+        assertNull(state.paymentError)
+        assertTrue(state.isValid)
+        assertNull(state.createRequest()!!.payment)
+        assertNull("A debt added by hand is not tied to a month", state.createRequest()!!.shortfallMonth)
+    }
+
+    @Test
+    fun `switching a prefilled sheet to What I pay still ties the debt to the month`() = runTest {
+        val viewModel = makeViewModel()
+        viewModel.applyPrefill(shortfall)
+        viewModel.setMode(DebtPlanMode.WHAT_I_PAY)
+        viewModel.onPaymentChange("50")
+        assertNotNull(viewModel.saveNow())
+        val request = service.createCalls.single().first
+        assertEquals("2026-09", request.shortfallMonth)
+        assertEquals(50.0, request.payment!!.amount, 0.0)
+    }
+
+    @Test
+    fun `the plan modes read What I pay, When I'm done, When I can`() {
+        assertEquals(listOf("What I pay", "When I'm done", "When I can"), DebtPlanMode.entries.map { it.label })
+    }
+
+    // endregion
+
     private fun preview(payment: Double, count: Int, last: Double, interest: Double = 0.0) = DebtPreviewResponse(
         payment = payment, paymentsCount = count, payoffDate = "2028-06-01",
         lastPaymentAmount = last, totalInterest = interest, neverPaysOff = false,
