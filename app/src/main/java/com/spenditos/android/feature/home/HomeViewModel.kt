@@ -16,7 +16,9 @@ import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.data.monthbalance.MonthBalanceActions
 import com.spenditos.android.data.monthbalance.MonthBalanceChoice
 import com.spenditos.android.data.user.UserSettingsActions
+import com.spenditos.android.feature.home.monthbalance.AnswerOutcome
 import com.spenditos.android.feature.home.monthbalance.MonthBalanceCard
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceFollowUp
 import com.spenditos.android.feature.home.monthbalance.MonthBalanceCopy
 import com.spenditos.android.feature.home.monthbalance.MonthBalanceTracker
 import com.spenditos.android.feature.home.insights.HomeInsights
@@ -25,7 +27,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.first
 import com.spenditos.android.feature.transactions.toEditTarget
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,7 +71,14 @@ data class HomeUiState(
     val refreshError: String? = null,
     /** The month-start card (docs/features/month-balance.md); null when there is nothing to ask. Home only. */
     val monthBalance: MonthBalanceCard? = null,
+    /** The math sheet's "Not included" / "Not tracked" row; null when there is nothing to act on. */
+    val monthBalanceFollowUp: MonthBalanceFollowUp? = null,
+    /** An answer is being saved: the card, Remove and the follow-up buttons wait for it. */
+    val monthBalanceSaving: Boolean = false,
 ) {
+    /** Remove is offered while a carry-over is adding to left after bills. */
+    val canRemoveCarriedIn: Boolean get() = status?.carriedIn?.signum() == 1
+
     val isLoading: Boolean get() = isRefreshing && !hasLoaded && transactionCount == 0
     val isEmpty: Boolean get() = hasLoaded && transactionCount == 0
     val showingSavedData: Boolean get() = isOffline
@@ -171,6 +182,8 @@ class HomeViewModel @Inject constructor(
             isOffline = settingsState.refresh.isOffline,
             refreshError = settingsState.refresh.error?.let(::refreshMessage),
             monthBalance = monthBalanceState.cardFor(monthKey),
+            monthBalanceFollowUp = monthBalanceState.followUpFor(monthKey),
+            monthBalanceSaving = monthBalanceState.isSaving,
         )
     }.stateIn(
         viewModelScope,
@@ -201,6 +214,27 @@ class HomeViewModel @Inject constructor(
     fun answerMonthBalance(choice: MonthBalanceChoice) {
         viewModelScope.launch { monthBalance.answer(currentMonthKey(), choice) }
     }
+
+    /**
+     * "Remove" on the Carried in line: saves `dismissed` for the month, applied on screen at once and rolled back with a
+     * message if the save fails. Re-adding is [carryOverAgain].
+     */
+    fun removeCarriedIn() = changeCarry(MonthBalanceChoice.DISMISSED, optimistic = true)
+
+    /** "Carry over" on the math sheet's "Not included" row (the answer is saved first, then the line appears). */
+    fun carryOverAgain() = changeCarry(MonthBalanceChoice.CARRIED, optimistic = false)
+
+    private fun changeCarry(choice: MonthBalanceChoice, optimistic: Boolean) {
+        viewModelScope.launch {
+            val outcome = monthBalance.answer(currentMonthKey(), choice, optimistic = optimistic, errorOnCard = false)
+            if (outcome is AnswerOutcome.Failed) messageChannel.send(outcome.message)
+        }
+    }
+
+    private val messageChannel = Channel<String>(Channel.BUFFERED)
+
+    /** One-shot plain-language messages for a snackbar (a failed Remove / re-add, which have no card to show them on). */
+    val messages: Flow<String> = messageChannel.receiveAsFlow()
 
     /** Refreshes the Room-backed current month; Room remains the source shown while offline. */
     fun refresh() {

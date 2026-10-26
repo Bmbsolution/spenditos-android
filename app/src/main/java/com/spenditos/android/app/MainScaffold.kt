@@ -183,6 +183,7 @@ fun MainScaffold(
                             showAdd = true
                         },
                         onScanMessage = { message -> scope.launch { snackbar.showSnackbar(message) } },
+                        onMessage = { message -> scope.launch { snackbar.showSnackbar(message) } },
                         onOpenBillsLeft = { start, end ->
                             upcomingRequest = com.spenditos.android.feature.transactions.UpcomingExpensesRequest(start, end)
                             nav.navigate(Tab.TRANSACTIONS.route) {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -44,7 +45,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Shadow as TextShadow
 import androidx.compose.ui.unit.DpOffset
@@ -76,6 +79,9 @@ fun PulseHero(
     modifier: Modifier = Modifier,
     /** Opens the upcoming expenses behind "Bills left". */
     onOpenBillsLeft: () -> Unit = {},
+    /** "Remove" next to the Carried in line (month-start balance); null hides it. */
+    onRemoveCarriedIn: (() -> Unit)? = null,
+    removeEnabled: Boolean = true,
 ) {
     val weather = FinancialWeather.from(status.state)
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -217,12 +223,31 @@ fun PulseHero(
         )
 
         if (status.carriedIn.signum() > 0) {
-            Text(
-                "Carried in ${money(status.carriedIn)} from ${MonthBalanceCopy.previousMonthName(status.today)}",
-                style = IosText.subheadline.w(FontWeight.SemiBold),
-                color = Color.White.copy(alpha = 0.95f),
-                modifier = Modifier.testTag("home.carriedIn"),
-            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(
+                    "Carried in ${money(status.carriedIn)} from ${MonthBalanceCopy.previousMonthName(status.today)}",
+                    style = IosText.subheadline.w(FontWeight.SemiBold),
+                    color = Color.White.copy(alpha = 0.95f),
+                    modifier = Modifier.weight(1f).testTag("home.carriedIn"),
+                )
+                if (onRemoveCarriedIn != null) {
+                    // A 48dp target (the text itself is small); applies at once, no confirmation.
+                    Box(
+                        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                            .clickable(enabled = removeEnabled, role = Role.Button, onClick = onRemoveCarriedIn)
+                            .semantics { contentDescription = MonthBalanceCopy.REMOVE_DESCRIPTION }
+                            .testTag("month-balance-remove"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            MonthBalanceCopy.REMOVE,
+                            style = IosText.subheadline.w(FontWeight.Bold),
+                            color = Color.White,
+                            textDecoration = TextDecoration.Underline,
+                        )
+                    }
+                }
+            }
         }
 
         Row(
