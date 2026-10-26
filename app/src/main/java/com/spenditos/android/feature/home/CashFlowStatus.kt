@@ -18,8 +18,15 @@ data class CashFlowStatus(
     val daysRemaining: Int,
     val today: LocalDate,
     val monthEnd: LocalDate,
+    /**
+     * Last month's surplus the user chose to include (docs/features/month-balance.md). Computed by the
+     * server, never a transaction; ZERO unless the user chose "Carry over". Added to [leftAfterBills] only,
+     * not to [income].
+     */
+    val carriedIn: BigDecimal = BigDecimal.ZERO,
 ) {
-    val leftAfterBills: BigDecimal get() = received + expected - spent - billsLeft
+    /** received + expected - spent - billsLeft + carriedIn (same as `leftAfterBills` in `packages/core/src/insights/cash-flow.ts`). */
+    val leftAfterBills: BigDecimal get() = received + expected - spent - billsLeft + carriedIn
 
     /** Average everyday spending over at least the first seven days of the month. */
     val pace: BigDecimal
@@ -81,7 +88,12 @@ data class CashFlowStatus(
         }
 
         /** Builds the monthly status. Income vs expense comes only from category `isIncome`. */
-        fun make(transactions: List<Transaction>, categories: List<Category>, today: LocalDate): CashFlowStatus {
+        fun make(
+            transactions: List<Transaction>,
+            categories: List<Category>,
+            today: LocalDate,
+            carriedIn: BigDecimal = BigDecimal.ZERO,
+        ): CashFlowStatus {
             val categoryIncome = categories.associate { it.id to it.isIncome }
             val monthStart = today.withDayOfMonth(1)
             val monthEnd = today.withDayOfMonth(today.lengthOfMonth())
@@ -127,6 +139,7 @@ data class CashFlowStatus(
                 daysRemaining = today.lengthOfMonth() - today.dayOfMonth + 1,
                 today = today,
                 monthEnd = monthEnd,
+                carriedIn = carriedIn,
             )
         }
 

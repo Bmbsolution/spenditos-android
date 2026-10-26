@@ -54,7 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.feature.debts.DebtAddSheetHost
+import com.spenditos.android.feature.debts.add.DebtPrefill
 import com.spenditos.android.feature.home.insights.MonthRiverCard
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCard
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCopy
 import com.spenditos.android.feature.home.insights.NextBillTile
 import com.spenditos.android.feature.home.insights.TopCategoryTile
 import com.spenditos.android.feature.home.insights.WeekTile
@@ -98,6 +102,8 @@ fun HomeScreen(
     val locale = LocalConfiguration.current.locales[0]
     var showMath by rememberSaveable { mutableStateOf(false) }
     var showHealth by rememberSaveable { mutableStateOf(false) }
+    // The Add debt sheet opened by the month-start card (not restored after process death: it needs the card).
+    var addDebtPrefill by remember { mutableStateOf<DebtPrefill?>(null) }
 
     val hero = state.status?.let { FinancialWeather.from(it.state) }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -131,6 +137,16 @@ fun HomeScreen(
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         GreetingHeader(state.today, state.displayName, locale)
+                        // The month-start card lives on Home only, right above the status card.
+                        state.monthBalance?.let { card ->
+                            MonthBalanceCard(
+                                card = card,
+                                currency = state.currency,
+                                locale = locale,
+                                onAddDebt = { addDebtPrefill = MonthBalanceCopy.shortfallPrefill(card.data) },
+                                onAnswer = viewModel::answerMonthBalance,
+                            )
+                        }
                         state.status?.let { status ->
                             PulseHero(
                                 status = status,
@@ -200,6 +216,14 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    addDebtPrefill?.let { prefill ->
+        DebtAddSheetHost(
+            onDismiss = { addDebtPrefill = null },
+            onCreated = { viewModel.onDebtCreated() },
+            prefill = prefill,
+        )
     }
 
     if (showHealth) {

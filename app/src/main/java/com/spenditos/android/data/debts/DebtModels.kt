@@ -93,6 +93,11 @@ data class Debt(
     val categoryId: String,
     val createdAt: String,
     val updatedAt: String,
+    /**
+     * The month (`YYYY-MM`) that ended short and that this debt tracks. Set only by the month-start prompt.
+     * Absent on older servers and on other debts.
+     */
+    val shortfallMonth: String? = null,
 )
 
 /** `DebtAdjustment` ("Correct balance"). Not returned by any route; history carries adjustments. */
@@ -230,6 +235,11 @@ data class CreateDebtRequest(
     val categoryId: String? = null,
     /** Omitted creates a debt without a bill ("pay when I can"). */
     val payment: CreateDebtPayment? = null,
+    /**
+     * The month (`YYYY-MM`) that ended short, when created from the month-start prompt. The server keeps
+     * one debt per month (the id is derived from the user and the month, so a retry returns the same debt).
+     */
+    val shortfallMonth: String? = null,
 )
 
 /** Bill fields changed by `PATCH /debts/{id}` (`payment`). Null fields are not sent. */

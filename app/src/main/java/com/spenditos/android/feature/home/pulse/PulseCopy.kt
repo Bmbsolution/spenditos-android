@@ -20,7 +20,7 @@ object PulseCopy {
                     "Add your income and log a first expense. This card then shows what's left after bills."
                 }
             CashFlowStatus.State.OVER ->
-                "Spending and bills due are ${money(status.leftAfterBills.negate())} more than this month's income."
+                "Spending and bills due are ${money(status.leftAfterBills.negate())} more than this month's income${if (status.carriedIn.signum() > 0) " and what you carried in" else ""}."
             CashFlowStatus.State.TIGHT, CashFlowStatus.State.WATCH ->
                 when {
                     // A pace from the first few days (one big purchase) isn't a pace.

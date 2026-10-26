@@ -167,6 +167,48 @@ class CashFlowStatusTest {
         assertNull(CashFlowStatus.make(emptyList(), categories, LocalDate.parse("2026-10-10")).runOutDate())
     }
 
+    // region carriedIn parity (packages/core/test/insights/month-balance.test.ts "makeCashFlowStatus carriedIn")
+
+    private val carryMonth = listOf(
+        tx("pay", "paycheck", "Income", "2026-10-01", 3000.0),
+        tx("lunch", "food", "Lunch", "2026-10-05", 500.0),
+    )
+    private val carryToday = LocalDate.parse("2026-10-10")
+
+    @Test
+    fun `carriedIn defaults to zero and leaves the status as it was`() {
+        val base = CashFlowStatus.make(carryMonth, categories, carryToday)
+        assertMoney("0.00", base.carriedIn)
+        assertMoney("2500.00", base.leftAfterBills)
+    }
+
+    @Test
+    fun `carriedIn changes left after bills by exactly that amount and not income`() {
+        val base = CashFlowStatus.make(carryMonth, categories, carryToday)
+        val carried = CashFlowStatus.make(carryMonth, categories, carryToday, carriedIn = CashFlowStatus.cashAmount(150.0))
+        assertMoney("150.00", carried.carriedIn)
+        assertMoney("2650.00", carried.leftAfterBills)
+        assertEquals(base.leftAfterBills + BigDecimal("150"), carried.leftAfterBills)
+        assertMoney(base.income.toPlainString(), carried.income)
+        assertMoney(base.spent.toPlainString(), carried.spent)
+        assertMoney(base.billsLeft.toPlainString(), carried.billsLeft)
+    }
+
+    @Test
+    fun `carriedIn does not turn a month with no income into a set up month`() {
+        val none = CashFlowStatus.make(emptyList(), categories, carryToday, carriedIn = CashFlowStatus.cashAmount(150.0))
+        assertEquals(CashFlowStatus.State.SETUP, none.state)
+    }
+
+    @Test
+    fun `carriedIn keeps cents exact`() {
+        val carried = CashFlowStatus.make(carryMonth, categories, carryToday, carriedIn = CashFlowStatus.cashAmount(150.1 + 0.2))
+        assertMoney("150.30", carried.carriedIn)
+        assertMoney("2650.30", carried.leftAfterBills)
+    }
+
+    // endregion
+
     private fun category(id: String, name: String, isIncome: Boolean = false) =
         Category(id, "fake-user", name, "#445566", isIncome = isIncome)
 
