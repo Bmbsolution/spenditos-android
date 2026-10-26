@@ -148,6 +148,155 @@ class MonthBalanceTrackerTest {
         assertEquals(com.spenditos.android.data.monthbalance.MonthBalanceKind.SURPLUS, state.loaded!!.kind)
     }
 
+    // region Remove, re-add and the follow-up row (owner follow-up to #395)
+
+    private val offlineFailure = Result.failure<com.spenditos.android.data.monthbalance.MonthBalanceData>(ApiError.Network(IOException("Offline")))
+
+    @Test
+    fun `remove shows at once and is saved as dismissed`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        service.getResult = Result.success(FakeMonthBalanceActions.carried)
+        service.setResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        service.setGate = { gate.await() }
+        tracker.load(october)
+        assertEquals(150.0, state.carriedInFor(october), 0.0)
+
+        val removing = launch { tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false) }
+        runCurrent()
+        // The save has not finished, yet left after bills no longer includes the carry-over.
+        assertTrue(state.isSaving)
+        assertEquals(0.0, state.carriedInFor(october), 0.0)
+        assertNotNull(state.followUpFor(october))
+        assertNull("the card does not come back", state.cardFor(october))
+
+        gate.complete(Unit)
+        removing.join()
+        assertEquals(listOf(october to MonthBalanceChoice.DISMISSED), service.setCalls)
+        assertEquals(FakeMonthBalanceActions.dismissedSurplus, state.loaded)
+        assertFalse(state.isSaving)
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `a failed remove rolls back, tells why and leaves the card state alone`() = runTest {
+        online = false
+        service.getResult = Result.success(FakeMonthBalanceActions.carried)
+        service.setResult = offlineFailure
+        tracker.load(october)
+
+        val outcome = tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false)
+
+        assertEquals(AnswerOutcome.Failed("You're offline. Connect to the internet to answer this."), outcome)
+        assertEquals(150.0, state.carriedInFor(october), 0.0)
+        assertEquals(FakeMonthBalanceActions.carried, state.loaded)
+        assertNull(state.followUpFor(october))
+        assertNull("no stale error is kept for a later card", state.error)
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun `carry over again adds the surplus back once it is saved`() = runTest {
+        service.getResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        service.setResult = Result.success(FakeMonthBalanceActions.carried)
+        tracker.load(october)
+        assertEquals(0.0, state.carriedInFor(october), 0.0)
+        assertNotNull(state.followUpFor(october))
+
+        assertEquals(AnswerOutcome.Saved, tracker.answer(october, MonthBalanceChoice.CARRIED, errorOnCard = false))
+
+        assertEquals(listOf(october to MonthBalanceChoice.CARRIED), service.setCalls)
+        assertEquals(150.0, state.carriedInFor(october), 0.0)
+        assertNull(state.followUpFor(october))
+    }
+
+    @Test
+    fun `a failed carry over again keeps the follow-up row and says why`() = runTest {
+        service.getResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        service.setResult = Result.failure(ApiError.Network(IOException("timeout")))
+        tracker.load(october)
+
+        val outcome = tracker.answer(october, MonthBalanceChoice.CARRIED, errorOnCard = false)
+
+        assertTrue(outcome is AnswerOutcome.Failed)
+        assertEquals(0.0, state.carriedInFor(october), 0.0)
+        assertNotNull(state.followUpFor(october))
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `remove then carry over again is two idempotent answers, last one wins`() = runTest {
+        service.setUpdatesGet = true
+        service.getResult = Result.success(FakeMonthBalanceActions.carried)
+        tracker.load(october)
+        service.setResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false)
+        service.setResult = Result.success(FakeMonthBalanceActions.carried)
+        tracker.answer(october, MonthBalanceChoice.CARRIED, errorOnCard = false)
+        assertEquals(listOf(october to MonthBalanceChoice.DISMISSED, october to MonthBalanceChoice.CARRIED), service.setCalls)
+        assertEquals(150.0, state.carriedInFor(october), 0.0)
+    }
+
+    @Test
+    fun `a read that started during the save does not undo it`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        service.setUpdatesGet = true
+        service.getResult = Result.success(FakeMonthBalanceActions.carried)
+        service.setResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        tracker.load(october)
+        service.setGate = { gate.await() }
+        val removing = launch { tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false) }
+        runCurrent()
+        tracker.load(october) // answers with the OLD carried state: the server has not applied the PUT yet
+        assertEquals(FakeMonthBalanceActions.carried, state.loaded)
+        gate.complete(Unit)
+        removing.join()
+        assertEquals(FakeMonthBalanceActions.dismissedSurplus, state.loaded)
+        assertEquals(0.0, state.carriedInFor(october), 0.0)
+    }
+
+    @Test
+    fun `a double tap on remove sends one request`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        service.getResult = Result.success(FakeMonthBalanceActions.carried)
+        service.setResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        service.setGate = { gate.await() }
+        tracker.load(october)
+        val first = launch { tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false) }
+        runCurrent()
+        assertEquals(AnswerOutcome.Ignored, tracker.answer(october, MonthBalanceChoice.DISMISSED, optimistic = true, errorOnCard = false))
+        gate.complete(Unit)
+        first.join()
+        assertEquals(1, service.setCalls.size)
+    }
+
+    @Test
+    fun `the follow-up row follows the spec`() = runTest {
+        suspend fun followUp(data: com.spenditos.android.data.monthbalance.MonthBalanceData): Boolean {
+            service.getResult = Result.success(data)
+            tracker.load(data.month)
+            return state.followUpFor(data.month) != null
+        }
+        val s = FakeMonthBalanceActions
+        assertTrue("surplus said no thanks / removed", followUp(s.dismissedSurplus))
+        assertTrue("shortfall said not needed", followUp(s.dismissedShortfall))
+        assertFalse("shortfall that already has a debt", followUp(s.dismissedShortfall.copy(shortfallDebtId = "debt-1")))
+        assertFalse("unanswered (the card is showing)", followUp(s.surplus))
+        assertFalse("unanswered shortfall", followUp(s.shortfall))
+        assertFalse("unanswered shortfall that got a debt", followUp(s.shortfall.copy(shortfallDebtId = "debt-1", showPrompt = false)))
+        assertFalse("carried", followUp(s.carried))
+        assertFalse("nothing to ask", followUp(s.dismissedSurplus.copy(kind = com.spenditos.android.data.monthbalance.MonthBalanceKind.NONE)))
+    }
+
+    @Test
+    fun `the follow-up row expires with its month`() = runTest {
+        service.getResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        tracker.load(october)
+        assertNotNull(state.followUpFor("2026-10"))
+        assertNull(state.followUpFor("2026-11"))
+    }
+
+    // endregion
+
     // region Expiry: the card lives until it is answered or the month ends
 
     @Test

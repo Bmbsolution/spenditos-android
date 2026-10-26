@@ -36,6 +36,16 @@ class MonthBalanceCopyTest {
     }
 
     @Test
+    fun `the follow-up lines say what was left out`() {
+        assertEquals("Not included: September ended \$150 ahead", MonthBalanceCopy.followUpLine(FakeMonthBalanceActions.dismissedSurplus, money))
+        assertEquals("Not tracked: September ended \$200 short", MonthBalanceCopy.followUpLine(FakeMonthBalanceActions.dismissedShortfall, money))
+        assertEquals("Not included: October ended \$250 ahead", MonthBalanceCopy.followUpLine(FakeMonthBalanceActions.chained.copy(choice = com.spenditos.android.data.monthbalance.MonthBalanceChoice.DISMISSED), money))
+        assertNull(MonthBalanceCopy.followUpLine(FakeMonthBalanceActions.surplus.copy(kind = com.spenditos.android.data.monthbalance.MonthBalanceKind.NONE), money))
+        assertEquals("Remove", MonthBalanceCopy.REMOVE)
+        assertEquals("Remove carried-in amount", MonthBalanceCopy.REMOVE_DESCRIPTION)
+    }
+
+    @Test
     fun `january names december and month names ignore the time zone`() {
         assertEquals("December", MonthBalanceCopy.monthName("2026-12"))
         assertEquals("December", MonthBalanceCopy.previousMonthName(LocalDate.of(2027, 1, 2)))

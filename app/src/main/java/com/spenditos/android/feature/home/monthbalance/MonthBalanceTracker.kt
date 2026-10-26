@@ -4,6 +4,7 @@ import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.monthbalance.MonthBalanceActions
 import com.spenditos.android.data.monthbalance.MonthBalanceChoice
 import com.spenditos.android.data.monthbalance.MonthBalanceData
+import com.spenditos.android.data.monthbalance.MonthBalanceKind
 import com.spenditos.android.feature.debts.add.DebtAddText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,33 @@ data class MonthBalanceState(
 
     /** Added to "left after bills" (0 unless the user chose "Carry over" for [monthKey]). */
     fun carriedInFor(monthKey: String): Double = dataFor(monthKey)?.carriedIn ?: 0.0
+
+    /**
+     * The "Not included" / "Not tracked" row of the math sheet: the user answered "No thanks" / "Not needed"
+     * (or removed a carry-over) for [monthKey] and there is still something to act on. Nothing while the card
+     * is showing (unanswered), after a carry-over, or for a shortfall that already has a debt.
+     */
+    fun followUpFor(monthKey: String): MonthBalanceFollowUp? {
+        val data = dataFor(monthKey) ?: return null
+        if (data.choice != MonthBalanceChoice.DISMISSED || data.kind == MonthBalanceKind.NONE) return null
+        if (data.kind == MonthBalanceKind.SHORTFALL && data.shortfallDebtId != null) return null
+        return MonthBalanceFollowUp(data)
+    }
+}
+
+/** An answered, still actionable month-start balance (see [MonthBalanceState.followUpFor]). Never logged: it holds amounts. */
+data class MonthBalanceFollowUp(val data: MonthBalanceData)
+
+/** How an answer ended. */
+sealed interface AnswerOutcome {
+    /** Saved (or a newer read replaced it); nothing to tell the user. */
+    data object Saved : AnswerOutcome
+
+    /** Nothing was sent: no card for that month, or a save is already running. */
+    data object Ignored : AnswerOutcome
+
+    /** Not saved; [message] is plain language. A [MonthBalanceTracker.answer] with `optimistic` has already rolled back. */
+    data class Failed(val message: String) : AnswerOutcome
 }
 
 /** What the Home card shows. Never logged: it holds amounts. */
@@ -67,27 +95,66 @@ class MonthBalanceTracker(
     }
 
     /**
-     * Saves [choice] for the card shown in [monthKey]. Ignored while a save is already running (a double tap
-     * sends one request; the server write is idempotent anyway) and when there is no card for [monthKey]: an
+     * Saves [choice] for the month shown in [monthKey]. Ignored while a save is already running (a double tap
+     * sends one request; the server write is idempotent anyway) and when there is no data for [monthKey]: an
      * expired card is not on screen.
+     *
+     * With [optimistic] the new state shows at once ("Remove" on a carry-over: left after bills updates before
+     * the answer is saved) and is rolled back if the save fails. With [errorOnCard] a failure is also kept in
+     * [MonthBalanceState.error] for the card; otherwise it is only returned.
      */
-    suspend fun answer(monthKey: String, choice: MonthBalanceChoice) {
+    suspend fun answer(
+        monthKey: String,
+        choice: MonthBalanceChoice,
+        optimistic: Boolean = false,
+        errorOnCard: Boolean = true,
+    ): AnswerOutcome {
         val current = mutableState.value
-        if (current.isSaving) return
-        val month = current.dataFor(monthKey)?.month ?: return
-        mutableState.update { it.copy(isSaving = true, error = null) }
+        if (current.isSaving) return AnswerOutcome.Ignored
+        val before = current.dataFor(monthKey) ?: return AnswerOutcome.Ignored
+        val month = before.month
+        mutableState.update {
+            it.copy(
+                isSaving = true,
+                error = null,
+                loaded = if (optimistic) before.answeredAs(choice) else it.loaded,
+            )
+        }
         val id = ++requestId
+        var outcome: AnswerOutcome = AnswerOutcome.Saved
         try {
             val result = actions.set(month, choice)
-            if (id == requestId) mutableState.update { it.copy(loaded = result) }
+            if (id == requestId) {
+                mutableState.update { it.copy(loaded = result) }
+            } else {
+                // A read that started meanwhile may predate this write: ask again so the screen ends on the saved answer.
+                load(monthKey)
+            }
         } catch (cancelled: CancellationException) {
+            if (optimistic && id == requestId) mutableState.update { it.copy(loaded = before) }
             throw cancelled
         } catch (error: Exception) {
-            mutableState.update { it.copy(error = messageFor(error)) }
+            val message = messageFor(error)
+            outcome = AnswerOutcome.Failed(message)
+            mutableState.update {
+                it.copy(
+                    // A newer read already decided what is on screen; only undo our own guess.
+                    loaded = if (optimistic && id == requestId) before else it.loaded,
+                    error = if (errorOnCard) message else it.error,
+                )
+            }
         } finally {
             mutableState.update { it.copy(isSaving = false) }
         }
+        return outcome
     }
+
+    /** What the card state looks like once [choice] is saved, before the server has said so. */
+    private fun MonthBalanceData.answeredAs(choice: MonthBalanceChoice): MonthBalanceData = copy(
+        choice = choice,
+        showPrompt = false,
+        carriedIn = if (choice == MonthBalanceChoice.CARRIED && kind == MonthBalanceKind.SURPLUS) balance else 0.0,
+    )
 
     private fun messageFor(error: Throwable): String =
         if (error is ApiError.Network && !isOnline()) {

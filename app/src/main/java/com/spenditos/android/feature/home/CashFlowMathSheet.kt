@@ -17,9 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spenditos.android.data.monthbalance.MonthBalanceKind
+import com.spenditos.android.feature.debts.add.DebtAddText
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCopy
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceFollowUp
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.theme.IosColors
@@ -39,6 +45,14 @@ fun CashFlowMathSheet(
     currency: String,
     locale: Locale,
     onDismiss: () -> Unit,
+    /** "Remove" on the Carried in row (month-start balance); null hides it. */
+    onRemoveCarriedIn: (() -> Unit)? = null,
+    /** "Not included" / "Not tracked" row under the equation; null when there is nothing to act on. */
+    followUp: MonthBalanceFollowUp? = null,
+    onCarryOver: () -> Unit = {},
+    onAddDebt: () -> Unit = {},
+    /** An answer is being saved. */
+    saving: Boolean = false,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -66,6 +80,16 @@ fun CashFlowMathSheet(
                             currency = currency,
                             locale = locale,
                             detail = "Last month’s balance you chose to include",
+                            action = onRemoveCarriedIn?.let { remove ->
+                                {
+                                    TextButton(
+                                        onClick = remove,
+                                        enabled = !saving,
+                                        modifier = Modifier.semantics { contentDescription = MonthBalanceCopy.REMOVE_DESCRIPTION }
+                                            .testTag("month-balance-remove-math"),
+                                    ) { Text(MonthBalanceCopy.REMOVE, style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
+                                }
+                            },
                         )
                     }
                     EquationRow(
@@ -98,6 +122,7 @@ fun CashFlowMathSheet(
                             color = if (status.leftAfterBills < BigDecimal.ZERO) IosColors.expense else IosColors.income,
                         )
                     }
+                    followUp?.let { FollowUpRow(it, currency, locale, saving, onCarryOver, onAddDebt) }
                     if (status.income.signum() > 0) {
                         Text(
                             "That’s ${percent(status.incomeLeftShare)} of this month’s income (${money(status.income, currency, locale)}).",
@@ -130,16 +155,50 @@ private fun EquationRow(
     currency: String,
     locale: Locale,
     detail: String? = null,
+    /** An action under the amount, aligned to the end (Carried in: Remove). */
+    action: (@Composable () -> Unit)? = null,
 ) {
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        modifier = Modifier.fillMaxWidth().testTag("home.math.equation.${title.lowercase().replace(' ', '_')}"),
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = IosText.callout, color = IosColors.textPrimary)
-            detail?.let { Text(it, style = IosText.caption, color = IosColors.textSecondary) }
+    Column(Modifier.fillMaxWidth().testTag("home.math.equation.${title.lowercase().replace(' ', '_')}")) {
+        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = IosText.callout, color = IosColors.textPrimary)
+                detail?.let { Text(it, style = IosText.caption, color = IosColors.textSecondary) }
+            }
+            Text("$sign ${money(amount, currency, locale)}", style = IosText.rounded(15, FontWeight.SemiBold), color = IosColors.textPrimary)
         }
-        Text("$sign ${money(amount, currency, locale)}", style = IosText.rounded(15, FontWeight.SemiBold), color = IosColors.textPrimary)
+        if (action != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { action() }
+        }
+    }
+}
+
+/**
+ * After "No thanks" / "Not needed" or a removed carry-over, the one thing left out of the numbers, with a way back
+ * ("Carry over", or the same prefilled Add debt sheet as the card). Home math sheet only, current month only.
+ */
+@Composable
+private fun FollowUpRow(
+    followUp: MonthBalanceFollowUp,
+    currency: String,
+    locale: Locale,
+    saving: Boolean,
+    onCarryOver: () -> Unit,
+    onAddDebt: () -> Unit,
+) {
+    val data = followUp.data
+    val line = MonthBalanceCopy.followUpLine(data) { value -> DebtAddText.money(value, currency, locale) } ?: return
+    val surplus = data.kind == MonthBalanceKind.SURPLUS
+    Row(
+        Modifier.fillMaxWidth().testTag("month-balance-follow-up"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Text(line, style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+        TextButton(
+            onClick = if (surplus) onCarryOver else onAddDebt,
+            enabled = !saving,
+            modifier = Modifier.testTag(if (surplus) "month-balance-carry-again" else "month-balance-add-debt-again"),
+        ) { Text(if (surplus) "Carry over" else "Add debt", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
     }
 }
 

@@ -49,11 +49,27 @@ object MonthBalanceCopy {
         MonthBalanceKind.NONE -> null
     }
 
+    /**
+     * The math sheet's line for an answer that left something out: "Not included: September ended $150 ahead" or
+     * "Not tracked: September ended $200 short" (same words on web, iOS and Android).
+     */
+    fun followUpLine(data: MonthBalanceData, money: (Double) -> String): String? {
+        val previous = monthName(data.previousMonth)
+        return when (data.kind) {
+            MonthBalanceKind.SURPLUS -> "Not included: $previous ended ${money(abs(data.balance))} ahead"
+            MonthBalanceKind.SHORTFALL -> "Not tracked: $previous ended ${money(abs(data.balance))} short"
+            MonthBalanceKind.NONE -> null
+        }
+    }
+
     /** The Add debt sheet's starting point for a shortfall: "September shortfall", what was short, tied to that month. */
     fun shortfallPrefill(data: MonthBalanceData): DebtPrefill? {
         if (data.kind != MonthBalanceKind.SHORTFALL) return null
         return DebtPrefill(name = "${monthName(data.previousMonth)} shortfall", owed = abs(data.balance), shortfallMonth = data.previousMonth)
     }
+
+    const val REMOVE = "Remove"
+    const val REMOVE_DESCRIPTION = "Remove carried-in amount"
 
     const val OFFLINE = "You're offline. Connect to the internet to answer this."
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,6 +96,8 @@ fun HomeScreen(
     onOpenBillsLeft: (start: LocalDate, end: LocalDate) -> Unit = { _, _ -> },
     /** Next bill was tapped: open the logged transaction in the edit form. */
     onOpenTransaction: (com.spenditos.android.feature.transactions.EditTarget) -> Unit = {},
+    /** A plain-language message for the snackbar (a failed Remove / re-add of the month-start carry-over). */
+    onMessage: (String) -> Unit = {},
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -104,6 +107,8 @@ fun HomeScreen(
     var showHealth by rememberSaveable { mutableStateOf(false) }
     // The Add debt sheet opened by the month-start card (not restored after process death: it needs the card).
     var addDebtPrefill by remember { mutableStateOf<DebtPrefill?>(null) }
+
+    LaunchedEffect(viewModel) { viewModel.messages.collect(onMessage) }
 
     val hero = state.status?.let { FinancialWeather.from(it.state) }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -161,6 +166,8 @@ fun HomeScreen(
                                     val end = status.monthEnd
                                     onOpenBillsLeft(minOf(state.today.plusDays(1), end), end)
                                 },
+                                onRemoveCarriedIn = (viewModel::removeCarriedIn).takeIf { state.canRemoveCarriedIn },
+                                removeEnabled = !state.monthBalanceSaving,
                             )
                         }
                     }
@@ -243,6 +250,14 @@ fun HomeScreen(
                 currency = state.currency,
                 locale = locale,
                 onDismiss = { showMath = false },
+                onRemoveCarriedIn = (viewModel::removeCarriedIn).takeIf { state.canRemoveCarriedIn },
+                followUp = state.monthBalanceFollowUp,
+                onCarryOver = viewModel::carryOverAgain,
+                onAddDebt = {
+                    state.monthBalanceFollowUp?.data?.let(MonthBalanceCopy::shortfallPrefill)?.let { addDebtPrefill = it }
+                    showMath = false
+                },
+                saving = state.monthBalanceSaving,
             )
         }
     }
