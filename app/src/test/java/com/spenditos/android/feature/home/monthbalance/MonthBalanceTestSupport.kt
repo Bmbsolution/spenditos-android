@@ -15,6 +15,9 @@ class FakeMonthBalanceActions : MonthBalanceActions {
     var getGate: (suspend () -> Unit)? = null
     var setGate: (suspend () -> Unit)? = null
 
+    /** When true a saved answer becomes what the next [get] returns, like the real server. */
+    var setUpdatesGet = false
+
     val getMonths = mutableListOf<String>()
     val setCalls = mutableListOf<Pair<String, MonthBalanceChoice>>()
 
@@ -27,7 +30,9 @@ class FakeMonthBalanceActions : MonthBalanceActions {
     override suspend fun set(month: String, choice: MonthBalanceChoice): MonthBalanceData {
         setCalls += month to choice
         setGate?.invoke()
-        return (setResult ?: Result.failure(ApiError.NoData)).getOrThrow()
+        val result = (setResult ?: Result.failure(ApiError.NoData)).getOrThrow()
+        if (setUpdatesGet) getResult = Result.success(result)
+        return result
     }
 
     companion object {
@@ -55,5 +60,8 @@ class FakeMonthBalanceActions : MonthBalanceActions {
         )
 
         val dismissedShortfall = shortfall.copy(choice = MonthBalanceChoice.DISMISSED, showPrompt = false)
+
+        /** September ended $150 ahead and the user removed it (or said "No thanks"). */
+        val dismissedSurplus = surplus.copy(choice = MonthBalanceChoice.DISMISSED, showPrompt = false)
     }
 }

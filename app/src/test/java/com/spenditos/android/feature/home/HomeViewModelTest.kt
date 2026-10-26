@@ -399,6 +399,109 @@ class HomeViewModelTest {
         assertNull(state.monthBalance)
     }
 
+
+    @Test
+    fun `remove takes the carried in amount off left after bills at once and saves dismissed`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.carried)
+        monthBalance.setResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        monthBalance.setUpdatesGet = true
+        viewModel = createViewModel()
+        val before = viewModel.state.first { it.hasLoaded && it.status?.carriedIn?.signum() == 1 }
+        assertTrue(before.canRemoveCarriedIn)
+        assertEquals(3150.0, before.status!!.leftAfterBills.toDouble(), 0.0)
+        assertNull("nothing to add back while it is carried", before.monthBalanceFollowUp)
+
+        viewModel.removeCarriedIn()
+        val after = viewModel.state.first { it.status?.carriedIn?.signum() == 0 && it.monthBalanceFollowUp != null }
+
+        assertEquals(listOf("2026-10" to MonthBalanceChoice.DISMISSED), monthBalance.setCalls)
+        assertEquals(3000.0, after.status!!.leftAfterBills.toDouble(), 0.0)
+        assertFalse(after.canRemoveCarriedIn)
+        assertEquals(MonthBalanceKind.SURPLUS, after.monthBalanceFollowUp!!.data.kind)
+        assertNull("the prompt does not come back", after.monthBalance)
+    }
+
+    @Test
+    fun `a failed remove puts the carried in amount back and sends one message`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        online.value = false
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.carried)
+        monthBalance.setResult = Result.failure(com.spenditos.android.core.network.ApiError.Network(java.io.IOException("Offline")))
+        viewModel = createViewModel()
+        viewModel.state.first { it.hasLoaded && it.status?.carriedIn?.signum() == 1 }
+
+        viewModel.removeCarriedIn()
+        val message = viewModel.messages.first()
+
+        assertEquals("You're offline. Connect to the internet to answer this.", message)
+        val state = viewModel.state.first { !it.monthBalanceSaving }
+        assertEquals(150.0, state.status!!.carriedIn.toDouble(), 0.0)
+        assertEquals(3150.0, state.status!!.leftAfterBills.toDouble(), 0.0)
+        assertNull(state.monthBalanceFollowUp)
+    }
+
+    @Test
+    fun `carry over again from the follow-up row adds it back`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.dismissedSurplus)
+        monthBalance.setResult = Result.success(FakeMonthBalanceActions.carried)
+        viewModel = createViewModel()
+        val before = viewModel.state.first { it.hasLoaded && it.monthBalanceFollowUp != null }
+        assertEquals(3000.0, before.status!!.leftAfterBills.toDouble(), 0.0)
+        assertFalse(before.canRemoveCarriedIn)
+
+        viewModel.carryOverAgain()
+        val after = viewModel.state.first { it.status?.carriedIn?.signum() == 1 }
+
+        assertEquals(listOf("2026-10" to MonthBalanceChoice.CARRIED), monthBalance.setCalls)
+        assertEquals(3150.0, after.status!!.leftAfterBills.toDouble(), 0.0)
+        assertNull(after.monthBalanceFollowUp)
+        assertTrue(after.canRemoveCarriedIn)
+    }
+
+    @Test
+    fun `no follow-up row for a shortfall that has a debt or for an unanswered prompt`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.shortfall) // unanswered: the card is showing
+        viewModel = createViewModel()
+        val prompt = viewModel.state.first { it.hasLoaded && it.monthBalance != null }
+        assertNull(prompt.monthBalanceFollowUp)
+
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.dismissedShortfall.copy(shortfallDebtId = "debt-1"))
+        viewModel.onDebtCreated()
+        val withDebt = viewModel.state.first { it.monthBalance == null }
+        assertNull(withDebt.monthBalanceFollowUp)
+
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.dismissedShortfall)
+        viewModel.onDebtCreated()
+        val dismissed = viewModel.state.first { it.monthBalanceFollowUp != null }
+        assertEquals(MonthBalanceKind.SHORTFALL, dismissed.monthBalanceFollowUp!!.data.kind)
+    }
+
+    @Test
+    fun `the follow-up row and Remove expire with the month`() = runTest {
+        seedCategories()
+        clock = MutableClock(Instant.parse("2026-11-01T03:30:00Z"), TORONTO) // 23:30 on Oct 31 locally
+        server.enqueue(MockResponse(body = page(tx("pay", "income", "Pay", "2026-10-01", 3000.0, "income-template"))))
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.carried)
+        viewModel = createViewModel()
+        assertTrue(viewModel.state.first { it.hasLoaded && it.status?.carriedIn?.signum() == 1 }.canRemoveCarriedIn)
+
+        clock.set(Instant.parse("2026-11-01T04:30:00Z"))
+        server.enqueue(MockResponse(body = page()))
+        testScheduler.advanceTimeBy(30 * 60_000L)
+        val after = viewModel.state.first { it.today == LocalDate.parse("2026-11-01") }
+        assertFalse(after.canRemoveCarriedIn)
+        assertNull(after.monthBalanceFollowUp)
+        viewModel.removeCarriedIn() // an expired answer cannot be changed
+        testScheduler.advanceUntilIdle()
+        assertTrue(monthBalance.setCalls.isEmpty())
+    }
     // endregion
 
     private fun createViewModel(): HomeViewModel {
