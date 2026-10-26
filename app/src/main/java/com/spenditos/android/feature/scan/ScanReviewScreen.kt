@@ -144,6 +144,16 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
                 modifier = Modifier.padding(horizontal = Spacing.m).padding(bottom = Spacing.s).testTag("scan.review.saveError"),
             )
         }
+        if (state.preparingCurrencies) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = Spacing.s).testTag("scan.review.preparing"),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(Modifier.size(16.dp), color = IosColors.spendOrange, strokeWidth = 2.dp)
+                Text("Preparing categories and currencies…", style = IosText.subheadline, color = IosColors.textSecondary)
+            }
+        }
         val missing = state.missingCategoryCount
         if (missing > 0) {
             Text(
@@ -151,6 +161,22 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.textSecondary,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.uncategorized"),
+            )
+        }
+        if (state.conversionUnavailableCount > 0) {
+            Text(
+                "One or more foreign-currency amounts could not be converted",
+                style = IosText.subheadline.w(FontWeight.SemiBold),
+                color = IosColors.warning,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.conversion"),
+            )
+        }
+        state.preparationMessage?.let { message ->
+            Text(
+                message,
+                style = IosText.caption,
+                color = IosColors.textSecondary,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m).padding(bottom = Spacing.s).testTag("scan.review.preparationMessage"),
             )
         }
         if (state.incompleteCount > 0) {

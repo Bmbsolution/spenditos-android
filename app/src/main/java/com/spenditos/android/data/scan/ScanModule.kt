@@ -41,6 +41,10 @@ abstract class ScanBindsModule {
 
     @Binds abstract fun inputs(impl: AndroidScanInputFactory): ScanInputFactory
 
+    @Binds abstract fun clipboard(impl: AndroidClipboardImages): ClipboardImages
+
+    @Binds abstract fun rates(impl: OkHttpExchangeRates): ExchangeRates
+
     @Binds abstract fun time(impl: SystemScanTimeSource): ScanTimeSource
 
     @Binds abstract fun session(impl: SessionManagerScanSession): ScanSession

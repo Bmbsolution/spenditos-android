@@ -34,7 +34,17 @@ import kotlinx.coroutines.withContext
 enum class DebtPlanMode(val label: String) {
     WHAT_I_PAY("What I pay"),
     WHEN_IM_DONE("When I'm done"),
+
+    /** No payment plan: the debt is paid down as the user can (no bill). */
+    WHEN_I_CAN("When I can"),
 }
+
+/**
+ * The sheet's starting point for a month-start shortfall (docs/features/month-balance.md; iOS
+ * `DebtFormViewModel.Prefill`): name, amount and "When I can". [shortfallMonth] (`YYYY-MM`) ties the debt to
+ * the month that ended short. Nothing here reaches logs: it is user financial data.
+ */
+data class DebtPrefill(val name: String, val owed: Double, val shortfallMonth: String)
 
 /** The plan the server worked out for exactly [request]. */
 data class DebtPreviewResult(val request: DebtPreviewRequest, val response: DebtPreviewResponse)
@@ -63,6 +73,8 @@ data class DebtFormUiState(
     val isSaving: Boolean = false,
     val error: String? = null,
     val previewResult: DebtPreviewResult? = null,
+    /** The month (`YYYY-MM`) that ended short, when the sheet was opened from the month-start card. */
+    val shortfallMonth: String? = null,
 ) {
     // region Parsed values
 
@@ -107,7 +119,8 @@ data class DebtFormUiState(
             null
         }
 
-    val firstPaymentError: String? get() = if (firstPaymentDate < today) "Pick today or a later date" else null
+    val firstPaymentError: String?
+        get() = if (mode != DebtPlanMode.WHEN_I_CAN && firstPaymentDate < today) "Pick today or a later date" else null
 
     private val aprInRange: Boolean get() = aprValue?.let { it > 0 && it < 100 } == true
 
@@ -128,6 +141,7 @@ data class DebtFormUiState(
             return when (mode) {
                 DebtPlanMode.WHAT_I_PAY -> (payment ?: 0.0) > 0
                 DebtPlanMode.WHEN_IM_DONE -> targetError == null
+                DebtPlanMode.WHEN_I_CAN -> true
             }
         }
 
@@ -141,6 +155,7 @@ data class DebtFormUiState(
     /** The preview request for what is typed so far, or null until it is complete enough to ask. */
     val previewRequest: DebtPreviewRequest?
         get() {
+            if (mode == DebtPlanMode.WHEN_I_CAN) return null
             val balance = owed?.takeIf { it > 0 } ?: return null
             if (firstPaymentError != null) return null
             if (chargesInterest && !aprInRange) return null
@@ -160,6 +175,7 @@ data class DebtFormUiState(
                         firstPaymentDate = first, targetMonth = DebtAddText.monthKey(targetMonth),
                     )
                 }
+                DebtPlanMode.WHEN_I_CAN -> null
             }
         }
 
@@ -191,6 +207,7 @@ data class DebtFormUiState(
                     val pay = "Pay ${DebtAddText.paymentLine(plan.payment, frequency, currency)}"
                     if (done != null) "$pay · done by $done" else pay
                 }
+                DebtPlanMode.WHEN_I_CAN -> null
             }
         }
 
@@ -224,9 +241,21 @@ data class DebtFormUiState(
     fun createRequest(): CreateDebtRequest? {
         if (!isValid) return null
         val balance = owed ?: return null
+        if (mode == DebtPlanMode.WHEN_I_CAN) {
+            // No bill: the payments are recorded as they are made.
+            return CreateDebtRequest(
+                name = trimmedName,
+                startingBalance = balance,
+                startDate = today.toString(),
+                apr = effectiveApr,
+                payment = null,
+                shortfallMonth = shortfallMonth,
+            )
+        }
         val amount = when (mode) {
             DebtPlanMode.WHAT_I_PAY -> payment ?: return null
             DebtPlanMode.WHEN_IM_DONE -> preview?.payment ?: return null
+            DebtPlanMode.WHEN_I_CAN -> return null
         }
         return CreateDebtRequest(
             name = trimmedName,
@@ -244,6 +273,7 @@ data class DebtFormUiState(
                     null
                 },
             ),
+            shortfallMonth = shortfallMonth,
         )
     }
 
@@ -287,6 +317,7 @@ class DebtFormViewModel internal constructor(
 
     private var previewJob: Job? = null
     private var createAttempt: Pair<CreateDebtRequest, String>? = null
+    private var prefillApplied = false
 
     init {
         viewModelScope.launch {
@@ -320,6 +351,23 @@ class DebtFormViewModel internal constructor(
         changeInput {
             val keepComputed = newMode == DebtPlanMode.WHAT_I_PAY && it.paymentText.isBlank() && computed != null
             it.copy(mode = newMode, paymentText = if (keepComputed) plainNumber(computed) else it.paymentText)
+        }
+    }
+
+    /**
+     * Starts the form from a month-start shortfall (name, amount, "When I can", no interest). Applies once per
+     * ViewModel, so recomposition or a rotation never overwrites what the user has typed since.
+     */
+    fun applyPrefill(prefill: DebtPrefill?) {
+        if (prefill == null || prefillApplied) return
+        prefillApplied = true
+        mutableState.update {
+            it.copy(
+                name = prefill.name.take(MAX_NAME_INPUT),
+                owedText = plainNumber(prefill.owed),
+                mode = DebtPlanMode.WHEN_I_CAN,
+                shortfallMonth = prefill.shortfallMonth,
+            )
         }
     }
 

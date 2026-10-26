@@ -17,6 +17,9 @@ import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.categories.CategoriesApi
 import com.spenditos.android.data.categories.CategoryRepository
 import com.spenditos.android.data.model.UserSettings
+import com.spenditos.android.data.monthbalance.MonthBalanceChoice
+import com.spenditos.android.data.monthbalance.MonthBalanceKind
+import com.spenditos.android.feature.home.monthbalance.FakeMonthBalanceActions
 import com.spenditos.android.data.model.UserSettingsUpdate
 import com.spenditos.android.data.transactions.TransactionsApi
 import com.spenditos.android.data.transactions.TransactionRepository
@@ -64,6 +67,8 @@ class HomeViewModelTest {
     private var clock = MutableClock(Instant.parse("2026-10-01T16:00:00Z"), TORONTO)
     private lateinit var db: SpenditosDatabase
     private lateinit var viewModel: HomeViewModel
+    private val monthBalance = FakeMonthBalanceActions().apply { getResult = Result.success(FakeMonthBalanceActions.shortfall.copy(showPrompt = false, kind = MonthBalanceKind.NONE)) }
+    private val online = kotlinx.coroutines.flow.MutableStateFlow(true)
 
     @Before
     fun setUp() {
@@ -238,6 +243,164 @@ class HomeViewModelTest {
         assertTrue(server.requestCount >= 3) // the invalidation caused a fresh month fetch
     }
 
+
+    // region Month-start card (docs/features/month-balance.md; iOS MonthBalanceTests)
+
+    private fun seedIncomeMonth() {
+        // 3000 received on the 1st, nothing else: left after bills = 3000 (+ carried in).
+        server.enqueue(MockResponse(body = page(tx("pay", "income", "Pay", "2026-10-01", 3000.0, "income-template"))))
+    }
+
+    private suspend fun seedCategories() = db.categories().insert(listOf(category("income", "Income", true), category("food", "Food")))
+
+    @Test
+    fun `the month key is the devices local month, not UTC's`() = runTest {
+        seedCategories()
+        // 23:30 on Oct 31 in Toronto is already 03:30Z on Nov 1.
+        clock = MutableClock(Instant.parse("2026-11-01T03:30:00Z"), TORONTO)
+        seedIncomeMonth()
+        viewModel = createViewModel()
+        viewModel.state.first { it.hasLoaded }
+
+        assertEquals(listOf("2026-10"), monthBalance.getMonths.distinct())
+        assertEquals(LocalDate.parse("2026-10-31"), viewModel.state.value.today)
+    }
+
+    @Test
+    fun `a shortfall shows the card on Home and carries nothing`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.shortfall)
+        viewModel = createViewModel()
+
+        val state = viewModel.state.first { it.hasLoaded && it.monthBalance != null }
+
+        assertEquals(MonthBalanceKind.SHORTFALL, state.monthBalance!!.data.kind)
+        assertEquals(0.0, state.status!!.carriedIn.toDouble(), 0.0)
+        assertEquals(3000.0, state.status!!.leftAfterBills.toDouble(), 0.0)
+    }
+
+    @Test
+    fun `carry over adds the surplus to left after bills only`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.surplus)
+        monthBalance.setResult = Result.success(FakeMonthBalanceActions.carried)
+        viewModel = createViewModel()
+        val before = viewModel.state.first { it.hasLoaded && it.monthBalance != null }.status!!
+        assertEquals(3000.0, before.leftAfterBills.toDouble(), 0.0)
+
+        viewModel.answerMonthBalance(MonthBalanceChoice.CARRIED)
+        val after = viewModel.state.first { it.monthBalance == null && it.status?.carriedIn?.signum() == 1 }.status!!
+
+        assertEquals(listOf("2026-10" to MonthBalanceChoice.CARRIED), monthBalance.setCalls)
+        assertEquals(150.0, after.carriedIn.toDouble(), 0.0)
+        assertEquals(3150.0, after.leftAfterBills.toDouble(), 0.0)
+        assertEquals(before.income.toDouble(), after.income.toDouble(), 0.0)
+        assertEquals(before.spent.toDouble(), after.spent.toDouble(), 0.0)
+        assertEquals(before.billsLeft.toDouble(), after.billsLeft.toDouble(), 0.0)
+    }
+
+    @Test
+    fun `an unanswered card expires at the local month rollover and the new month asks its own question`() = runTest {
+        seedCategories()
+        clock = MutableClock(Instant.parse("2026-11-01T03:30:00Z"), TORONTO) // 23:30 on Oct 31 locally
+        server.enqueue(MockResponse(body = page(tx("pay", "income", "Pay", "2026-10-01", 3000.0, "income-template"))))
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.surplus) // for 2026-10
+        viewModel = createViewModel()
+        val before = viewModel.state.first { it.hasLoaded && it.monthBalance != null }
+        assertEquals("2026-10", before.monthBalance!!.data.month)
+
+        // 00:30 on Nov 1 locally: the October card has expired, without any reload.
+        clock.set(Instant.parse("2026-11-01T04:30:00Z"))
+        server.enqueue(MockResponse(body = page(tx("rent", "food", "Rent", "2026-11-01", 900.0))))
+        testScheduler.advanceTimeBy(30 * 60_000L)
+        val after = viewModel.state.first { it.today == LocalDate.parse("2026-11-01") }
+        assertNull(after.monthBalance)
+        assertEquals(0.0, after.status!!.carriedIn.toDouble(), 0.0)
+        // Answering the expired card sends nothing.
+        viewModel.answerMonthBalance(MonthBalanceChoice.DISMISSED)
+        testScheduler.advanceUntilIdle()
+        assertTrue(monthBalance.setCalls.isEmpty())
+
+        // November evaluates its own previous month (October).
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.chained)
+        server.enqueue(MockResponse(body = page()))
+        viewModel.refresh()
+        val november = viewModel.state.first { it.monthBalance != null }
+        assertEquals("2026-11", november.monthBalance!!.data.month)
+        assertEquals("2026-10", november.monthBalance!!.data.previousMonth)
+        assertEquals("2026-11", monthBalance.getMonths.last())
+    }
+
+    @Test
+    fun `an expired carry over stops adding to left after bills`() = runTest {
+        seedCategories()
+        clock = MutableClock(Instant.parse("2026-11-01T03:30:00Z"), TORONTO)
+        server.enqueue(MockResponse(body = page(tx("pay", "income", "Pay", "2026-10-01", 3000.0, "income-template"))))
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.carried)
+        viewModel = createViewModel()
+        assertEquals(150.0, viewModel.state.first { it.hasLoaded && it.status?.carriedIn?.signum() == 1 }.status!!.carriedIn.toDouble(), 0.0)
+
+        clock.set(Instant.parse("2026-11-01T04:30:00Z"))
+        server.enqueue(MockResponse(body = page()))
+        testScheduler.advanceTimeBy(30 * 60_000L)
+        val after = viewModel.state.first { it.today == LocalDate.parse("2026-11-01") }
+        assertEquals(0.0, after.status!!.carriedIn.toDouble(), 0.0)
+    }
+
+    @Test
+    fun `a failed load hides the card and never blocks Home`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.failure(com.spenditos.android.core.network.ApiError.Network(java.io.IOException("boom")))
+        viewModel = createViewModel()
+
+        val state = viewModel.state.first { it.hasLoaded && it.transactionCount == 1 }
+
+        assertNull(state.monthBalance)
+        assertEquals(3000.0, state.status!!.leftAfterBills.toDouble(), 0.0)
+        assertNull(state.refreshError)
+    }
+
+    @Test
+    fun `answering twice sends the same request and ends in the same state`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.shortfall)
+        monthBalance.setResult = Result.success(FakeMonthBalanceActions.dismissedShortfall)
+        viewModel = createViewModel()
+        viewModel.state.first { it.hasLoaded && it.monthBalance != null }
+
+        viewModel.answerMonthBalance(MonthBalanceChoice.DISMISSED)
+        val first = viewModel.state.first { it.monthBalance == null }.monthBalance
+        viewModel.answerMonthBalance(MonthBalanceChoice.DISMISSED) // a repeat is the same request (the server write is idempotent)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("2026-10" to MonthBalanceChoice.DISMISSED, "2026-10" to MonthBalanceChoice.DISMISSED), monthBalance.setCalls)
+        assertEquals(first, viewModel.state.value.monthBalance)
+        assertNull(viewModel.state.value.monthBalance)
+    }
+
+    @Test
+    fun `a debt created from the card reloads the prompt`() = runTest {
+        seedCategories()
+        seedIncomeMonth()
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.shortfall)
+        viewModel = createViewModel()
+        viewModel.state.first { it.hasLoaded && it.monthBalance != null }
+        val loadsBefore = monthBalance.getMonths.size
+
+        monthBalance.getResult = Result.success(FakeMonthBalanceActions.shortfall.copy(shortfallDebtId = "debt-1", showPrompt = false))
+        viewModel.onDebtCreated()
+        val state = viewModel.state.first { it.monthBalance == null }
+
+        assertTrue(monthBalance.getMonths.size > loadsBefore)
+        assertNull(state.monthBalance)
+    }
+
+    // endregion
+
     private fun createViewModel(): HomeViewModel {
         val client = OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(offline).build()
         val retrofit = Retrofit.Builder().baseUrl(server.url("/")).client(client)
@@ -265,6 +428,10 @@ class HomeViewModelTest {
             FakeSettings(),
             bus,
             clock,
+            monthBalance,
+            object : com.spenditos.android.core.network.ConnectivityStatus {
+                override val isOnline = online
+            },
         )
     }
 

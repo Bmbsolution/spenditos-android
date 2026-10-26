@@ -96,16 +96,22 @@ import java.time.format.TextStyle
  * The sheet owns a fresh ViewModel per opening, so a host does not need `ScopedViewModels`.
  */
 @Composable
-fun AddDebtSheet(onDismiss: () -> Unit, onCreated: (debtId: String) -> Unit) {
-    ScopedViewModels { AddDebtSheetContent(onDismiss, onCreated) }
+fun AddDebtSheet(onDismiss: () -> Unit, onCreated: (debtId: String) -> Unit, prefill: DebtPrefill? = null) {
+    ScopedViewModels { AddDebtSheetContent(onDismiss, onCreated, prefill) }
 }
 
 @Composable
 private fun AddDebtSheetContent(
     onDismiss: () -> Unit,
     onCreated: (debtId: String) -> Unit,
+    prefill: DebtPrefill?,
     viewModel: DebtFormViewModel = hiltViewModel(),
 ) {
+    // Before the first frame, so the form never flashes empty; applies once per ViewModel.
+    remember(viewModel) {
+        viewModel.applyPrefill(prefill)
+        true
+    }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDiscardAlert by remember { mutableStateOf(false) }
@@ -169,8 +175,10 @@ private fun AddDebtSheetContent(
                 tag = "debts.add.owed",
             )
             PlanBySection(state, viewModel)
-            FrequencySection(state, viewModel)
-            NextPaymentSection(state, onPick = { showDatePicker = true })
+            if (state.mode != DebtPlanMode.WHEN_I_CAN) {
+                FrequencySection(state, viewModel)
+                NextPaymentSection(state, onPick = { showDatePicker = true })
+            }
             InterestSection(state, viewModel)
             PreviewCard(state)
             DebtSavePill(
@@ -296,6 +304,12 @@ private fun PlanBySection(state: DebtFormUiState, viewModel: DebtFormViewModel) 
                 tag = "debts.add.payment",
             )
             DebtPlanMode.WHEN_IM_DONE -> TargetMonthPicker(state, viewModel)
+            DebtPlanMode.WHEN_I_CAN -> Text(
+                "No payments are planned. Record each payment when you make it.",
+                style = IosText.subheadline,
+                color = IosColors.textSecondary,
+                modifier = Modifier.testTag("debts.add.whenICanNote"),
+            )
         }
     }
 }

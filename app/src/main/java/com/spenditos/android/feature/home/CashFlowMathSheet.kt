@@ -58,6 +58,16 @@ fun CashFlowMathSheet(
                     Text("This month", style = IosText.footnote.w(FontWeight.SemiBold), color = IosColors.textSecondary)
                     EquationRow("Income received", status.received, "+", currency, locale)
                     EquationRow("Income expected", status.expected, "+", currency, locale)
+                    if (status.carriedIn.signum() > 0) {
+                        EquationRow(
+                            title = "Carried in",
+                            amount = status.carriedIn,
+                            sign = "+",
+                            currency = currency,
+                            locale = locale,
+                            detail = "Last month’s balance you chose to include",
+                        )
+                    }
                     EquationRow(
                         title = "Spent so far",
                         amount = status.spent,

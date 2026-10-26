@@ -264,13 +264,14 @@ internal fun groupTotalText(group: ReviewGroup, currency: String, locale: Locale
     val total = group.signedTotal
     val sign = if (total.signum() < 0) "−" else "+"
     if (group.allAmountsMissing) return "$sign—"
-    return sign + Money.format(total.abs().toDouble(), currency, locale)
+    // Like iOS, the group is shown in its first row's own currency when that row could not be converted.
+    return sign + Money.format(total.abs().toDouble(), group.items.firstOrNull()?.reviewCurrency ?: currency, locale)
 }
 
 internal fun lineAmountText(item: CaptureReviewItem, currency: String, locale: Locale): String {
     val sign = if (item.isIncomeRow()) "+" else "−"
     val amount: BigDecimal = item.editableAmount() ?: return "$sign—"
-    return sign + Money.format(amount.toDouble(), currency, locale)
+    return sign + Money.format(amount.toDouble(), item.reviewCurrency ?: currency, locale)
 }
 
 /** "Oct 8" for "2026-10-08", "No date" for none, the text itself when it does not parse. */

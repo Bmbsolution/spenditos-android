@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spenditos.android.feature.home.CashFlowStatus
+import com.spenditos.android.feature.home.monthbalance.MonthBalanceCopy
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.theme.IosText
@@ -214,6 +215,15 @@ fun PulseHero(
                 StripEntry("calendar.badge.clock", "Bills left", whole(status.billsLeft, currency, locale), onOpenBillsLeft, "home.billsLeft"),
             ),
         )
+
+        if (status.carriedIn.signum() > 0) {
+            Text(
+                "Carried in ${money(status.carriedIn)} from ${MonthBalanceCopy.previousMonthName(status.today)}",
+                style = IosText.subheadline.w(FontWeight.SemiBold),
+                color = Color.White.copy(alpha = 0.95f),
+                modifier = Modifier.testTag("home.carriedIn"),
+            )
+        }
 
         Row(
             Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onSeeMath).padding(vertical = 4.dp).testTag("home.seeMath"),
