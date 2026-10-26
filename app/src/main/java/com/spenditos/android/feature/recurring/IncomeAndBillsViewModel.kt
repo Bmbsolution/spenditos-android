@@ -5,11 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FinanceInvalidationBus
+import com.spenditos.android.data.model.BillHistorySummary
+import com.spenditos.android.data.model.BillLifecycle
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.GenerateTransactionsResult
 import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
+import com.spenditos.android.data.recurring.BillLifecycleRequests
 import com.spenditos.android.data.recurring.RecurringActions
 import com.spenditos.android.data.recurring.RecurringCategorySource
 import com.spenditos.android.data.user.UserSettingsActions
@@ -26,6 +30,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -38,20 +43,40 @@ data class IncomeAndBillsUiState(
     val isWriting: Boolean = false,
     val isOffline: Boolean = false,
     val error: String? = null,
+    /** This month's logged entries, for the summary strip. Null until loaded (or when loading failed): the strip then leaves out "paid". */
+    val monthEntries: List<Transaction>? = null,
+    /** What each ended bill has logged, for the Ended archive rows (#403). */
+    val endedHistory: Map<String, BillHistorySummary> = emptyMap(),
 ) {
     private val categoryById get() = categories.associateBy { it.id }
+    fun isIncome(template: RecurringTemplate): Boolean = categoryById[template.categoryId]?.isIncome == true
+
+    /** Active income. Paused and ended items have their own places (#403). */
     val incomeTemplates: List<RecurringTemplate>
-        get() = templates.filter { categoryById[it.categoryId]?.isIncome == true }
-    /** A debt's payment bill lives under Debts, not Bills (docs/features/debts.md "Clients"). */
+        get() = templates.filter { it.lifecycle == BillLifecycle.ACTIVE && isIncome(it) }
+    /** Active bills. A debt's payment bill lives under Debts, not Bills (docs/features/debts.md "Clients"). */
     val billTemplates: List<RecurringTemplate>
-        get() = templates.filter { it.debtId == null && categoryById[it.categoryId]?.isIncome != true }
+        get() = templates.filter { it.lifecycle == BillLifecycle.ACTIVE && it.debtId == null && !isIncome(it) }
+    /** Paused income and bills: the collapsed group at the bottom of the list. */
+    val pausedTemplates: List<RecurringTemplate>
+        get() = templates.filter { it.lifecycle == BillLifecycle.PAUSED && it.debtId == null }
+    /** Ended income and bills, newest end first: the Ended archive. A debt's bill stays with its debt. */
+    val endedTemplates: List<RecurringTemplate>
+        get() = templates.filter { it.lifecycle == BillLifecycle.ENDED && it.debtId == null }
+            .sortedByDescending { BillText.endedDate(it) ?: java.time.Instant.MIN }
     val isEmpty: Boolean get() = !isLoading && error == null && templates.isEmpty()
+
+    /** The strip at the top (#403). Null when there are no active bills. */
+    fun monthSummary(today: LocalDate = LocalDate.now()): BillsMonthSummary? =
+        billsMonthSummary(templates, this::isIncome, monthEntries, today)
 }
 
 sealed interface IncomeAndBillsEvent {
     data object Saved : IncomeAndBillsEvent
     data object Deleted : IncomeAndBillsEvent
     data class Generated(val result: GenerateTransactionsResult) : IncomeAndBillsEvent
+    /** A pause, resume, end or start-again went through: "Bell internet ended" with an optional Undo. */
+    data class Lifecycle(val text: String, val undo: (() -> Unit)?) : IncomeAndBillsEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -77,6 +102,8 @@ class IncomeAndBillsViewModel @Inject constructor(
             invalidations.events.debounce(250).collect { changed ->
                 if (Aggregate.RECURRING in changed) {
                     refreshFromInvalidation()
+                } else if (Aggregate.TRANSACTION in changed) {
+                    loadMonthEntries()
                 }
             }
         }
@@ -90,6 +117,7 @@ class IncomeAndBillsViewModel @Inject constructor(
                 recurring.refresh()
                 categories.refresh()
                 mutableState.update { it.copy(isLoading = false) }
+                loadMonthEntries()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
@@ -121,9 +149,105 @@ class IncomeAndBillsViewModel @Inject constructor(
         write { recurring.setMainIncome(id); _events.send(IncomeAndBillsEvent.Saved) }
     }
 
-    fun generate(month: YearMonth) = write {
-        val result = recurring.generate(month)
+    fun generate(month: YearMonth, templateIds: List<String>? = null) = write {
+        val result = recurring.generate(month, templateIds)
         _events.send(IncomeAndBillsEvent.Generated(result))
+        loadMonthEntries()
+    }
+
+    // Month data (#403)
+
+    /** Logged entries dated in [month] (the Generate sheet's "already logged" check). */
+    suspend fun entriesIn(month: YearMonth): List<Transaction> = recurring.monthEntries(month)
+
+    private suspend fun loadMonthEntries() {
+        val loaded = try {
+            recurring.monthEntries(YearMonth.now())
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            null
+        }
+        mutableState.update { it.copy(monthEntries = loaded) }
+    }
+
+    // Lifecycle (#403)
+
+    fun pause(template: RecurringTemplate) = lifecycle(
+        text = "${template.description} paused",
+        action = { recurring.pause(template.id) },
+        undo = { recurring.resume(template.id) },
+    )
+
+    fun resume(template: RecurringTemplate) = lifecycle(
+        text = "${template.description} resumed",
+        action = { recurring.resume(template.id) },
+        undo = { recurring.pause(template.id) },
+    )
+
+    /**
+     * End now, or after one more payment ([oneMore]). A last payment due this month is already
+     * logged, so the bill ends now and keeps it; a later one is made by the generator, which then
+     * ends the bill.
+     */
+    fun end(template: RecurringTemplate, oneMore: Boolean, today: LocalDate = LocalDate.now()) {
+        val next = BillSchedule.nextDate(template, today)
+        val nextIsThisMonth = next?.let { YearMonth.from(it) == YearMonth.from(today) } ?: false
+
+        if (oneMore && next != null && !nextIsThisMonth) {
+            val previous = template.occurrencesRemaining
+            lifecycle(
+                text = "${template.description} ends after ${BillText.monthDay(next)}",
+                action = { recurring.endAfterNextPayment(template.id) },
+                undo = { recurring.update(template.id, BillLifecycleRequests.restoreOccurrences(previous)) },
+            )
+            return
+        }
+
+        val wasPaused = template.lifecycle == BillLifecycle.PAUSED
+        lifecycle(
+            text = "${template.description} ended",
+            action = { recurring.end(template.id, keepUpcoming = oneMore) },
+            undo = { if (wasPaused) recurring.pause(template.id) else recurring.resume(template.id) },
+        )
+    }
+
+    fun startAgain(template: RecurringTemplate, nextDate: LocalDate) = lifecycle(
+        text = "${template.description} started again",
+        action = { recurring.startAgain(template.id, nextDate) },
+        undo = null,
+    )
+
+    fun loadEndedHistory() {
+        val ids = state.value.endedTemplates.map { it.id }
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            // If the history call fails the rows just leave the totals out.
+            val history = try {
+                recurring.history(ids)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                return@launch
+            }
+            mutableState.update { it.copy(endedHistory = history) }
+        }
+    }
+
+    /** One ended bill's history with its payments, for the detail (throws when the call fails). */
+    suspend fun fetchHistory(id: String): BillHistorySummary =
+        recurring.history(listOf(id), includeEntries = true)[id] ?: BillHistorySummary()
+
+    private fun lifecycle(
+        text: String,
+        action: suspend () -> RecurringTemplate,
+        undo: (suspend () -> RecurringTemplate)?,
+    ) = write {
+        action()
+        // Undo is one more write; a failure shows the usual error and the bill keeps its new state.
+        val undoAction: (() -> Unit)? = undo?.let { run -> { write { run(); loadMonthEntries() } } }
+        _events.send(IncomeAndBillsEvent.Lifecycle(text, undoAction))
+        loadMonthEntries()
     }
 
     private fun write(operation: suspend () -> Unit) {

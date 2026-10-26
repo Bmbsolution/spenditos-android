@@ -55,7 +55,7 @@ fun PaycheckPeriodsScreen(
     val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Paycheck Periods", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Pay periods", onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -63,7 +63,7 @@ fun PaycheckPeriodsScreen(
         ) {
             when {
                 state.isLoading -> ReportLoadingState(
-                    "Loading paycheck periods...",
+                    "Loading pay periods...",
                     IosColors.spendOrange,
                     Modifier.fillMaxSize().testTag("reports.paycheck.list"),
                 )
@@ -81,8 +81,8 @@ fun PaycheckPeriodsScreen(
                     )
                     ReportEmptyState(
                         icon = "banknote.fill",
-                        title = "No Paycheck Periods",
-                        subtitle = "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                        title = "No pay periods",
+                        subtitle = "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
@@ -112,8 +112,8 @@ fun PaycheckPeriodsScreen(
                         if (state.isEmpty && state.loadStatus == null) {
                             item {
                                 ReportEmptyCard(
-                                    "No Paycheck Periods",
-                                    "No paycheck periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                                    "No pay periods",
+                                    "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
                                 )
                             }
                         } else {

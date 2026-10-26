@@ -79,9 +79,12 @@ fun MonthPlanScreen(
     addOneTimeRequest: Int = 0,
     onAddOneTimeRequestHandled: (Int) -> Unit = {},
     onOpenIncomeAndBills: () -> Unit = {},
+    /** Opens on this month ("Plan November" from Generate, #403) instead of the one last shown. */
+    requestedMonth: java.time.YearMonth? = null,
+    onRequestedMonthHandled: () -> Unit = {},
 ) {
     val viewModel: MonthPlanViewModel = hiltViewModel()
-    MonthPlanContent(viewModel, addOneTimeRequest, onAddOneTimeRequestHandled, onOpenIncomeAndBills)
+    MonthPlanContent(viewModel, addOneTimeRequest, onAddOneTimeRequestHandled, onOpenIncomeAndBills, requestedMonth, onRequestedMonthHandled)
 }
 
 internal enum class ConfirmAction { APPLY, DISCARD }
@@ -111,6 +114,8 @@ private fun MonthPlanContent(
     addOneTimeRequest: Int,
     onAddOneTimeRequestHandled: (Int) -> Unit,
     onOpenIncomeAndBills: () -> Unit,
+    requestedMonth: java.time.YearMonth?,
+    onRequestedMonthHandled: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var addingOneTime by rememberSaveable { mutableStateOf(false) }
@@ -124,7 +129,15 @@ private fun MonthPlanContent(
     val reviewSuggestion = reviewSuggestionId?.let { id -> state.visibleSuggestions.firstOrNull { it.id == id } }
     val summary = viewModel.summary(state)
 
-    LaunchedEffect(viewModel) { viewModel.load() }
+    LaunchedEffect(viewModel) {
+        if (requestedMonth != null) {
+            // selectMonth loads the month itself.
+            viewModel.selectMonth(requestedMonth)
+            onRequestedMonthHandled()
+        } else {
+            viewModel.load()
+        }
+    }
     LaunchedEffect(addOneTimeRequest) {
         if (addOneTimeRequest > 0) {
             // A past month can't take new entries; drop the request instead of opening the sheet later.

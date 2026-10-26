@@ -52,4 +52,29 @@ class RecurringSaversTest {
 
         assertEquals(month, roundTrip(YearMonthSaver, month))
     }
+
+    // Editor (#403): switching an active item off pauses it.
+
+    private val editNow = java.time.Instant.parse("2026-10-26T12:00:00.500Z")
+
+    @Test
+    fun `switching an active item off also sends pausedAt`() {
+        val request = RecurringDraft(description = "Gym", amountText = "45", categoryId = "c", isActive = false)
+            .toUpdateRequest(wasActive = true, now = editNow)
+        assertEquals(kotlinx.serialization.json.JsonPrimitive("2026-10-26T12:00:00Z"), request.pausedAt)
+        assertEquals(false, request.isActive)
+    }
+
+    @Test
+    fun `editing an already paused item keeps its original pausedAt and switching on sends none`() {
+        val stillOff = RecurringDraft(description = "Gym", amountText = "45", categoryId = "c", isActive = false)
+            .toUpdateRequest(wasActive = false, now = editNow)
+        assertNull(stillOff.pausedAt)
+        val on = RecurringDraft(description = "Gym", amountText = "45", categoryId = "c", isActive = true)
+            .toUpdateRequest(wasActive = false, now = editNow)
+        assertNull(on.pausedAt)
+        val editedActive = RecurringDraft(description = "Gym", amountText = "45", categoryId = "c", isActive = true)
+            .toUpdateRequest(wasActive = true, now = editNow)
+        assertNull(editedActive.pausedAt)
+    }
 }

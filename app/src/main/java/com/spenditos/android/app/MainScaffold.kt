@@ -93,6 +93,7 @@ private const val DOWNLOAD_DATA_ROUTE = "settings/download-data"
 private const val MERCHANTS_ROUTE = "settings/merchant-names"
 private const val PRO_ROUTE = "settings/pro"
 private const val DEBT_ROUTE = "plan/debts/{debtId}"
+private const val ENDED_BILLS_ROUTE = "plan/ended"
 private fun debtRoute(debtId: String) = "plan/debts/${android.net.Uri.encode(debtId)}"
 
 /**
@@ -218,7 +219,13 @@ fun MainScaffold(
                         },
                     )
                 }
-                composable(Tab.PLAN.route) { PlanHubScreen(onOpenDebt = { nav.navigate(debtRoute(it)) }) }
+                composable(Tab.PLAN.route) {
+                    PlanHubScreen(
+                        onOpenDebt = { nav.navigate(debtRoute(it)) },
+                        onOpenEnded = { nav.navigate(ENDED_BILLS_ROUTE) },
+                    )
+                }
+                composable(ENDED_BILLS_ROUTE) { com.spenditos.android.feature.recurring.EndedBillsScreen(onBack = { nav.popBackStack() }) }
                 composable(
                     DEBT_ROUTE,
                     arguments = listOf(androidx.navigation.navArgument("debtId") { type = androidx.navigation.NavType.StringType }),

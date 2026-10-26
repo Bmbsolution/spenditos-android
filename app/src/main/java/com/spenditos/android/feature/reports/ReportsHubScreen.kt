@@ -155,7 +155,7 @@ fun ReportsHubScreen(
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Paycheck Periods",
+                        title = "Pay periods",
                         detail = "See how your income covers expenses across pay periods.",
                         symbol = "banknote.fill",
                         iconTint = IosColors.income,

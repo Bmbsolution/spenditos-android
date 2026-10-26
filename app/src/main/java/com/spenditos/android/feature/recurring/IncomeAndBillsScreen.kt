@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +30,10 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,8 +51,14 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.StopCircle
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
@@ -54,11 +66,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.data.model.BillLifecycle
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
+import com.spenditos.android.data.recurring.BillLifecycleRequests
 import com.spenditos.android.feature.debts.DebtAddSheetHost
 import com.spenditos.android.feature.debts.DebtListViewModel
 import com.spenditos.android.feature.debts.debtsSection
@@ -78,6 +93,7 @@ import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.YearMonth
 
@@ -92,30 +108,50 @@ fun IncomeAndBillsScreen(
     viewModel: IncomeAndBillsViewModel = hiltViewModel(),
     debtsViewModel: DebtListViewModel = hiltViewModel(),
     onOpenDebt: (debtId: String) -> Unit = {},
+    /** Opens the Ended archive (its own route). */
+    onOpenEnded: () -> Unit = {},
+    /** Opens Month plan on a month (Plan tab only): Generate sends future months there instead of logging them (#403). */
+    onPlanMonth: ((YearMonth) -> Unit)? = null,
+    /** Bumped by the Plan title's overflow menu ("Generate a month"); 0 means no request. */
+    generateRequest: Int = 0,
+    onGenerateRequestHandled: (Int) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val debts by debtsViewModel.state.collectAsStateWithLifecycle()
     var showAddDebt by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var showEditor by rememberSaveable { mutableStateOf(false) }
     // Recreations keep only ids; the templates are resolved from the current state below and
     // the sheet/dialog closes when an id no longer resolves (deleted or refreshed away).
     var templateToEditId by rememberSaveable { mutableStateOf<String?>(null) }
     var templateToDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var templateToEndId by rememberSaveable { mutableStateOf<String?>(null) }
     var showGenerate by rememberSaveable { mutableStateOf(false) }
-    var generateMonth by rememberSaveable(stateSaver = YearMonthSaver) { mutableStateOf(YearMonth.now()) }
+    var showPaused by rememberSaveable { mutableStateOf(false) }
     var showAddMenu by rememberSaveable { mutableStateOf(false) }
     var addPresetIncome by rememberSaveable { mutableStateOf(false) }
     val templateToEdit = templateToEditId?.let { id -> state.templates.firstOrNull { it.id == id } }
     val templateToDelete = templateToDeleteId?.let { id -> state.templates.firstOrNull { it.id == id } }
+    val templateToEnd = templateToEndId?.let { id -> state.templates.firstOrNull { it.id == id } }
+    val summary = remember(state.templates, state.categories, state.monthEntries) { state.monthSummary() }
+    val now = remember(state.templates) { Instant.now() }
 
-    LaunchedEffect(templateToEditId, templateToDeleteId, showEditor, state.isLoading, state.templates) {
+    LaunchedEffect(templateToEditId, templateToDeleteId, templateToEndId, showEditor, state.isLoading, state.templates) {
         if (!state.isLoading) {
             if (showEditor && templateToEditId != null && templateToEdit == null) {
                 showEditor = false
                 templateToEditId = null
             }
             if (templateToDeleteId != null && templateToDelete == null) templateToDeleteId = null
+            if (templateToEndId != null && templateToEnd == null) templateToEndId = null
+        }
+    }
+
+    LaunchedEffect(generateRequest) {
+        if (generateRequest > 0) {
+            showGenerate = true
+            onGenerateRequestHandled(generateRequest)
         }
     }
 
@@ -124,9 +160,19 @@ fun IncomeAndBillsScreen(
             when (event) {
                 IncomeAndBillsEvent.Saved -> { showEditor = false; templateToEditId = null }
                 IncomeAndBillsEvent.Deleted -> templateToDeleteId = null
-                is IncomeAndBillsEvent.Generated -> {
-                    if (event.result.errors == 0) showGenerate = false
-                    snackbar.showSnackbar("Generated ${event.result.generated} transactions. ${event.result.skipped} skipped, ${event.result.errors} errors.")
+                is IncomeAndBillsEvent.Generated -> scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(generatedMessage(event.result))
+                }
+                is IncomeAndBillsEvent.Lifecycle -> scope.launch {
+                    // "Bell internet ended · Undo": one snackbar at a time, a little longer with an action.
+                    snackbar.currentSnackbarData?.dismiss()
+                    val result = snackbar.showSnackbar(
+                        event.text,
+                        actionLabel = event.undo?.let { "Undo" },
+                        duration = SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) event.undo?.invoke()
                 }
             }
         }
@@ -214,7 +260,7 @@ fun IncomeAndBillsScreen(
                     }
                 }
             } else {
-                item("tools") { RecurringToolsCard(onGenerate = { showGenerate = true }) }
+                summary?.let { item("summary") { BillsMonthSummaryCard(it, state.currency) } }
 
                 item("bills.header") {
                     Row(Modifier.fillMaxWidth().padding(end = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
@@ -226,19 +272,7 @@ fun IncomeAndBillsScreen(
                     item("bills.empty") { SectionEmptyMessage("No bills yet.", Modifier.testTag("recurring.bills.empty")) }
                 }
                 items(state.billTemplates, key = RecurringTemplate::id) { template ->
-                    val category = state.categories.firstOrNull { it.id == template.categoryId }
-                    IncomeBillRow(
-                        template = template,
-                        categoryName = category?.name,
-                        categoryColorHex = category?.color,
-                        categoryIcon = category?.icon,
-                        isIncome = false,
-                        mainIncomeTemplateId = state.mainIncomeTemplateId,
-                        currency = state.currency,
-                        onEdit = { templateToEditId = template.id; showEditor = true },
-                        onDelete = { templateToDeleteId = template.id },
-                        onMainIncome = {},
-                    )
+                    BillRow(template, state, now, viewModel, onEdit = { templateToEditId = template.id; showEditor = true }, onEnd = { templateToEndId = template.id }, onDelete = { templateToDeleteId = template.id })
                 }
 
                 debtsSection(debts, onOpen = onOpenDebt, onAdd = { showAddDebt = true }, onRetry = debtsViewModel::retry)
@@ -248,19 +282,24 @@ fun IncomeAndBillsScreen(
                     item("income.empty") { SectionEmptyMessage("No income yet.", Modifier.testTag("recurring.income.empty")) }
                 }
                 items(state.incomeTemplates, key = RecurringTemplate::id) { template ->
-                    val category = state.categories.firstOrNull { it.id == template.categoryId }
-                    IncomeBillRow(
-                        template = template,
-                        categoryName = category?.name,
-                        categoryColorHex = category?.color,
-                        categoryIcon = category?.icon,
-                        isIncome = true,
-                        mainIncomeTemplateId = state.mainIncomeTemplateId,
-                        currency = state.currency,
-                        onEdit = { templateToEditId = template.id; showEditor = true },
-                        onDelete = { templateToDeleteId = template.id },
-                        onMainIncome = { viewModel.setMainIncome(if (state.mainIncomeTemplateId == template.id) null else template.id) },
-                    )
+                    BillRow(template, state, now, viewModel, onEdit = { templateToEditId = template.id; showEditor = true }, onEnd = { templateToEndId = template.id }, onDelete = { templateToDeleteId = template.id })
+                }
+
+                // Paused (#403): collapsed at the bottom; they come back.
+                if (state.pausedTemplates.isNotEmpty()) {
+                    item("paused.header") {
+                        PausedHeader(count = state.pausedTemplates.size, expanded = showPaused, onToggle = { showPaused = !showPaused })
+                    }
+                    if (showPaused) {
+                        items(state.pausedTemplates, key = { "paused-${it.id}" }) { template ->
+                            BillRow(template, state, now, viewModel, onEdit = { templateToEditId = template.id; showEditor = true }, onEnd = { templateToEndId = template.id }, onDelete = { templateToDeleteId = template.id })
+                        }
+                    }
+                }
+
+                // Ended (#403): a quiet way into the archive.
+                if (state.endedTemplates.isNotEmpty()) {
+                    item("ended.row") { EndedRow(count = state.endedTemplates.size, onClick = onOpenEnded) }
                 }
             }
             }
@@ -324,7 +363,7 @@ fun IncomeAndBillsScreen(
             onDismiss = { showEditor = false; templateToEditId = null },
             onSave = { draft ->
                 if (templateToEdit == null) viewModel.create(draft.toCreateRequest())
-                else viewModel.update(requireNotNull(templateToEdit).id, draft.toUpdateRequest())
+                else viewModel.update(requireNotNull(templateToEdit).id, draft.toUpdateRequest(wasActive = requireNotNull(templateToEdit).isActive))
             },
         )
     }
@@ -348,70 +387,118 @@ fun IncomeAndBillsScreen(
         )
     }
 
+    templateToEnd?.let { target ->
+        EndBillDialog(
+            template = target,
+            onEnd = { oneMore -> templateToEndId = null; viewModel.end(target, oneMore = oneMore) },
+            onDismiss = { templateToEndId = null },
+        )
+    }
+
     if (showGenerate) {
         GenerateMonthSheet(
             templates = state.templates,
+            isIncome = state::isIncome,
             currency = state.currency,
-            month = generateMonth,
+            monthEntries = state.monthEntries,
             isGenerating = state.isWriting,
-            error = state.error,
-            onMonthChange = { generateMonth = it },
+            loadEntries = viewModel::entriesIn,
             onDismiss = { showGenerate = false },
-            onGenerate = viewModel::generate,
+            onGenerate = { month, ids -> showGenerate = false; viewModel.generate(month, ids) },
+            onPlanMonth = onPlanMonth?.let { plan -> { month: YearMonth -> showGenerate = false; plan(month) } },
         )
     }
 }
 
+private fun generatedMessage(result: com.spenditos.android.data.model.GenerateTransactionsResult): String {
+    val logged = if (result.generated == 1) "Logged 1 entry." else "Logged ${result.generated} entries."
+    return if (result.errors > 0) "$logged ${counted(result.errors, "entry", "entries")} couldn't be logged." else logged
+}
+
+/** iOS `BillsMonthSummaryCard`: what is still to pay this month, how many bills are paid, which is next. */
 @Composable
-private fun RecurringToolsCard(onGenerate: () -> Unit) {
-    GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(bottom = Spacing.s)) {
-        Row(
-            Modifier.fillMaxWidth().padding(Spacing.m),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RecurringToolPill(
-                icon = SfSymbols.icon("calendar.badge.plus"),
-                text = "Generate Month",
-                onClick = onGenerate,
-                modifier = Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.open"),
-                filled = true,
-                enabled = true,
+private fun BillsMonthSummaryCard(summary: BillsMonthSummary, currency: String) {
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val detail = BillText.summaryDetail(summary, locale)
+    GlassCard(
+        Modifier.padding(horizontal = Spacing.screen).padding(bottom = Spacing.s)
+            .semantics(mergeDescendants = true) {}
+            .testTag("recurring.summary"),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            Text(
+                BillText.monthName(summary.month, locale).uppercase(locale),
+                style = IosText.caption.w(FontWeight.Bold).copy(letterSpacing = 1.sp),
+                color = IosColors.spendOrange,
             )
-            RecurringToolPill(
-                icon = SfSymbols.icon("banknote.fill"),
-                text = "Pay periods",
-                onClick = {},
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                filled = false,
-                enabled = false,
+            Text(
+                BillText.summaryHeadline(summary, currency),
+                style = IosText.title3.w(FontWeight.SemiBold),
+                color = IosColors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (detail.isNotEmpty()) {
+                Text(detail, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
 
 @Composable
-private fun RecurringToolPill(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    filled: Boolean,
-    enabled: Boolean,
-) {
-    val shape = RoundedCornerShape(Radius.m)
-    val background = IosColors.spendOrange
-    val foreground = if (filled) androidx.compose.ui.graphics.Color.White else IosColors.textPrimary
+private fun PausedHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
     Row(
-        modifier.then(if (filled) Modifier.clip(shape).background(background) else subtleGlassModifier(shape))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(vertical = Spacing.s),
-        horizontalArrangement = Arrangement.Center,
+        Modifier.fillMaxWidth()
+            .clickable(role = Role.Button, onClickLabel = if (expanded) "Hides paused income and bills" else "Shows paused income and bills", onClick = onToggle)
+            .padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s)
+            .testTag("recurring.paused.toggle"),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(17.dp))
-        Text(text, modifier = Modifier.padding(start = 6.dp, end = 12.dp), style = IosText.subheadline.w(FontWeight.SemiBold), color = foreground, maxLines = 1)
+        Text("Paused · $count", style = IosText.headline, color = IosColors.textSecondary)
+        Icon(SfSymbols.icon(if (expanded) "chevron.up" else "chevron.down"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.weight(1f))
     }
+}
+
+@Composable
+private fun EndedRow(count: Int, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Spacing.m, vertical = Spacing.s)
+            .testTag("recurring.ended.row"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Ended · $count", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textSecondary)
+        Spacer(Modifier.weight(1f))
+        Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
+    }
+}
+
+/** iOS End confirmation: "End Bell internet?" with No / Yes, one more / Cancel. */
+@Composable
+private fun EndBillDialog(template: RecurringTemplate, onEnd: (oneMore: Boolean) -> Unit, onDismiss: () -> Unit) {
+    val next = remember(template) { BillSchedule.nextDate(template, java.time.LocalDate.now()) }
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(BillText.endDialogTitle(template)) },
+        text = { Text("Is there one more payment? It moves to Ended. Past payments stay in your transactions.") },
+        confirmButton = {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                TextButton(onClick = { onEnd(false) }, modifier = Modifier.testTag("recurring.end.now")) {
+                    Text("No, end it now", color = IosColors.expense)
+                }
+                if (next != null) {
+                    TextButton(onClick = { onEnd(true) }, modifier = Modifier.testTag("recurring.end.oneMore")) {
+                        Text("Yes, one more on ${BillText.monthDay(next, locale)}")
+                    }
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("recurring.end.cancel")) { Text("Cancel") }
+            }
+        },
+    )
 }
 
 @Composable
@@ -434,6 +521,38 @@ private fun SectionEmptyMessage(message: String, modifier: Modifier = Modifier) 
     )
 }
 
+/** One income or bill row with its status line and actions; resolves the category and wires the view model. */
+@Composable
+private fun BillRow(
+    template: RecurringTemplate,
+    state: IncomeAndBillsUiState,
+    now: Instant,
+    viewModel: IncomeAndBillsViewModel,
+    onEdit: () -> Unit,
+    onEnd: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val category = state.categories.firstOrNull { it.id == template.categoryId }
+    val isIncome = state.isIncome(template)
+    IncomeBillRow(
+        template = template,
+        categoryName = category?.name,
+        categoryColorHex = category?.color,
+        categoryIcon = category?.icon,
+        isIncome = isIncome,
+        mainIncomeTemplateId = state.mainIncomeTemplateId,
+        currency = state.currency,
+        now = now,
+        onEdit = onEdit,
+        onPauseResume = {
+            if (template.lifecycle == BillLifecycle.PAUSED) viewModel.resume(template) else viewModel.pause(template)
+        },
+        onEnd = onEnd,
+        onDelete = onDelete,
+        onMainIncome = { viewModel.setMainIncome(if (state.mainIncomeTemplateId == template.id) null else template.id) },
+    )
+}
+
 @Composable
 private fun IncomeBillRow(
     template: RecurringTemplate,
@@ -443,15 +562,22 @@ private fun IncomeBillRow(
     isIncome: Boolean,
     mainIncomeTemplateId: String?,
     currency: String,
+    now: Instant,
     onEdit: () -> Unit,
+    onPauseResume: () -> Unit,
+    onEnd: () -> Unit,
     onDelete: () -> Unit,
     onMainIncome: () -> Unit,
 ) {
     val finance = LocalFinanceColors.current
     val tint = categoryColor(categoryColorHex)
     val amount = Money.format(template.amount, currency)
-    val canEdit = template.type == "fixed"
+    val canEdit = !template.isLegacyEstimate
     val isMain = template.id == mainIncomeTemplateId
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val status = remember(template, now, locale) { BillText.rowStatus(template, now, locale = locale) }
+    val longPaused = remember(template, now) { BillText.isLongPaused(template, now) }
+    val isPaused = template.lifecycle == BillLifecycle.PAUSED
 
     var showActions by remember(template.id) { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.xs)) {
@@ -492,8 +618,35 @@ private fun IncomeBillRow(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(frequencyText(template), style = IosText.caption.w(FontWeight.Medium), color = IosColors.spendOrange)
-                    Text("·", style = IosText.caption, color = IosColors.neutral)
+                    Text(
+                        frequencyText(template),
+                        style = IosText.caption.w(FontWeight.Medium),
+                        color = if (template.isActive) IosColors.spendOrange else IosColors.textSecondary,
+                    )
+                    // No dangling dot: it only appears when a status follows (#403).
+                    if (status != null) {
+                        Text("·", Modifier.clearAndSetSemantics {}, style = IosText.caption, color = IosColors.neutral)
+                        Text(
+                            status,
+                            Modifier.testTag("recurring.status.${template.id}"),
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (longPaused) {
+                        Text(
+                            "End it?",
+                            // 18dp in the layout like iOS, but a 48dp touch target that overflows it.
+                            Modifier.height(18.dp).wrapContentHeight(unbounded = true).requiredHeight(48.dp)
+                                .clickable(role = Role.Button, onClick = onEnd)
+                                .wrapContentSize(Alignment.Center)
+                                .testTag("recurring.endHint.${template.id}"),
+                            style = IosText.caption.w(FontWeight.SemiBold),
+                            color = IosColors.spendOrange,
+                        )
+                    }
                     if (!canEdit) {
                         Text(
                             "Old estimate · not logged",
@@ -511,16 +664,6 @@ private fun IncomeBillRow(
                                 .padding(horizontal = 5.dp, vertical = 1.dp),
                             color = finance.income,
                             style = IosText.caption2.w(FontWeight.SemiBold),
-                        )
-                    }
-                    if (!template.isActive) {
-                        Text(
-                            "Paused",
-                            Modifier.testTag("recurring.paused.${template.id}")
-                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp, vertical = 1.dp),
-                            color = IosColors.textSecondary,
-                            style = IosText.caption2.w(FontWeight.Medium),
                         )
                     }
                     Spacer(Modifier.weight(1f))
@@ -542,7 +685,7 @@ private fun IncomeBillRow(
                     }
                 }
             }
-            // Android has no iOS swipe actions; a visible button keeps Edit/Delete discoverable.
+            // Android has no iOS swipe actions; a visible button keeps the row actions discoverable.
             Box(
                 Modifier.size(36.dp).clip(CircleShape)
                     .clickable(role = Role.Button, onClickLabel = "More actions") { showActions = true }
@@ -554,20 +697,36 @@ private fun IncomeBillRow(
             }
         }
         DropdownMenu(expanded = showActions, onDismissRequest = { showActions = false }) {
-            if (canEdit) {
+            if (!canEdit) {
+                // Old estimates are delete-only until the #336 wipe.
+                DropdownMenuItem(
+                    text = { Text("Delete", style = IosText.subheadline, color = IosColors.expense) },
+                    leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
+                    onClick = { showActions = false; onDelete() },
+                    modifier = Modifier.testTag("recurring.delete.${template.id}"),
+                )
+            } else {
                 DropdownMenuItem(
                     text = { Text("Edit", style = IosText.subheadline) },
                     leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
                     onClick = { showActions = false; onEdit() },
                     modifier = Modifier.testTag("recurring.edit.${template.id}"),
                 )
+                DropdownMenuItem(
+                    text = { Text(if (isPaused) "Resume" else "Pause", style = IosText.subheadline) },
+                    leadingIcon = { Icon(if (isPaused) Icons.Outlined.PlayCircle else Icons.Outlined.PauseCircle, contentDescription = null) },
+                    onClick = { showActions = false; onPauseResume() },
+                    modifier = Modifier.testTag("recurring.pauseResume.${template.id}"),
+                )
+                HorizontalDivider()
+                // Delete lives in Ended (#403): ending keeps the history.
+                DropdownMenuItem(
+                    text = { Text(if (isIncome) "End income" else "End bill", style = IosText.subheadline, color = IosColors.expense) },
+                    leadingIcon = { Icon(Icons.Outlined.StopCircle, contentDescription = null, tint = IosColors.expense) },
+                    onClick = { showActions = false; onEnd() },
+                    modifier = Modifier.testTag("recurring.end.${template.id}"),
+                )
             }
-            DropdownMenuItem(
-                text = { Text("Delete", style = IosText.subheadline, color = IosColors.expense) },
-                leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
-                onClick = { showActions = false; onDelete() },
-                modifier = Modifier.testTag("recurring.delete.${template.id}"),
-            )
         }
     }
 }
@@ -594,7 +753,12 @@ private fun RecurringDraft.toCreateRequest() = CreateRecurringTemplateRequest(
     isActive = isActive,
 )
 
-private fun RecurringDraft.toUpdateRequest() = UpdateRecurringTemplateRequest(
+/**
+ * Switching an active item off pauses it (#403): the date tells Paused from Ended. Editing an item
+ * that was already off keeps its original `pausedAt`; switching on leaves it to the server, which
+ * clears both markers.
+ */
+internal fun RecurringDraft.toUpdateRequest(wasActive: Boolean, now: Instant = Instant.now()) = UpdateRecurringTemplateRequest(
     categoryId = requireNotNull(categoryId),
     description = description.trim(),
     amount = requireNotNull(amount).toDouble(),
@@ -606,6 +770,6 @@ private fun RecurringDraft.toUpdateRequest() = UpdateRecurringTemplateRequest(
     isActive = isActive,
     secondOccurrenceDay = if (frequency == "semi-monthly") secondOccurrenceDay?.let { JsonPrimitive(it) } ?: JsonNull else JsonNull,
     repeatInterval = requireNotNull(repeatInterval),
-    pausedAt = if (isActive) null else Instant.now().toString(),
+    pausedAt = if (wasActive && !isActive) JsonPrimitive(BillLifecycleRequests.timestamp(now)) else null,
     amountVaries = amountVaries,
 )

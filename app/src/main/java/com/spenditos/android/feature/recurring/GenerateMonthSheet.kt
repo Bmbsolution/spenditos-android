@@ -1,26 +1,37 @@
 package com.spenditos.android.feature.recurring
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,158 +39,332 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.spenditos.android.data.model.RecurringTemplate
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.ui.components.Money
 import com.spenditos.android.ui.components.SfSymbols
-import com.spenditos.android.ui.components.WheelPicker
+import com.spenditos.android.ui.components.subtleGlassModifier
 import com.spenditos.android.ui.theme.IosColors
 import com.spenditos.android.ui.theme.IosText
 import com.spenditos.android.ui.theme.Radius
 import com.spenditos.android.ui.theme.Spacing
 import com.spenditos.android.ui.theme.w
-import java.math.BigDecimal
+import kotlinx.coroutines.CancellationException
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 /**
- * iOS MonthPickerSheet: a wheel of the current month ±6 months.
+ * iOS `GenerateMonthSheet` (#403), opened from the overflow menu: pick a month with chips, see
+ * exactly what will be logged, leave items out. Entries already logged are greyed. A future month
+ * belongs to Month plan, so it offers that instead of generating. The container is opaque: the
+ * iOS bug was an unreadable picker on a translucent sheet.
  */
 @Composable
 fun GenerateMonthSheet(
     templates: List<RecurringTemplate>,
+    isIncome: (RecurringTemplate) -> Boolean,
     currency: String,
-    month: YearMonth,
+    /** This month's entries, if the screen already has them (saves a request for the default chip). */
+    monthEntries: List<Transaction>?,
     isGenerating: Boolean,
-    error: String?,
-    onMonthChange: (YearMonth) -> Unit,
+    loadEntries: suspend (YearMonth) -> List<Transaction>,
     onDismiss: () -> Unit,
-    onGenerate: (YearMonth) -> Unit,
+    onGenerate: (month: YearMonth, templateIds: List<String>) -> Unit,
+    /** Opens Month plan on a month; null where Month plan isn't reachable. */
+    onPlanMonth: ((YearMonth) -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val preview = remember(templates, month) { generatePreview(templates, month) }
     val locale = LocalConfiguration.current.locales[0]
-    val monthOptions = remember {
-        val now = YearMonth.now()
-        (-6..6).map { now.plusMonths(it.toLong()) }
-    }
-    val monthLabels = remember(locale) {
-        monthOptions.map { option ->
-            val label = option.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
-            if (option == YearMonth.now()) "$label (Current)" else label
+    val current = remember { YearMonth.now() }
+    var month by rememberSaveable(stateSaver = YearMonthSaver) { mutableStateOf(current) }
+    var logged by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+    var isLoadingMonth by remember { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var excluded by remember { mutableStateOf(emptySet<String>()) }
+    val isFuture = month.isAfter(current)
+
+    LaunchedEffect(month) {
+        excluded = emptySet()
+        if (month.isAfter(current)) return@LaunchedEffect
+        if (month == current && monthEntries != null) {
+            logged = monthEntries
+            loadFailed = false
+            return@LaunchedEffect
+        }
+        isLoadingMonth = true
+        try {
+            logged = loadEntries(month)
+            loadFailed = false
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            logged = emptyList()
+            loadFailed = true
+        } finally {
+            isLoadingMonth = false
         }
     }
+
+    val items = remember(templates, month, logged) { generateItems(templates, isIncome, month, logged) }
+    val selected = items.filter { !it.isFullyLogged && it.id !in excluded }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = Radius.l, topEnd = Radius.l),
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
                 Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss).testTag("recurring.generate.cancel"), style = IosText.body, color = IosColors.textPrimary)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Generate Transactions", style = IosText.headline, color = IosColors.textPrimary)
+                    Text("Generate a month", style = IosText.headline, color = IosColors.textPrimary)
                 }
                 Spacer(Modifier.size(52.dp))
             }
-            Text(
-                "Process all active income and bills and create projected transactions for the selected month.",
-                Modifier.padding(horizontal = Spacing.l).padding(top = Spacing.l),
-                style = IosText.callout,
-                color = IosColors.textSecondary,
-                textAlign = TextAlign.Center,
+
+            MonthChips(
+                month = month,
+                current = current,
+                locale = locale,
+                onSelect = { month = it },
+                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
             )
-            WheelPicker(
-                labels = monthLabels,
-                selectedIndex = monthOptions.indexOf(month).coerceAtLeast(0),
-                onSelect = { onMonthChange(monthOptions[it]) },
-                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m).testTag("recurring.generate.month"),
-            )
-            Text("Range: ±6 months from current month", style = IosText.caption, color = IosColors.textTertiary)
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m)
-                    .clip(RoundedCornerShape(Radius.m))
-                    .background(IosColors.spendOrange.copy(alpha = 0.05f))
-                    .border(1.dp, IosColors.spendOrange.copy(alpha = 0.2f), RoundedCornerShape(Radius.m))
-                    .padding(Spacing.m),
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
-            ) {
-                Text(
-                    "PREVIEW",
-                    style = IosText.caption.w(FontWeight.Bold).copy(letterSpacing = 1.sp),
-                    color = IosColors.spendOrange,
-                )
-                PreviewLine("Transactions to create:", preview.count.toString(), Modifier.testTag("recurring.generate.count"))
-                PreviewLine("From income and bills:", preview.recurringCount.toString())
-                HorizontalDivider(color = Color.Black.copy(alpha = 0.1f))
-                PreviewLine(
-                    "Estimated total:",
-                    Money.format(preview.total.toDouble(), currency),
-                    valueColor = if (preview.total.signum() >= 0) IosColors.income else IosColors.expense,
-                    modifier = Modifier.testTag("recurring.generate.total"),
-                )
+
+            when {
+                isFuture -> FutureMonth(month, locale, onPlanMonth)
+                isLoadingMonth -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.testTag("recurring.generate.loading"))
+                }
+                items.isEmpty() -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("Nothing falls in ${BillText.monthName(month, locale)}", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("recurring.generate.empty"))
+                }
+                else -> {
+                    LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.list")) {
+                        if (loadFailed) {
+                            item("failed") {
+                                Text(
+                                    "Couldn't check what's already logged. Logging again never makes duplicates.",
+                                    Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.xs).testTag("recurring.generate.error"),
+                                    style = IosText.caption,
+                                    color = IosColors.textSecondary,
+                                )
+                            }
+                        }
+                        items(items, key = GenerateItem::id) { item ->
+                            val isOn = !item.isFullyLogged && item.id !in excluded
+                            GenerateRow(
+                                item = item,
+                                isOn = isOn,
+                                currency = currency,
+                                locale = locale,
+                                onToggle = { excluded = if (item.id in excluded) excluded - item.id else excluded + item.id },
+                            )
+                        }
+                    }
+                    GenerateFooter(
+                        selected = selected,
+                        month = month,
+                        currency = currency,
+                        locale = locale,
+                        isGenerating = isGenerating,
+                        onLog = { onGenerate(month, selected.map { it.id }) },
+                    )
+                }
             }
-            error?.let {
-                Text(it, Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("recurring.generate.error"), style = IosText.caption, color = IosColors.expense)
-            }
-            Row(
-                Modifier.padding(top = Spacing.m),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(SfSymbols.icon("info.circle"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
-                Text("Existing transactions will be skipped", style = IosText.caption, color = IosColors.textTertiary)
-            }
-            val shape = RoundedCornerShape(Radius.m)
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.l)
-                    .clip(shape)
-                    .background(if (isGenerating) IosColors.spendOrange.copy(alpha = 0.4f) else IosColors.spendOrange)
-                    .clickable(enabled = !isGenerating, role = Role.Button) { onGenerate(month) }
-                    .testTag("recurring.generate.confirm")
-                    .padding(vertical = Spacing.m),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
-                Text(
-                    if (isGenerating) "Generating…" else "Log this month now",
-                    Modifier.padding(start = Spacing.s),
-                    style = IosText.callout.w(FontWeight.SemiBold),
-                    color = Color.White,
-                )
+        }
+    }
+}
+
+/** Sep · Oct · Nov · Earlier: short month names so all four fit; TalkBack still says "Last month, September". */
+@Composable
+private fun MonthChips(
+    month: YearMonth,
+    current: YearMonth,
+    locale: java.util.Locale,
+    onSelect: (YearMonth) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val last = current.minusMonths(1)
+    val next = current.plusMonths(1)
+    val earlier = (2L..6L).map { current.minusMonths(it) }
+    var showEarlier by remember { mutableStateOf(false) }
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs + 2.dp)) {
+        MonthChip(BillText.shortMonthName(last, locale), month == last, "Last month, ${BillText.monthName(last, locale)}", "recurring.generate.month.last", Modifier.weight(1f)) { onSelect(last) }
+        MonthChip(BillText.shortMonthName(current, locale), month == current, "This month, ${BillText.monthName(current, locale)}", "recurring.generate.month.this", Modifier.weight(1f)) { onSelect(current) }
+        MonthChip(BillText.shortMonthName(next, locale), month == next, "Next month, ${BillText.monthName(next, locale)}", "recurring.generate.month.next", Modifier.weight(1f)) { onSelect(next) }
+        Box(Modifier.weight(1f)) {
+            val isEarlier = month in earlier
+            MonthChip(
+                if (isEarlier) BillText.shortMonthName(month, locale) else "Earlier",
+                isEarlier,
+                "Earlier months",
+                "recurring.generate.month.earlier",
+                Modifier.fillMaxWidth(),
+            ) { showEarlier = true }
+            DropdownMenu(expanded = showEarlier, onDismissRequest = { showEarlier = false }) {
+                earlier.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)), style = IosText.subheadline) },
+                        onClick = { showEarlier = false; onSelect(option) },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PreviewLine(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = IosColors.textPrimary) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = IosText.subheadline, color = IosColors.textSecondary)
-        Text(value, style = IosText.callout.w(FontWeight.SemiBold), color = valueColor)
+private fun MonthChip(title: String, isSelected: Boolean, spoken: String, tag: String, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier
+            .clip(CircleShape)
+            .background(if (isSelected) IosColors.spendOrange else Color.Black.copy(alpha = 0.06f))
+            .semantics(mergeDescendants = true) { contentDescription = spoken; selected = isSelected }
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = Spacing.s)
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            title,
+            style = IosText.subheadline.w(FontWeight.SemiBold),
+            color = if (isSelected) Color.White else IosColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
-data class GeneratePreview(val count: Int, val recurringCount: Int, val total: BigDecimal)
-
-fun generatePreview(templates: List<RecurringTemplate>, month: YearMonth): GeneratePreview {
-    var count = 0
-    var recurringCount = 0
-    var total = BigDecimal.ZERO
-    templates.filter { it.isActive && it.type == "fixed" }.forEach { template ->
-        val dates = RecurrenceMath.occurrencesInMonth(template, month)
-        count += dates.size
-        recurringCount += 1
-        total = total.add(BigDecimal.valueOf(template.amount).multiply(BigDecimal.valueOf(dates.size.toLong())))
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.FutureMonth(
+    month: YearMonth,
+    locale: java.util.Locale,
+    onPlanMonth: ((YearMonth) -> Unit)?,
+) {
+    Column(
+        Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.future"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.m, Alignment.CenterVertically),
+    ) {
+        Icon(SfSymbols.icon("calendar"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
+        Text("${BillText.monthName(month, locale)} is still ahead", style = IosText.headline, color = IosColors.textPrimary)
+        Text(
+            "Plan it in Month plan. Its entries are logged on their dates.",
+            Modifier.padding(horizontal = Spacing.xl),
+            style = IosText.callout,
+            color = IosColors.textSecondary,
+            textAlign = TextAlign.Center,
+        )
+        if (onPlanMonth != null) {
+            Row(
+                Modifier.clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange)
+                    .clickable(role = Role.Button) { onPlanMonth(month) }
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m)
+                    .testTag("recurring.generate.planMonth"),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Plan ${BillText.monthName(month, locale)}", style = IosText.callout.w(FontWeight.SemiBold), color = Color.White)
+                Icon(SfSymbols.icon("arrow.right"), contentDescription = null, tint = Color.White, modifier = Modifier.size(17.dp))
+            }
+        }
     }
-    return GeneratePreview(count, recurringCount, total)
+}
+
+@Composable
+private fun GenerateRow(item: GenerateItem, isOn: Boolean, currency: String, locale: java.util.Locale, onToggle: () -> Unit) {
+    val finance = com.spenditos.android.ui.theme.LocalFinanceColors.current
+    val amount = if (item.isFullyLogged) {
+        item.template.amount * item.dates.size
+    } else {
+        item.amountToLog
+    }
+    val amountText = (if (item.template.amountVaries) "≈ " else "") + Money.format(amount, currency)
+    Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.xs)) {
+        Row(
+            Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
+                .semantics(mergeDescendants = true) { selected = isOn }
+                .clickable(enabled = !item.isFullyLogged, role = Role.Checkbox, onClick = onToggle)
+                .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                .testTag("recurring.generate.item.${item.id}"),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                SfSymbols.icon(if (item.isFullyLogged) "checkmark.circle" else if (isOn) "checkmark.circle.fill" else "circle"),
+                contentDescription = null,
+                tint = if (item.isFullyLogged) IosColors.textTertiary else if (isOn) IosColors.spendOrange else IosColors.neutral,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    item.template.description,
+                    style = IosText.callout.w(FontWeight.Medium),
+                    color = if (item.isFullyLogged) IosColors.textTertiary else IosColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    if (item.isFullyLogged) "Already logged" else BillText.generateDates(item, locale),
+                    style = IosText.caption,
+                    color = IosColors.textSecondary,
+                )
+            }
+            Text(
+                amountText,
+                style = IosText.callout.w(FontWeight.SemiBold),
+                color = if (item.isFullyLogged) IosColors.textTertiary else if (item.isIncome) finance.income else finance.expense,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GenerateFooter(
+    selected: List<GenerateItem>,
+    month: YearMonth,
+    currency: String,
+    locale: java.util.Locale,
+    isGenerating: Boolean,
+    onLog: () -> Unit,
+) {
+    val entryCount = selected.sumOf { it.dates.size - it.loggedCount }
+    val enabled = entryCount > 0 && !isGenerating
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        Box(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
+                .background(if (entryCount == 0) IosColors.neutral else IosColors.spendOrange)
+                .clickable(enabled = enabled, role = Role.Button, onClick = onLog)
+                .padding(vertical = Spacing.m)
+                .testTag("recurring.generate.confirm"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                if (entryCount == 0) "Nothing to log" else "Log ${counted(entryCount, "entry", "entries")}",
+                style = IosText.callout.w(FontWeight.SemiBold),
+                color = Color.White,
+            )
+        }
+        if (entryCount > 0) {
+            Text(
+                BillText.net(selected, month, currency, locale),
+                Modifier.testTag("recurring.generate.net"),
+                style = IosText.caption,
+                color = IosColors.textSecondary,
+            )
+        }
+    }
 }

@@ -59,14 +59,14 @@ class RecurrenceMathTest {
     }
 
     @Test
-    fun `generate preview counts and adds with decimal arithmetic`() {
+    fun `generate items add with decimal arithmetic and leave out legacy estimates and inactive items`() {
         val monthlyA = template("monthly", "2026-01-01").copy(amount = 0.1)
         val monthlyB = template("monthly", "2026-01-01").copy(id = "other", amount = 0.2)
         val inactive = template("monthly", "2026-01-01").copy(id = "inactive", isActive = false, amount = 90.0)
         val legacy = template("monthly", "2026-01-01").copy(id = "legacy", type = "variable", amount = 90.0)
-        val preview = generatePreview(listOf(monthlyA, monthlyB, inactive, legacy), YearMonth.of(2026, 1))
-        assertEquals(2, preview.count)
-        assertEquals(BigDecimal("0.3"), preview.total)
+        val items = generateItems(listOf(monthlyA, monthlyB, inactive, legacy), { false }, YearMonth.of(2026, 1), emptyList())
+        assertEquals(2, items.sumOf { it.dates.size })
+        assertEquals(BigDecimal("0.3"), items.fold(BigDecimal.ZERO) { sum, item -> sum + BigDecimal.valueOf(item.amountToLog) })
     }
 
     private fun template(frequency: String, first: String, secondDay: Int? = null) = RecurringTemplate(

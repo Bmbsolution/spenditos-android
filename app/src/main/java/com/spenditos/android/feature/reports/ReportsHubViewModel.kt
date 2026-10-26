@@ -34,7 +34,7 @@ internal fun reportLoadStatus(error: Throwable): ReportLoadStatus = when (error)
 internal fun reportStatusMessage(status: ReportLoadStatus): String = when (status) {
     ReportLoadStatus.OFFLINE -> "Offline. Connect to load reports."
     ReportLoadStatus.ERROR -> "Reports couldn't load. Try again."
-    ReportLoadStatus.PRO_REQUIRED -> "Paycheck periods are a Pro feature."
+    ReportLoadStatus.PRO_REQUIRED -> "Pay periods are a Pro feature."
 }
 
 data class ReportsHubUiState(

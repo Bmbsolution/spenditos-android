@@ -411,4 +411,210 @@ class RecurringRepositoryTest {
         server.takeRequest() // PUT pausedAt
         assertEquals("/recurring", server.takeRequest().url.encodedPath)
     }
+
+    // Lifecycle (#403): request bodies exactly as iOS sends them, with real JSON nulls.
+
+    private val lifecycleNow = java.time.Instant.parse("2026-10-26T12:00:00.789Z")
+
+    private suspend fun lifecycleBody(call: suspend () -> Unit): kotlinx.serialization.json.JsonObject {
+        server.enqueue(writeResponse())
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        call()
+        val put = server.takeRequest()
+        assertEquals("PUT", put.method)
+        assertEquals("/recurring/tmpl-fake-1", put.url.encodedPath)
+        assertEquals("/recurring", server.takeRequest().url.encodedPath)
+        assertEquals("/user/settings", server.takeRequest().url.encodedPath)
+        return SpenditosJson.parseToJsonElement(put.body!!.utf8()).jsonObject
+    }
+
+    @Test
+    fun `pause sends isActive false, a whole-second pausedAt and sync`() = runTest {
+        val body = lifecycleBody { repository.pause("tmpl-fake-1", lifecycleNow) }
+        assertEquals(setOf("isActive", "pausedAt", "upcomingEntries"), body.keys)
+        assertEquals("false", body["isActive"]!!.jsonPrimitive.content)
+        assertEquals("2026-10-26T12:00:00Z", body["pausedAt"]!!.jsonPrimitive.content)
+        assertEquals("sync", body["upcomingEntries"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `resume sends isActive true and sync only`() = runTest {
+        val body = lifecycleBody { repository.resume("tmpl-fake-1") }
+        assertEquals(setOf("isActive", "upcomingEntries"), body.keys)
+        assertEquals("true", body["isActive"]!!.jsonPrimitive.content)
+        assertEquals("sync", body["upcomingEntries"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `end sends endedAt and an explicit null pausedAt`() = runTest {
+        val body = lifecycleBody { repository.end("tmpl-fake-1", keepUpcoming = false, now = lifecycleNow) }
+        assertEquals(setOf("isActive", "endedAt", "pausedAt", "upcomingEntries"), body.keys)
+        assertEquals("false", body["isActive"]!!.jsonPrimitive.content)
+        assertEquals("2026-10-26T12:00:00Z", body["endedAt"]!!.jsonPrimitive.content)
+        assertTrue(body["pausedAt"] is JsonNull)
+        assertEquals("sync", body["upcomingEntries"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `end with a last payment still due this month leaves upcomingEntries out`() = runTest {
+        val body = lifecycleBody { repository.end("tmpl-fake-1", keepUpcoming = true, now = lifecycleNow) }
+        assertEquals(setOf("isActive", "endedAt", "pausedAt"), body.keys)
+        assertTrue(body["pausedAt"] is JsonNull)
+    }
+
+    @Test
+    fun `end after the next payment sends occurrencesRemaining 1 and nothing else`() = runTest {
+        val body = lifecycleBody { repository.endAfterNextPayment("tmpl-fake-1") }
+        assertEquals(setOf("occurrencesRemaining"), body.keys)
+        assertEquals("1", body["occurrencesRemaining"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `start again sends the date, an explicit null cap and sync`() = runTest {
+        val body = lifecycleBody { repository.startAgain("tmpl-fake-1", java.time.LocalDate.of(2026, 11, 5)) }
+        assertEquals(setOf("isActive", "firstOccurrenceDate", "occurrencesRemaining", "upcomingEntries"), body.keys)
+        assertEquals("true", body["isActive"]!!.jsonPrimitive.content)
+        assertEquals("2026-11-05", body["firstOccurrenceDate"]!!.jsonPrimitive.content)
+        assertTrue(body["occurrencesRemaining"] is JsonNull)
+        assertEquals("sync", body["upcomingEntries"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `undoing an end after the next payment restores the previous cap or sends null`() {
+        fun encode(request: UpdateRecurringTemplateRequest) =
+            SpenditosJson.encodeToString(UpdateRecurringTemplateRequest.serializer(), request)
+        assertEquals("""{"occurrencesRemaining":5}""", encode(BillLifecycleRequests.restoreOccurrences(5)))
+        assertEquals("""{"occurrencesRemaining":null}""", encode(BillLifecycleRequests.restoreOccurrences(null)))
+        // The raw JSON carries the nulls: Kotlin nulls are omitted, JsonNull values are written.
+        assertEquals(
+            """{"isActive":false,"pausedAt":null,"endedAt":"2026-10-26T12:00:00Z"}""".toJsonObject(),
+            encode(BillLifecycleRequests.end(lifecycleNow, keepUpcoming = true)).toJsonObject(),
+        )
+    }
+
+    private fun String.toJsonObject() = SpenditosJson.parseToJsonElement(this).jsonObject
+
+    @Test
+    fun `a lifecycle write refreshes the list and announces recurring and transaction changes`() = runTest {
+        val invalidations = FinanceInvalidationBus()
+        val repo = RecurringRepository(
+            Retrofit.Builder().baseUrl(server.url("/")).client(OkHttpClient())
+                .addConverterFactory(SpenditosJson.asConverterFactory("application/json".toMediaType()))
+                .build().create(RecurringApi::class.java),
+            session,
+            invalidations,
+        )
+        val event = async(start = CoroutineStart.UNDISPATCHED) { invalidations.events.first() }
+        server.enqueue(writeResponse())
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        repo.pause("tmpl-fake-1")
+        assertEquals(setOf(Aggregate.RECURRING, Aggregate.TRANSACTION), event.await())
+    }
+
+    @Test
+    fun `lifecycle writes map client and network failures`() = runTest {
+        server.enqueue(MockResponse(code = 404, body = """{"error":"Not found"}"""))
+        assertTrue(failure { repository.end("tmpl-fake-1") } is ApiError.Server)
+        offline.failNext = 1
+        assertTrue(failure { repository.pause("tmpl-fake-1") } is ApiError.Network)
+    }
+
+    // History (#403)
+
+    private fun historyResponse() = MockResponse(
+        body = """{"data":{"tmpl-fake-1":{"count":2,"total":229.72,"firstDate":"2026-09-30","lastDate":"2026-10-14","entries":[{"id":"txn-hist-2","date":"2026-10-14","amount":114.86,"description":"Klarna Airbnb"},{"id":"txn-hist-1","date":"2026-09-30","amount":114.86,"description":"Klarna Airbnb"}]},"tmpl-fake-2":{"count":0,"total":0,"firstDate":null,"lastDate":null}}}""",
+    )
+
+    @Test
+    fun `history asks for the ids with literal commas and parses the summaries`() = runTest {
+        server.enqueue(historyResponse())
+        val result = repository.history(listOf("tmpl-fake-1", "tmpl-fake-2"))
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/recurring/history", request.url.encodedPath)
+        assertEquals("ids=tmpl-fake-1,tmpl-fake-2", request.url.encodedQuery)
+
+        val first = result.getValue("tmpl-fake-1")
+        assertEquals(2, first.count)
+        assertEquals(229.72, first.total, 0.0)
+        assertEquals("2026-09-30", first.firstDate)
+        assertEquals("2026-10-14", first.lastDate)
+        assertEquals(listOf("txn-hist-2", "txn-hist-1"), first.entries!!.map { it.id })
+        assertEquals(114.86, first.entries!!.first().amount, 0.0)
+        val empty = result.getValue("tmpl-fake-2")
+        assertEquals(0, empty.count)
+        assertEquals(null, empty.firstDate)
+        assertEquals(null, empty.entries)
+    }
+
+    @Test
+    fun `history with entries adds includeEntries, caps at 50 ids and skips empty requests`() = runTest {
+        server.enqueue(historyResponse())
+        repository.history(listOf("tmpl-fake-1"), includeEntries = true)
+        assertEquals("ids=tmpl-fake-1&includeEntries=true", server.takeRequest().url.encodedQuery)
+
+        server.enqueue(historyResponse())
+        repository.history((1..60).map { "id$it" })
+        val ids = server.takeRequest().url.encodedQuery!!.removePrefix("ids=").split(",")
+        assertEquals(50, ids.size)
+        assertEquals("id50", ids.last())
+
+        assertTrue(repository.history(emptyList()).isEmpty())
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun `history maps client and network failures`() = runTest {
+        server.enqueue(MockResponse(code = 500, body = """{"error":"InternalError"}"""))
+        assertTrue(failure { repository.history(listOf("tmpl-fake-1")) } is ApiError.Server)
+        offline.failNext = 1
+        assertTrue(failure { repository.history(listOf("tmpl-fake-1")) } is ApiError.Network)
+    }
+
+    // Month entries (#403)
+
+    private fun entriesPage(id: String, hasMore: Boolean, cursor: String? = null) = MockResponse(
+        body = """{"data":{"transactions":[{"id":"$id","userId":"user-fake-1","categoryId":"cat-fake-1","templateId":"tmpl-fake-1","amount":12.5,"date":"2026-10-03"}],"pagination":{"hasMore":$hasMore,"nextCursor":${cursor?.let { "\"$it\"" } ?: "null"}}}}""",
+    )
+
+    @Test
+    fun `month entries read the whole month and follow the cursor`() = runTest {
+        server.enqueue(entriesPage("e1", hasMore = true, cursor = "c1"))
+        server.enqueue(entriesPage("e2", hasMore = false))
+        val entries = repository.monthEntries(YearMonth.of(2026, 10))
+        assertEquals(listOf("e1", "e2"), entries.map { it.id })
+        val first = server.takeRequest()
+        assertEquals("/transactions", first.url.encodedPath)
+        assertEquals("2026-10-01", first.url.queryParameter("startDate"))
+        assertEquals("2026-10-31", first.url.queryParameter("endDate"))
+        assertEquals("200", first.url.queryParameter("limit"))
+        assertEquals(null, first.url.queryParameter("cursor"))
+        assertEquals("c1", server.takeRequest().url.queryParameter("cursor"))
+    }
+
+    @Test
+    fun `month entries map network failures`() = runTest {
+        offline.failNext = 1
+        assertTrue(failure { repository.monthEntries(YearMonth.of(2026, 10)) } is ApiError.Network)
+    }
+
+    @Test
+    fun `generate sends the selected template ids and omits them for the whole month`() = runTest {
+        server.enqueue(generateResponse())
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        repository.generate(YearMonth.of(2026, 10), listOf("tmpl-fake-1", "tmpl-fake-2"))
+        val withIds = SpenditosJson.parseToJsonElement(server.takeRequest().body!!.utf8()).jsonObject
+        assertEquals("2026-10-15", withIds["targetDate"]!!.jsonPrimitive.content)
+        assertEquals(listOf("tmpl-fake-1", "tmpl-fake-2"), withIds["templateIds"]!!.jsonArray.map { it.jsonPrimitive.content })
+        server.takeRequest(); server.takeRequest()
+
+        server.enqueue(generateResponse())
+        server.enqueue(listResponse())
+        server.enqueue(settingsResponse())
+        repository.generate(YearMonth.of(2026, 10))
+        assertEquals(setOf("targetDate"), SpenditosJson.parseToJsonElement(server.takeRequest().body!!.utf8()).jsonObject.keys)
+    }
 }
