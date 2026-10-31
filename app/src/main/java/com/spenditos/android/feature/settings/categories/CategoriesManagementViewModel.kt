@@ -113,7 +113,7 @@ class CategoriesManagementViewModel @Inject constructor(
             existing.id != id && existing.isIncome == draft.isIncome && normalizeCategoryName(existing.name) == normalizeCategoryName(name)
         }
         if (duplicate != null) {
-            screen.update { it.copy(error = "\"${duplicate.name}\" already exists.") }
+            screen.update { it.copy(error = Strings.get(R.string.common_category_already_exists, duplicate.name)) }
             return
         }
 

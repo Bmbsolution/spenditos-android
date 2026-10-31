@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.home.insights
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.background
@@ -106,7 +107,7 @@ fun NextBillTile(
                 )
                 if (days > 1) {
                     Text(
-                        "days · ${pin.date.format(monthDayFormatter(locale))}",
+                        stringResource(R.string.home_days_and_date, pin.date.format(monthDayFormatter(locale))),
                         style = IosText.caption.w(FontWeight.Medium),
                         color = IosColors.textSecondary,
                     )
@@ -184,7 +185,7 @@ fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Lo
                             .background(Brush.horizontalGradient(listOf(color.copy(alpha = 0.7f), color))),
                     )
                 }
-                Text("$sharePercent% of everyday spending", style = IosText.caption2, color = IosColors.textSecondary)
+                Text(stringResource(R.string.home_share_of_everyday, sharePercent), style = IosText.caption2, color = IosColors.textSecondary)
             }
         }
     }
@@ -210,5 +211,5 @@ internal fun PinBadge(pin: HomeInsights.Pin, size: androidx.compose.ui.unit.Dp =
     }
 }
 
-private fun monthDayFormatter(locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d", locale)
-private fun weekdayFormatter(locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern("EEEEE", locale)
+private fun monthDayFormatter(locale: Locale): DateTimeFormatter = LocalizedDate.formatter("MMM d", locale)
+private fun weekdayFormatter(locale: Locale): DateTimeFormatter = LocalizedDate.formatter("EEEEE", locale)

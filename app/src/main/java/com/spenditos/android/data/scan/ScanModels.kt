@@ -70,13 +70,13 @@ data class ScanContext(
 /** Why a scan could not be read, with the copy iOS `ScanError` shows. */
 sealed class ScanFailure(val userMessage: String) : Exception(userMessage) {
     data object NoDocuments : ScanFailure(Strings.get(R.string.data_scan_choose_at_least_one_photo))
-    data class UnreadableImage(val name: String?) : ScanFailure("Couldn't read ${name ?: "one of the images"}.")
+    data class UnreadableImage(val name: String?) : ScanFailure(Strings.get(R.string.scan_cant_read_name, name ?: Strings.get(R.string.scan_one_of_the_images)))
     data class PdfLocked(val name: String?) :
-        ScanFailure("${name ?: "That PDF"} is password protected. Remove the password and try again.")
-    data class PdfEmpty(val name: String?) : ScanFailure("${name ?: "That PDF"} has no pages to read.")
-    data class FileTooLarge(val name: String?) : ScanFailure("${name ?: "That file"} is too large to upload (10 MB maximum).")
+        ScanFailure(Strings.get(R.string.scan_pdf_locked, name ?: Strings.get(R.string.scan_that_pdf)))
+    data class PdfEmpty(val name: String?) : ScanFailure(Strings.get(R.string.scan_pdf_empty, name ?: Strings.get(R.string.scan_that_pdf)))
+    data class FileTooLarge(val name: String?) : ScanFailure(Strings.get(R.string.scan_file_too_large, name ?: Strings.get(R.string.scan_that_file)))
     data class UnsupportedFile(val name: String?) :
-        ScanFailure("${name ?: "That file"} isn't a type Spenditos can read. Try a photo, PDF, CSV or Excel file.")
+        ScanFailure(Strings.get(R.string.scan_unsupported_file, name ?: Strings.get(R.string.scan_that_file)))
     data class Failed(val serverMessage: String?) :
         ScanFailure(serverMessage?.takeIf { it.isNotBlank() } ?: Strings.get(R.string.data_scan_couldn_t_read_transactions_from))
     data object Timeout : ScanFailure(Strings.get(R.string.data_scan_reading_is_taking_longer_than))
@@ -140,13 +140,13 @@ object ScanRules {
             val name = inputs[0].filename?.trim().orEmpty()
             if (name.isNotEmpty()) return name.take(MAX_SOURCE_LABEL_LENGTH)
             return when (inputs[0].origin) {
-                ScanInputOrigin.PHOTO_LIBRARY -> "1 screenshot"
-                ScanInputOrigin.CAMERA -> "1 photo"
-                ScanInputOrigin.FILES -> "1 file"
+                ScanInputOrigin.PHOTO_LIBRARY -> Strings.plural(R.plurals.scan_label_screenshots, 1)
+                ScanInputOrigin.CAMERA -> Strings.plural(R.plurals.scan_label_photos, 1)
+                ScanInputOrigin.FILES -> Strings.plural(R.plurals.scan_label_files, 1)
             }
         }
         val allPhotos = inputs.all { it.origin == ScanInputOrigin.PHOTO_LIBRARY }
-        return if (allPhotos) "${inputs.size} screenshots" else "${inputs.size} files"
+        return if (allPhotos) Strings.plural(R.plurals.scan_label_screenshots, inputs.size) else Strings.plural(R.plurals.scan_label_files, inputs.size)
     }
 
     /** Splits uploaded documents into scan-sized groups, preserving order. */
@@ -155,7 +155,7 @@ object ScanRules {
 
     /** "Statement.pdf (1 of 2)" when an upload is split; the label as is otherwise. */
     fun chunkLabel(label: String, index: Int, count: Int): String =
-        if (count > 1) "$label (${index + 1} of $count)" else label
+        if (count > 1) Strings.get(R.string.scan_chunk_label, label, index + 1, count) else label
 
     /** The reading screen's unit: pages for a PDF, images for photos, files otherwise. */
     fun readingUnit(inputs: List<ScanInput>): String = when {

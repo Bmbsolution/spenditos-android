@@ -26,7 +26,7 @@ data class OnboardingUiState(
     val displayName: String = "",
     val country: String = defaultCountry(),
     val currency: String = OnboardingData.currencyForCountry(defaultCountry()),
-    val language: String = if (Locale.getDefault().language == "fr") "fr" else "en",
+    val language: String = com.spenditos.android.core.i18n.AppLanguage.resolved(),
     val isDetectingCountry: Boolean = false,
     val countryLoaded: Boolean = false,
     val countryEdited: Boolean = false,
@@ -50,7 +50,7 @@ class OnboardingViewModel @Inject constructor(
             displayName = savedStateHandle[KEY_NAME] ?: "",
             country = savedStateHandle[KEY_COUNTRY] ?: defaultCountry(),
             currency = savedStateHandle[KEY_CURRENCY] ?: OnboardingData.currencyForCountry(defaultCountry()),
-            language = savedStateHandle[KEY_LANGUAGE] ?: if (Locale.getDefault().language == "fr") "fr" else "en",
+            language = com.spenditos.android.core.i18n.AppLanguage.resolved(),
             countryLoaded = savedStateHandle[KEY_COUNTRY_LOADED] ?: false,
             countryEdited = savedStateHandle[KEY_COUNTRY_EDITED] ?: false,
         ).let { it.copy(page = it.page.coerceIn(0, LAST_PAGE)) },
@@ -106,10 +106,6 @@ class OnboardingViewModel @Inject constructor(
 
     fun onCurrencyChange(value: String) = update {
         it.copy(currency = value.filter(Char::isLetter).take(3).uppercase(), error = null, errorKind = null)
-    }
-
-    fun onLanguageChange(value: String) {
-        if (value == "en" || value == "fr") update { it.copy(language = value, error = null, errorKind = null) }
     }
 
     fun onContinue() {
@@ -177,7 +173,6 @@ class OnboardingViewModel @Inject constructor(
         savedStateHandle[KEY_NAME] = current.displayName
         savedStateHandle[KEY_COUNTRY] = current.country
         savedStateHandle[KEY_CURRENCY] = current.currency
-        savedStateHandle[KEY_LANGUAGE] = current.language
         savedStateHandle[KEY_COUNTRY_LOADED] = current.countryLoaded
         savedStateHandle[KEY_COUNTRY_EDITED] = current.countryEdited
     }
@@ -192,7 +187,6 @@ class OnboardingViewModel @Inject constructor(
         const val KEY_NAME = "onboarding.name"
         const val KEY_COUNTRY = "onboarding.country"
         const val KEY_CURRENCY = "onboarding.currency"
-        const val KEY_LANGUAGE = "onboarding.language"
         const val KEY_COUNTRY_LOADED = "onboarding.countryLoaded"
         const val KEY_COUNTRY_EDITED = "onboarding.countryEdited"
     }

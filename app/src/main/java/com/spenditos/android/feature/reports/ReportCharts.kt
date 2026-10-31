@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -269,7 +270,7 @@ internal fun DailyExpenseChart(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
                 Text(
-                    row.date.format(DateTimeFormatter.ofPattern("MMM d", locale)),
+                    row.date.format(LocalizedDate.formatter("MMM d", locale)),
                     modifier = Modifier.width(48.dp),
                     style = IosText.subheadline,
                     color = IosColors.neutral,

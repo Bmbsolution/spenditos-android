@@ -112,8 +112,7 @@ class SettingsViewModel @Inject constructor(
     fun signOutMessage(): String {
         val count = state.value.unsyncedCount
         if (count == 0) return Strings.get(R.string.settings_are_you_sure_you_want)
-        val noun = if (count == 1) "transaction" else "transactions"
-        return Strings.get(R.string.settings_are_you_sure_you_want_2, count, noun)
+        return Strings.plural(R.plurals.settings_sign_out_unsynced, count)
     }
 
     /** Entering Settings is a settings load: pick up Premium changes (throttled, best effort). */

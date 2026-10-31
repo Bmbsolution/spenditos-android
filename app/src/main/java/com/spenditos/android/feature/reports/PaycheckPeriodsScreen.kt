@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -76,7 +77,7 @@ fun PaycheckPeriodsScreen(
                         .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
                 ) {
                     ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                         subtitle = monthRangeLabel(state.month, locale),
                         tag = "reports.paycheck.month",
                         onPrevious = viewModel::previousMonth,
@@ -85,7 +86,7 @@ fun PaycheckPeriodsScreen(
                     ReportEmptyState(
                         icon = "banknote.fill",
                         title = stringResource(R.string.reports_no_pay_periods),
-                        subtitle = "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                        subtitle = stringResource(R.string.reports_no_pay_periods_overlap, state.month.format(LocalizedDate.formatter("MMMM yyyy", locale))),
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
@@ -96,7 +97,7 @@ fun PaycheckPeriodsScreen(
                 ) {
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.paycheck.month",
                             onPrevious = viewModel::previousMonth,
@@ -116,7 +117,7 @@ fun PaycheckPeriodsScreen(
                             item {
                                 ReportEmptyCard(
                                     stringResource(R.string.reports_no_pay_periods),
-                                    "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                                    stringResource(R.string.reports_no_pay_periods_overlap, state.month.format(LocalizedDate.formatter("MMMM yyyy", locale))),
                                 )
                             }
                         } else {
@@ -249,9 +250,9 @@ private fun displayPeriodLabel(period: PaycheckPeriod, locale: Locale): String {
     return Strings.get(R.string.reports_paycheck, formatPeriodDate(parsed, locale))
 }
 
-private fun formatPeriodDate(date: LocalDate, locale: Locale): String = date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+private fun formatPeriodDate(date: LocalDate, locale: Locale): String = date.format(LocalizedDate.formatter("MMM d", locale))
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

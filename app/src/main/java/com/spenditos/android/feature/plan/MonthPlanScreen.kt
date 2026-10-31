@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.plan
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -245,7 +246,7 @@ private fun MonthPlanContent(
         ConfirmAction.APPLY -> AlertDialog(
             onDismissRequest = { confirmAction = null },
             title = { Text(stringResource(R.string.plan_apply_this_plan)) },
-            text = { Text("This updates your records for ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0]))}.") },
+            text = { Text(stringResource(R.string.plan_this_updates_records, state.month.format(LocalizedDate.formatter("MMMM yyyy", LocalConfiguration.current.locales[0])))) },
             confirmButton = {
                 TextButton(
                     onClick = { confirmAction = null; viewModel.applyAllFromScreen() },
@@ -284,13 +285,13 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])),
+                    state.month.format(LocalizedDate.formatter("MMMM yyyy", LocalConfiguration.current.locales[0])),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
                 )
                 if (state.draftChangeCount > 0) {
                     Text(
-                        "Draft · ${state.draftChangeCount} ${if (state.draftChangeCount == 1) "change" else "changes"}",
+                        Strings.plural(R.plurals.plan_draft_changes, state.draftChangeCount),
                         modifier = Modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
                             .padding(horizontal = 8.dp, vertical = 3.dp).testTag("monthPlan.draftCount"),
                         style = IosText.caption2.w(FontWeight.Bold),
@@ -423,9 +424,8 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
             if (state.draftChangeCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        val changeLabel = if (state.draftChangeCount == 1) "1 change" else "${state.draftChangeCount} changes"
                         Text(
-                            if (applyFailed) "$changeLabel didn't apply" else "$changeLabel in your draft",
+                            if (applyFailed) Strings.plural(R.plurals.plan_changes_didnt_apply, state.draftChangeCount) else Strings.plural(R.plurals.plan_changes_in_draft, state.draftChangeCount),
                             style = IosText.subheadline.w(FontWeight.Bold),
                             color = IosColors.textPrimary,
                         )
@@ -546,7 +546,7 @@ private fun RecordedPlanEntry(row: MonthPlanTransactionRow, state: MonthPlanUiSt
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.transaction.${row.transaction.id}")) {
         IosRow(
             title = row.transaction.description,
-            subtitle = runCatching { LocalDate.parse(row.transaction.date.take(10)).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
+            subtitle = runCatching { LocalDate.parse(row.transaction.date.take(10)).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
             icon = SfSymbols.icon("receipt"),
             iconTint = if (row.isIncome) finance.income else finance.expense,
             divider = false,
@@ -624,8 +624,8 @@ private fun RecurringPlanRow(
         // A debt's last payment is smaller than the rest: then the count alone is honest.
         val dates = if (row.occurrenceCount > 1) {
             if (row.hasUniformAmounts) "${row.occurrenceCount} × ${Money.format(row.amounts.first().toDouble(), state.currency)}"
-            else "${row.occurrenceCount} payments"
-        } else row.dates.firstOrNull()?.format(DateTimeFormatter.ofPattern("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
+            else Strings.plural(R.plurals.count_payment, row.occurrenceCount)
+        } else row.dates.firstOrNull()?.format(LocalizedDate.formatter("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
         Text(dates, style = IosText.caption, color = IosColors.textSecondary)
         if (!state.isPast) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -756,7 +756,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                                     )
                                 }
                                 Text(
-                                    runCatching { LocalDate.parse(transaction.date).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(transaction.date),
+                                    runCatching { LocalDate.parse(transaction.date).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(transaction.date),
                                     style = IosText.caption,
                                     color = IosColors.textSecondary,
                                 )
@@ -780,7 +780,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                                     DraftBadge()
                                 }
                                 Text(
-                                    runCatching { LocalDate.parse(entry.date).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(entry.date),
+                                    runCatching { LocalDate.parse(entry.date).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(entry.date),
                                     style = IosText.caption,
                                     color = IosColors.textSecondary,
                                 )
@@ -892,7 +892,7 @@ private fun CheckupCard(
                         )
                     }
                     Text(
-                        "${suggestion.categoryName} · seen in ${suggestion.observedMonths.size} months · typical ${Money.format(suggestion.amount, state.currency)}",
+                        stringResource(R.string.plan_suggestion_detail, suggestion.categoryName, suggestion.observedMonths.size, Money.format(suggestion.amount, state.currency)),
                         style = IosText.caption,
                         color = IosColors.textSecondary,
                     )

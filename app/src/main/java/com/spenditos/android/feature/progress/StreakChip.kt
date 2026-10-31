@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.progress
 
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.layout.Row
@@ -91,7 +92,7 @@ fun StreakTile(modifier: Modifier = Modifier) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFFF7A3D), modifier = Modifier.size(34.dp))
                 Text("$days", style = IosText.rounded(34, FontWeight.ExtraBold), color = IosColors.textPrimary)
-                Text(if (days == 1) "day" else "days", style = IosText.subheadline.w(FontWeight.Medium), color = IosColors.textSecondary)
+                Text(Strings.plural(R.plurals.streak_unit_days, days), style = IosText.subheadline.w(FontWeight.Medium), color = IosColors.textSecondary)
             }
             Text(stringResource(R.string.progress_keep_logging_to_build_it), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         }

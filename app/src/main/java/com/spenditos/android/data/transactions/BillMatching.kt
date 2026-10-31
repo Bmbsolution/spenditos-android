@@ -132,13 +132,15 @@ object BillMatching {
 val RecurringTemplate.isLegacyEstimate: Boolean get() = type.equals("variable", ignoreCase = true)
 
 /** Repeat presets offered by "Make it recurring" in the add form. Port of iOS `RecurrencePreset`. */
-enum class RecurrencePreset(val label: String, val frequency: String) {
-    WEEKLY(Strings.get(R.string.data_transactions_weekly), "weekly"),
-    BI_WEEKLY(Strings.get(R.string.common_every_2_weeks), "bi-weekly"),
-    SEMI_MONTHLY(Strings.get(R.string.common_twice_a_month), "semi-monthly"),
-    MONTHLY(Strings.get(R.string.data_transactions_monthly), "monthly"),
-    YEARLY(Strings.get(R.string.data_transactions_yearly), "yearly"),
+enum class RecurrencePreset(@androidx.annotation.StringRes val labelRes: Int, val frequency: String) {
+    WEEKLY(R.string.data_transactions_weekly, "weekly"),
+    BI_WEEKLY(R.string.common_every_2_weeks, "bi-weekly"),
+    SEMI_MONTHLY(R.string.common_twice_a_month, "semi-monthly"),
+    MONTHLY(R.string.data_transactions_monthly, "monthly"),
+    YEARLY(R.string.data_transactions_yearly, "yearly"),
     ;
+
+    val label: String get() = Strings.get(labelRes)
 
     /** The due date one period after [date]; month arithmetic clamps to the month's last day. */
     fun next(date: LocalDate): LocalDate = when (this) {

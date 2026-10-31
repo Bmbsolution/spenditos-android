@@ -47,15 +47,15 @@ data class MonthPlanDraftState(
 
     /** Mirrors packages/core/src/schemas/monthly-plan-draft.ts:1-240 before every PUT. */
     fun validationError(month: YearMonth): String? {
-        if (entries.size > 100) return "A draft can have up to 100 one-time items."
-        if (pendingEdits.size > 100) return "A draft has too many changes."
-        if (pendingLogs.size > 50 || pendingSkips.size > 50) return "A draft has too many scheduled changes."
-        if (pendingDeletes.size > 100) return "A draft has too many deletions."
+        if (entries.size > 100) return Strings.get(R.string.plan_draft_a_draft_can_have_up)
+        if (pendingEdits.size > 100) return Strings.get(R.string.plan_draft_a_draft_has_too_many)
+        if (pendingLogs.size > 50 || pendingSkips.size > 50) return Strings.get(R.string.plan_draft_a_draft_has_too_many)
+        if (pendingDeletes.size > 100) return Strings.get(R.string.plan_draft_a_draft_has_too_many)
 
         if (entries.map { it.id }.toSet().size != entries.size) return Strings.get(R.string.plan_each_one_time_item_needs)
         for (entry in entries) {
-            if (entry.id.isBlank() || entry.id.length > 100) return "A one-time item has an invalid id."
-            if (entry.idempotencyKeyId.isBlank() || entry.idempotencyKeyId.length > 200) return "A one-time item has an invalid id."
+            if (entry.id.isBlank() || entry.id.length > 100) return Strings.get(R.string.plan_draft_a_one_time_item_has)
+            if (entry.idempotencyKeyId.isBlank() || entry.idempotencyKeyId.length > 200) return Strings.get(R.string.plan_draft_a_one_time_item_has)
             if (!entry.date.isDateIn(month)) return Strings.get(R.string.plan_one_time_item_dates_must)
             if (entry.description.trim().isEmpty() || entry.description.length > 200) return Strings.get(R.string.plan_enter_a_description_of_up)
             if (!entry.amount.isValidAmount()) return Strings.get(R.string.plan_enter_a_valid_amount)
@@ -66,8 +66,8 @@ data class MonthPlanDraftState(
         val editIds = pendingEdits.map { it.transactionId }
         if (editIds.toSet().size != editIds.size) return Strings.get(R.string.plan_each_transaction_can_have_one)
         for (edit in pendingEdits) {
-            if (edit.transactionId.isBlank() || edit.transactionId.length > 200) return "A transaction change has an invalid id."
-            if (edit.amount == null && edit.date == null && edit.description == null && edit.categoryId == null) return "A transaction change is empty."
+            if (edit.transactionId.isBlank() || edit.transactionId.length > 200) return Strings.get(R.string.plan_draft_a_transaction_change_has_an)
+            if (edit.amount == null && edit.date == null && edit.description == null && edit.categoryId == null) return Strings.get(R.string.plan_draft_a_transaction_change_is_empty)
             if (edit.amount != null && !edit.amount.isValidAmount()) return Strings.get(R.string.plan_enter_a_valid_amount)
             if (edit.date != null && !edit.date.isDateIn(month)) return Strings.get(R.string.plan_changed_dates_must_be_in)
             if (edit.description?.length?.let { it > 200 } == true) return Strings.get(R.string.plan_descriptions_can_have_up_to)
@@ -77,26 +77,26 @@ data class MonthPlanDraftState(
         val logKeys = pendingLogs.map { "${it.templateId}:${it.month}" }
         if (logKeys.toSet().size != logKeys.size) return Strings.get(R.string.plan_each_scheduled_item_can_have)
         for (log in pendingLogs) {
-            if (log.templateId.isBlank() || log.templateId.length > 200 || log.month != month.toString()) return "A scheduled change must target this month."
+            if (log.templateId.isBlank() || log.templateId.length > 200 || log.month != month.toString()) return Strings.get(R.string.plan_draft_a_scheduled_change_must_target)
             if (log.overrides.size > 10) return Strings.get(R.string.plan_this_schedule_has_too_many)
             val dates = log.overrides.map { it.occurrenceDate }
             if (dates.toSet().size != dates.size) return Strings.get(R.string.plan_each_scheduled_date_can_have)
             for (override in log.overrides) {
                 if (!override.occurrenceDate.isDateIn(month) || override.date?.isDateIn(month) == false) return Strings.get(R.string.plan_changed_dates_must_be_in)
-                if (override.amount == null && override.date == null) return "A scheduled change is empty."
+                if (override.amount == null && override.date == null) return Strings.get(R.string.plan_draft_a_scheduled_change_is_empty)
                 if (override.amount != null && !override.amount.isValidAmount()) return Strings.get(R.string.plan_enter_a_valid_amount)
             }
         }
 
         val deleteIds = pendingDeletes.map { it.transactionId }
-        if (deleteIds.any { it.isBlank() || it.length > 200 }) return "A deletion has an invalid transaction id."
-        if (deleteIds.toSet().size != deleteIds.size) return "A transaction can only be deleted once."
-        if (deleteIds.any { it in editIds }) return "A transaction cannot have a change and a deletion."
+        if (deleteIds.any { it.isBlank() || it.length > 200 }) return Strings.get(R.string.plan_draft_a_deletion_has_an_invalid)
+        if (deleteIds.toSet().size != deleteIds.size) return Strings.get(R.string.plan_draft_a_transaction_can_only_be)
+        if (deleteIds.any { it in editIds }) return Strings.get(R.string.plan_draft_a_transaction_cannot_have_a)
 
         val skipKeys = pendingSkips.map { "${it.templateId}:${it.month}" }
         if (skipKeys.toSet().size != skipKeys.size) return Strings.get(R.string.plan_each_scheduled_item_can_be)
         for (skip in pendingSkips) {
-            if (skip.templateId.isBlank() || skip.templateId.length > 200 || skip.month != month.toString()) return "A skip must target this month."
+            if (skip.templateId.isBlank() || skip.templateId.length > 200 || skip.month != month.toString()) return Strings.get(R.string.plan_draft_a_skip_must_target_this)
             if (skip.dates.isEmpty() || skip.dates.size > 31) return Strings.get(R.string.plan_choose_at_least_one_date)
             if (skip.dates.toSet().size != skip.dates.size) return Strings.get(R.string.plan_skip_dates_must_be_unique)
             if (skip.dates.any { !it.isDateIn(month) }) return Strings.get(R.string.plan_skip_dates_must_be_in)

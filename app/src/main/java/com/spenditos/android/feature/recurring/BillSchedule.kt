@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.data.scan.countedPlural
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import com.spenditos.android.data.model.BillHistorySummary
@@ -131,34 +133,34 @@ fun generateItems(
 
 /** "1 bill", "9 bills", "1 entry", "2 entries". */
 fun counted(n: Int, singular: String, plural: String = singular + "s"): String =
-    "$n ${if (n == 1) singular else plural}"
+    countedPlural(singular)?.let { Strings.plural(it, n) } ?: "$n ${if (n == 1) singular else plural}"
 
 /** Wording for Income & bills, the Generate sheet and the Ended archive (iOS strings, value by value). */
 object BillText {
     fun monthName(month: YearMonth, locale: Locale = Locale.getDefault()): String =
-        month.format(DateTimeFormatter.ofPattern("MMMM", locale))
+        month.format(LocalizedDate.formatter("MMMM", locale))
 
     fun shortMonthName(month: YearMonth, locale: Locale = Locale.getDefault()): String =
-        month.format(DateTimeFormatter.ofPattern("MMM", locale))
+        month.format(LocalizedDate.formatter("MMM", locale))
 
     /** "Oct 28" */
     fun monthDay(date: LocalDate, locale: Locale = Locale.getDefault()): String =
-        date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+        date.format(LocalizedDate.formatter("MMM d", locale))
 
     /** "$418.00 still to pay", or the month's total when entries aren't loaded. */
     fun summaryHeadline(summary: BillsMonthSummary, currency: String): String {
         val stillToPay = summary.stillToPay
         if (stillToPay != null) {
-            return if (stillToPay > 0) "${Money.format(stillToPay, currency)} still to pay" else "All bills paid"
+            return if (stillToPay > 0) Strings.get(R.string.recurring_still_to_pay, Money.format(stillToPay, currency)) else Strings.get(R.string.recurring_all_bills_paid)
         }
-        return "${Money.format(summary.billsTotal, currency)} in bills"
+        return Strings.get(R.string.recurring_in_bills, Money.format(summary.billsTotal, currency))
     }
 
     /** "5 of 9 bills paid · Next: Bell internet, Nov 3" */
     fun summaryDetail(summary: BillsMonthSummary, locale: Locale = Locale.getDefault()): String {
         val parts = mutableListOf<String>()
         val paid = summary.paidCount
-        parts += if (paid != null) "$paid of ${counted(summary.billCount, "bill")} paid" else counted(summary.billCount, "bill")
+        parts += if (paid != null) Strings.plural(R.plurals.recurring_bills_paid, summary.billCount, paid, summary.billCount) else counted(summary.billCount, "bill")
         val name = summary.nextName
         val date = summary.nextDate
         if (name != null && date != null) parts += Strings.get(R.string.recurring_next, name, monthDay(date, locale))
@@ -198,7 +200,7 @@ object BillText {
                 since == null -> Strings.get(R.string.recurring_paused)
                 isLongPaused(template, now, zone) -> {
                     val months = ChronoUnit.MONTHS.between(since.atZone(zone), now.atZone(zone)).toInt()
-                    "Paused ${counted(months, "month")}"
+                    Strings.plural(R.plurals.recurring_paused_months, months)
                 }
                 else -> Strings.get(R.string.recurring_paused_since, monthDay(since.atZone(zone).toLocalDate(), locale))
             }
@@ -222,7 +224,7 @@ object BillText {
         val days = item.dates.map { it.dayOfMonth }
         var text = "$monthShort " + days.take(3).joinToString(", ")
         if (days.size > 3) text += " +${days.size - 3}"
-        if (item.loggedCount > 0) text += " · ${item.loggedCount} of ${item.dates.size} logged"
+        if (item.loggedCount > 0) text += " · " + Strings.get(R.string.recurring_n_of_m_logged, item.loggedCount, item.dates.size)
         return text
     }
 
@@ -248,7 +250,7 @@ object BillText {
         val parts = mutableListOf<String>()
         val ended = endedDate(template)
         parts += if (ended != null) {
-            "Ended " + ended.atZone(zone).format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+            Strings.get(R.string.recurring_ended_on, ended.atZone(zone).format(LocalizedDate.formatter("MMM yyyy", locale)))
         } else {
             Strings.get(R.string.common_ended)
         }
@@ -264,11 +266,11 @@ object BillText {
         val first = history.firstDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
         val last = history.lastDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
         val start = if (first.year == last.year) {
-            first.format(DateTimeFormatter.ofPattern("MMM", locale))
+            first.format(LocalizedDate.formatter("MMM", locale))
         } else {
-            first.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+            first.format(LocalizedDate.formatter("MMM yyyy", locale))
         }
-        return "$start – ${last.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))}"
+        return "$start – ${last.format(LocalizedDate.formatter("MMM yyyy", locale))}"
     }
 
     /** "Ended in 2026"; year 0 (unknown) reads just "Ended". */

@@ -17,10 +17,11 @@ import kotlin.math.abs
  */
 object MonthBalanceCopy {
     private val english = Locale.US
+    private val display: Locale get() = Locale.getDefault()
 
     /** "September" for `2026-09`; the key itself when it is not a month key. */
     fun monthName(key: String): String =
-        runCatching { YearMonth.parse(key).month.getDisplayName(TextStyle.FULL_STANDALONE, english) }.getOrDefault(key)
+        runCatching { YearMonth.parse(key).month.getDisplayName(TextStyle.FULL_STANDALONE, display) }.getOrDefault(key)
 
     /** The month before [date] in the device calendar: "September" on Oct 3. */
     fun previousMonthName(date: LocalDate): String = monthName(monthKey(YearMonth.from(date).minusMonths(1)))
@@ -33,8 +34,8 @@ object MonthBalanceCopy {
     fun headline(data: MonthBalanceData, money: (Double) -> String): String? {
         val previous = monthName(data.previousMonth)
         return when (data.kind) {
-            MonthBalanceKind.SHORTFALL -> "$previous ended ${money(abs(data.balance))} short."
-            MonthBalanceKind.SURPLUS -> "$previous ended ${money(abs(data.balance))} ahead."
+            MonthBalanceKind.SHORTFALL -> Strings.get(R.string.home_month_ended_short, previous.replaceFirstChar { it.titlecase(display) }, money(abs(data.balance)))
+            MonthBalanceKind.SURPLUS -> Strings.get(R.string.home_month_ended_ahead, previous.replaceFirstChar { it.titlecase(display) }, money(abs(data.balance)))
             MonthBalanceKind.NONE -> null
         }
     }
@@ -67,7 +68,7 @@ object MonthBalanceCopy {
     /** The Add debt sheet's starting point for a shortfall: "September shortfall", what was short, tied to that month. */
     fun shortfallPrefill(data: MonthBalanceData): DebtPrefill? {
         if (data.kind != MonthBalanceKind.SHORTFALL) return null
-        return DebtPrefill(name = "${monthName(data.previousMonth)} shortfall", owed = abs(data.balance), shortfallMonth = data.previousMonth)
+        return DebtPrefill(name = Strings.get(R.string.home_month_shortfall_debt_name, monthName(data.previousMonth)), owed = abs(data.balance), shortfallMonth = data.previousMonth)
     }
 
     val REMOVE: String get() = Strings.get(R.string.plan_remove)

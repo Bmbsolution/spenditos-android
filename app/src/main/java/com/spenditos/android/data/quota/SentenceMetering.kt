@@ -43,7 +43,7 @@ data class SentenceMeter(
         }
 
         fun counterCopy(remaining: Int): String =
-            if (remaining == 1) "1 smart entry left this month" else "$remaining smart entries left this month"
+            Strings.plural(R.plurals.quota_smart_entries_left, remaining)
 
         fun bannerCopy(remaining: Int): String =
             Strings.get(R.string.data_quota_smart_entries_are_a_pro, maxOf(0, remaining))

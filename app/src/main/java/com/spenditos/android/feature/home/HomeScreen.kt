@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -284,9 +285,9 @@ private fun AttentionRow(
 ) {
     val days = ChronoUnit.DAYS.between(today, line.date).toInt()
     val whenText = when (days) {
-        0 -> "today"
-        1 -> "tomorrow"
-        else -> "in $days days"
+        0 -> stringResource(R.string.home_due_today)
+        1 -> stringResource(R.string.home_due_tomorrow)
+        else -> Strings.plural(R.plurals.home_due_in_days, days)
     }
     GlassCard(onClick = onOpen, modifier = Modifier.testTag("home.billRow.${line.id}")) {
         Row(
@@ -296,7 +297,7 @@ private fun AttentionRow(
         ) {
             IconChip(SfSymbols.icon("calendar.badge.clock"), IosColors.spendOrange, size = 42.dp)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("${line.name} due $whenText", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(stringResource(R.string.home_bill_due, line.name, whenText), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                 Text(Money.format(line.amount.toDouble(), currency, locale), style = IosText.subheadline, color = IosColors.textSecondary)
             }
             Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.4.dp))
@@ -378,7 +379,7 @@ private fun GreetingHeader(today: LocalDate, displayName: String, locale: Locale
                 },
             )
             Text(
-                today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale)).uppercase(locale),
+                today.format(LocalizedDate.formatter("EEEE, MMMM d", locale)).uppercase(locale),
                 style = IosText.caption.w(FontWeight.SemiBold),
                 color = IosColors.textSecondary,
                 letterSpacing = 0.8.sp,
@@ -469,5 +470,5 @@ private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, 
 private fun relativeDay(date: LocalDate): String = when {
     date == LocalDate.now() -> Strings.get(R.string.common_today)
     date == LocalDate.now().minusDays(1) -> Strings.get(R.string.common_yesterday)
-    else -> date.format(DateTimeFormatter.ofPattern("MMM d"))
+    else -> date.format(LocalizedDate.formatter("MMM d"))
 }

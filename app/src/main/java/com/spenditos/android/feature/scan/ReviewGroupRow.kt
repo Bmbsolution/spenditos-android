@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -99,7 +100,7 @@ private fun GroupHeader(
     val badge = when {
         group.allSkippedByRule -> SKIPPED_BY_RULE_LABEL
         group.allRuleFiled -> YOUR_RULE_LABEL
-        group.flaggedCount > 0 -> "${group.flaggedCount} not included"
+        group.flaggedCount > 0 -> Strings.get(R.string.scan_not_included, group.flaggedCount)
         else -> null
     }
     Row(
@@ -147,7 +148,7 @@ private fun GroupHeader(
                 Row(
                     Modifier.clip(CircleShape).background(surfaceTertiary())
                         .clickable(role = Role.Button, onClick = onExpand)
-                        .semantics { contentDescription = "${group.count} transactions, ${if (isExpanded) "collapse" else "expand"}" }
+                        .semantics { contentDescription = Strings.plural(R.plurals.count_transaction, group.count) + ", " + (if (isExpanded) Strings.get(R.string.a11y_collapse) else Strings.get(R.string.a11y_expand)) }
                         .padding(horizontal = Spacing.s, vertical = 3.dp)
                         .testTag("review-group-expand"),
                     verticalAlignment = Alignment.CenterVertically,
@@ -280,5 +281,5 @@ internal fun lineAmountText(item: CaptureReviewItem, currency: String, locale: L
 /** "Oct 8" for "2026-10-08", "No date" for none, the text itself when it does not parse. */
 internal fun groupDateText(iso: String?, locale: Locale): String {
     if (iso.isNullOrBlank()) return Strings.get(R.string.scan_no_date)
-    return runCatching { LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(iso)
+    return runCatching { LocalDate.parse(iso).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(iso)
 }

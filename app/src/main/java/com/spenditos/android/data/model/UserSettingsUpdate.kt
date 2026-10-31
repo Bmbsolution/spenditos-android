@@ -12,6 +12,8 @@ import kotlinx.serialization.json.JsonElement
 data class UserSettingsUpdate(
     val currency: String,
     val displayName: JsonElement,
+    /** `en` | `fr`: the app language mirrored to the server (omitted when null, so older servers are unaffected). */
+    val language: String? = null,
 )
 
 /** `ChangePasswordRequestSchema`, packages/functions/src/user.ts:736-739. */

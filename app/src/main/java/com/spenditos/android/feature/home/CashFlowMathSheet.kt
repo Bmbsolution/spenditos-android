@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
@@ -100,9 +102,9 @@ fun CashFlowMathSheet(
                         sign = "−",
                         currency = currency,
                         locale = locale,
-                        detail = "${money(status.spent - status.everyday, currency, locale)} bills · ${money(status.everyday, currency, locale)} everyday",
+                        detail = stringResource(R.string.home_bills_and_everyday, money(status.spent - status.everyday, currency, locale), money(status.everyday, currency, locale)),
                     )
-                    val entries = if (status.billsLeftCount == 1) "1 entry still to come" else "${status.billsLeftCount} entries still to come"
+                    val entries = Strings.plural(R.plurals.home_entries_still_to_come, status.billsLeftCount, status.billsLeftCount)
                     EquationRow(
                         title = stringResource(R.string.home_bills_left),
                         amount = status.billsLeft,
@@ -221,7 +223,7 @@ private fun BreakdownGroup(title: String, lines: List<CashFlowBreakdown.Line>, c
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(line.name, style = IosText.callout, color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            "${line.category} · ${line.date.format(DateTimeFormatter.ofPattern("MMM d", locale))}",
+                            "${line.category} · ${line.date.format(LocalizedDate.formatter("MMM d", locale))}",
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                         )
@@ -241,6 +243,6 @@ private fun signed(amount: BigDecimal, currency: String, locale: Locale): String
     if (amount.signum() < 0) "−${money(amount.abs(), currency, locale)}" else money(amount, currency, locale)
 
 private fun percent(share: BigDecimal): String {
-    if (share.signum() > 0 && share < BigDecimal("0.01")) return "less than 1%"
-    return "${share.multiply(BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).toInt()}%"
+    if (share.signum() > 0 && share < BigDecimal("0.01")) return Strings.get(R.string.home_less_than_one_percent)
+    return java.text.NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(share.setScale(2, RoundingMode.HALF_UP).toDouble())
 }

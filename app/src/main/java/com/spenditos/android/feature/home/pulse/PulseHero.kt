@@ -163,7 +163,7 @@ fun PulseHero(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        if (short) "SHORT AFTER BILLS" else "LEFT AFTER BILLS",
+                        (if (short) stringResource(R.string.home_short_after_bills) else stringResource(R.string.home_left_after_bills)).uppercase(),
                         style = IosText.caption.w(FontWeight.Bold),
                         color = Color.White.copy(alpha = 0.85f),
                         letterSpacing = 0.8.sp,
@@ -183,7 +183,7 @@ fun PulseHero(
                     val chip = if (short) {
                         stringResource(R.string.home_trim_a_day, money(status.leftAfterBills.negate().divide(BigDecimal(maxOf(status.daysRemaining, 1)), 2, RoundingMode.HALF_UP)))
                     } else {
-                        "≈ ${money(status.affordablePace.setScale(2, RoundingMode.HALF_UP))} a day"
+                        stringResource(R.string.home_approx_per_day, money(status.affordablePace.setScale(2, RoundingMode.HALF_UP)))
                     }
                     Row(
                         Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f))
@@ -205,7 +205,7 @@ fun PulseHero(
                     level = status.incomeLeftShare.toFloat(),
                     tint = weather.glow,
                     label = PulseCopy.percentLabel(status.incomeLeftShare),
-                    caption = "of income left",
+                    caption = stringResource(R.string.home_of_income_left),
                     size = 124.dp,
                 )
             }
@@ -375,7 +375,7 @@ private fun CashFlowSparkline(history: List<DayFlow>, currency: String, locale: 
     Column(Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home.sparkline"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(stringResource(R.string.home_7_day_cash_flow), color = Color.White.copy(alpha = 0.8f), style = IosText.caption2.w(FontWeight.Medium))
-            Text("${Money.format(avg.toDouble(), currency, locale)} avg/day", color = Color.White.copy(alpha = 0.9f), style = IosText.caption2.w(FontWeight.SemiBold))
+            Text(stringResource(R.string.home_avg_per_day, Money.format(avg.toDouble(), currency, locale)), color = Color.White.copy(alpha = 0.9f), style = IosText.caption2.w(FontWeight.SemiBold))
         }
         Canvas(Modifier.fillMaxWidth().height(40.dp).clearAndSetSemantics { contentDescription = Strings.get(R.string.home_net_cash_flow_for_the) }) {
             if (points.isEmpty()) return@Canvas

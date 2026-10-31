@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="a11y_collapse">réduire</string>
+    <string name="a11y_collapsed">réduit</string>
+    <string name="a11y_expand">développer</string>
+    <string name="a11y_expanded">développé</string>
+    <string name="a11y_requirement_met">respectée</string>
+    <string name="a11y_requirement_not_met">non respectée</string>
+    <string name="a11y_strength_fair">moyen</string>
+    <string name="a11y_strength_strong">fort</string>
+    <string name="a11y_strength_weak">faible</string>
     <string name="app_add_transaction">Ajouter une transaction</string>
     <string name="app_email_confirmed_sign_in_to">Adresse courriel confirmée. Connectez-vous pour continuer.</string>
     <string name="app_home">Accueil</string>
@@ -34,6 +43,8 @@
     <string name="auth_reset_password">Réinitialiser le mot de passe</string>
     <string name="auth_send_code">Envoyer le code</string>
     <string name="auth_sign_in">Se connecter</string>
+    <string name="auth_six_digit_code">Code à 6 chiffres</string>
+    <string name="auth_six_digit_verification_code">Code de vérification à 6 chiffres</string>
     <string name="auth_something_went_wrong_please_try">Une erreur s’est produite. Veuillez réessayer.</string>
     <string name="auth_special_character">Caractère spécial</string>
     <string name="auth_spenditos">Spenditos</string>
@@ -66,6 +77,7 @@
     <string name="capture_expense">− Dépense</string>
     <string name="capture_find_transactions">Trouver les transactions</string>
     <string name="capture_finding_transactions">Recherche des transactions…</string>
+    <string name="capture_include_item">Inclure %1$s</string>
     <string name="capture_income">+ Revenu</string>
     <string name="capture_loading_categories">Chargement des catégories…</string>
     <string name="capture_microphone_access_required">Accès au microphone requis</string>
@@ -82,7 +94,6 @@
     <string name="capture_retry_to_confirm_this_save">Réessayez pour confirmer cet enregistrement avant de modifier.</string>
     <string name="capture_saved_transactions">%1$s transactions enregistrées</string>
     <string name="capture_saving_transactions">Enregistrement des transactions…</string>
-    <string name="capture_select_a_category_for_before">Choisissez une catégorie pour %1$s %2$s avant d’enregistrer</string>
     <string name="capture_select_category">Choisir une catégorie</string>
     <string name="capture_skipped_by_your_rule">Ignorée par votre règle</string>
     <string name="capture_spent_25_at_starbucks_for">J’ai dépensé 25&#160;$ chez Starbucks pour un café</string>
@@ -119,6 +130,7 @@
     <string name="common_cancel">Annuler</string>
     <string name="common_categories">Catégories</string>
     <string name="common_category">Catégorie</string>
+    <string name="common_category_already_exists">«&#160;%1$s&#160;» existe déjà.</string>
     <string name="common_clear_search">Effacer la recherche</string>
     <string name="common_close">Fermer</string>
     <string name="common_continue">Continuer</string>
@@ -157,6 +169,8 @@
     <string name="common_name">Nom</string>
     <string name="common_name_must_be_100_characters">Le nom doit contenir 100 caractères ou moins.</string>
     <string name="common_no_categories_found">Aucune catégorie trouvée</string>
+    <string name="common_noun_bill">facture</string>
+    <string name="common_noun_income">revenu</string>
     <string name="common_on_track">Sur la bonne voie</string>
     <string name="common_open_settings">Ouvrir les paramètres</string>
     <string name="common_other">Autre</string>
@@ -185,6 +199,7 @@
     <string name="common_spending_trend">Tendance des dépenses</string>
     <string name="common_spenditos_pro">Spenditos Pro</string>
     <string name="common_spent">Dépensé</string>
+    <string name="common_this">Ceci</string>
     <string name="common_this_month">Ce mois-ci</string>
     <string name="common_to">Au</string>
     <string name="common_today">Aujourd’hui</string>
@@ -257,9 +272,13 @@
     <string name="debts_add_extra_payment">Ajouter un paiement supplémentaire</string>
     <string name="debts_add_how_much_you_pay">Indiquez combien vous payez, à quelle fréquence et la date du prochain paiement.</string>
     <string name="debts_add_what_you_owe_pick">Ajoutez ce que vous devez, choisissez un paiement et voyez quand vous aurez fini.</string>
+    <string name="debts_added_as_payment_on">Ajouté à vos transactions comme paiement pour %1$s.</string>
     <string name="debts_all_paid_off">Tout est remboursé</string>
+    <string name="debts_amount_extra">%1$s de plus</string>
+    <string name="debts_amount_owed">%1$s dus</string>
     <string name="debts_balance">Solde %1$s</string>
     <string name="debts_balance_corrected">Solde corrigé</string>
+    <string name="debts_balance_left_to_pay">%1$s à payer</string>
     <string name="debts_can_t_reach_spenditos_right">Impossible de joindre Spenditos pour le moment. Vérifiez votre connexion et réessayez.</string>
     <string name="debts_charges_interest">Avec intérêts</string>
     <string name="debts_check_the_amounts_and_dates">Vérifiez les montants et les dates, puis réessayez.</string>
@@ -269,6 +288,7 @@
     <string name="debts_delete_this_debt_2">Supprimer cette dette</string>
     <string name="debts_discard_this_debt">Abandonner cette dette&#160;?</string>
     <string name="debts_done_by">Terminée d’ici</string>
+    <string name="debts_done_by_inline">terminée d’ici %1$s</string>
     <string name="debts_each_payment">Chaque paiement</string>
     <string name="debts_enter_a_rate_above_0">Entrez un taux supérieur à 0 et inférieur à 100</string>
     <string name="debts_enter_how_much_you_owe">Entrez le montant que vous devez</string>
@@ -288,7 +308,9 @@
     <string name="debts_extra_payment_added">Paiement supplémentaire ajouté</string>
     <string name="debts_give_this_debt_a_name">Donnez un nom à cette dette</string>
     <string name="debts_how_often">Fréquence</string>
+    <string name="debts_i_owe_today">Ce que je dois aujourd’hui</string>
     <string name="debts_includes_interest">Inclut %1$s d’intérêts</string>
+    <string name="debts_interest_approx">intérêts ≈ %1$s</string>
     <string name="debts_interest_rate">Taux d’intérêt</string>
     <string name="debts_interest_rate_a_year" formatted="false">Taux d’intérêt (% par an)</string>
     <string name="debts_interest_rate_percent_a_year">Taux d’intérêt, pourcentage par an</string>
@@ -296,7 +318,11 @@
     <string name="debts_interest_so_far">Intérêts payés à ce jour</string>
     <string name="debts_interest_still_to_come">Intérêts à venir</string>
     <string name="debts_its_payments_are_removed_from">Ses paiements sont retirés de votre plan. Les paiements déjà effectués restent dans vos transactions.</string>
+    <string name="debts_left_of">%1$s restants sur %2$s</string>
     <string name="debts_left_to_pay">Reste à payer</string>
+    <string name="debts_n_payments">%1$s paiements</string>
+    <string name="debts_n_payments_last">%1$s paiements, le dernier de %2$s</string>
+    <string name="debts_name_placeholder">p. ex. Prêt auto, Portable de Sam</string>
     <string name="debts_never_paid_off_pay_more">Jamais remboursée — payez plus à chaque fois</string>
     <string name="debts_new_payoff_date">Nouvelle date de remboursement</string>
     <string name="debts_next_payment">Prochain paiement</string>
@@ -305,8 +331,12 @@
     <string name="debts_no_payments_are_planned_record">Aucun paiement n’est prévu. Enregistrez chaque paiement quand vous le faites.</string>
     <string name="debts_no_regular_payment_you_pay">Aucun paiement régulier. Vous payez quand vous le pouvez.</string>
     <string name="debts_off_for_money_you_borrowed">Désactivé pour l’argent emprunté à un ami.</string>
+    <string name="debts_one_payment">1 paiement</string>
+    <string name="debts_one_payment_left">1 paiement restant</string>
+    <string name="debts_one_payment_left_last">1 paiement restant, %1$s</string>
     <string name="debts_opens_a_form_to_add">Ouvre un formulaire pour ajouter une dette</string>
     <string name="debts_opens_this_debt">Ouvre cette dette</string>
+    <string name="debts_paid_of_total">%1$s remboursés sur %2$s</string>
     <string name="debts_paid_off">Remboursée</string>
     <string name="debts_paid_off_by">Remboursée d’ici</string>
     <string name="debts_paid_off_by_2">Remboursée d’ici %1$s</string>
@@ -316,12 +346,29 @@
     <string name="debts_payment">Paiement</string>
     <string name="debts_payment_too_low_to_finish">Paiement trop bas pour rembourser</string>
     <string name="debts_payment_updated">Paiement mis à jour</string>
+    <string name="debts_payment_with_extra">%1$s · %2$s de plus</string>
     <string name="debts_payments_are_stopped_nothing_is">Les paiements sont arrêtés. Rien n’est prévu pour cette dette.</string>
+    <string name="debts_payments_left">%1$s paiements restants</string>
+    <string name="debts_payments_left_last">%1$s paiements restants, le dernier de %2$s</string>
     <string name="debts_payments_sooner">Paiements plus tôt</string>
     <string name="debts_payments_stopped">Paiements arrêtés</string>
+    <string name="debts_percent_a_year">%1$s&#160;%% par an</string>
+    <string name="debts_percent_paid_off">%1$s pour cent remboursé</string>
+    <string name="debts_period_day">/ jour</string>
+    <string name="debts_period_every_n_days">tous les %1$s jours</string>
+    <string name="debts_period_every_n_half_months">toutes les %1$s demi-mois</string>
+    <string name="debts_period_every_n_months">tous les %1$s mois</string>
+    <string name="debts_period_every_n_weeks">toutes les %1$s semaines</string>
+    <string name="debts_period_every_n_years">tous les %1$s ans</string>
+    <string name="debts_period_month">/ mois</string>
+    <string name="debts_period_quarter">/ trimestre</string>
+    <string name="debts_period_twice_a_month">deux fois par mois</string>
+    <string name="debts_period_week">/ semaine</string>
+    <string name="debts_period_year">/ an</string>
     <string name="debts_pick_a_month_on_or">Choisissez un mois à partir de votre prochain paiement</string>
     <string name="debts_pick_today_or_a_later">Choisissez aujourd’hui ou une date ultérieure</string>
     <string name="debts_plan_by">Planifier par</string>
+    <string name="debts_progress_percent_paid_off">%1$s, %2$s pour cent remboursé</string>
     <string name="debts_set_to">Fixé à %1$s</string>
     <string name="debts_sign_in_again_to_continue">Reconnectez-vous pour continuer.</string>
     <string name="debts_slide_to_add_to_each">Glissez pour ajouter à chaque paiement</string>
@@ -329,6 +376,7 @@
     <string name="debts_that_month_is_too_soon">Ce mois est trop proche. Choisissez un mois ultérieur ou un paiement que vous pouvez effectuer.</string>
     <string name="debts_the_category_for_this_debt">La catégorie de cette dette n’est plus disponible. Choisissez-en une autre et réessayez.</string>
     <string name="debts_the_date_can_t_be">La date ne peut pas être dans le futur.</string>
+    <string name="debts_this_debt">cette dette</string>
     <string name="debts_this_debt_couldn_t_be">Cette dette est introuvable. Elle a peut-être été supprimée.</string>
     <string name="debts_this_payment_is_too_low">Ce paiement est trop bas pour rembourser la dette. Payez plus à chaque fois.</string>
     <string name="debts_unavailable">Indisponible</string>
@@ -346,6 +394,7 @@
     <string name="export_couldn_t_download_your_data">Impossible de télécharger vos données. Réessayez.</string>
     <string name="export_couldn_t_download_your_transactions">Impossible de télécharger vos transactions. Réessayez.</string>
     <string name="export_couldn_t_save_the_file">Impossible d’enregistrer le fichier à cet endroit. Essayez un autre emplacement.</string>
+    <string name="export_csv_file_up_to_2_years">Fichier CSV · jusqu’à 2 ans à la fois</string>
     <string name="export_download_failed">Échec du téléchargement</string>
     <string name="export_download_full_copy">Télécharger la copie complète</string>
     <string name="export_download_spreadsheet">Télécharger le tableur</string>
@@ -369,8 +418,13 @@
     <string name="home_add_your_income">Ajoutez vos revenus</string>
     <string name="home_add_your_income_and_log">Ajoutez vos revenus et saisissez une première dépense. Cette carte montre ensuite ce qui reste après les factures.</string>
     <string name="home_after_bills_you_can_spend">Après les factures, vous pouvez dépenser environ %1$s jusqu’au %2$s.</string>
+    <string name="home_amount_per_day">%1$s par jour</string>
+    <string name="home_approx_per_day">≈ %1$s par jour</string>
     <string name="home_at_about_you_ll_run">À environ %1$s, vous serez à court vers le %2$s.</string>
     <string name="home_at_risk">À risque</string>
+    <string name="home_avg_per_day">%1$s moy./jour</string>
+    <string name="home_bill_due">%1$s à payer %2$s</string>
+    <string name="home_bills_and_everyday">%1$s de factures · %2$s au quotidien</string>
     <string name="home_bills_left">Factures restantes</string>
     <string name="home_bills_paid">Factures payées</string>
     <string name="home_build_your_financial_picture">Dressez votre portrait financier</string>
@@ -378,9 +432,14 @@
     <string name="home_carried_in_from">%1$s reportés de %2$s</string>
     <string name="home_carry_over">Report</string>
     <string name="home_coming_up">À venir</string>
+    <string name="home_coming_up_item">%1$s, %2$s le %3$s</string>
+    <string name="home_coming_up_list">À venir&#160;: %1$s.</string>
     <string name="home_couldn_t_refresh_home_pull">Impossible d’actualiser l’accueil. Tirez vers le bas pour réessayer.</string>
     <string name="home_critical">Critique</string>
     <string name="home_d_left">%1$s&#160;j restants</string>
+    <string name="home_days_and_date">jours · %1$s</string>
+    <string name="home_due_today">aujourd’hui</string>
+    <string name="home_due_tomorrow">demain</string>
     <string name="home_entries_dated_today_or_earlier">Les entrées datées d’aujourd’hui ou avant comptent comme reçues ou dépensées; les suivantes comme attendues ou à venir. Les factures sont des entrées créées à partir d’une facture dans Plan › Factures.</string>
     <string name="home_everyday_spending">Dépenses courantes</string>
     <string name="home_everyday_spending_in_the_last">Dépenses courantes des 7 derniers jours&#160;: %1$s</string>
@@ -403,9 +462,15 @@
     <string name="home_last_7_days">7 derniers jours</string>
     <string name="home_last_month_s_balance_you">Solde du mois dernier que vous avez choisi d’inclure</string>
     <string name="home_left_after_bills">Reste après factures</string>
+    <string name="home_left_after_bills_for_days">%1$s de reste après les factures pour %2$s, soit environ %3$s.</string>
+    <string name="home_left_at_month_end">restant en fin de mois</string>
+    <string name="home_less_than_one_percent" formatted="false">moins de 1&#160;%</string>
     <string name="home_let_s_set_up_your">Configurons votre mois</string>
     <string name="home_log_a_few_expenses_to">Saisissez quelques dépenses pour voir où va votre argent.</string>
     <string name="home_money_coming_in_and_going">L’argent qui entre et qui sort, avec les factures et revenus à venir</string>
+    <string name="home_month_ended_ahead">%1$s&#160;s’est terminé avec %2$s d’avance.</string>
+    <string name="home_month_ended_short">%1$s&#160;s’est terminé avec %2$s de moins.</string>
+    <string name="home_month_shortfall_debt_name">Manque de %1$s</string>
     <string name="home_most_spent_on">Le plus dépensé en</string>
     <string name="home_needs_attention">À surveiller</string>
     <string name="home_needs_attention_2">À surveiller</string>
@@ -418,19 +483,25 @@
     <string name="home_not_included_ended_ahead">Non inclus&#160;: %1$s&#160;s’est terminé avec %2$s d’avance</string>
     <string name="home_not_needed">Pas nécessaire</string>
     <string name="home_not_tracked_ended_short">Non suivi&#160;: %1$s&#160;s’est terminé avec %2$s de moins</string>
+    <string name="home_of_income_left">du revenu restant</string>
     <string name="home_out">Sorties</string>
     <string name="home_out_is_ahead_of_in">Les sorties dépassent les entrées %1$s, jusqu’à %2$s. Cette part provient de l’épargne ou de ce qui est déjà dans votre compte.</string>
     <string name="home_out_is_ahead_of_in_2">Les sorties dépassent les entrées du %1$s au %2$s, jusqu’à %3$s.</string>
+    <string name="home_over_income">Les dépenses et les factures à payer dépassent de %1$s les revenus de ce mois-ci.</string>
+    <string name="home_over_income_carried">Les dépenses et les factures à payer dépassent de %1$s les revenus de ce mois-ci et ce que vous avez reporté.</string>
     <string name="home_overspending">Dépenses excessives</string>
+    <string name="home_percent_under_one" formatted="false">&lt;1&#160;%</string>
     <string name="home_recent_activity">Activité récente</string>
     <string name="home_recent_spending_direction">Tendance récente des dépenses</string>
     <string name="home_recommendations">Recommandations</string>
     <string name="home_remove_carried_in_amount">Retirer le montant reporté</string>
     <string name="home_review_your_plan">Vérifier votre plan</string>
     <string name="home_savings_rate">Taux d’épargne</string>
+    <string name="home_scheduled">prévu</string>
     <string name="home_score_breakdown">Détail de l’indice</string>
     <string name="home_see_all">Tout voir</string>
     <string name="home_see_the_math">Voir le calcul</string>
+    <string name="home_share_of_everyday">%1$s&#160;%% des dépenses courantes</string>
     <string name="home_short_after_bills">Manque après factures</string>
     <string name="home_show_less">Afficher moins</string>
     <string name="home_show_more">Afficher plus</string>
@@ -443,10 +514,12 @@
     <string name="home_start_logging_income_and_expenses">Commencez à saisir vos revenus et dépenses pour établir votre indice de santé.</string>
     <string name="home_that_s_of_this_month">Cela représente %1$s des revenus de ce mois-ci (%2$s).</string>
     <string name="home_the_orb_is_the_share">L’orbe représente la part des revenus de ce mois-ci qui reste après les dépenses et les factures.</string>
+    <string name="home_through_month_end">jusqu’à la fin du mois</string>
     <string name="home_tomorrow">Demain</string>
     <string name="home_track_it_as_a_debt">Le suivre comme une dette&#160;?</string>
     <string name="home_trim_a_day">Réduire d’environ %1$s par jour</string>
     <string name="home_two_steps_to_see_what">Deux étapes pour voir ce qui reste après les factures.</string>
+    <string name="home_until_date">jusqu’au %1$s</string>
     <string name="home_you_re_offline_connect_to">Vous êtes hors ligne. Connectez-vous à Internet pour répondre.</string>
     <string name="home_you_re_spending_about_keeps">Vous dépensez environ %1$s; %2$s vous garde sur la bonne voie.</string>
     <string name="home_you_re_spending_about_up">Vous dépensez environ %1$s. Jusqu’à %2$s vous garde sur la bonne voie.</string>
@@ -458,51 +531,54 @@
     <string name="lock_unlock_spenditos_to_continue">Déverrouillez Spenditos pour continuer</string>
     <string name="lock_unlock_with_biometrics">Déverrouiller par biométrie</string>
     <string name="onboarding_all_currencies">Toutes les devises</string>
-    <string name="onboarding_australian_dollar">Dollar australien</string>
-    <string name="onboarding_brazilian_real">Réal brésilien</string>
-    <string name="onboarding_british_pound">Livre sterling</string>
     <string name="onboarding_build_streaks">Bâtissez des séries</string>
-    <string name="onboarding_canadian_dollar">Dollar canadien</string>
-    <string name="onboarding_central_african_cfa">Franc CFA (Afrique centrale)</string>
     <string name="onboarding_checking_your_country">Vérification de votre pays…</string>
-    <string name="onboarding_chinese_yuan">Yuan chinois</string>
     <string name="onboarding_couldn_t_check_your_country">Impossible de vérifier votre pays. Réessayez ou saisissez-le ci-dessous.</string>
     <string name="onboarding_couldn_t_finish_setup_please">Impossible de terminer la configuration. Veuillez réessayer.</string>
     <string name="onboarding_country_code">Code du pays</string>
     <string name="onboarding_currency">Devise&#160;: %1$s</string>
-    <string name="onboarding_danish_krone">Couronne danoise</string>
     <string name="onboarding_detected_currency">Devise détectée&#160;: %1$s</string>
-    <string name="onboarding_english">Anglais</string>
     <string name="onboarding_enter_a_two_letter_country">Entrez un code de pays à deux lettres et un code de devise à trois lettres.</string>
     <string name="onboarding_enter_your_name_to_continue">Entrez votre nom pour continuer.</string>
-    <string name="onboarding_euro">Euro</string>
-    <string name="onboarding_fr">Fr</string>
     <string name="onboarding_get_started">Commencer</string>
+    <string name="onboarding_group_groceries_food">Alimentation</string>
+    <string name="onboarding_group_housing_utilities">Logement et services</string>
+    <string name="onboarding_group_income">Revenus</string>
+    <string name="onboarding_group_miscellaneous">Divers</string>
+    <string name="onboarding_group_savings_debt">Épargne et dettes</string>
+    <string name="onboarding_group_subscriptions_entertainment">Abonnements et divertissement</string>
+    <string name="onboarding_group_transportation">Transport</string>
     <string name="onboarding_hit_your_goals">Atteignez vos objectifs</string>
-    <string name="onboarding_hong_kong_dollar">Dollar de Hong Kong</string>
-    <string name="onboarding_indian_rupee">Roupie indienne</string>
-    <string name="onboarding_japanese_yen">Yen japonais</string>
-    <string name="onboarding_language">Langue</string>
     <string name="onboarding_let_s_set_up_your">Configurons votre compte en quelques étapes rapides.</string>
     <string name="onboarding_log_daily_to_build_habits">Saisissez chaque jour pour créer des habitudes, gagner des XP et débloquer des succès.</string>
     <string name="onboarding_log_one_transaction_now_to">Saisissez une transaction maintenant pour voir votre portrait financier.</string>
-    <string name="onboarding_mexican_peso">Peso mexicain</string>
-    <string name="onboarding_new_zealand_dollar">Dollar néo-zélandais</string>
-    <string name="onboarding_norwegian_krone">Couronne norvégienne</string>
     <string name="onboarding_ready_to_start">Prêt à commencer</string>
     <string name="onboarding_search_currencies">Rechercher des devises</string>
     <string name="onboarding_see_where_your_money_goes">Voyez où va votre argent grâce à de beaux graphiques et des aperçus clairs.</string>
+    <string name="onboarding_seed_car_maintenance">Entretien du véhicule</string>
+    <string name="onboarding_seed_coffee_snacks">Café et collations</string>
+    <string name="onboarding_seed_debt_payments">Remboursements de dettes</string>
+    <string name="onboarding_seed_eating_out">Restaurants</string>
+    <string name="onboarding_seed_entertainment">Divertissement</string>
+    <string name="onboarding_seed_freelance_side_income">Travail autonome / revenus d’appoint</string>
+    <string name="onboarding_seed_fuel_gas">Carburant</string>
+    <string name="onboarding_seed_groceries">Courses alimentaires</string>
+    <string name="onboarding_seed_health_medical">Santé et soins médicaux</string>
+    <string name="onboarding_seed_internet">Internet</string>
+    <string name="onboarding_seed_miscellaneous">Divers</string>
+    <string name="onboarding_seed_personal_care">Soins personnels</string>
+    <string name="onboarding_seed_public_transport">Transports en commun</string>
+    <string name="onboarding_seed_rent_mortgage">Loyer / Hypothèque</string>
+    <string name="onboarding_seed_salary">Salaire</string>
+    <string name="onboarding_seed_savings">Épargne</string>
+    <string name="onboarding_seed_subscriptions">Abonnements</string>
+    <string name="onboarding_seed_utilities">Services publics</string>
     <string name="onboarding_set_savings_targets_that_keep">Fixez des objectifs d’épargne qui vous motivent chaque jour.</string>
     <string name="onboarding_set_your_preferences">Choisissez vos préférences</string>
-    <string name="onboarding_singapore_dollar">Dollar de Singapour</string>
-    <string name="onboarding_south_african_rand">Rand sud-africain</string>
-    <string name="onboarding_swedish_krona">Couronne suédoise</string>
-    <string name="onboarding_swiss_franc">Franc suisse</string>
     <string name="onboarding_this_is_shown_on_your">Ce nom s’affiche sur votre tableau de bord</string>
     <string name="onboarding_three_letter_code_such_as">Code à trois lettres, par exemple CAD</string>
     <string name="onboarding_track_your_spending">Suivez vos dépenses</string>
     <string name="onboarding_two_letters_such_as_ca">Deux lettres, par exemple CA</string>
-    <string name="onboarding_west_african_cfa">Franc CFA (Afrique de l’Ouest)</string>
     <string name="onboarding_what_should_we_call_you">Comment devons-nous vous appeler&#160;?</string>
     <string name="onboarding_you_can_always_change_these">Vous pourrez toujours les modifier plus tard dans les paramètres</string>
     <string name="onboarding_you_re_offline_check_your">Vous êtes hors ligne. Vérifiez votre pays ou réessayez.</string>
@@ -531,6 +607,17 @@
     <string name="plan_descriptions_can_have_up_to">Les descriptions peuvent contenir jusqu’à 200 caractères.</string>
     <string name="plan_discard_this_draft">Abandonner ce brouillon&#160;?</string>
     <string name="plan_draft">Brouillon</string>
+    <string name="plan_draft_a_deletion_has_an_invalid">Une suppression a un identifiant de transaction invalide.</string>
+    <string name="plan_draft_a_draft_can_have_up">Un brouillon peut contenir jusqu’à 100 éléments uniques.</string>
+    <string name="plan_draft_a_draft_has_too_many">Le brouillon contient trop de suppressions.</string>
+    <string name="plan_draft_a_one_time_item_has">Un élément unique a un identifiant invalide.</string>
+    <string name="plan_draft_a_scheduled_change_is_empty">Une modification planifiée est vide.</string>
+    <string name="plan_draft_a_scheduled_change_must_target">Une modification planifiée doit viser ce mois-ci.</string>
+    <string name="plan_draft_a_skip_must_target_this">Une omission doit viser ce mois-ci.</string>
+    <string name="plan_draft_a_transaction_can_only_be">Une transaction ne peut être supprimée qu’une fois.</string>
+    <string name="plan_draft_a_transaction_cannot_have_a">Une transaction ne peut pas avoir à la fois une modification et une suppression.</string>
+    <string name="plan_draft_a_transaction_change_has_an">Une modification de transaction a un identifiant invalide.</string>
+    <string name="plan_draft_a_transaction_change_is_empty">Une modification de transaction est vide.</string>
     <string name="plan_draft_discarded">Brouillon abandonné.</string>
     <string name="plan_each_one_time_item_needs">Chaque élément unique doit avoir un identifiant unique.</string>
     <string name="plan_each_scheduled_date_can_have">Chaque date planifiée ne peut avoir qu’un changement de montant.</string>
@@ -553,6 +640,7 @@
     <string name="plan_log_this_month">Saisir ce mois-ci</string>
     <string name="plan_logged_in_draft">Saisi dans le brouillon</string>
     <string name="plan_month_plan">Plan du mois</string>
+    <string name="plan_month_plan_applied">Plan de %1$s appliqué.</string>
     <string name="plan_more_tools">Plus d’outils</string>
     <string name="plan_no_bills_scheduled_yet">Aucune facture planifiée pour l’instant.</string>
     <string name="plan_no_categories_available_add_one">Aucune catégorie disponible. Ajoutez-en une dans Revenus et factures.</string>
@@ -579,6 +667,7 @@
     <string name="plan_skip">Ignorer</string>
     <string name="plan_skip_dates_must_be_in">Les dates ignorées doivent être dans ce mois.</string>
     <string name="plan_skip_dates_must_be_unique">Les dates ignorées doivent être uniques.</string>
+    <string name="plan_suggestion_detail">%1$s · vu sur %2$s mois · montant habituel %3$s</string>
     <string name="plan_that_s_more_than_you">C’est plus que ce que vous aurez. Ignorez un élément ou déplacez un élément unique vers un mois ultérieur.</string>
     <string name="plan_the_draft_could_not_be">Le brouillon n’a pas pu être enregistré. Il reste à l’écran.</string>
     <string name="plan_the_rest_is_saved_try">Le reste est enregistré. Réessayez.</string>
@@ -587,6 +676,7 @@
     <string name="plan_this_goes_into_your_draft">Cet élément unique est ajouté à votre brouillon. Rien n’est définitif tant que vous ne l’appliquez pas.</string>
     <string name="plan_this_month_has_passed_the">Ce mois est passé. Le brouillon peut être abandonné, mais pas appliqué.</string>
     <string name="plan_this_schedule_has_too_many">Cet échéancier a trop de changements de montant pour un seul mois.</string>
+    <string name="plan_this_updates_records">Cela met à jour vos dossiers pour %1$s.</string>
     <string name="plan_undo_log">Annuler la saisie</string>
     <string name="plan_undo_skip">Annuler l’omission</string>
     <string name="plan_we_compare_this_plan_with">Nous comparons ce plan avec les dépenses de vos quatre derniers mois complets. Les suggestions doivent être vérifiées avant d’être ajoutées.</string>
@@ -621,6 +711,7 @@
     <string name="pro_your_account_will_be_charged">Votre compte sera débité pour le renouvellement dans les 24 heures précédant la fin de la période en cours.</string>
     <string name="pro_your_purchase_is_processing_pro">Votre achat est en cours de traitement. Pro s’activera sous peu.</string>
     <string name="progress_achievements">Succès</string>
+    <string name="progress_active_of_last">%1$s des %2$s derniers jours actifs</string>
     <string name="progress_challenge_history">Historique des défis</string>
     <string name="progress_complete_challenge">Terminer le défi</string>
     <string name="progress_complete_challenges_to_see_them">Terminez des défis pour les voir ici</string>
@@ -632,6 +723,12 @@
     <string name="progress_couldn_t_refresh">Actualisation impossible</string>
     <string name="progress_couldn_t_use_a_streak">Impossible d’utiliser un gel de série. Réessayez.</string>
     <string name="progress_d">%1$s&#160;j</string>
+    <string name="progress_day_active">actif</string>
+    <string name="progress_day_active_today">actif aujourd’hui</string>
+    <string name="progress_day_freeze">gel</string>
+    <string name="progress_day_missed">manqué</string>
+    <string name="progress_day_streak">Série de %1$s jours</string>
+    <string name="progress_day_today">aujourd’hui</string>
     <string name="progress_earn_xp_to_see_your">Gagnez des XP pour voir votre historique ici&#160;!</string>
     <string name="progress_expired">Expiré</string>
     <string name="progress_freeze_applied">Gel appliqué</string>
@@ -650,6 +747,7 @@
     <string name="progress_no_challenge_history_yet">Aucun historique de défis pour l’instant</string>
     <string name="progress_no_points_history_yet">Aucun historique de points pour l’instant</string>
     <string name="progress_no_time_limit">Sans limite de temps</string>
+    <string name="progress_percent_complete">%1$s&#160;%%%% terminé</string>
     <string name="progress_points_history">Historique des points</string>
     <string name="progress_reward">Récompense</string>
     <string name="progress_streak">Série</string>
@@ -659,6 +757,7 @@
     <string name="progress_unlocked_2">Débloqué %1$s</string>
     <string name="progress_use_streak_freeze">Utiliser un gel de série</string>
     <string name="progress_view_all">Tout voir</string>
+    <string name="progress_xp_total">%1$s XP au total</string>
     <string name="quota_scan_exhausted">Vous avez utilisé tous vos crédits de numérisation gratuits ce mois-ci.</string>
     <string name="quota_scan_upgrade">Passez à Pro pour continuer à numériser.</string>
     <string name="quota_sentence_exhausted_title">Vous avez utilisé les saisies intelligentes de ce mois-ci</string>
@@ -682,6 +781,7 @@
     <string name="receipt_take_photo">Prendre une photo</string>
     <string name="receipt_there_s_no_image_on">Il n’y a aucune image dans le presse-papiers.</string>
     <string name="receipt_too_many_attempts_in_a">Trop de tentatives en peu de temps — patientez quelques secondes et réessayez.</string>
+    <string name="receipt_unit_of_total_matching">%1$s %2$s sur %3$s · comparaison avec ce que vous avez déjà</string>
     <string name="receipt_upgrade_to_pro_to_keep">Passez à Pro pour continuer à numériser.</string>
     <string name="receipt_upload">Téléverser</string>
     <string name="receipt_upload_choose_from_photo_library">Téléverser. Choisir dans la photothèque ou les fichiers</string>
@@ -691,6 +791,7 @@
     <string name="receipt_you_ve_used_all_your">Vous avez utilisé tous vos crédits de numérisation gratuits ce mois-ci.</string>
     <string name="recurring_add_bill">Ajouter une facture</string>
     <string name="recurring_advanced">Avancé</string>
+    <string name="recurring_all_bills_paid">Toutes les factures sont payées</string>
     <string name="recurring_already_logged">Déjà saisi</string>
     <string name="recurring_are_you_sure_you_want">Voulez-vous vraiment supprimer ce revenu ou cette facture&#160;? Cette action est irréversible.</string>
     <string name="recurring_choose_second_day">Choisir le second jour</string>
@@ -714,11 +815,13 @@
     <string name="recurring_end_it">Y mettre fin&#160;?</string>
     <string name="recurring_end_this_bill">Mettre fin à cette facture&#160;?</string>
     <string name="recurring_ended_in">Terminées en %1$s</string>
+    <string name="recurring_ended_on">Terminé en %1$s</string>
     <string name="recurring_everything_that_comes_in_or">Tout ce qui entre ou sort selon un échéancier. Chaque élément est saisi à sa date.</string>
     <string name="recurring_expense_categories">Catégories de dépenses</string>
     <string name="recurring_first_occurrence">Première occurrence</string>
     <string name="recurring_frequency">Fréquence</string>
     <string name="recurring_hides_paused_income_and_bills">Masque les revenus et factures en pause</string>
+    <string name="recurring_in_bills">%1$s en factures</string>
     <string name="recurring_income_and_bills_you_end">Les revenus et factures que vous terminez arrivent ici, avec leur total.</string>
     <string name="recurring_income_categories">Catégories de revenus</string>
     <string name="recurring_is_there_one_more_payment">Reste-t-il un paiement&#160;? Il passe dans Terminées. Les paiements passés restent dans vos transactions.</string>
@@ -729,7 +832,9 @@
     <string name="recurring_logging_each_purchase_yourself_skip">Vous saisissez chaque achat vous-même&#160;? Ignorez cette facture. Ce que vous saisissez apparaît dans Transactions et Rapports.</string>
     <string name="recurring_main_income">Revenu principal</string>
     <string name="recurring_main_income_2">Revenu principal</string>
+    <string name="recurring_month_still_ahead">%1$s est encore à venir</string>
     <string name="recurring_more_actions_for">Plus d’actions pour %1$s</string>
+    <string name="recurring_n_of_m_logged">%1$s sur %2$s saisis</string>
     <string name="recurring_net_for">Net %1$s%2$s pour %3$s</string>
     <string name="recurring_never">Jamais</string>
     <string name="recurring_new_income_or_bill">Nouveau revenu ou nouvelle facture</string>
@@ -759,6 +864,7 @@
     <string name="recurring_required">Obligatoire</string>
     <string name="recurring_resume">Reprendre</string>
     <string name="recurring_save_changes">Enregistrer les modifications</string>
+    <string name="recurring_second_day_of_month">2e jour du mois</string>
     <string name="recurring_select_a_category">Choisir une catégorie</string>
     <string name="recurring_select_a_day">Choisir un jour</string>
     <string name="recurring_set_as_main_income">Définir comme revenu principal</string>
@@ -767,10 +873,16 @@
     <string name="recurring_shows_paused_income_and_bills">Affiche les revenus et factures en pause</string>
     <string name="recurring_start_again">Recommencer</string>
     <string name="recurring_start_again_2">Recommencer %1$s</string>
+    <string name="recurring_still_to_pay">%1$s encore à payer</string>
     <string name="recurring_the_amount_changes_each_time">Le montant change à chaque fois</string>
     <string name="recurring_this_month">Ce mois-ci, %1$s</string>
     <string name="recurring_updating">Mise à jour…</string>
     <string name="recurring_when_is_the_next_payment">Quand le prochain paiement est-il dû&#160;?</string>
+    <string name="recurring_x_ended">%1$s terminé</string>
+    <string name="recurring_x_ends_after">%1$s se termine après le %2$s</string>
+    <string name="recurring_x_paused">%1$s mis en pause</string>
+    <string name="recurring_x_resumed">%1$s repris</string>
+    <string name="recurring_x_started_again">%1$s recommencé</string>
     <string name="recurring_yes_one_more_on">Oui, un de plus le %1$s</string>
     <string name="recurring_you_re_offline_reconnect_to">Vous êtes hors ligne. Reconnectez-vous pour enregistrer les modifications.</string>
     <string name="reports_above_avg">Au-dessus de la moyenne</string>
@@ -800,9 +912,11 @@
     <string name="reports_net">Net</string>
     <string name="reports_net_change">Variation nette</string>
     <string name="reports_next_month">Mois suivant</string>
+    <string name="reports_no_daily_aggregates_for">Aucun total de dépenses quotidiennes trouvé pour %1$s.</string>
     <string name="reports_no_daily_aggregates_found_for">Aucun total quotidien trouvé pour la comparaison.</string>
     <string name="reports_no_data">Aucune donnée</string>
     <string name="reports_no_pay_periods">Aucune période de paie</string>
+    <string name="reports_no_pay_periods_overlap">Aucune période de paie ne chevauche %1$s.</string>
     <string name="reports_no_spending_data">Aucune donnée de dépenses</string>
     <string name="reports_no_spending_logged_this_month">Aucune dépense saisie ce mois-ci pour l’instant.</string>
     <string name="reports_no_spending_pattern_yet">Aucune habitude de dépense pour l’instant</string>
@@ -822,25 +936,35 @@
     <string name="reports_see_how_your_income_covers">Voyez comment vos revenus couvrent vos dépenses d’une période de paie à l’autre.</string>
     <string name="reports_spending">Dépenses</string>
     <string name="reports_takeaways">À retenir</string>
+    <string name="reports_top_category_leads">%1$s domine les dépenses</string>
     <string name="reports_total_income">Total des revenus</string>
     <string name="reports_total_spending">Total des dépenses</string>
     <string name="reports_track_day_to_day_trends">Suivez les tendances quotidiennes et la couverture des revenus au même endroit.</string>
     <string name="reports_track_your_daily_spending_patterns">Suivez vos habitudes de dépenses quotidiennes et repérez les jours de forte dépense.</string>
     <string name="reports_we_could_not_refresh_this">Nous n’avons pas pu actualiser ce bilan. Vérifiez votre connexion et réessayez.</string>
     <string name="reports_weekly_comparison_bars">Barres de comparaison hebdomadaire</string>
+    <string name="reports_weekly_expenses">Dépenses hebdomadaires</string>
+    <string name="reports_weekly_income">Revenus hebdomadaires</string>
     <string name="reports_where_your_money_went">Où est allé votre argent</string>
     <string name="reports_you_re_offline">Vous êtes hors ligne</string>
     <string name="reports_your_review_starts_with_one">Votre bilan commence par une entrée</string>
+    <string name="rules_merchant_placeholder">p. ex. Tim Hortons, Uber, Amazon</string>
     <string name="scan_always">Toujours</string>
     <string name="scan_always_file_under">Toujours classer %1$s dans %2$s&#160;?</string>
+    <string name="scan_cant_read_name">Impossible de lire %1$s.</string>
     <string name="scan_category_for">Catégorie pour %1$s&#160;: %2$s</string>
     <string name="scan_choose_category">Choisir une catégorie</string>
+    <string name="scan_chunk_label">%1$s (%2$s sur %3$s)</string>
     <string name="scan_couldn_t_open_this_scan">Impossible d’ouvrir cette numérisation. Réessayez.</string>
     <string name="scan_couldn_t_save_these_transactions">Impossible d’enregistrer ces transactions. Réessayez.</string>
     <string name="scan_discard_scan">Abandonner la numérisation</string>
     <string name="scan_discard_this_scan">Abandonner cette numérisation&#160;?</string>
+    <string name="scan_done_of_total">%1$s sur %2$s</string>
     <string name="scan_exclude">Exclure %1$s</string>
     <string name="scan_exclude_this_one">Exclure celle-ci</string>
+    <string name="scan_failed_summary">%1$s n’ont pas pu être enregistrées</string>
+    <string name="scan_file_too_large">%1$s est trop volumineux pour être envoyé (10 Mo maximum).</string>
+    <string name="scan_handled_by_rules">%1$s gérés par vos règles. Choisissez une catégorie une fois et Spenditos s’en souviendra.</string>
     <string name="scan_include">Inclure %1$s</string>
     <string name="scan_include_this_one">Inclure celle-ci</string>
     <string name="scan_it_ll_show_up_here">Elle apparaîtra ici quand elle sera prête.</string>
@@ -849,29 +973,39 @@
     <string name="scan_mixed_categories">Catégories mixtes</string>
     <string name="scan_next_time_spenditos_sees_in">La prochaine fois que Spenditos verra %1$s dans une numérisation ou une importation, il le classera dans %2$s pour vous.</string>
     <string name="scan_no_date">Sans date</string>
+    <string name="scan_not_included">%1$s non incluses</string>
     <string name="scan_off">Désactivé</string>
     <string name="scan_on">Activé</string>
+    <string name="scan_one_of_the_images">l’une des images</string>
     <string name="scan_one_or_more_foreign_currency">Un ou plusieurs montants en devise étrangère n’ont pas pu être convertis</string>
+    <string name="scan_pdf_empty">%1$s n’a aucune page à lire.</string>
+    <string name="scan_pdf_locked">%1$s est protégé par un mot de passe. Retirez le mot de passe et réessayez.</string>
     <string name="scan_preparing_categories_and_currencies">Préparation des catégories et des devises…</string>
     <string name="scan_review">Vérification</string>
     <string name="scan_review_later">Vérifier plus tard</string>
     <string name="scan_saving_of">Enregistrement de %1$s sur %2$s…</string>
     <string name="scan_scan_more">Numériser d’autres</string>
+    <string name="scan_skipped_summary">%1$s ignorées&#160;: déjà dans Spenditos ou pas des dépenses</string>
     <string name="scan_some_foreign_currency_amounts_need">Certains montants en devise étrangère doivent être vérifiés avant de pouvoir être enregistrés.</string>
+    <string name="scan_that_file">Ce fichier</string>
+    <string name="scan_that_pdf">Ce PDF</string>
     <string name="scan_the_signed_in_account_changed">Le compte connecté a changé, donc cette numérisation n’a pas été enregistrée.</string>
     <string name="scan_these_transactions_won_t_be">Ces transactions ne seront pas ajoutées.</string>
     <string name="scan_this_scan_is_no_longer">Cette numérisation n’est plus disponible.</string>
+    <string name="scan_unsupported_file">%1$s n’est pas un type que Spenditos peut lire. Essayez une photo, un PDF, un CSV ou un fichier Excel.</string>
     <string name="scan_you_re_offline_reconnect_to">Vous êtes hors ligne. Reconnectez-vous pour ouvrir cette numérisation.</string>
     <string name="scan_you_re_offline_your_changes">Vous êtes hors ligne. Vos modifications sont conservées — réessayez une fois connecté.</string>
     <string name="settings_add_a_category_to_get">Ajoutez une catégorie pour commencer</string>
+    <string name="settings_add_another_expense_category">Ajoutez d’abord une autre catégorie de dépenses, pour avoir où les déplacer.</string>
+    <string name="settings_add_another_income_category">Ajoutez d’abord une autre catégorie de revenus, pour avoir où les déplacer.</string>
     <string name="settings_add_category">Ajouter une catégorie</string>
     <string name="settings_all_icons">Toutes les icônes</string>
     <string name="settings_are_you_absolutely_sure">Êtes-vous absolument certain&#160;?</string>
     <string name="settings_are_you_sure_you_want">Voulez-vous vraiment vous déconnecter&#160;?</string>
-    <string name="settings_are_you_sure_you_want_2">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s %2$s non synchronisée(s) resteront en attente sur cet appareil et seront synchronisée(s) à votre prochaine connexion à ce compte.</string>
     <string name="settings_are_you_sure_you_want_3">Voulez-vous vraiment supprimer «&#160;%1$s&#160;»&#160;? Cette action est irréversible.</string>
     <string name="settings_browse_all_icons">Parcourir toutes les icônes</string>
     <string name="settings_card_payments_and_transfers_that">Paiements par carte et virements qui ne sont pas des dépenses</string>
+    <string name="settings_category_in_use">«&#160;%1$s&#160;» est encore utilisée. Choisissez où doivent aller ses transactions et factures. Elles gardent leurs montants et leurs dates.</string>
     <string name="settings_category_name">Nom de la catégorie</string>
     <string name="settings_category_name_2">Nom de la catégorie</string>
     <string name="settings_change_password">Changer le mot de passe</string>
@@ -899,6 +1033,7 @@
     <string name="settings_current_icon">Icône actuelle</string>
     <string name="settings_current_password">Mot de passe actuel</string>
     <string name="settings_daily_logging_reminder">Rappel de saisie quotidien</string>
+    <string name="settings_daily_nudge">Un petit rappel quotidien pour saisir vos dépenses</string>
     <string name="settings_default">Par défaut</string>
     <string name="settings_delete_account">Supprimer le compte</string>
     <string name="settings_delete_category">Supprimer la catégorie</string>
@@ -937,8 +1072,10 @@
     <string name="settings_new_password">Nouveau mot de passe</string>
     <string name="settings_new_rule">Nouvelle règle</string>
     <string name="settings_no_currencies_found">Aucune devise trouvée.</string>
+    <string name="settings_no_expense_categories">Aucune catégorie de dépenses</string>
     <string name="settings_no_icon">Aucune icône</string>
     <string name="settings_no_icons_found">Aucune icône trouvée</string>
+    <string name="settings_no_income_categories">Aucune catégorie de revenus</string>
     <string name="settings_no_rules_yet">Aucune règle pour l’instant</string>
     <string name="settings_none">Aucune</string>
     <string name="settings_not_set">Non défini</string>
@@ -1011,6 +1148,7 @@
     <string name="sync_this_change_is_being_sent">Cette modification est en cours d’envoi, elle ne peut donc pas encore être abandonnée. Réessayez dans un instant.</string>
     <string name="sync_this_change_needs_attention_before">Cette modification doit être vérifiée avant de pouvoir être synchronisée.</string>
     <string name="sync_waiting_for_a_connection_to">En attente d’une connexion pour synchroniser.</string>
+    <string name="sync_will_be_removed">%1$s sera retiré de cet appareil et ne pourra pas être réessayé.</string>
     <string name="transactions_add">Ajouter «&#160;%1$s&#160;»</string>
     <string name="transactions_add_a_category">Ajouter une catégorie</string>
     <string name="transactions_add_category">Ajouter une catégorie de %1$s</string>
@@ -1021,6 +1159,8 @@
     <string name="transactions_apply_filters">Appliquer les filtres</string>
     <string name="transactions_are_you_sure_you_want">Voulez-vous vraiment supprimer cette transaction&#160;? Cette action est irréversible.</string>
     <string name="transactions_are_you_sure_you_want_2">Voulez-vous vraiment supprimer ces %1$s transactions&#160;? Cette action est irréversible.</string>
+    <string name="transactions_bill_choice_message">%1$s · %2$s · échéance le %3$s. L’utiliser remplace l’estimation, elle n’est donc pas comptée deux fois.</string>
+    <string name="transactions_bill_summary_next">%1$s · %2$s · prochaine échéance le %3$s.</string>
     <string name="transactions_cancel_selection">Annuler la sélection</string>
     <string name="transactions_categories">Catégories&#160;: %1$s</string>
     <string name="transactions_category">Catégorie&#160;: %1$s</string>
@@ -1064,9 +1204,11 @@
     <string name="transactions_make_it_recurring">Rendre récurrent</string>
     <string name="transactions_max">Max</string>
     <string name="transactions_max_2">Max&#160;: %1$s</string>
+    <string name="transactions_max_amount_in">Montant maximum en %1$s</string>
     <string name="transactions_merchant_or_description">Commerçant ou description</string>
     <string name="transactions_min">Min</string>
     <string name="transactions_min_2">Min&#160;: %1$s</string>
+    <string name="transactions_min_amount_in">Montant minimum en %1$s</string>
     <string name="transactions_more">Plus</string>
     <string name="transactions_more_save_options">Plus d’options d’enregistrement</string>
     <string name="transactions_necessary">Nécessaire</string>
@@ -1074,10 +1216,13 @@
     <string name="transactions_no_transactions_yet">Aucune transaction pour l’instant</string>
     <string name="transactions_none_of_these_save_as">Aucune de celles-ci, enregistrer séparément</string>
     <string name="transactions_not_synced">Non synchronisée</string>
+    <string name="transactions_not_synced_yet_edit">Celle-ci n’est pas encore synchronisée. Modifiez-la une fois synchronisée.</string>
     <string name="transactions_pick_a_category">Choisir une catégorie</string>
     <string name="transactions_pick_date">Choisir la date</string>
     <string name="transactions_preset_name">Nom du préréglage</string>
     <string name="transactions_quick_dates">Dates rapides</string>
+    <string name="transactions_recurring_hint">Ce paiement est saisi le %1$s. Ensuite le %2$s, le %3$s, et ainsi de suite. Échéance un autre jour que celui du paiement&#160;? Modifiez «&#160;Prochaine échéance&#160;».</string>
+    <string name="transactions_recurring_next_due">%1$s, prochaine échéance le %2$s</string>
     <string name="transactions_regret">Regret</string>
     <string name="transactions_remove_filter">Retirer le filtre</string>
     <string name="transactions_reset_all">Tout réinitialiser</string>
@@ -1087,6 +1232,7 @@
     <string name="transactions_save_preset">Enregistrer le préréglage</string>
     <string name="transactions_saved_on_this_device_it">Enregistrée sur cet appareil. Elle sera synchronisée dès que vous serez de nouveau en ligne.</string>
     <string name="transactions_saved_presets">Préréglages enregistrés</string>
+    <string name="transactions_saved_summary">%1$s enregistrée · %2$s · %3$s ajoutées</string>
     <string name="transactions_scroll_to_top">Revenir en haut</string>
     <string name="transactions_search_transactions">Rechercher des transactions</string>
     <string name="transactions_search_transactions_2">Rechercher des transactions…</string>
@@ -1109,6 +1255,7 @@
     <string name="transactions_update_income">Mettre à jour le revenu</string>
     <string name="transactions_use_existing_bill">Utiliser la facture existante</string>
     <string name="transactions_use_this_one">Utiliser celle-ci</string>
+    <string name="transactions_usually_repeats">%1$s revient habituellement. Activez pour le suivre.</string>
     <string name="transactions_waiting_to_sync">En attente de synchronisation</string>
     <string name="transactions_where_or_what_like_starbucks">Où ou quoi, par exemple Starbucks</string>
     <string name="transactions_which_bill_is_this">De quelle facture s’agit-il&#160;?</string>
@@ -1135,4 +1282,204 @@
     <string name="widget_storm">Tempête</string>
     <string name="widget_storm_mode">Mode tempête</string>
     <string name="widget_top_categories">Principales catégories</string>
+    <plurals name="capture_select_category_before_saving">
+        <item quantity="one">Choisissez une catégorie pour %1$s élément avant d’enregistrer</item>
+        <item quantity="many">Choisissez une catégorie pour %1$s éléments avant d’enregistrer</item>
+        <item quantity="other">Choisissez une catégorie pour %1$s éléments avant d’enregistrer</item>
+    </plurals>
+    <plurals name="count_bill">
+        <item quantity="one">%1$s facture</item>
+        <item quantity="many">%1$s factures</item>
+        <item quantity="other">%1$s factures</item>
+    </plurals>
+    <plurals name="count_entry">
+        <item quantity="one">%1$s entrée</item>
+        <item quantity="many">%1$s entrées</item>
+        <item quantity="other">%1$s entrées</item>
+    </plurals>
+    <plurals name="count_item">
+        <item quantity="one">%1$s élément</item>
+        <item quantity="many">%1$s éléments</item>
+        <item quantity="other">%1$s éléments</item>
+    </plurals>
+    <plurals name="count_month">
+        <item quantity="one">%1$s mois</item>
+        <item quantity="many">%1$s mois</item>
+        <item quantity="other">%1$s mois</item>
+    </plurals>
+    <plurals name="count_page">
+        <item quantity="one">%1$s page</item>
+        <item quantity="many">%1$s pages</item>
+        <item quantity="other">%1$s pages</item>
+    </plurals>
+    <plurals name="count_past_transaction">
+        <item quantity="one">%1$s transaction passée</item>
+        <item quantity="many">%1$s transactions passées</item>
+        <item quantity="other">%1$s transactions passées</item>
+    </plurals>
+    <plurals name="count_payment">
+        <item quantity="one">%1$s paiement</item>
+        <item quantity="many">%1$s paiements</item>
+        <item quantity="other">%1$s paiements</item>
+    </plurals>
+    <plurals name="count_payment_received">
+        <item quantity="one">%1$s paiement reçu</item>
+        <item quantity="many">%1$s paiements reçus</item>
+        <item quantity="other">%1$s paiements reçus</item>
+    </plurals>
+    <plurals name="count_transaction">
+        <item quantity="one">%1$s transaction</item>
+        <item quantity="many">%1$s transactions</item>
+        <item quantity="other">%1$s transactions</item>
+    </plurals>
+    <plurals name="home_days_count">
+        <item quantity="one">%1$s jour</item>
+        <item quantity="many">%1$s jours</item>
+        <item quantity="other">%1$s jours</item>
+    </plurals>
+    <plurals name="home_due_in_days">
+        <item quantity="one">dans %1$s jour</item>
+        <item quantity="many">dans %1$s jours</item>
+        <item quantity="other">dans %1$s jours</item>
+    </plurals>
+    <plurals name="home_entries_still_to_come">
+        <item quantity="one">%1$s entrée encore à venir</item>
+        <item quantity="many">%1$s entrées encore à venir</item>
+        <item quantity="other">%1$s entrées encore à venir</item>
+    </plurals>
+    <plurals name="onboarding_categories_ready">
+        <item quantity="one">%1$s catégorie prête</item>
+        <item quantity="many">%1$s catégories prêtes</item>
+        <item quantity="other">%1$s catégories prêtes</item>
+    </plurals>
+    <plurals name="plan_changes_didnt_apply">
+        <item quantity="one">%1$s modification n’a pas été appliquée</item>
+        <item quantity="many">%1$s modifications n’ont pas été appliquées</item>
+        <item quantity="other">%1$s modifications n’ont pas été appliquées</item>
+    </plurals>
+    <plurals name="plan_changes_in_draft">
+        <item quantity="one">%1$s modification dans votre brouillon</item>
+        <item quantity="many">%1$s modifications dans votre brouillon</item>
+        <item quantity="other">%1$s modifications dans votre brouillon</item>
+    </plurals>
+    <plurals name="plan_draft_changes">
+        <item quantity="one">Brouillon · %1$s modification</item>
+        <item quantity="many">Brouillon · %1$s modifications</item>
+        <item quantity="other">Brouillon · %1$s modifications</item>
+    </plurals>
+    <plurals name="progress_days_remaining">
+        <item quantity="one">%1$s jour restant</item>
+        <item quantity="many">%1$s jours restants</item>
+        <item quantity="other">%1$s jours restants</item>
+    </plurals>
+    <plurals name="quota_smart_entries_left">
+        <item quantity="one">%1$s saisie intelligente restante ce mois-ci</item>
+        <item quantity="many">%1$s saisies intelligentes restantes ce mois-ci</item>
+        <item quantity="other">%1$s saisies intelligentes restantes ce mois-ci</item>
+    </plurals>
+    <plurals name="recurring_bills_paid">
+        <item quantity="one">%1$s facture payée sur %2$s</item>
+        <item quantity="many">%1$s factures payées sur %2$s</item>
+        <item quantity="other">%1$s factures payées sur %2$s</item>
+    </plurals>
+    <plurals name="recurring_entries_not_logged">
+        <item quantity="one">%1$s entrée n’a pas pu être saisie.</item>
+        <item quantity="many">%1$s entrées n’ont pas pu être saisies.</item>
+        <item quantity="other">%1$s entrées n’ont pas pu être saisies.</item>
+    </plurals>
+    <plurals name="recurring_log_entries">
+        <item quantity="one">Saisir %1$s entrée</item>
+        <item quantity="many">Saisir %1$s entrées</item>
+        <item quantity="other">Saisir %1$s entrées</item>
+    </plurals>
+    <plurals name="recurring_paused_months">
+        <item quantity="one">En pause depuis %1$s mois</item>
+        <item quantity="many">En pause depuis %1$s mois</item>
+        <item quantity="other">En pause depuis %1$s mois</item>
+    </plurals>
+    <plurals name="reports_recurring_mapped">
+        <item quantity="one">%1$s obligation récurrente définie</item>
+        <item quantity="many">%1$s obligations récurrentes définies</item>
+        <item quantity="other">%1$s obligations récurrentes définies</item>
+    </plurals>
+    <plurals name="rule_past_updated">
+        <item quantity="one">%1$s transaction passée mise à jour.</item>
+        <item quantity="many">%1$s transactions passées mises à jour.</item>
+        <item quantity="other">%1$s transactions passées mises à jour.</item>
+    </plurals>
+    <plurals name="scan_added_transactions">
+        <item quantity="one">%1$s transaction ajoutée</item>
+        <item quantity="many">%1$s transactions ajoutées</item>
+        <item quantity="other">%1$s transactions ajoutées</item>
+    </plurals>
+    <plurals name="scan_also_update_past">
+        <item quantity="one">Mettre aussi à jour %1$s transaction passée de %2$s</item>
+        <item quantity="many">Mettre aussi à jour %1$s transactions passées de %2$s</item>
+        <item quantity="other">Mettre aussi à jour %1$s transactions passées de %2$s</item>
+    </plurals>
+    <plurals name="scan_flagged_unchecked">
+        <item quantity="one">%1$s est déjà dans Spenditos ou n’est pas une dépense, donc elle commence décochée.</item>
+        <item quantity="many">%1$s sont déjà dans Spenditos ou ne sont pas des dépenses, donc elles commencent décochées.</item>
+        <item quantity="other">%1$s sont déjà dans Spenditos ou ne sont pas des dépenses, donc elles commencent décochées.</item>
+    </plurals>
+    <plurals name="scan_found_transactions">
+        <item quantity="one">%1$s transaction trouvée</item>
+        <item quantity="many">%1$s transactions trouvées</item>
+        <item quantity="other">%1$s transactions trouvées</item>
+    </plurals>
+    <plurals name="scan_incomplete_items">
+        <item quantity="one">%1$s élément nécessite un montant et une date avant l’enregistrement</item>
+        <item quantity="many">%1$s éléments nécessitent un montant et une date avant l’enregistrement</item>
+        <item quantity="other">%1$s éléments nécessitent un montant et une date avant l’enregistrement</item>
+    </plurals>
+    <plurals name="scan_label_files">
+        <item quantity="one">%1$s fichier</item>
+        <item quantity="many">%1$s fichiers</item>
+        <item quantity="other">%1$s fichiers</item>
+    </plurals>
+    <plurals name="scan_label_photos">
+        <item quantity="one">%1$s photo</item>
+        <item quantity="many">%1$s photos</item>
+        <item quantity="other">%1$s photos</item>
+    </plurals>
+    <plurals name="scan_label_screenshots">
+        <item quantity="one">%1$s capture d’écran</item>
+        <item quantity="many">%1$s captures d’écran</item>
+        <item quantity="other">%1$s captures d’écran</item>
+    </plurals>
+    <plurals name="scan_missing_category">
+        <item quantity="one">%1$s élément sera enregistré comme Sans catégorie — choisissez une catégorie pour affiner les rapports</item>
+        <item quantity="many">%1$s éléments seront enregistrés comme Sans catégorie — choisissez une catégorie pour affiner les rapports</item>
+        <item quantity="other">%1$s éléments seront enregistrés comme Sans catégorie — choisissez une catégorie pour affiner les rapports</item>
+    </plurals>
+    <plurals name="scan_pages_unreadable">
+        <item quantity="one">%1$s page n’a pas pu être lue.</item>
+        <item quantity="many">%1$s pages n’ont pas pu être lues.</item>
+        <item quantity="other">%1$s pages n’ont pas pu être lues.</item>
+    </plurals>
+    <plurals name="scan_ready_to_review">
+        <item quantity="one">%1$s transaction à vérifier</item>
+        <item quantity="many">%1$s transactions à vérifier</item>
+        <item quantity="other">%1$s transactions à vérifier</item>
+    </plurals>
+    <plurals name="settings_sign_out_unsynced">
+        <item quantity="one">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s transaction non synchronisée restera en attente sur cet appareil et sera synchronisée à votre prochaine connexion à ce compte.</item>
+        <item quantity="many">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s transactions non synchronisées resteront en attente sur cet appareil et seront synchronisées à votre prochaine connexion à ce compte.</item>
+        <item quantity="other">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s transactions non synchronisées resteront en attente sur cet appareil et seront synchronisées à votre prochaine connexion à ce compte.</item>
+    </plurals>
+    <plurals name="streak_unit_days">
+        <item quantity="one">jour</item>
+        <item quantity="many">jours</item>
+        <item quantity="other">jours</item>
+    </plurals>
+    <plurals name="transactions_delete_failed">
+        <item quantity="one">%1$s transaction n’a pas pu être supprimée. Réessayez.</item>
+        <item quantity="many">%1$s transactions n’ont pas pu être supprimées. Réessayez.</item>
+        <item quantity="other">%1$s transactions n’ont pas pu être supprimées. Réessayez.</item>
+    </plurals>
+    <plurals name="widget_day_streak">
+        <item quantity="one">Série de %1$s jour</item>
+        <item quantity="many">Série de %1$s jours</item>
+        <item quantity="other">Série de %1$s jours</item>
+    </plurals>
 </resources>

@@ -172,7 +172,7 @@ class SessionLifecycleTest {
         )
         val categories = CategoryRepository(categoriesApi, db.categories(), session, FinanceInvalidationBus())
         val settings = UserSettingsRepository(ApplicationProvider.getApplicationContext<Context>(), userApi, session, com.spenditos.android.testing.FakeProAccess())
-        return SessionLifecycle(session, transactions, categories, settings, SyncRequester {}, push, purchases)
+        return SessionLifecycle(session, transactions, categories, settings, SyncRequester {}, push, purchases, com.spenditos.android.data.user.LanguageMirror(settings, session))
     }
 
     /** Waits until [counter] settles on exactly [expected] (all earlier emissions processed). */

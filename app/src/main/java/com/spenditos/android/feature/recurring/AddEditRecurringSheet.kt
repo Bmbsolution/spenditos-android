@@ -383,7 +383,7 @@ fun AddEditRecurringSheet(
                             Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
-                                    Text("2nd Day of Month", Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
+                                    Text(stringResource(R.string.recurring_second_day_of_month), Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
                                     Text(stringResource(R.string.recurring_required), Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
                                 }
                                 val day = draft.secondOccurrenceDay

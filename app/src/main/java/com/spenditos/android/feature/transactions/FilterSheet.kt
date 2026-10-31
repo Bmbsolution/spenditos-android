@@ -725,6 +725,5 @@ private fun currencySymbol(currency: String): String = when (currency.uppercase(
 
 /** Spoken label for the filter amount fields, mirroring the AddTransactionSheet amount pattern. */
 internal fun amountFieldDescription(placeholder: String, symbol: String): String {
-    val bound = if (placeholder.equals("Min", ignoreCase = true)) "Minimum" else "Maximum"
-    return "$bound amount in $symbol"
+    return if (placeholder.equals(Strings.get(R.string.transactions_min), ignoreCase = true)) Strings.get(R.string.transactions_min_amount_in, symbol) else Strings.get(R.string.transactions_max_amount_in, symbol)
 }

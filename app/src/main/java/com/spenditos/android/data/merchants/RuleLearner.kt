@@ -58,7 +58,7 @@ class RuleLearner @Inject constructor(private val mappings: MerchantMappingActio
         /** "Rule saved: Tim Hortons → Dining. 7 past transactions updated. Change it anytime in Settings › Rules." */
         fun savedMessage(merchant: String, categoryName: String, pastUpdated: Int?): String {
             var text = Strings.get(R.string.data_merchants_rule_saved, merchant, categoryName)
-            if (pastUpdated != null && pastUpdated > 0) text += " ${pastUpdated.counted("past transaction")} updated."
+            if (pastUpdated != null && pastUpdated > 0) text += " " + Strings.plural(R.plurals.rule_past_updated, pastUpdated)
             return "$text $CHANGE_ANYTIME"
         }
     }

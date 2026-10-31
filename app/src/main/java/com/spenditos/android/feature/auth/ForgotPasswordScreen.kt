@@ -117,7 +117,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                         RoundedForgotTextField(
                             value = state.code,
                             onValueChange = viewModel::onCodeChange,
-                            placeholder = "6-digit code",
+                            placeholder = stringResource(R.string.auth_six_digit_code),
                             keyboardOptions = doneKeyboardOptions(KeyboardType.Number),
                             textStyle = IosText.rounded(22),
                             textAlign = TextAlign.Center,

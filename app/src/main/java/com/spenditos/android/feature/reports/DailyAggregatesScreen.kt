@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.background
@@ -73,7 +75,7 @@ fun DailyAggregatesScreen(
                         .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
                 ) {
                     ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                         subtitle = monthRangeLabel(state.month, locale),
                         tag = "reports.daily.month",
                         onPrevious = viewModel::previousMonth,
@@ -82,7 +84,7 @@ fun DailyAggregatesScreen(
                     ReportEmptyState(
                         icon = "chart.bar.fill",
                         title = stringResource(R.string.reports_no_spending_data),
-                        subtitle = "No daily spending aggregates were found for ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
+                        subtitle = stringResource(R.string.reports_no_daily_aggregates_for, state.month.format(LocalizedDate.formatter("MMMM yyyy", locale))),
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
@@ -93,7 +95,7 @@ fun DailyAggregatesScreen(
                 ) {
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.daily.month",
                             onPrevious = viewModel::previousMonth,
@@ -161,7 +163,7 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
                 SummaryValue("Avg/Day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), IosColors.spendOrange, Modifier.weight(1f))
                 SummaryValue(
                     stringResource(R.string.reports_highest_day),
-                    summary.highestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—",
+                    summary.highestSpendingDay?.format(LocalizedDate.formatter("MMM d", locale)) ?: "—",
                     if (summary.highestSpendingDay == null) IosColors.neutral else finance.expense,
                     Modifier.weight(1f),
                 )
@@ -187,8 +189,8 @@ private fun DailyAggregateRow(aggregate: DailyAggregate, state: DailyAggregatesU
     val finance = LocalFinanceColors.current
     val isHigh = state.summary.highestSpendingDay == aggregate.date
     val isLow = state.summary.lowestSpendingDay == aggregate.date
-    val dayLabel = aggregate.date.format(DateTimeFormatter.ofPattern("EEE", locale))
-    val dateLabel = aggregate.date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+    val dayLabel = aggregate.date.format(LocalizedDate.formatter("EEE", locale))
+    val dateLabel = aggregate.date.format(LocalizedDate.formatter("MMM d", locale))
     val net = BigDecimal.valueOf(aggregate.income).subtract(BigDecimal.valueOf(aggregate.expenses))
     Row(
         Modifier.fillMaxWidth().testTag("reports.daily.row.${aggregate.date}")
@@ -204,7 +206,7 @@ private fun DailyAggregateRow(aggregate: DailyAggregate, state: DailyAggregatesU
                 else if (isLow) DayBadge("LOWEST", finance.income, "low")
             }
             Text(
-                "${aggregate.transactionCount} transaction${if (aggregate.transactionCount == 1) "" else "s"}",
+                Strings.plural(R.plurals.count_transaction, aggregate.transactionCount),
                 style = IosText.subheadline,
                 color = IosColors.neutral,
             )
@@ -237,6 +239,6 @@ private fun signedMoney(value: BigDecimal, currency: String): String {
 }
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     return "${month.format(formatter)} - ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

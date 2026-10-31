@@ -303,12 +303,11 @@ fun CaptureScreen(
                             )
                             val missingCategoryCount = state.includedItems.count { it.categoryId == null }
                             if (missingCategoryCount > 0) {
-                                val noun = if (missingCategoryCount == 1) "item" else "items"
                                 Text(
                                     if (state.offline) {
-                                        stringResource(R.string.capture_select_a_category_for_before, missingCategoryCount, noun)
+                                        Strings.plural(R.plurals.capture_select_category_before_saving, missingCategoryCount)
                                     } else {
-                                        "$missingCategoryCount $noun will save as Uncategorized — pick a category to refine reports"
+                                        Strings.plural(R.plurals.scan_missing_category, missingCategoryCount)
                                     },
                                     style = IosText.subheadline.w(FontWeight.SemiBold),
                                     color = IosColors.textSecondary,
@@ -712,7 +711,7 @@ private fun DoneContent(savedCount: Int, onDone: () -> Unit, modifier: Modifier 
         Spacer(Modifier.height(32.dp))
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(67.dp))
         Text(stringResource(R.string.capture_transactions_added), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = modifier)
-        Text("$savedCount transactions", style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+        Text(Strings.plural(R.plurals.count_transaction, savedCount), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         Spacer(Modifier.weight(1f))
         PillButton(stringResource(R.string.common_done), onClick = onDone, modifier = Modifier.fillMaxWidth().then(buttonModifier))
     }

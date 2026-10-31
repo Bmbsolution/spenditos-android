@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import com.spenditos.android.core.network.ApiError
@@ -58,7 +59,7 @@ internal object DebtFormat {
 
     /** "Jul 2028" from "2028-07-01". */
     fun monthYear(iso: String?, locale: Locale = Locale.getDefault()): String? =
-        parse(iso)?.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+        parse(iso)?.format(LocalizedDate.formatter("MMM yyyy", locale))
 
     /** "Oct 1, 2026" from "2026-10-01". */
     fun shortDate(iso: String?, locale: Locale = Locale.getDefault()): String? =
@@ -79,14 +80,14 @@ internal object DebtFormat {
     fun paymentPeriod(frequency: String, repeatInterval: Int?): String {
         val n = maxOf(1, repeatInterval ?: 1)
         return when (frequency) {
-            "daily" -> if (n == 1) "/ day" else "every $n days"
-            "weekly" -> if (n == 1) "/ week" else "every $n weeks"
-            "bi-weekly" -> "every ${2 * n} weeks"
-            "semi-monthly" -> if (n == 1) "twice a month" else "every $n half-months"
-            "monthly" -> if (n == 1) "/ month" else "every $n months"
-            "quarterly" -> if (n == 1) "/ quarter" else "every ${3 * n} months"
-            "semi-annually" -> "every ${6 * n} months"
-            "yearly" -> if (n == 1) "/ year" else "every $n years"
+            "daily" -> if (n == 1) Strings.get(R.string.debts_period_day) else Strings.get(R.string.debts_period_every_n_days, n)
+            "weekly" -> if (n == 1) Strings.get(R.string.debts_period_week) else Strings.get(R.string.debts_period_every_n_weeks, n)
+            "bi-weekly" -> Strings.get(R.string.debts_period_every_n_weeks, 2 * n)
+            "semi-monthly" -> if (n == 1) Strings.get(R.string.debts_period_twice_a_month) else Strings.get(R.string.debts_period_every_n_half_months, n)
+            "monthly" -> if (n == 1) Strings.get(R.string.debts_period_month) else Strings.get(R.string.debts_period_every_n_months, n)
+            "quarterly" -> if (n == 1) Strings.get(R.string.debts_period_quarter) else Strings.get(R.string.debts_period_every_n_months, 3 * n)
+            "semi-annually" -> Strings.get(R.string.debts_period_every_n_months, 6 * n)
+            "yearly" -> if (n == 1) Strings.get(R.string.debts_period_year) else Strings.get(R.string.debts_period_every_n_years, n)
             else -> ""
         }
     }
@@ -121,13 +122,13 @@ internal object DebtFormat {
             val date = shortDate(summary.paidOffDate, locale)
             return if (date != null) Strings.get(R.string.debts_paid_off_on, date) else Strings.get(R.string.debts_paid_off)
         }
-        val parts = mutableListOf("${money(summary.balance, currencyCode, locale)} left of ${money(plan.debt.startingBalance, currencyCode, locale)}")
+        val parts = mutableListOf(Strings.get(R.string.debts_left_of, money(summary.balance, currencyCode, locale), money(plan.debt.startingBalance, currencyCode, locale)))
         if (plan.paymentsStopped) {
             parts += Strings.get(R.string.debts_payments_stopped)
         } else if (plan.projection.neverPaysOff) {
             parts += Strings.get(R.string.debts_payment_too_low_to_finish)
         } else {
-            monthYear(plan.projection.payoffDate, locale)?.let { parts += "done by $it" }
+            monthYear(plan.projection.payoffDate, locale)?.let { parts += Strings.get(R.string.debts_done_by_inline, it) }
         }
         return parts.joinToString(" · ")
     }

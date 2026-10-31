@@ -81,7 +81,7 @@ internal fun DebtExtraPaymentSheet(
         )
         DebtDateField(epochDay = epochDay, onChange = { epochDay = it }, tag = "debt.extra.date")
         Text(
-            "Added to your transactions as a payment on ${state.debt?.name ?: "this debt"}.",
+            stringResource(R.string.debts_added_as_payment_on, state.debt?.name ?: stringResource(R.string.debts_this_debt)),
             style = IosText.caption,
             color = IosColors.textTertiary,
         )
@@ -117,7 +117,7 @@ internal fun DebtCorrectBalanceSheet(
             color = IosColors.textSecondary,
         )
         DebtAmountField(
-            title = "I owe today",
+            title = stringResource(R.string.debts_i_owe_today),
             placeholder = "0",
             text = amountText,
             onTextChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },

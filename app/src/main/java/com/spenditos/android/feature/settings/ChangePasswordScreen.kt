@@ -144,7 +144,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                         requirements.forEachIndexed { index, requirement ->
                             Row(
                                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                                    stateDescription = if (requirement.isMet) "met" else "not met"
+                                    stateDescription = if (requirement.isMet) Strings.get(R.string.a11y_requirement_met) else Strings.get(R.string.a11y_requirement_not_met)
                                 },
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),

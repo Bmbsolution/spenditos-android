@@ -415,7 +415,7 @@ fun IncomeAndBillsScreen(
 
 private fun generatedMessage(result: com.spenditos.android.data.model.GenerateTransactionsResult): String {
     val logged = if (result.generated == 1) Strings.get(R.string.recurring_logged_1_entry) else Strings.get(R.string.recurring_logged_entries, result.generated)
-    return if (result.errors > 0) "$logged ${counted(result.errors, "entry", "entries")} couldn't be logged." else logged
+    return if (result.errors > 0) "$logged " + Strings.plural(R.plurals.recurring_entries_not_logged, result.errors) else logged
 }
 
 /** iOS `BillsMonthSummaryCard`: what is still to pay this month, how many bills are paid, which is next. */

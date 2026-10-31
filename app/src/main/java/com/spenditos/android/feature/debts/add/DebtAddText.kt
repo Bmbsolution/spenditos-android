@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.debts.add
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import com.spenditos.android.core.network.ApiError
@@ -50,21 +51,21 @@ internal object DebtAddText {
     /** "Jul 2028" from "2028-07-01"; null when absent or not a date. */
     fun monthYear(iso: String?, locale: Locale = Locale.getDefault()): String? =
         iso?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            ?.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+            ?.format(LocalizedDate.formatter("MMM yyyy", locale))
 
     /** "2026-10": the `targetMonth` the preview endpoint takes. */
     fun monthKey(month: YearMonth): String = month.toString()
 
     /** "/ month" style when it is every period (the add sheet never sets a repeat interval). */
     fun paymentPeriod(frequency: String): String = when (frequency) {
-        "daily" -> "/ day"
-        "weekly" -> "/ week"
-        "bi-weekly" -> "every 2 weeks"
-        "semi-monthly" -> "twice a month"
-        "quarterly" -> "/ quarter"
-        "semi-annually" -> "every 6 months"
-        "yearly" -> "/ year"
-        else -> "/ month"
+        "daily" -> Strings.get(R.string.debts_period_day)
+        "weekly" -> Strings.get(R.string.debts_period_week)
+        "bi-weekly" -> Strings.get(R.string.debts_period_every_n_weeks, 2)
+        "semi-monthly" -> Strings.get(R.string.debts_period_twice_a_month)
+        "quarterly" -> Strings.get(R.string.debts_period_quarter)
+        "semi-annually" -> Strings.get(R.string.debts_period_every_n_months, 6)
+        "yearly" -> Strings.get(R.string.debts_period_year)
+        else -> Strings.get(R.string.debts_period_month)
     }
 
     /** "$447 / month". */

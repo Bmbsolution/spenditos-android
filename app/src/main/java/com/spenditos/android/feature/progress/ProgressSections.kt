@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.progress
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.animation.core.LinearEasing
@@ -115,7 +117,7 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                     ) {
                         Text(
-                            "${streak.currentStreak} Day Streak",
+                            stringResource(R.string.progress_day_streak, streak.currentStreak),
                             style = IosText.title2.w(FontWeight.Bold),
                             color = streakColor(streak.currentStreak),
                         )
@@ -234,16 +236,16 @@ private fun StreakCalendarContent(state: ProgressUiState, locale: java.util.Loca
 /** Row-level spoken summary of the 14-day streak calendar. */
 internal fun streakCalendarSummary(days: List<StreakCalendarDay>): String {
     val active = days.count { it.hasEntry && it.isStreakDay }
-    return "$active of the last ${days.size} days active"
+    return Strings.get(R.string.progress_active_of_last, active, days.size)
 }
 
 /** Spoken state of one streak calendar day: active / freeze / today / missed. */
 internal fun streakDayStateDescription(date: LocalDate, active: Boolean, freezeUsed: Boolean, today: LocalDate): String = when {
-    freezeUsed -> "freeze"
-    date == today && active -> "active today"
-    date == today -> "today"
-    active -> "active"
-    else -> "missed"
+    freezeUsed -> Strings.get(R.string.progress_day_freeze)
+    date == today && active -> Strings.get(R.string.progress_day_active_today)
+    date == today -> Strings.get(R.string.progress_day_today)
+    active -> Strings.get(R.string.progress_day_active)
+    else -> Strings.get(R.string.progress_day_missed)
 }
 
 @Composable
@@ -323,7 +325,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     Text(level?.title ?: stringResource(R.string.progress_level, levelNumber), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-                    Text("$total XP Total", style = IosText.subheadline, color = XpGold)
+                    Text(stringResource(R.string.progress_xp_total, total), style = IosText.subheadline, color = XpGold)
                 }
                 points?.let { PointsBadge(it.available) }
             }
@@ -343,7 +345,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                 Column(Modifier.padding(top = Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Row(
                         Modifier.fillMaxWidth().clickable { showBenefits = !showBenefits }
-                            .semantics { stateDescription = if (showBenefits) "expanded" else "collapsed" },
+                            .semantics { stateDescription = if (showBenefits) Strings.get(R.string.a11y_expanded) else Strings.get(R.string.a11y_collapsed) },
                         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -757,7 +759,7 @@ private fun challengeHistoryDate(challenge: GamificationChallenge): String {
         null
     }
     if (instant != null) {
-        return DateTimeFormatter.ofPattern("MMM d, h:mm a", Locale.getDefault()).format(instant.atZone(ZoneId.systemDefault()))
+        return LocalizedDate.formatter("MMM d, h:mm a", Locale.getDefault()).format(instant.atZone(ZoneId.systemDefault()))
     }
     return challenge.date?.toString() ?: raw.orEmpty()
 }
@@ -821,7 +823,7 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                                 .background(Brush.horizontalGradient(listOf(IosColors.spendOrange, XpGold))),
                         )
                     }
-                    Text("${(ratio * 100).toInt()}% complete", style = IosText.subheadline, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_percent_complete, (ratio * 100).toInt()), style = IosText.subheadline, color = IosColors.textTertiary)
                 }
             }
             Row(
@@ -889,7 +891,7 @@ private fun rememberChallengeTime(expiresAt: String?): String? {
     val days = hours / 24
     return when {
         days > 30 -> stringResource(R.string.progress_no_time_limit)
-        days >= 2 -> "$days days remaining"
+        days >= 2 -> Strings.plural(R.plurals.progress_days_remaining, days.toInt())
         hours > 0 -> stringResource(R.string.progress_h_m_remaining, hours, minutes)
         else -> stringResource(R.string.progress_m_remaining, minutes)
     }

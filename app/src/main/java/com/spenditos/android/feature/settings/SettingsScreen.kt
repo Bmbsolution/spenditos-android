@@ -153,7 +153,7 @@ fun SettingsScreen(
                 GroupedCard {
                     IosRow(
                         if (state.pushEnabled) stringResource(R.string.settings_daily_logging_reminder) else stringResource(R.string.settings_enable_notifications),
-                        subtitle = if (state.pushEnabled) "A daily nudge to log your spending" else stringResource(R.string.settings_notifications_are_turned_off),
+                        subtitle = if (state.pushEnabled) stringResource(R.string.settings_daily_nudge) else stringResource(R.string.settings_notifications_are_turned_off),
                         icon = SfSymbols.icon(if (state.pushEnabled) "square.and.pencil" else "bell.slash.fill"),
                         iconTint = if (state.pushEnabled) IosColors.spendOrange else IosColors.neutral,
                         chevron = false,

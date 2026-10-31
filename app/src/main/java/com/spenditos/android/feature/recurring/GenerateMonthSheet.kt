@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.background
@@ -214,7 +216,7 @@ private fun MonthChips(
             DropdownMenu(expanded = showEarlier, onDismissRequest = { showEarlier = false }) {
                 earlier.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)), style = IosText.subheadline) },
+                        text = { Text(option.format(LocalizedDate.formatter("MMMM yyyy", locale)), style = IosText.subheadline) },
                         onClick = { showEarlier = false; onSelect(option) },
                     )
                 }
@@ -257,7 +259,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.FutureMonth(
         verticalArrangement = Arrangement.spacedBy(Spacing.m, Alignment.CenterVertically),
     ) {
         Icon(SfSymbols.icon("calendar"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-        Text("${BillText.monthName(month, locale)} is still ahead", style = IosText.headline, color = IosColors.textPrimary)
+        Text(stringResource(R.string.recurring_month_still_ahead, BillText.monthName(month, locale)), style = IosText.headline, color = IosColors.textPrimary)
         Text(
             stringResource(R.string.recurring_plan_it_in_month_plan),
             Modifier.padding(horizontal = Spacing.xl),
@@ -355,7 +357,7 @@ private fun GenerateFooter(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                if (entryCount == 0) stringResource(R.string.recurring_nothing_to_log) else "Log ${counted(entryCount, "entry", "entries")}",
+                if (entryCount == 0) stringResource(R.string.recurring_nothing_to_log) else Strings.plural(R.plurals.recurring_log_entries, entryCount),
                 style = IosText.callout.w(FontWeight.SemiBold),
                 color = Color.White,
             )

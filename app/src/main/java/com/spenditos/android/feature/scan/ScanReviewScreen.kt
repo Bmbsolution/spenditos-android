@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.activity.compose.BackHandler
@@ -159,7 +160,7 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
         val missing = state.missingCategoryCount
         if (missing > 0) {
             Text(
-                "${missing.counted("item")} will save as Uncategorized — pick a category to refine reports",
+                Strings.plural(R.plurals.scan_missing_category, missing),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.textSecondary,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.uncategorized"),
@@ -183,7 +184,7 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
         }
         if (state.incompleteCount > 0) {
             Text(
-                "${state.incompleteCount.counted("item")} ${if (state.incompleteCount == 1) "needs" else "need"} an amount and a date before saving",
+                Strings.plural(R.plurals.scan_incomplete_items, state.incompleteCount),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.warning,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.incomplete"),
@@ -314,29 +315,28 @@ private fun SummaryHeader(state: ScanReviewUiState) {
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text(
-            "Found ${state.foundCount.counted("transaction")}",
+            Strings.plural(R.plurals.scan_found_transactions, state.foundCount),
             style = IosText.headline,
             color = IosColors.textPrimary,
             modifier = Modifier.testTag("review-found"),
         )
         if (flagged > 0) {
             Text(
-                "$flagged ${if (flagged == 1) "is" else "are"} already in Spenditos or ${if (flagged == 1) "isn't" else "aren't"} spending, " +
-                    "so ${if (flagged == 1) "it starts" else "they start"} unchecked.",
+                Strings.plural(R.plurals.scan_flagged_unchecked, flagged),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
             )
         }
         if (ruled > 0) {
             Text(
-                "$ruled handled by your rules. Pick a category once and Spenditos can remember it.",
+                stringResource(R.string.scan_handled_by_rules, ruled),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
                 modifier = Modifier.testTag("review-rules-summary"),
             )
         }
         if (state.failedDocuments > 0) {
-            Text("${state.failedDocuments.counted("page")} couldn't be read.", style = IosText.subheadline, color = IosColors.warning)
+            Text(Strings.plural(R.plurals.scan_pages_unreadable, state.failedDocuments), style = IosText.subheadline, color = IosColors.warning)
         }
     }
 }
@@ -345,8 +345,8 @@ private fun SummaryHeader(state: ScanReviewUiState) {
 @Composable
 private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore: () -> Unit, modifier: Modifier) {
     val lines = buildList {
-        if (state.skippedCount > 0) add("${state.skippedCount} skipped: already in Spenditos or not spending")
-        if (state.failedCount > 0) add("${state.failedCount} couldn't be saved")
+        if (state.skippedCount > 0) add(Strings.get(R.string.scan_skipped_summary, state.skippedCount))
+        if (state.failedCount > 0) add(Strings.get(R.string.scan_failed_summary, state.failedCount))
     }
     Column(
         modifier.fillMaxWidth().padding(Spacing.l),
@@ -356,7 +356,7 @@ private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore
         Spacer(Modifier.weight(1f))
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(67.2.dp))
         Text(
-            "${state.addedCount.counted("transaction")} added",
+            Strings.plural(R.plurals.scan_added_transactions, state.addedCount),
             style = IosText.title3.w(FontWeight.SemiBold),
             color = IosColors.textPrimary,
             textAlign = TextAlign.Center,

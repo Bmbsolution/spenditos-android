@@ -26,11 +26,14 @@ import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 /** iOS `SpreadsheetRange.Preset`. */
-enum class ExportRange(val label: String) {
-    THIS_MONTH(Strings.get(R.string.common_this_month)),
-    THIS_YEAR(Strings.get(R.string.export_this_year)),
-    LAST_YEAR(Strings.get(R.string.export_last_year)),
-    CUSTOM(Strings.get(R.string.common_custom)),
+enum class ExportRange(@androidx.annotation.StringRes val labelRes: Int) {
+    THIS_MONTH(R.string.common_this_month),
+    THIS_YEAR(R.string.export_this_year),
+    LAST_YEAR(R.string.export_last_year),
+    CUSTOM(R.string.common_custom),
+    ;
+
+    val label: String get() = Strings.get(labelRes)
 }
 
 data class ExportUiState(

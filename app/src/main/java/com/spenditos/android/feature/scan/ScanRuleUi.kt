@@ -99,7 +99,7 @@ internal fun RuleAskSheet(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        "Also update $pastCount past ${ask.merchant} ${if (pastCount == 1) "transaction" else "transactions"}",
+                        Strings.plural(R.plurals.scan_also_update_past, pastCount, pastCount, ask.merchant),
                         style = IosText.callout,
                         color = IosColors.textPrimary,
                         modifier = Modifier.weight(1f),

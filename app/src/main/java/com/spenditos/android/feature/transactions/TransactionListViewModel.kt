@@ -452,8 +452,7 @@ class TransactionListViewModel @Inject constructor(
                 if (result.failed == 0) {
                     onDone()
                 } else {
-                    val noun = if (result.failed == 1) "1 transaction" else "${result.failed} transactions"
-                    refresh.update { it.copy(actionError = "$noun couldn't be deleted. Try again.") }
+                    refresh.update { it.copy(actionError = Strings.plural(R.plurals.transactions_delete_failed, result.failed)) }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -601,7 +600,8 @@ internal fun activeFilterPillLabels(
 }
 
 internal fun sanitizeAmountInput(raw: String): String {
-    val filtered = raw.filter { it.isDigit() || it == '.' }
+    // A comma decimal separator (French keyboards) is stored as a dot.
+    val filtered = raw.replace(',', '.').filter { it.isDigit() || it == '.' }
     val dot = filtered.indexOf('.')
     if (dot < 0) return filtered
     return filtered.substring(0, dot + 1) + filtered.substring(dot + 1).filter { it != '.' }

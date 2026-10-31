@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
@@ -155,24 +156,23 @@ data class AddTransactionUiState(
     /** Subtitle under "Make it recurring". */
     val recurringSubtitle: String
         get() {
-            if (makeRecurring) return "${recurrencePreset.label}, next due ${shortDate(nextDue)}"
+            if (makeRecurring) return Strings.get(R.string.transactions_recurring_next_due, recurrencePreset.label, shortDate(nextDue))
             val name = selectedCategory?.name?.lowercase().orEmpty()
-            if (USUALLY_REPEATS.any { name.contains(it) }) return "${selectedCategory?.name ?: "This"} usually repeats. Turn on to track it."
+            if (USUALLY_REPEATS.any { name.contains(it) }) return Strings.get(R.string.transactions_usually_repeats, selectedCategory?.name ?: Strings.get(R.string.common_this))
             return Strings.get(R.string.transactions_adds_it_to_your_bills)
         }
 
     val recurringHint: String
-        get() = "This payment is logged on ${shortDate(date)}. Then ${shortDate(nextDue)}, " +
-            "${shortDate(recurrencePreset.next(nextDue))}, and so on. Due on a different day than you paid? Change Next due."
+        get() = Strings.get(R.string.transactions_recurring_hint, shortDate(date), shortDate(nextDue), shortDate(recurrencePreset.next(nextDue)))
 
     private companion object {
-        val USUALLY_REPEATS = listOf("rent", "utilities", "subscriptions", "salary", "insurance", "phone", "internet")
+        val USUALLY_REPEATS = listOf("rent", "utilities", "subscriptions", "salary", "insurance", "phone", "internet", "loyer", "hypoth", "abonnement", "salaire", "assurance", "téléphone", "électricité", "hydro")
     }
 }
 
 /** "Oct 7": the iOS `.dateTime.month(.abbreviated).day()` format. */
 internal fun shortDate(date: LocalDate): String =
-    date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault()))
+    date.format(LocalizedDate.formatter("MMM d", java.util.Locale.getDefault()))
 
 /** Accepts "12.50" and "12,50"; at most two decimals; null when not a number. */
 internal fun parseAmount(text: String): BigDecimal? {
@@ -382,7 +382,7 @@ class AddTransactionViewModel @Inject constructor(
                 it.isIncome == isIncome &&
                     com.spenditos.android.feature.settings.categories.normalizeCategoryName(it.name) ==
                     com.spenditos.android.feature.settings.categories.normalizeCategoryName(name)
-            }?.let { "\"${it.name}\" already exists." }
+            }?.let { Strings.get(R.string.common_category_already_exists, it.name) }
         }
         if (error != null) {
             form.update { it.copy(categoryError = error) }
@@ -579,7 +579,7 @@ class AddTransactionViewModel @Inject constructor(
 
             if (current.editing != null) {
                 if (current.editing.id.startsWith("local-")) {
-                    showError("This one hasn't synced yet. Edit it once it's synced.", FailedAction.SAVE)
+                    showError(Strings.get(R.string.transactions_not_synced_yet_edit), FailedAction.SAVE)
                     return
                 }
                 transactions.update(current.editing.id, draft)

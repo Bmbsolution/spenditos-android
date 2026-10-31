@@ -63,7 +63,7 @@ internal fun DebtProgressBar(progress: Double, modifier: Modifier = Modifier, is
         modifier.fillMaxWidth().height(height).clip(CircleShape).background(IosColors.textPrimary.copy(alpha = 0.10f))
             .clearAndSetSemantics {
                 contentDescription = Strings.get(R.string.common_progress)
-                stateDescription = if (isPaidOff) Strings.get(R.string.debts_paid_off) else "$percent percent paid off"
+                stateDescription = if (isPaidOff) Strings.get(R.string.debts_paid_off) else Strings.get(R.string.debts_percent_paid_off, percent)
             },
     ) {
         // The fill is never narrower than a dot once there is some progress, like the iOS capsule.
@@ -102,7 +102,7 @@ internal fun DebtRowView(plan: DebtWithPlan, currency: String, onClick: () -> Un
         if (isPaidOff) add(stringResource(R.string.debts_paid_off))
         if (paymentLine != null) add(paymentLine)
     }.joinToString(", ")
-    val value = if (isPaidOff) progressLine else "$progressLine, $percent percent paid off"
+    val value = if (isPaidOff) progressLine else Strings.get(R.string.debts_progress_percent_paid_off, progressLine, percent)
 
     Row(
         modifier.fillMaxWidth().alpha(if (isPaidOff) 0.6f else 1f)

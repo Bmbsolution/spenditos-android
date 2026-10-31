@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.capture
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -175,7 +176,7 @@ internal fun ReviewSummaryRow(
         Box(
             Modifier.size(48.dp)
                 .toggleable(value = item.include, enabled = !item.isFrozen, role = Role.Checkbox, onValueChange = { onToggle() })
-                .semantics { contentDescription = "Include ${item.description.ifBlank { "transaction" }}" }
+                .semantics { contentDescription = Strings.get(R.string.capture_include_item, item.description.ifBlank { Strings.get(R.string.common_transaction).lowercase() }) }
                 .testTag("capture.include.$key"),
             contentAlignment = Alignment.Center,
         ) {
@@ -710,4 +711,4 @@ internal val YOUR_RULE_LABEL: String get() = Strings.get(R.string.capture_your_r
 
 /** "Oct 8" for "2026-10-08" (iOS `.dateTime.month(.abbreviated).day()`); null when it does not parse. */
 private fun shortDate(iso: String, locale: java.util.Locale): String? =
-    runCatching { LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrNull()
+    runCatching { LocalDate.parse(iso).format(LocalizedDate.formatter("MMM d", locale)) }.getOrNull()

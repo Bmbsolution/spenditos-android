@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.plan
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
@@ -441,7 +442,7 @@ class MonthPlanViewModel @Inject constructor(
                 MonthPlanApplyResult.Applied -> {
                     savedDraft = null
                     mutableState.update {
-                        it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = "${month.format(MONTH_LABEL)} plan applied.")
+                        it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = Strings.get(R.string.plan_month_plan_applied, month.format(MONTH_LABEL)))
                     }
                     refreshSnapshot(month)
                 }
@@ -621,7 +622,7 @@ class MonthPlanViewModel @Inject constructor(
 
     companion object {
         const val AUTOSAVE_DELAY_MS = 900L
-        private val MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy")
+        private val MONTH_LABEL: DateTimeFormatter get() = LocalizedDate.formatter("MMMM yyyy")
     }
 }
 

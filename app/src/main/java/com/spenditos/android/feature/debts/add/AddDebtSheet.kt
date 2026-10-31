@@ -272,7 +272,7 @@ private fun NameSection(state: DebtFormUiState, viewModel: DebtFormViewModel, on
                 cursorBrush = SolidColor(IosColors.spendOrange),
                 decorationBox = { inner ->
                     Box {
-                        if (state.name.isEmpty()) Text("e.g., Car loan, Laptop from Sam", style = IosText.callout, color = IosColors.textTertiary)
+                        if (state.name.isEmpty()) Text(stringResource(R.string.debts_name_placeholder), style = IosText.callout, color = IosColors.textTertiary)
                         inner()
                     }
                 },

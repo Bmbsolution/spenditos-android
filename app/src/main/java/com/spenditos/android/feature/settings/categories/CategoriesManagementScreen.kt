@@ -259,12 +259,12 @@ private fun ReassignCategoryDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text(
-                    "\"${category.name}\" is still in use. Choose where its transactions and bills should go. They keep their amounts and dates.",
+                    stringResource(R.string.settings_category_in_use, category.name),
                     style = IosText.body,
                 )
                 if (candidates.isEmpty()) {
                     Text(
-                        "Add another ${if (category.isIncome) "income" else "expense"} category first, so there is somewhere to move them.",
+                        if (category.isIncome) stringResource(R.string.settings_add_another_income_category) else stringResource(R.string.settings_add_another_expense_category),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                     )
@@ -361,7 +361,7 @@ private fun EmptyCategories(isIncome: Boolean, onAdd: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
-        Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
+        Text(if (isIncome) stringResource(R.string.settings_no_income_categories) else stringResource(R.string.settings_no_expense_categories), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
         Text(stringResource(R.string.settings_add_a_category_to_get), style = IosText.callout, color = IosColors.textSecondary, maxLines = 3)
         Box(
             Modifier.clip(RoundedCornerShape(10.dp)).background(IosColors.spendOrange)

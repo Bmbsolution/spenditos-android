@@ -78,7 +78,7 @@ data class ScanReadingState(
                 return if (count != null && count > 0) Strings.get(R.string.receipt_uploading_of, minOf(uploaded + 1, count), count) else Strings.get(R.string.receipt_uploading)
             }
             if (total <= 1) return Strings.get(R.string.receipt_matching_what_you_already_have)
-            return "$unit ${minOf(done + 1, total)} of $total · matching what you already have"
+            return Strings.get(R.string.receipt_unit_of_total_matching, unit, minOf(done + 1, total), total)
         }
 }
 

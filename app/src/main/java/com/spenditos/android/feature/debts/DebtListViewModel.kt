@@ -49,7 +49,7 @@ data class DebtListUiState(
         get() = when {
             !hasDebts -> null
             allPaidOff -> Strings.get(R.string.debts_all_paid_off)
-            else -> "${DebtFormat.money(totalOwed, currency)} owed"
+            else -> Strings.get(R.string.debts_amount_owed, DebtFormat.money(totalOwed, currency))
         }
 
     fun debt(withId: String): DebtWithPlan? = debts.firstOrNull { it.id == withId }

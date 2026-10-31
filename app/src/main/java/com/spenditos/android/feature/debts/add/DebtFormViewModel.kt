@@ -33,12 +33,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** "Plan by" (iOS `DebtFormViewModel.PlanMode`). */
-enum class DebtPlanMode(val label: String) {
-    WHAT_I_PAY(Strings.get(R.string.debts_what_i_pay)),
-    WHEN_IM_DONE(Strings.get(R.string.debts_when_i_m_done)),
+enum class DebtPlanMode(@androidx.annotation.StringRes val labelRes: Int) {
+    WHAT_I_PAY(R.string.debts_what_i_pay),
+    WHEN_IM_DONE(R.string.debts_when_i_m_done),
 
     /** No payment plan: the debt is paid down as the user can (no bill). */
-    WHEN_I_CAN(Strings.get(R.string.debts_when_i_can)),
+    WHEN_I_CAN(R.string.debts_when_i_can),
+    ;
+
+    val label: String get() = Strings.get(labelRes)
 }
 
 /**
@@ -207,7 +210,7 @@ data class DebtFormUiState(
                 }.joinToString(" · ")
                 DebtPlanMode.WHEN_IM_DONE -> {
                     val pay = Strings.get(R.string.debts_pay, DebtAddText.paymentLine(plan.payment, frequency, currency))
-                    if (done != null) "$pay · done by $done" else pay
+                    if (done != null) "$pay · ${Strings.get(R.string.debts_done_by_inline, done)}" else pay
                 }
                 DebtPlanMode.WHEN_I_CAN -> null
             }
@@ -226,13 +229,13 @@ data class DebtFormUiState(
 
     private fun paymentsPhrase(plan: DebtPreviewResponse): String {
         val count = plan.paymentsCount
-        if (count <= 1) return "1 payment"
-        val last = plan.lastPaymentAmount ?: return "$count payments"
-        return "$count payments, last one ${DebtAddText.money(last, currency)}"
+        if (count <= 1) return Strings.get(R.string.debts_one_payment)
+        val last = plan.lastPaymentAmount ?: return Strings.get(R.string.debts_n_payments, count)
+        return Strings.get(R.string.debts_n_payments_last, count, DebtAddText.money(last, currency))
     }
 
     private fun interestPhrase(plan: DebtPreviewResponse): String? =
-        if (effectiveApr == null) null else "interest ≈ ${DebtAddText.money(plan.totalInterest, currency)}"
+        if (effectiveApr == null) null else Strings.get(R.string.debts_interest_approx, DebtAddText.money(plan.totalInterest, currency))
 
     // endregion
 

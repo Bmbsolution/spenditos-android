@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import java.time.LocalDate
@@ -99,7 +101,7 @@ fun ReportsHubScreen(
                     val status = requireNotNull(state.loadStatus)
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.hub.month",
                             onPrevious = viewModel::previousMonth,
@@ -118,7 +120,7 @@ fun ReportsHubScreen(
                     // A month with no entries: iOS's "starts with one entry" card, with month navigation kept.
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.hub.month",
                             onPrevious = viewModel::previousMonth,
@@ -279,7 +281,7 @@ private fun MonthlyReviewCard(
                     ReportTakeawayRow(
                         symbol = "chart.bar.fill",
                         tint = finance.expense,
-                        title = "${topCategory.name} leads spending",
+                        title = stringResource(R.string.reports_top_category_leads, topCategory.name),
                         detail = stringResource(R.string.reports_review_the_transaction_log_to, Money.format(topCategory.amount.toDouble(), currency)),
                         onClick = onReviewTransactions,
                     )
@@ -290,7 +292,7 @@ private fun MonthlyReviewCard(
                     title = if (activeRecurringCount == 0) {
                         stringResource(R.string.reports_recurring_obligations_are_not_mapped)
                     } else {
-                        "$activeRecurringCount recurring obligation${if (activeRecurringCount == 1) "" else "s"} mapped"
+                        Strings.plural(R.plurals.reports_recurring_mapped, activeRecurringCount)
                     },
                     detail = if (activeRecurringCount == 0) {
                         stringResource(R.string.reports_add_regular_bills_or_income)
@@ -450,6 +452,6 @@ private fun ReportNavigationCard(
 }
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

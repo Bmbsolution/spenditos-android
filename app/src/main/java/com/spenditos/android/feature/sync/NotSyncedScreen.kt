@@ -148,7 +148,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
         AlertDialog(
             onDismissRequest = { confirmDiscard = null },
             title = { Text(stringResource(R.string.sync_discard_this_saved_transaction), style = IosText.headline) },
-            text = { Text("$description will be removed from this device and cannot be retried.", style = IosText.body) },
+            text = { Text(stringResource(R.string.sync_will_be_removed, description), style = IosText.body) },
             confirmButton = { TextButton(onClick = { viewModel.discard(id); confirmDiscard = null }) { Text(stringResource(R.string.common_discard), color = IosColors.expense) } },
             dismissButton = { TextButton(onClick = { confirmDiscard = null }) { Text(stringResource(R.string.common_cancel)) } },
         )

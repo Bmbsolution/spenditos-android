@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.background
@@ -85,7 +86,7 @@ fun MonthComparisonScreen(
                         .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
                 ) {
                     ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                         subtitle = comparisonRangeLabel(state.month, locale),
                         tag = "reports.comparison.month",
                         onPrevious = viewModel::previousMonth,
@@ -105,7 +106,7 @@ fun MonthComparisonScreen(
                 ) {
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = comparisonRangeLabel(state.month, locale),
                             tag = "reports.comparison.month",
                             onPrevious = viewModel::previousMonth,
@@ -124,7 +125,7 @@ fun MonthComparisonScreen(
                             GlassCard(modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
                                     Text(
-                                        "Weekly ${if (showIncome) "Income" else "Expenses"}",
+                                        if (showIncome) stringResource(R.string.reports_weekly_income) else stringResource(R.string.reports_weekly_expenses),
                                         style = IosText.headline,
                                         color = IosColors.textPrimary,
                                     )
@@ -134,8 +135,8 @@ fun MonthComparisonScreen(
                                         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                                     ) {
                                         val metricColor = if (showIncome) LocalFinanceColors.current.income else LocalFinanceColors.current.expense
-                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
-                                        ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
+                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(LocalizedDate.formatter("MMMM yyyy", locale)))
+                                        ChartLegendDot(metricColor, state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)))
                                     }
                                 }
                             }
@@ -235,7 +236,7 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
 }
 
 private fun comparisonRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     val previous = month.minusMonths(1)
     return "${previous.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

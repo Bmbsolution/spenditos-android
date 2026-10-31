@@ -210,7 +210,7 @@ fun DownloadDataScreen(
                         modifier = Modifier.testTag("export.run"),
                     )
                     Text(
-                        "CSV file · up to 2 years at a time",
+                        stringResource(R.string.export_csv_file_up_to_2_years),
                         style = IosText.caption,
                         color = IosColors.textTertiary,
                         textAlign = TextAlign.Center,

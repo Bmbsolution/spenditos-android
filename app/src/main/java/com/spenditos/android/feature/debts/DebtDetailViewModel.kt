@@ -109,7 +109,7 @@ data class DebtDetailUiState(
         get() {
             val plan = plan ?: return null
             val paid = max(0.0, plan.debt.startingBalance - plan.summary.balance)
-            return "${money(paid)} of ${money(plan.debt.startingBalance)} paid off"
+            return Strings.get(R.string.debts_paid_of_total, money(paid), money(plan.debt.startingBalance))
         }
 
     /** "40%". Rounds down so a nearly paid debt never reads 100%. */
@@ -168,9 +168,9 @@ data class DebtDetailUiState(
             if (isPaidOff || projection.neverPaysOff || projection.paymentsLeft <= 0) return null
             val count = projection.paymentsLeft
             val last = projection.lastPaymentAmount?.let { money(it) }
-            if (count == 1) return if (last != null) "1 payment left, $last" else "1 payment left"
-            if (last == null) return "$count payments left"
-            return "$count payments left, the last one $last"
+            if (count == 1) return if (last != null) Strings.get(R.string.debts_one_payment_left_last, last) else Strings.get(R.string.debts_one_payment_left)
+            if (last == null) return Strings.get(R.string.debts_payments_left, count)
+            return Strings.get(R.string.debts_payments_left_last, count, last)
         }
 
     // endregion
@@ -183,7 +183,7 @@ data class DebtDetailUiState(
         get() {
             val apr = debt?.apr ?: return null
             val text = BigDecimal(apr).round(MathContext(6)).stripTrailingZeros().toPlainString()
-            return "$text% a year"
+            return Strings.get(R.string.debts_percent_a_year, text)
         }
 
     val interestSoFarText: String?

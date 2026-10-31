@@ -12,8 +12,8 @@ import java.util.Locale
 object PulseCopy {
     /** [money] formats a positive amount in the user's currency. */
     fun reason(status: CashFlowStatus, locale: Locale, money: (BigDecimal) -> String): String {
-        fun perDay(amount: BigDecimal) = "${money(amount)} a day"
-        fun day(date: LocalDate) = date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+        fun perDay(amount: BigDecimal) = Strings.get(R.string.home_amount_per_day, money(amount))
+        fun day(date: LocalDate) = date.format(com.spenditos.android.core.i18n.LocalizedDate.formatter("MMM d", locale))
         return when (status.state) {
             CashFlowStatus.State.SETUP ->
                 if (status.spent.signum() > 0) {
@@ -22,12 +22,12 @@ object PulseCopy {
                     Strings.get(R.string.home_add_your_income_and_log)
                 }
             CashFlowStatus.State.OVER ->
-                "Spending and bills due are ${money(status.leftAfterBills.negate())} more than this month's income${if (status.carriedIn.signum() > 0) " and what you carried in" else ""}."
+                if (status.carriedIn.signum() > 0) Strings.get(R.string.home_over_income_carried, money(status.leftAfterBills.negate())) else Strings.get(R.string.home_over_income, money(status.leftAfterBills.negate()))
             CashFlowStatus.State.TIGHT, CashFlowStatus.State.WATCH ->
                 when {
                     // A pace from the first few days (one big purchase) isn't a pace.
                     status.daysElapsed < 7 ->
-                        "${money(status.leftAfterBills)} left after bills for ${days(status.daysRemaining)}, about ${perDay(status.affordablePace)}."
+                        Strings.get(R.string.home_left_after_bills_for_days, money(status.leftAfterBills), days(status.daysRemaining), perDay(status.affordablePace))
                     status.state == CashFlowStatus.State.TIGHT -> {
                         val runOut = status.runOutDate(status.today)
                         if (runOut != null) {
@@ -43,11 +43,11 @@ object PulseCopy {
         }
     }
 
-    fun days(count: Int): String = if (count == 1) "1 day" else "$count days"
+    fun days(count: Int): String = Strings.plural(R.plurals.home_days_count, count)
 
     /** Whole percent, but never "0%" while something is left. */
     fun percentLabel(share: BigDecimal): String {
-        if (share.signum() > 0 && share < BigDecimal("0.01")) return "<1%"
-        return "${share.multiply(BigDecimal(100)).setScale(0, java.math.RoundingMode.HALF_UP).toInt()}%"
+        if (share.signum() > 0 && share < BigDecimal("0.01")) return Strings.get(R.string.home_percent_under_one)
+        return java.text.NumberFormat.getPercentInstance(Locale.getDefault()).apply { maximumFractionDigits = 0 }.format(share.setScale(2, java.math.RoundingMode.HALF_UP).toDouble())
     }
 }

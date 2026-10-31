@@ -223,7 +223,7 @@ private fun HeroCard(state: DebtDetailUiState) {
                 Text(stringResource(R.string.debts_left_to_pay), style = IosText.subheadline, color = IosColors.textSecondary)
                 Text(
                     state.balanceText,
-                    Modifier.semantics { contentDescription = "${state.balanceText} left to pay" }.testTag("debt.balance"),
+                    Modifier.semantics { contentDescription = Strings.get(R.string.debts_balance_left_to_pay, state.balanceText) }.testTag("debt.balance"),
                     style = IosText.rounded(34, FontWeight.Bold),
                     color = IosColors.textPrimary,
                     maxLines = 1,
@@ -328,7 +328,7 @@ private fun WhatIfCard(state: DebtDetailUiState, viewModel: DebtDetailViewModel)
             if (newPayment != null && summary != null && frequency != null) {
                 Text(
                     if (state.extra > 0) {
-                        "${DebtFormat.paymentLine(newPayment, frequency, summary.repeatInterval, state.currency)} · ${DebtFormat.money(state.extra, state.currency)} extra"
+                        stringResource(R.string.debts_payment_with_extra, DebtFormat.paymentLine(newPayment, frequency, summary.repeatInterval, state.currency), DebtFormat.money(state.extra, state.currency))
                     } else {
                         stringResource(R.string.debts_slide_to_add_to_each)
                     },
@@ -346,7 +346,7 @@ private fun WhatIfCard(state: DebtDetailUiState, viewModel: DebtDetailViewModel)
                 colors = SliderDefaults.colors(thumbColor = IosColors.spendOrange, activeTrackColor = IosColors.spendOrange),
                 modifier = Modifier.fillMaxWidth().testTag("debt.whatif.slider").semantics {
                     contentDescription = Strings.get(R.string.debts_extra_amount_each_payment)
-                    stateDescription = if (state.extra > 0) "${DebtFormat.money(state.extra, state.currency)} extra" else Strings.get(R.string.debts_no_extra)
+                    stateDescription = if (state.extra > 0) Strings.get(R.string.debts_amount_extra, DebtFormat.money(state.extra, state.currency)) else Strings.get(R.string.debts_no_extra)
                 },
             )
 

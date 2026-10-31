@@ -36,6 +36,7 @@ object NetworkModule {
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .addInterceptor(TraceHeadersInterceptor())
+        .addInterceptor(AcceptLanguageInterceptor())
         .apply {
             if (environment.isDebug) {
                 // BASIC = method, path, status, timing. Never bodies (financial data) and

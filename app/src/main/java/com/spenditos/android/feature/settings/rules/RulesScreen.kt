@@ -438,7 +438,7 @@ private fun AddRuleSheet(
                         modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("rule-add-merchant"),
                         decorationBox = { inner ->
                             Box {
-                                if (merchant.isEmpty()) Text("e.g. Tim Hortons, Uber, Amazon", style = IosText.body, color = IosColors.textTertiary)
+                                if (merchant.isEmpty()) Text(stringResource(R.string.rules_merchant_placeholder), style = IosText.body, color = IosColors.textTertiary)
                                 inner()
                             }
                         },

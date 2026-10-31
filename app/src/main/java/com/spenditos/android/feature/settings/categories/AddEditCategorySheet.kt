@@ -443,7 +443,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
 private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
     var searchText by remember { mutableStateOf("") }
     var selectedGroup by remember { mutableStateOf<String?>(null) }
-    val groups = listOf(stringResource(R.string.common_all), stringResource(R.string.settings_money), stringResource(R.string.settings_work_tech), stringResource(R.string.settings_food_drink), stringResource(R.string.settings_home_life), stringResource(R.string.settings_transport), stringResource(R.string.settings_shopping), stringResource(R.string.settings_health_care), stringResource(R.string.settings_entertainment), stringResource(R.string.settings_people_learning), stringResource(R.string.settings_nature_pets), stringResource(R.string.settings_symbols))
+    val groups = listOf("All", "Money", "Work & Tech", "Food & Drink", "Home & Life", "Transport", "Shopping", "Health & Care", "Entertainment", "People & Learning", "Nature & Pets", "Symbols")
     val query = searchText.trim()
     val icons = iconLibrary.filter { item ->
         (selectedGroup == null || item.group == selectedGroup) &&
@@ -510,7 +510,7 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) IosColors.spendOrange else IosColors.textSecondary, modifier = Modifier.size(14.dp))
-                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
+                        Text(iconGroupLabel(group), style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
                     }
                 }
             }
@@ -520,7 +520,7 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                     IconBrowserSection(stringResource(R.string.settings_all_icons), iconLibrary.map { it.value }.distinct(), selectedIcon, onSelect)
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(selectedGroup ?: stringResource(R.string.settings_search_results), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                        Text(selectedGroup?.let { iconGroupLabel(it) } ?: stringResource(R.string.settings_search_results), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
                         Text(icons.map { it.value }.distinct().size.toString(), style = IosText.caption, color = IosColors.textTertiary)
                     }
                     if (icons.isEmpty()) {
@@ -562,3 +562,20 @@ private fun SheetSectionLabel(text: String) {
 }
 
 private fun categorySwatch(hex: String): Color = Color(runCatching { android.graphics.Color.parseColor(hex) }.getOrDefault(android.graphics.Color.GRAY))
+
+/** Localized name of an icon group; the English [group] id is what the icon library is keyed by. */
+@androidx.compose.runtime.Composable
+private fun iconGroupLabel(group: String): String = when (group) {
+    "All" -> stringResource(R.string.common_all)
+    "Money" -> stringResource(R.string.settings_money)
+    "Work & Tech" -> stringResource(R.string.settings_work_tech)
+    "Food & Drink" -> stringResource(R.string.settings_food_drink)
+    "Home & Life" -> stringResource(R.string.settings_home_life)
+    "Transport" -> stringResource(R.string.settings_transport)
+    "Shopping" -> stringResource(R.string.settings_shopping)
+    "Health & Care" -> stringResource(R.string.settings_health_care)
+    "Entertainment" -> stringResource(R.string.settings_entertainment)
+    "People & Learning" -> stringResource(R.string.settings_people_learning)
+    "Nature & Pets" -> stringResource(R.string.settings_nature_pets)
+    else -> stringResource(R.string.settings_symbols)
+}

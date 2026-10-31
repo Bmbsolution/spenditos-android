@@ -280,7 +280,7 @@ private fun MediumWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                 WidgetIcon(if (snapshot.isStormMode) "storm" else "flame", if (snapshot.isStormMode) WidgetRed else WidgetOrange, 16.dp)
                 Spacer(GlanceModifier.width(4.dp))
                 Text(
-                    if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else "${snapshot.streakDays} day streak",
+                    if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
                     style = TextStyle(color = primary, fontSize = 15.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
@@ -339,7 +339,7 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
             WidgetIcon(if (snapshot.isStormMode) "storm" else "flame", if (snapshot.isStormMode) WidgetRed else WidgetOrange, 20.dp)
             Spacer(GlanceModifier.width(6.dp))
             Text(
-                if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else "${snapshot.streakDays} Day Streak",
+                if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
                 style = TextStyle(
                     color = androidx.glance.unit.ColorProvider(if (snapshot.isStormMode) WidgetRed else WidgetOrange),
                     fontSize = 17.sp,

@@ -68,6 +68,8 @@ import com.spenditos.android.ui.theme.Spacing
 
 data class CurrencyOption(val code: String, val name: String)
 
+private fun localizedName(option: CurrencyOption): String = com.spenditos.android.core.i18n.CurrencyNames.display(option.code, option.name)
+
 private val popularCurrencyCodes = listOf("USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF", "CNY", "INR")
 
 private val currencyOptions = listOf(
@@ -342,7 +344,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                 }
                 val query = currencySearch.trim()
                 val matches = currencyOptions.filter {
-                    it.code.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true)
+                    it.code.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true) || localizedName(it).contains(query, ignoreCase = true)
                 }
                 LazyColumn(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
                     if (query.isEmpty()) {
@@ -385,7 +387,7 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Text(option.code, style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.width(50.dp))
-        Text(option.name, style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+        Text(localizedName(option), style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
         if (option.code == selectedCode) Icon(SfSymbols.icon("checkmark"), contentDescription = null, tint = IosColors.spendOrange)
     }
 }

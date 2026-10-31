@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.home.insights
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -90,7 +91,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                         style = IosText.rounded(17, FontWeight.Bold),
                         color = if (insights.monthEndGap.signum() >= 0) inColor else IosColors.expense,
                     )
-                    Text("left at month end", style = IosText.caption2, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_left_at_month_end), style = IosText.caption2, color = IosColors.textSecondary)
                 }
             }
 
@@ -252,12 +253,12 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                             cap = StrokeCap.Round,
                         )
                     }
-                    Text("scheduled", style = IosText.caption2, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.home_scheduled), style = IosText.caption2, color = IosColors.textTertiary)
                 }
             }
 
             if (shortfall != null) {
-                val until = if (shortfall.end == insights.monthEnd) "through month end" else "until ${shortfall.end.plusDays(1).format(dayFormatter(locale))}"
+                val until = if (shortfall.end == insights.monthEnd) Strings.get(R.string.home_through_month_end) else Strings.get(R.string.home_until_date, shortfall.end.plusDays(1).format(dayFormatter(locale)))
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(OutColor.copy(alpha = 0.08f)).padding(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -326,7 +327,7 @@ private fun riverDescription(insights: HomeInsights, currency: String, locale: L
     }
     val upcoming = insights.pins.filterNot { it.isPast }
     if (upcoming.isNotEmpty()) {
-        parts += "Coming up: ${upcoming.joinToString { "${it.name}, ${Money.format(it.amount.toDouble(), currency, locale)} on ${it.date.format(dayFormatter(locale))}" }}."
+        parts += Strings.get(R.string.home_coming_up_list, upcoming.joinToString { Strings.get(R.string.home_coming_up_item, it.name, Money.format(it.amount.toDouble(), currency, locale), it.date.format(dayFormatter(locale))) })
     }
     return parts.joinToString(" ")
 }
@@ -341,4 +342,4 @@ private fun compactCurrency(amount: Double, currency: String, locale: Locale): S
 private fun signedAmount(amount: BigDecimal, currency: String, locale: Locale): String =
     if (amount.signum() < 0) "−${Money.format(amount.abs().toDouble(), currency, locale)}" else Money.format(amount.toDouble(), currency, locale)
 
-private fun dayFormatter(locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d", locale)
+private fun dayFormatter(locale: Locale): DateTimeFormatter = LocalizedDate.formatter("MMM d", locale)

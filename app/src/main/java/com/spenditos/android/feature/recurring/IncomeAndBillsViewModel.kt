@@ -176,13 +176,13 @@ class IncomeAndBillsViewModel @Inject constructor(
     // Lifecycle (#403)
 
     fun pause(template: RecurringTemplate) = lifecycle(
-        text = "${template.description} paused",
+        text = Strings.get(R.string.recurring_x_paused, template.description),
         action = { recurring.pause(template.id) },
         undo = { recurring.resume(template.id) },
     )
 
     fun resume(template: RecurringTemplate) = lifecycle(
-        text = "${template.description} resumed",
+        text = Strings.get(R.string.recurring_x_resumed, template.description),
         action = { recurring.resume(template.id) },
         undo = { recurring.pause(template.id) },
     )
@@ -199,7 +199,7 @@ class IncomeAndBillsViewModel @Inject constructor(
         if (oneMore && next != null && !nextIsThisMonth) {
             val previous = template.occurrencesRemaining
             lifecycle(
-                text = "${template.description} ends after ${BillText.monthDay(next)}",
+                text = Strings.get(R.string.recurring_x_ends_after, template.description, BillText.monthDay(next)),
                 action = { recurring.endAfterNextPayment(template.id) },
                 undo = { recurring.update(template.id, BillLifecycleRequests.restoreOccurrences(previous)) },
             )
@@ -208,14 +208,14 @@ class IncomeAndBillsViewModel @Inject constructor(
 
         val wasPaused = template.lifecycle == BillLifecycle.PAUSED
         lifecycle(
-            text = "${template.description} ended",
+            text = Strings.get(R.string.recurring_x_ended, template.description),
             action = { recurring.end(template.id, keepUpcoming = oneMore) },
             undo = { if (wasPaused) recurring.pause(template.id) else recurring.resume(template.id) },
         )
     }
 
     fun startAgain(template: RecurringTemplate, nextDate: LocalDate) = lifecycle(
-        text = "${template.description} started again",
+        text = Strings.get(R.string.recurring_x_started_again, template.description),
         action = { recurring.startAgain(template.id, nextDate) },
         undo = null,
     )

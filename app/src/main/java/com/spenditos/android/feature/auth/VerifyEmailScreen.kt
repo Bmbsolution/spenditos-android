@@ -156,7 +156,7 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
         decorationBox = { innerTextField ->
             Box(contentAlignment = Alignment.Center) {
                 Row(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "6-digit verification code" },
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = Strings.get(R.string.auth_six_digit_verification_code) },
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     repeat(6) { index ->

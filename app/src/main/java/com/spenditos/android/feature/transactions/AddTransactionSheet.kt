@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.LocalizedDate
 import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
@@ -442,7 +443,7 @@ fun AddTransactionSheet(
     if (state.billChoices.isNotEmpty()) {
         val choices = state.billChoices
         val title = if (choices.size == 1) {
-            val kind = if (state.type == EntryType.INCOME) "income" else "bill"
+            val kind = if (state.type == EntryType.INCOME) stringResource(R.string.common_noun_income) else stringResource(R.string.common_noun_bill)
             stringResource(R.string.transactions_is_this_your, choices.first().billName, kind)
         } else if (state.type == EntryType.INCOME) stringResource(R.string.transactions_which_income_is_this) else stringResource(R.string.transactions_which_bill_is_this)
         AlertDialog(
@@ -473,7 +474,7 @@ fun AddTransactionSheet(
             title = { Text(stringResource(R.string.transactions_you_already_have, bill.description)) },
             text = {
                 Text(
-                    "${bill.description} · ${moneyText(bill.amount, state.currency)} · next ${formatShortDate(bill.firstOccurrenceDate)}. " +
+                    stringResource(R.string.transactions_bill_summary_next, bill.description, moneyText(bill.amount, state.currency), formatShortDate(bill.firstOccurrenceDate)) + " " +
                         stringResource(R.string.transactions_link_this_payment_to_it),
                 )
             },
@@ -683,7 +684,7 @@ private fun UndoBanner(
     ) {
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(20.dp))
         Text(
-            "Saved " + description.ifEmpty { "transaction" } + " · " + moneyText(amount, currency) + " · $addedCount added",
+            stringResource(R.string.transactions_saved_summary, description.ifEmpty { stringResource(R.string.common_transaction).lowercase() }, moneyText(amount, currency), addedCount),
             style = IosText.subheadline,
             color = IosColors.textPrimary,
             modifier = Modifier.weight(1f),
@@ -1457,7 +1458,7 @@ private fun moneyText(amount: Double, currency: String): String = runCatching {
 
 private fun formatShortDate(iso: String): String =
     runCatching {
-        LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
+        LocalDate.parse(iso).format(LocalizedDate.formatter("MMM d", Locale.getDefault()))
     }.getOrDefault(iso)
 
 private fun candidateLabel(candidate: BillCandidate, currency: String): String =
@@ -1466,8 +1467,7 @@ private fun candidateLabel(candidate: BillCandidate, currency: String): String =
 private fun billChoiceMessage(choices: List<BillCandidate>, currency: String): String {
     if (choices.size == 1) {
         val only = choices.first()
-        return only.billName + " · " + moneyText(only.estimate, currency) + " · due " +
-            formatShortDate(only.dueDate) + ". Using it replaces the estimate, so it isn't counted twice."
+        return Strings.get(R.string.transactions_bill_choice_message, only.billName, moneyText(only.estimate, currency), formatShortDate(only.dueDate))
     }
     return Strings.get(R.string.transactions_it_looks_like_more_than)
 }

@@ -153,7 +153,6 @@ fun OnboardingScreen(
                         state = state,
                         onCountryChange = viewModel::onCountryChange,
                         onCurrencyChange = viewModel::onCurrencyChange,
-                        onLanguageChange = viewModel::onLanguageChange,
                         onRetry = viewModel::retry,
                         onShowCurrencyPicker = { showCurrencyPicker = true },
                     )
@@ -316,7 +315,6 @@ private fun PreferencesPage(
     state: OnboardingUiState,
     onCountryChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit,
-    onLanguageChange: (String) -> Unit,
     onRetry: () -> Unit,
     onShowCurrencyPicker: () -> Unit,
 ) {
@@ -364,17 +362,6 @@ private fun PreferencesPage(
                             Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.dp))
                         }
                     }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text(stringResource(R.string.onboarding_language), style = IosText.subheadline, color = IosColors.textSecondary)
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("onboarding.languageOptions"),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                ) {
-                    LanguageChip("en", stringResource(R.string.onboarding_english), state.language == "en", onLanguageChange)
-                    LanguageChip("fr", "Français", state.language == "fr", onLanguageChange)
                 }
             }
 
@@ -469,20 +456,6 @@ private fun CurrencyChoiceCard(option: CurrencyOption, selected: Boolean, onClic
 }
 
 @Composable
-private fun LanguageChip(code: String, label: String, selected: Boolean, onLanguageChange: (String) -> Unit) {
-    val shape = RoundedCornerShape(Radius.m)
-    Box(
-        Modifier.clip(shape).background(if (selected) IosColors.spendOrange else MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, if (selected) IosColors.spendOrange else IosColors.separator.copy(alpha = 0.55f), shape)
-            .clickable(role = Role.Button) { onLanguageChange(code) }.semantics { this.selected = selected }
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .testTag("onboarding.language.$code"),
-    ) {
-        Text(label, style = IosText.subheadline.w(FontWeight.Bold), color = if (selected) Color.White else IosColors.textPrimary)
-    }
-}
-
-@Composable
 private fun ReadyPage(state: OnboardingUiState) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.screen),
@@ -518,7 +491,7 @@ private fun ReadyPage(state: OnboardingUiState) {
         }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(Spacing.m)) {
             SummaryRow(icon = "dollarsign.circle", text = stringResource(R.string.onboarding_currency, state.currency))
-            SummaryRow(icon = "square.grid.2x2", text = "${OnboardingData.categorySeeds.size} categories ready")
+            SummaryRow(icon = "square.grid.2x2", text = Strings.plural(R.plurals.onboarding_categories_ready, OnboardingData.categorySeeds.size))
         }
         Spacer(Modifier.weight(1f))
     }
@@ -704,7 +677,7 @@ private fun currencySymbol(code: String): String = when (code) {
     "JPY" -> "¥"
     "CAD" -> "C$"
     "AUD" -> "A$"
-    "CHF" -> Strings.get(R.string.onboarding_fr)
+    "CHF" -> "Fr"
     "INR" -> "₹"
     "SEK", "NOK", "DKK" -> "kr"
     "NZD" -> "NZ$"
@@ -714,32 +687,11 @@ private fun currencySymbol(code: String): String = when (code) {
     else -> code
 }
 
-private fun currencyName(code: String): String = when (code) {
-    "USD" -> "US Dollar"
-    "EUR" -> Strings.get(R.string.onboarding_euro)
-    "GBP" -> Strings.get(R.string.onboarding_british_pound)
-    "CAD" -> Strings.get(R.string.onboarding_canadian_dollar)
-    "AUD" -> Strings.get(R.string.onboarding_australian_dollar)
-    "JPY" -> Strings.get(R.string.onboarding_japanese_yen)
-    "CHF" -> Strings.get(R.string.onboarding_swiss_franc)
-    "CNY" -> Strings.get(R.string.onboarding_chinese_yuan)
-    "INR" -> Strings.get(R.string.onboarding_indian_rupee)
-    "MXN" -> Strings.get(R.string.onboarding_mexican_peso)
-    "BRL" -> Strings.get(R.string.onboarding_brazilian_real)
-    "ZAR" -> Strings.get(R.string.onboarding_south_african_rand)
-    "SEK" -> Strings.get(R.string.onboarding_swedish_krona)
-    "NOK" -> Strings.get(R.string.onboarding_norwegian_krone)
-    "DKK" -> Strings.get(R.string.onboarding_danish_krone)
-    "NZD" -> Strings.get(R.string.onboarding_new_zealand_dollar)
-    "SGD" -> Strings.get(R.string.onboarding_singapore_dollar)
-    "HKD" -> Strings.get(R.string.onboarding_hong_kong_dollar)
-    "XOF" -> Strings.get(R.string.onboarding_west_african_cfa)
-    "XAF" -> Strings.get(R.string.onboarding_central_african_cfa)
-    else -> runCatching { Currency.getInstance(code).getDisplayName(Locale.getDefault()) }.getOrDefault(code)
-}
+private fun currencyName(code: String): String =
+    com.spenditos.android.core.i18n.CurrencyNames.display(code, if (code == "USD") "US Dollar" else code)
 
 private fun currencyPickerName(code: String): String = when (code) {
     "USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF", "CNY", "INR", "MXN", "BRL", "ZAR",
     "SEK", "NOK", "DKK", "NZD", "SGD", "HKD", "XOF", "XAF" -> currencyName(code)
-    else -> runCatching { Currency.getInstance(code).getDisplayName(Locale.US) }.getOrDefault(code)
+    else -> com.spenditos.android.core.i18n.CurrencyNames.display(code)
 }

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="a11y_collapse">collapse</string>
+    <string name="a11y_collapsed">collapsed</string>
+    <string name="a11y_expand">expand</string>
+    <string name="a11y_expanded">expanded</string>
+    <string name="a11y_requirement_met">met</string>
+    <string name="a11y_requirement_not_met">not met</string>
+    <string name="a11y_strength_fair">fair</string>
+    <string name="a11y_strength_strong">strong</string>
+    <string name="a11y_strength_weak">weak</string>
     <string name="app_add_transaction">Add transaction</string>
     <string name="app_email_confirmed_sign_in_to">Email confirmed. Sign in to continue.</string>
     <string name="app_home">Home</string>
@@ -34,6 +43,8 @@
     <string name="auth_reset_password">Reset Password</string>
     <string name="auth_send_code">Send Code</string>
     <string name="auth_sign_in">Sign In</string>
+    <string name="auth_six_digit_code">6-digit code</string>
+    <string name="auth_six_digit_verification_code">6-digit verification code</string>
     <string name="auth_something_went_wrong_please_try">Something went wrong. Please try again.</string>
     <string name="auth_special_character">Special character</string>
     <string name="auth_spenditos">Spenditos</string>
@@ -66,6 +77,7 @@
     <string name="capture_expense">− Expense</string>
     <string name="capture_find_transactions">Find transactions</string>
     <string name="capture_finding_transactions">Finding transactions…</string>
+    <string name="capture_include_item">Include %1$s</string>
     <string name="capture_income">+ Income</string>
     <string name="capture_loading_categories">Loading categories…</string>
     <string name="capture_microphone_access_required">Microphone Access Required</string>
@@ -82,7 +94,6 @@
     <string name="capture_retry_to_confirm_this_save">Retry to confirm this save before editing.</string>
     <string name="capture_saved_transactions">Saved %1$s transactions</string>
     <string name="capture_saving_transactions">Saving transactions…</string>
-    <string name="capture_select_a_category_for_before">Select a category for %1$s %2$s before saving</string>
     <string name="capture_select_category">Select category</string>
     <string name="capture_skipped_by_your_rule">Skipped by your rule</string>
     <string name="capture_spent_25_at_starbucks_for">Spent $25 at Starbucks for coffee</string>
@@ -119,6 +130,7 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_categories">Categories</string>
     <string name="common_category">Category</string>
+    <string name="common_category_already_exists">\"%1$s\" already exists.</string>
     <string name="common_clear_search">Clear search</string>
     <string name="common_close">Close</string>
     <string name="common_continue">Continue</string>
@@ -157,6 +169,8 @@
     <string name="common_name">Name</string>
     <string name="common_name_must_be_100_characters">Name must be 100 characters or fewer.</string>
     <string name="common_no_categories_found">No categories found</string>
+    <string name="common_noun_bill">bill</string>
+    <string name="common_noun_income">income</string>
     <string name="common_on_track">On track</string>
     <string name="common_open_settings">Open Settings</string>
     <string name="common_other">Other</string>
@@ -185,6 +199,7 @@
     <string name="common_spending_trend">Spending Trend</string>
     <string name="common_spenditos_pro">Spenditos Pro</string>
     <string name="common_spent">Spent</string>
+    <string name="common_this">This</string>
     <string name="common_this_month">This month</string>
     <string name="common_to">To</string>
     <string name="common_today">Today</string>
@@ -257,9 +272,13 @@
     <string name="debts_add_extra_payment">Add extra payment</string>
     <string name="debts_add_how_much_you_pay">Add how much you pay, how often, and the date of the next payment.</string>
     <string name="debts_add_what_you_owe_pick">Add what you owe, pick a payment, and see when you\'ll be done.</string>
+    <string name="debts_added_as_payment_on">Added to your transactions as a payment on %1$s.</string>
     <string name="debts_all_paid_off">All paid off</string>
+    <string name="debts_amount_extra">%1$s extra</string>
+    <string name="debts_amount_owed">%1$s owed</string>
     <string name="debts_balance">Balance %1$s</string>
     <string name="debts_balance_corrected">Balance corrected</string>
+    <string name="debts_balance_left_to_pay">%1$s left to pay</string>
     <string name="debts_can_t_reach_spenditos_right">Can\'t reach Spenditos right now. Check your connection and try again.</string>
     <string name="debts_charges_interest">Charges interest</string>
     <string name="debts_check_the_amounts_and_dates">Check the amounts and dates and try again.</string>
@@ -269,6 +288,7 @@
     <string name="debts_delete_this_debt_2">Delete this debt</string>
     <string name="debts_discard_this_debt">Discard this debt?</string>
     <string name="debts_done_by">Done by</string>
+    <string name="debts_done_by_inline">done by %1$s</string>
     <string name="debts_each_payment">Each payment</string>
     <string name="debts_enter_a_rate_above_0">Enter a rate above 0 and below 100</string>
     <string name="debts_enter_how_much_you_owe">Enter how much you owe</string>
@@ -288,7 +308,9 @@
     <string name="debts_extra_payment_added">Extra payment added</string>
     <string name="debts_give_this_debt_a_name">Give this debt a name</string>
     <string name="debts_how_often">How often</string>
+    <string name="debts_i_owe_today">I owe today</string>
     <string name="debts_includes_interest">Includes %1$s interest</string>
+    <string name="debts_interest_approx">interest ≈ %1$s</string>
     <string name="debts_interest_rate">Interest rate</string>
     <string name="debts_interest_rate_a_year" formatted="false">Interest rate (% a year)</string>
     <string name="debts_interest_rate_percent_a_year">Interest rate, percent a year</string>
@@ -296,7 +318,11 @@
     <string name="debts_interest_so_far">Interest so far</string>
     <string name="debts_interest_still_to_come">Interest still to come</string>
     <string name="debts_its_payments_are_removed_from">Its payments are removed from your plan. Payments you already made stay in your transactions.</string>
+    <string name="debts_left_of">%1$s left of %2$s</string>
     <string name="debts_left_to_pay">Left to pay</string>
+    <string name="debts_n_payments">%1$s payments</string>
+    <string name="debts_n_payments_last">%1$s payments, last one %2$s</string>
+    <string name="debts_name_placeholder">e.g., Car loan, Laptop from Sam</string>
     <string name="debts_never_paid_off_pay_more">Never paid off — pay more each time</string>
     <string name="debts_new_payoff_date">New payoff date</string>
     <string name="debts_next_payment">Next payment</string>
@@ -305,8 +331,12 @@
     <string name="debts_no_payments_are_planned_record">No payments are planned. Record each payment when you make it.</string>
     <string name="debts_no_regular_payment_you_pay">No regular payment. You pay when you can.</string>
     <string name="debts_off_for_money_you_borrowed">Off for money you borrowed from a friend.</string>
+    <string name="debts_one_payment">1 payment</string>
+    <string name="debts_one_payment_left">1 payment left</string>
+    <string name="debts_one_payment_left_last">1 payment left, %1$s</string>
     <string name="debts_opens_a_form_to_add">Opens a form to add a debt</string>
     <string name="debts_opens_this_debt">Opens this debt</string>
+    <string name="debts_paid_of_total">%1$s of %2$s paid off</string>
     <string name="debts_paid_off">Paid off</string>
     <string name="debts_paid_off_by">Paid off by</string>
     <string name="debts_paid_off_by_2">Paid off by %1$s</string>
@@ -316,12 +346,29 @@
     <string name="debts_payment">Payment</string>
     <string name="debts_payment_too_low_to_finish">Payment too low to finish</string>
     <string name="debts_payment_updated">Payment updated</string>
+    <string name="debts_payment_with_extra">%1$s · %2$s extra</string>
     <string name="debts_payments_are_stopped_nothing_is">Payments are stopped. Nothing is scheduled for this debt.</string>
+    <string name="debts_payments_left">%1$s payments left</string>
+    <string name="debts_payments_left_last">%1$s payments left, the last one %2$s</string>
     <string name="debts_payments_sooner">Payments sooner</string>
     <string name="debts_payments_stopped">Payments stopped</string>
+    <string name="debts_percent_a_year">%1$s%% a year</string>
+    <string name="debts_percent_paid_off">%1$s percent paid off</string>
+    <string name="debts_period_day">/ day</string>
+    <string name="debts_period_every_n_days">every %1$s days</string>
+    <string name="debts_period_every_n_half_months">every %1$s half-months</string>
+    <string name="debts_period_every_n_months">every %1$s months</string>
+    <string name="debts_period_every_n_weeks">every %1$s weeks</string>
+    <string name="debts_period_every_n_years">every %1$s years</string>
+    <string name="debts_period_month">/ month</string>
+    <string name="debts_period_quarter">/ quarter</string>
+    <string name="debts_period_twice_a_month">twice a month</string>
+    <string name="debts_period_week">/ week</string>
+    <string name="debts_period_year">/ year</string>
     <string name="debts_pick_a_month_on_or">Pick a month on or after your next payment</string>
     <string name="debts_pick_today_or_a_later">Pick today or a later date</string>
     <string name="debts_plan_by">Plan by</string>
+    <string name="debts_progress_percent_paid_off">%1$s, %2$s percent paid off</string>
     <string name="debts_set_to">Set to %1$s</string>
     <string name="debts_sign_in_again_to_continue">Sign in again to continue.</string>
     <string name="debts_slide_to_add_to_each">Slide to add to each payment</string>
@@ -329,6 +376,7 @@
     <string name="debts_that_month_is_too_soon">That month is too soon. Pick a later month, or a payment you can make.</string>
     <string name="debts_the_category_for_this_debt">The category for this debt isn\'t available anymore. Pick another one and try again.</string>
     <string name="debts_the_date_can_t_be">The date can\'t be in the future.</string>
+    <string name="debts_this_debt">this debt</string>
     <string name="debts_this_debt_couldn_t_be">This debt couldn\'t be found. It may have been deleted.</string>
     <string name="debts_this_payment_is_too_low">This payment is too low to finish the debt. Pay more each time.</string>
     <string name="debts_unavailable">Unavailable</string>
@@ -346,6 +394,7 @@
     <string name="export_couldn_t_download_your_data">Couldn\'t download your data. Try again.</string>
     <string name="export_couldn_t_download_your_transactions">Couldn\'t download your transactions. Try again.</string>
     <string name="export_couldn_t_save_the_file">Couldn\'t save the file there. Try another location.</string>
+    <string name="export_csv_file_up_to_2_years">CSV file · up to 2 years at a time</string>
     <string name="export_download_failed">Download failed</string>
     <string name="export_download_full_copy">Download full copy</string>
     <string name="export_download_spreadsheet">Download spreadsheet</string>
@@ -369,8 +418,13 @@
     <string name="home_add_your_income">Add your income</string>
     <string name="home_add_your_income_and_log">Add your income and log a first expense. This card then shows what\'s left after bills.</string>
     <string name="home_after_bills_you_can_spend">After bills, you can spend about %1$s until %2$s.</string>
+    <string name="home_amount_per_day">%1$s a day</string>
+    <string name="home_approx_per_day">≈ %1$s a day</string>
     <string name="home_at_about_you_ll_run">At about %1$s, you\'ll run short around %2$s.</string>
     <string name="home_at_risk">At Risk</string>
+    <string name="home_avg_per_day">%1$s avg/day</string>
+    <string name="home_bill_due">%1$s due %2$s</string>
+    <string name="home_bills_and_everyday">%1$s bills · %2$s everyday</string>
     <string name="home_bills_left">Bills left</string>
     <string name="home_bills_paid">Bills paid</string>
     <string name="home_build_your_financial_picture">Build your financial picture</string>
@@ -378,9 +432,14 @@
     <string name="home_carried_in_from">Carried in %1$s from %2$s</string>
     <string name="home_carry_over">Carry over</string>
     <string name="home_coming_up">Coming up</string>
+    <string name="home_coming_up_item">%1$s, %2$s on %3$s</string>
+    <string name="home_coming_up_list">Coming up: %1$s.</string>
     <string name="home_couldn_t_refresh_home_pull">Couldn\'t refresh Home. Pull down to try again.</string>
     <string name="home_critical">Critical</string>
     <string name="home_d_left">%1$sd left</string>
+    <string name="home_days_and_date">days · %1$s</string>
+    <string name="home_due_today">today</string>
+    <string name="home_due_tomorrow">tomorrow</string>
     <string name="home_entries_dated_today_or_earlier">Entries dated today or earlier count as received or spent; later ones as expected or still to come. Bills are entries created from a bill in Plan › Bills.</string>
     <string name="home_everyday_spending">Everyday spending</string>
     <string name="home_everyday_spending_in_the_last">Everyday spending in the last 7 days: %1$s</string>
@@ -403,9 +462,15 @@
     <string name="home_last_7_days">Last 7 days</string>
     <string name="home_last_month_s_balance_you">Last month’s balance you chose to include</string>
     <string name="home_left_after_bills">Left after bills</string>
+    <string name="home_left_after_bills_for_days">%1$s left after bills for %2$s, about %3$s.</string>
+    <string name="home_left_at_month_end">left at month end</string>
+    <string name="home_less_than_one_percent" formatted="false">less than 1%</string>
     <string name="home_let_s_set_up_your">Let’s set up your month</string>
     <string name="home_log_a_few_expenses_to">Log a few expenses to see where your money goes.</string>
     <string name="home_money_coming_in_and_going">Money coming in and going out, with bills and income ahead</string>
+    <string name="home_month_ended_ahead">%1$s ended %2$s ahead.</string>
+    <string name="home_month_ended_short">%1$s ended %2$s short.</string>
+    <string name="home_month_shortfall_debt_name">%1$s shortfall</string>
     <string name="home_most_spent_on">Most spent on</string>
     <string name="home_needs_attention">Needs Attention</string>
     <string name="home_needs_attention_2">Needs attention</string>
@@ -418,19 +483,25 @@
     <string name="home_not_included_ended_ahead">Not included: %1$s ended %2$s ahead</string>
     <string name="home_not_needed">Not needed</string>
     <string name="home_not_tracked_ended_short">Not tracked: %1$s ended %2$s short</string>
+    <string name="home_of_income_left">of income left</string>
     <string name="home_out">Out</string>
     <string name="home_out_is_ahead_of_in">Out is ahead of in %1$s, by up to %2$s. That part comes from savings or what’s already in your account.</string>
     <string name="home_out_is_ahead_of_in_2">Out is ahead of in from %1$s through %2$s, by up to %3$s.</string>
+    <string name="home_over_income">Spending and bills due are %1$s more than this month\'s income.</string>
+    <string name="home_over_income_carried">Spending and bills due are %1$s more than this month\'s income and what you carried in.</string>
     <string name="home_overspending">Overspending</string>
+    <string name="home_percent_under_one" formatted="false">&lt;1%</string>
     <string name="home_recent_activity">Recent activity</string>
     <string name="home_recent_spending_direction">Recent spending direction</string>
     <string name="home_recommendations">Recommendations</string>
     <string name="home_remove_carried_in_amount">Remove carried-in amount</string>
     <string name="home_review_your_plan">Review your plan</string>
     <string name="home_savings_rate">Savings Rate</string>
+    <string name="home_scheduled">scheduled</string>
     <string name="home_score_breakdown">Score Breakdown</string>
     <string name="home_see_all">See all</string>
     <string name="home_see_the_math">See the math</string>
+    <string name="home_share_of_everyday">%1$s%% of everyday spending</string>
     <string name="home_short_after_bills">Short after bills</string>
     <string name="home_show_less">Show less</string>
     <string name="home_show_more">Show more</string>
@@ -443,10 +514,12 @@
     <string name="home_start_logging_income_and_expenses">Start logging income and expenses to build your health score.</string>
     <string name="home_that_s_of_this_month">That’s %1$s of this month’s income (%2$s).</string>
     <string name="home_the_orb_is_the_share">The orb is the share of this month’s income still left after spending and bills.</string>
+    <string name="home_through_month_end">through month end</string>
     <string name="home_tomorrow">Tomorrow</string>
     <string name="home_track_it_as_a_debt">Track it as a debt?</string>
     <string name="home_trim_a_day">Trim ≈ %1$s a day</string>
     <string name="home_two_steps_to_see_what">Two steps to see what’s left after bills.</string>
+    <string name="home_until_date">until %1$s</string>
     <string name="home_you_re_offline_connect_to">You\'re offline. Connect to the internet to answer this.</string>
     <string name="home_you_re_spending_about_keeps">You\'re spending about %1$s; %2$s keeps you on track.</string>
     <string name="home_you_re_spending_about_up">You\'re spending about %1$s. Up to %2$s keeps you on track.</string>
@@ -458,51 +531,54 @@
     <string name="lock_unlock_spenditos_to_continue">Unlock Spenditos to continue</string>
     <string name="lock_unlock_with_biometrics">Unlock with Biometrics</string>
     <string name="onboarding_all_currencies">All currencies</string>
-    <string name="onboarding_australian_dollar">Australian Dollar</string>
-    <string name="onboarding_brazilian_real">Brazilian Real</string>
-    <string name="onboarding_british_pound">British Pound</string>
     <string name="onboarding_build_streaks">Build Streaks</string>
-    <string name="onboarding_canadian_dollar">Canadian Dollar</string>
-    <string name="onboarding_central_african_cfa">Central African CFA</string>
     <string name="onboarding_checking_your_country">Checking your country…</string>
-    <string name="onboarding_chinese_yuan">Chinese Yuan</string>
     <string name="onboarding_couldn_t_check_your_country">Couldn\'t check your country. Retry or enter it below.</string>
     <string name="onboarding_couldn_t_finish_setup_please">Couldn\'t finish setup. Please retry.</string>
     <string name="onboarding_country_code">Country code</string>
     <string name="onboarding_currency">Currency: %1$s</string>
-    <string name="onboarding_danish_krone">Danish Krone</string>
     <string name="onboarding_detected_currency">Detected currency: %1$s</string>
-    <string name="onboarding_english">English</string>
     <string name="onboarding_enter_a_two_letter_country">Enter a two-letter country and three-letter currency code.</string>
     <string name="onboarding_enter_your_name_to_continue">Enter your name to continue.</string>
-    <string name="onboarding_euro">Euro</string>
-    <string name="onboarding_fr">Fr</string>
     <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_group_groceries_food">Groceries &amp; Food</string>
+    <string name="onboarding_group_housing_utilities">Housing &amp; Utilities</string>
+    <string name="onboarding_group_income">Income</string>
+    <string name="onboarding_group_miscellaneous">Miscellaneous</string>
+    <string name="onboarding_group_savings_debt">Savings &amp; Debt</string>
+    <string name="onboarding_group_subscriptions_entertainment">Subscriptions &amp; Entertainment</string>
+    <string name="onboarding_group_transportation">Transportation</string>
     <string name="onboarding_hit_your_goals">Hit Your Goals</string>
-    <string name="onboarding_hong_kong_dollar">Hong Kong Dollar</string>
-    <string name="onboarding_indian_rupee">Indian Rupee</string>
-    <string name="onboarding_japanese_yen">Japanese Yen</string>
-    <string name="onboarding_language">Language</string>
     <string name="onboarding_let_s_set_up_your">Let\'s set up your account in just a few quick steps.</string>
     <string name="onboarding_log_daily_to_build_habits">Log daily to build habits, earn XP, and unlock achievements.</string>
     <string name="onboarding_log_one_transaction_now_to">Log one transaction now to see your financial picture.</string>
-    <string name="onboarding_mexican_peso">Mexican Peso</string>
-    <string name="onboarding_new_zealand_dollar">New Zealand Dollar</string>
-    <string name="onboarding_norwegian_krone">Norwegian Krone</string>
     <string name="onboarding_ready_to_start">Ready to Start</string>
     <string name="onboarding_search_currencies">Search currencies</string>
     <string name="onboarding_see_where_your_money_goes">See where your money goes with beautiful charts and clear insights.</string>
+    <string name="onboarding_seed_car_maintenance">Car Maintenance</string>
+    <string name="onboarding_seed_coffee_snacks">Coffee &amp; Snacks</string>
+    <string name="onboarding_seed_debt_payments">Debt Payments</string>
+    <string name="onboarding_seed_eating_out">Eating Out</string>
+    <string name="onboarding_seed_entertainment">Entertainment</string>
+    <string name="onboarding_seed_freelance_side_income">Freelance / Side Income</string>
+    <string name="onboarding_seed_fuel_gas">Fuel / Gas</string>
+    <string name="onboarding_seed_groceries">Groceries</string>
+    <string name="onboarding_seed_health_medical">Health &amp; Medical</string>
+    <string name="onboarding_seed_internet">Internet</string>
+    <string name="onboarding_seed_miscellaneous">Miscellaneous</string>
+    <string name="onboarding_seed_personal_care">Personal Care</string>
+    <string name="onboarding_seed_public_transport">Public Transport</string>
+    <string name="onboarding_seed_rent_mortgage">Rent / Mortgage</string>
+    <string name="onboarding_seed_salary">Salary</string>
+    <string name="onboarding_seed_savings">Savings</string>
+    <string name="onboarding_seed_subscriptions">Subscriptions</string>
+    <string name="onboarding_seed_utilities">Utilities</string>
     <string name="onboarding_set_savings_targets_that_keep">Set savings targets that keep you motivated every day.</string>
     <string name="onboarding_set_your_preferences">Set your preferences</string>
-    <string name="onboarding_singapore_dollar">Singapore Dollar</string>
-    <string name="onboarding_south_african_rand">South African Rand</string>
-    <string name="onboarding_swedish_krona">Swedish Krona</string>
-    <string name="onboarding_swiss_franc">Swiss Franc</string>
     <string name="onboarding_this_is_shown_on_your">This is shown on your dashboard</string>
     <string name="onboarding_three_letter_code_such_as">Three-letter code, such as CAD</string>
     <string name="onboarding_track_your_spending">Track Your Spending</string>
     <string name="onboarding_two_letters_such_as_ca">Two letters, such as CA</string>
-    <string name="onboarding_west_african_cfa">West African CFA</string>
     <string name="onboarding_what_should_we_call_you">What should we call you?</string>
     <string name="onboarding_you_can_always_change_these">You can always change these later in Settings</string>
     <string name="onboarding_you_re_offline_check_your">You\'re offline. Check your country or retry.</string>
@@ -531,6 +607,17 @@
     <string name="plan_descriptions_can_have_up_to">Descriptions can have up to 200 characters.</string>
     <string name="plan_discard_this_draft">Discard this draft?</string>
     <string name="plan_draft">Draft</string>
+    <string name="plan_draft_a_deletion_has_an_invalid">A deletion has an invalid transaction id.</string>
+    <string name="plan_draft_a_draft_can_have_up">A draft can have up to 100 one-time items.</string>
+    <string name="plan_draft_a_draft_has_too_many">A draft has too many deletions.</string>
+    <string name="plan_draft_a_one_time_item_has">A one-time item has an invalid id.</string>
+    <string name="plan_draft_a_scheduled_change_is_empty">A scheduled change is empty.</string>
+    <string name="plan_draft_a_scheduled_change_must_target">A scheduled change must target this month.</string>
+    <string name="plan_draft_a_skip_must_target_this">A skip must target this month.</string>
+    <string name="plan_draft_a_transaction_can_only_be">A transaction can only be deleted once.</string>
+    <string name="plan_draft_a_transaction_cannot_have_a">A transaction cannot have a change and a deletion.</string>
+    <string name="plan_draft_a_transaction_change_has_an">A transaction change has an invalid id.</string>
+    <string name="plan_draft_a_transaction_change_is_empty">A transaction change is empty.</string>
     <string name="plan_draft_discarded">Draft discarded.</string>
     <string name="plan_each_one_time_item_needs">Each one-time item needs a unique id.</string>
     <string name="plan_each_scheduled_date_can_have">Each scheduled date can have one amount change.</string>
@@ -553,6 +640,7 @@
     <string name="plan_log_this_month">Log this month</string>
     <string name="plan_logged_in_draft">Logged in draft</string>
     <string name="plan_month_plan">Month plan</string>
+    <string name="plan_month_plan_applied">%1$s plan applied.</string>
     <string name="plan_more_tools">More tools</string>
     <string name="plan_no_bills_scheduled_yet">No bills scheduled yet.</string>
     <string name="plan_no_categories_available_add_one">No categories available. Add one in Income &amp; bills.</string>
@@ -579,6 +667,7 @@
     <string name="plan_skip">Skip</string>
     <string name="plan_skip_dates_must_be_in">Skip dates must be in this month.</string>
     <string name="plan_skip_dates_must_be_unique">Skip dates must be unique.</string>
+    <string name="plan_suggestion_detail">%1$s · seen in %2$s months · typical %3$s</string>
     <string name="plan_that_s_more_than_you">That\'s more than you\'ll have. Skip something, or move a one-time item to a later month.</string>
     <string name="plan_the_draft_could_not_be">The draft could not be saved. It is kept on screen.</string>
     <string name="plan_the_rest_is_saved_try">The rest is saved. Try again.</string>
@@ -587,6 +676,7 @@
     <string name="plan_this_goes_into_your_draft">This goes into your draft as a one-time item. Nothing is final until you apply it.</string>
     <string name="plan_this_month_has_passed_the">This month has passed. The draft can be discarded, not applied.</string>
     <string name="plan_this_schedule_has_too_many">This schedule has too many amount changes for one month.</string>
+    <string name="plan_this_updates_records">This updates your records for %1$s.</string>
     <string name="plan_undo_log">Undo log</string>
     <string name="plan_undo_skip">Undo skip</string>
     <string name="plan_we_compare_this_plan_with">We compare this plan with expenses from your last four completed months. Suggestions need your review before anything is added.</string>
@@ -621,6 +711,7 @@
     <string name="pro_your_account_will_be_charged">Your account will be charged for renewal within 24 hours prior to the end of the current period.</string>
     <string name="pro_your_purchase_is_processing_pro">Your purchase is processing. Pro will turn on shortly.</string>
     <string name="progress_achievements">Achievements</string>
+    <string name="progress_active_of_last">%1$s of the last %2$s days active</string>
     <string name="progress_challenge_history">Challenge history</string>
     <string name="progress_complete_challenge">Complete Challenge</string>
     <string name="progress_complete_challenges_to_see_them">Complete challenges to see them here</string>
@@ -632,6 +723,12 @@
     <string name="progress_couldn_t_refresh">Couldn\'t refresh</string>
     <string name="progress_couldn_t_use_a_streak">Couldn\'t use a streak freeze. Try again.</string>
     <string name="progress_d">%1$sd</string>
+    <string name="progress_day_active">active</string>
+    <string name="progress_day_active_today">active today</string>
+    <string name="progress_day_freeze">freeze</string>
+    <string name="progress_day_missed">missed</string>
+    <string name="progress_day_streak">%1$s Day Streak</string>
+    <string name="progress_day_today">today</string>
     <string name="progress_earn_xp_to_see_your">Earn XP to see your history here!</string>
     <string name="progress_expired">Expired</string>
     <string name="progress_freeze_applied">Freeze Applied</string>
@@ -650,6 +747,7 @@
     <string name="progress_no_challenge_history_yet">No challenge history yet</string>
     <string name="progress_no_points_history_yet">No points history yet</string>
     <string name="progress_no_time_limit">No time limit</string>
+    <string name="progress_percent_complete">%1$s%% complete</string>
     <string name="progress_points_history">Points History</string>
     <string name="progress_reward">Reward</string>
     <string name="progress_streak">Streak</string>
@@ -659,6 +757,7 @@
     <string name="progress_unlocked_2">Unlocked %1$s</string>
     <string name="progress_use_streak_freeze">Use Streak Freeze</string>
     <string name="progress_view_all">View All</string>
+    <string name="progress_xp_total">%1$s XP Total</string>
     <string name="quota_scan_exhausted">You\'ve used all your free scan credits for this month.</string>
     <string name="quota_scan_upgrade">Upgrade to Pro to keep scanning.</string>
     <string name="quota_sentence_exhausted_title">You\'ve used this month\'s smart entries</string>
@@ -682,6 +781,7 @@
     <string name="receipt_take_photo">Take photo</string>
     <string name="receipt_there_s_no_image_on">There\'s no image on the clipboard.</string>
     <string name="receipt_too_many_attempts_in_a">Too many attempts in a short time — wait a few seconds and try again.</string>
+    <string name="receipt_unit_of_total_matching">%1$s %2$s of %3$s · matching what you already have</string>
     <string name="receipt_upgrade_to_pro_to_keep">Upgrade to Pro to keep scanning.</string>
     <string name="receipt_upload">Upload</string>
     <string name="receipt_upload_choose_from_photo_library">Upload. Choose from Photo Library or Files</string>
@@ -691,6 +791,7 @@
     <string name="receipt_you_ve_used_all_your">You\'ve used all your free scan credits for this month.</string>
     <string name="recurring_add_bill">Add bill</string>
     <string name="recurring_advanced">Advanced</string>
+    <string name="recurring_all_bills_paid">All bills paid</string>
     <string name="recurring_already_logged">Already logged</string>
     <string name="recurring_are_you_sure_you_want">Are you sure you want to delete this income or bill? This action cannot be undone.</string>
     <string name="recurring_choose_second_day">Choose second day</string>
@@ -714,11 +815,13 @@
     <string name="recurring_end_it">End it?</string>
     <string name="recurring_end_this_bill">End this bill?</string>
     <string name="recurring_ended_in">Ended in %1$s</string>
+    <string name="recurring_ended_on">Ended %1$s</string>
     <string name="recurring_everything_that_comes_in_or">Everything that comes in or goes out on a schedule. Each one is logged on its date.</string>
     <string name="recurring_expense_categories">Expense Categories</string>
     <string name="recurring_first_occurrence">First Occurrence</string>
     <string name="recurring_frequency">Frequency</string>
     <string name="recurring_hides_paused_income_and_bills">Hides paused income and bills</string>
+    <string name="recurring_in_bills">%1$s in bills</string>
     <string name="recurring_income_and_bills_you_end">Income and bills you end move here, with what they added up to.</string>
     <string name="recurring_income_categories">Income Categories</string>
     <string name="recurring_is_there_one_more_payment">Is there one more payment? It moves to Ended. Past payments stay in your transactions.</string>
@@ -729,7 +832,9 @@
     <string name="recurring_logging_each_purchase_yourself_skip">Logging each purchase yourself? Skip this bill. What you log shows up in Transactions and Reports.</string>
     <string name="recurring_main_income">Main Income</string>
     <string name="recurring_main_income_2">Main income</string>
+    <string name="recurring_month_still_ahead">%1$s is still ahead</string>
     <string name="recurring_more_actions_for">More actions for %1$s</string>
+    <string name="recurring_n_of_m_logged">%1$s of %2$s logged</string>
     <string name="recurring_net_for">Net %1$s%2$s for %3$s</string>
     <string name="recurring_never">Never</string>
     <string name="recurring_new_income_or_bill">New income or bill</string>
@@ -759,6 +864,7 @@
     <string name="recurring_required">Required</string>
     <string name="recurring_resume">Resume</string>
     <string name="recurring_save_changes">Save changes</string>
+    <string name="recurring_second_day_of_month">2nd Day of Month</string>
     <string name="recurring_select_a_category">Select a category</string>
     <string name="recurring_select_a_day">Select a day</string>
     <string name="recurring_set_as_main_income">Set as main income</string>
@@ -767,10 +873,16 @@
     <string name="recurring_shows_paused_income_and_bills">Shows paused income and bills</string>
     <string name="recurring_start_again">Start again</string>
     <string name="recurring_start_again_2">Start %1$s again</string>
+    <string name="recurring_still_to_pay">%1$s still to pay</string>
     <string name="recurring_the_amount_changes_each_time">The amount changes each time</string>
     <string name="recurring_this_month">This month, %1$s</string>
     <string name="recurring_updating">Updating…</string>
     <string name="recurring_when_is_the_next_payment">When is the next payment due?</string>
+    <string name="recurring_x_ended">%1$s ended</string>
+    <string name="recurring_x_ends_after">%1$s ends after %2$s</string>
+    <string name="recurring_x_paused">%1$s paused</string>
+    <string name="recurring_x_resumed">%1$s resumed</string>
+    <string name="recurring_x_started_again">%1$s started again</string>
     <string name="recurring_yes_one_more_on">Yes, one more on %1$s</string>
     <string name="recurring_you_re_offline_reconnect_to">You\'re offline. Reconnect to save changes.</string>
     <string name="reports_above_avg">Above avg</string>
@@ -800,9 +912,11 @@
     <string name="reports_net">Net</string>
     <string name="reports_net_change">Net Change</string>
     <string name="reports_next_month">Next month</string>
+    <string name="reports_no_daily_aggregates_for">No daily spending aggregates were found for %1$s.</string>
     <string name="reports_no_daily_aggregates_found_for">No daily aggregates found for comparison.</string>
     <string name="reports_no_data">No Data</string>
     <string name="reports_no_pay_periods">No pay periods</string>
+    <string name="reports_no_pay_periods_overlap">No pay periods overlap %1$s.</string>
     <string name="reports_no_spending_data">No Spending Data</string>
     <string name="reports_no_spending_logged_this_month">No spending logged this month yet.</string>
     <string name="reports_no_spending_pattern_yet">No spending pattern yet</string>
@@ -822,25 +936,35 @@
     <string name="reports_see_how_your_income_covers">See how your income covers expenses across pay periods.</string>
     <string name="reports_spending">Spending</string>
     <string name="reports_takeaways">Takeaways</string>
+    <string name="reports_top_category_leads">%1$s leads spending</string>
     <string name="reports_total_income">Total Income</string>
     <string name="reports_total_spending">Total Spending</string>
     <string name="reports_track_day_to_day_trends">Track day-to-day trends and income coverage from one place.</string>
     <string name="reports_track_your_daily_spending_patterns">Track your daily spending patterns and identify high-spend days.</string>
     <string name="reports_we_could_not_refresh_this">We could not refresh this review. Check your connection and try again.</string>
     <string name="reports_weekly_comparison_bars">Weekly comparison bars</string>
+    <string name="reports_weekly_expenses">Weekly Expenses</string>
+    <string name="reports_weekly_income">Weekly Income</string>
     <string name="reports_where_your_money_went">Where your money went</string>
     <string name="reports_you_re_offline">You\'re offline</string>
     <string name="reports_your_review_starts_with_one">Your review starts with one entry</string>
+    <string name="rules_merchant_placeholder">e.g. Tim Hortons, Uber, Amazon</string>
     <string name="scan_always">Always</string>
     <string name="scan_always_file_under">Always file %1$s under %2$s?</string>
+    <string name="scan_cant_read_name">Couldn\'t read %1$s.</string>
     <string name="scan_category_for">Category for %1$s: %2$s</string>
     <string name="scan_choose_category">Choose category</string>
+    <string name="scan_chunk_label">%1$s (%2$s of %3$s)</string>
     <string name="scan_couldn_t_open_this_scan">Couldn\'t open this scan. Try again.</string>
     <string name="scan_couldn_t_save_these_transactions">Couldn\'t save these transactions. Try again.</string>
     <string name="scan_discard_scan">Discard scan</string>
     <string name="scan_discard_this_scan">Discard this scan?</string>
+    <string name="scan_done_of_total">%1$s of %2$s</string>
     <string name="scan_exclude">Exclude %1$s</string>
     <string name="scan_exclude_this_one">Exclude this one</string>
+    <string name="scan_failed_summary">%1$s couldn\'t be saved</string>
+    <string name="scan_file_too_large">%1$s is too large to upload (10 MB maximum).</string>
+    <string name="scan_handled_by_rules">%1$s handled by your rules. Pick a category once and Spenditos can remember it.</string>
     <string name="scan_include">Include %1$s</string>
     <string name="scan_include_this_one">Include this one</string>
     <string name="scan_it_ll_show_up_here">It\'ll show up here when it\'s ready.</string>
@@ -849,29 +973,39 @@
     <string name="scan_mixed_categories">Mixed categories</string>
     <string name="scan_next_time_spenditos_sees_in">Next time Spenditos sees %1$s in a scan or import, it files it under %2$s for you.</string>
     <string name="scan_no_date">No date</string>
+    <string name="scan_not_included">%1$s not included</string>
     <string name="scan_off">Off</string>
     <string name="scan_on">On</string>
+    <string name="scan_one_of_the_images">one of the images</string>
     <string name="scan_one_or_more_foreign_currency">One or more foreign-currency amounts could not be converted</string>
+    <string name="scan_pdf_empty">%1$s has no pages to read.</string>
+    <string name="scan_pdf_locked">%1$s is password protected. Remove the password and try again.</string>
     <string name="scan_preparing_categories_and_currencies">Preparing categories and currencies…</string>
     <string name="scan_review">Review</string>
     <string name="scan_review_later">Review later</string>
     <string name="scan_saving_of">Saving %1$s of %2$s…</string>
     <string name="scan_scan_more">Scan more</string>
+    <string name="scan_skipped_summary">%1$s skipped: already in Spenditos or not spending</string>
     <string name="scan_some_foreign_currency_amounts_need">Some foreign-currency amounts need review before they can be saved.</string>
+    <string name="scan_that_file">That file</string>
+    <string name="scan_that_pdf">That PDF</string>
     <string name="scan_the_signed_in_account_changed">The signed-in account changed, so this scan wasn\'t saved.</string>
     <string name="scan_these_transactions_won_t_be">These transactions won\'t be added.</string>
     <string name="scan_this_scan_is_no_longer">This scan is no longer available.</string>
+    <string name="scan_unsupported_file">%1$s isn\'t a type Spenditos can read. Try a photo, PDF, CSV or Excel file.</string>
     <string name="scan_you_re_offline_reconnect_to">You\'re offline. Reconnect to open this scan.</string>
     <string name="scan_you_re_offline_your_changes">You\'re offline. Your changes are kept — try again when you\'re connected.</string>
     <string name="settings_add_a_category_to_get">Add a category to get started</string>
+    <string name="settings_add_another_expense_category">Add another expense category first, so there is somewhere to move them.</string>
+    <string name="settings_add_another_income_category">Add another income category first, so there is somewhere to move them.</string>
     <string name="settings_add_category">Add category</string>
     <string name="settings_all_icons">All icons</string>
     <string name="settings_are_you_absolutely_sure">Are you absolutely sure?</string>
     <string name="settings_are_you_sure_you_want">Are you sure you want to sign out?</string>
-    <string name="settings_are_you_sure_you_want_2">Are you sure you want to sign out?\n\n%1$s unsynced %2$s will stay queued on this device and sync the next time you sign in to this account.</string>
     <string name="settings_are_you_sure_you_want_3">Are you sure you want to delete \"%1$s\"? This action cannot be undone.</string>
     <string name="settings_browse_all_icons">Browse all icons</string>
     <string name="settings_card_payments_and_transfers_that">Card payments and transfers that aren\'t spending</string>
+    <string name="settings_category_in_use">\"%1$s\" is still in use. Choose where its transactions and bills should go. They keep their amounts and dates.</string>
     <string name="settings_category_name">Category name</string>
     <string name="settings_category_name_2">Category Name</string>
     <string name="settings_change_password">Change Password</string>
@@ -899,6 +1033,7 @@
     <string name="settings_current_icon">Current icon</string>
     <string name="settings_current_password">Current Password</string>
     <string name="settings_daily_logging_reminder">Daily logging reminder</string>
+    <string name="settings_daily_nudge">A daily nudge to log your spending</string>
     <string name="settings_default">Default</string>
     <string name="settings_delete_account">Delete Account</string>
     <string name="settings_delete_category">Delete Category</string>
@@ -937,8 +1072,10 @@
     <string name="settings_new_password">New Password</string>
     <string name="settings_new_rule">New Rule</string>
     <string name="settings_no_currencies_found">No currencies found.</string>
+    <string name="settings_no_expense_categories">No expense categories</string>
     <string name="settings_no_icon">No icon</string>
     <string name="settings_no_icons_found">No icons found</string>
+    <string name="settings_no_income_categories">No income categories</string>
     <string name="settings_no_rules_yet">No rules yet</string>
     <string name="settings_none">None</string>
     <string name="settings_not_set">Not set</string>
@@ -1011,6 +1148,7 @@
     <string name="sync_this_change_is_being_sent">This change is being sent right now, so it can\'t be discarded yet. Try again in a moment.</string>
     <string name="sync_this_change_needs_attention_before">This change needs attention before it can sync.</string>
     <string name="sync_waiting_for_a_connection_to">Waiting for a connection to sync.</string>
+    <string name="sync_will_be_removed">%1$s will be removed from this device and cannot be retried.</string>
     <string name="transactions_add">Add \"%1$s\"</string>
     <string name="transactions_add_a_category">Add a category</string>
     <string name="transactions_add_category">Add %1$s Category</string>
@@ -1021,6 +1159,8 @@
     <string name="transactions_apply_filters">Apply Filters</string>
     <string name="transactions_are_you_sure_you_want">Are you sure you want to delete this transaction? This action cannot be undone.</string>
     <string name="transactions_are_you_sure_you_want_2">Are you sure you want to delete these %1$s transactions? This action cannot be undone.</string>
+    <string name="transactions_bill_choice_message">%1$s · %2$s · due %3$s. Using it replaces the estimate, so it isn\'t counted twice.</string>
+    <string name="transactions_bill_summary_next">%1$s · %2$s · next %3$s.</string>
     <string name="transactions_cancel_selection">Cancel selection</string>
     <string name="transactions_categories">Categories: %1$s</string>
     <string name="transactions_category">Category: %1$s</string>
@@ -1064,9 +1204,11 @@
     <string name="transactions_make_it_recurring">Make it recurring</string>
     <string name="transactions_max">Max</string>
     <string name="transactions_max_2">Max: %1$s</string>
+    <string name="transactions_max_amount_in">Maximum amount in %1$s</string>
     <string name="transactions_merchant_or_description">Merchant or description</string>
     <string name="transactions_min">Min</string>
     <string name="transactions_min_2">Min: %1$s</string>
+    <string name="transactions_min_amount_in">Minimum amount in %1$s</string>
     <string name="transactions_more">More</string>
     <string name="transactions_more_save_options">More save options</string>
     <string name="transactions_necessary">Necessary</string>
@@ -1074,10 +1216,13 @@
     <string name="transactions_no_transactions_yet">No transactions yet</string>
     <string name="transactions_none_of_these_save_as">None of these, save as separate</string>
     <string name="transactions_not_synced">Not synced</string>
+    <string name="transactions_not_synced_yet_edit">This one hasn\'t synced yet. Edit it once it\'s synced.</string>
     <string name="transactions_pick_a_category">Pick a category</string>
     <string name="transactions_pick_date">Pick date</string>
     <string name="transactions_preset_name">Preset Name</string>
     <string name="transactions_quick_dates">Quick Dates</string>
+    <string name="transactions_recurring_hint">This payment is logged on %1$s. Then %2$s, %3$s, and so on. Due on a different day than you paid? Change Next due.</string>
+    <string name="transactions_recurring_next_due">%1$s, next due %2$s</string>
     <string name="transactions_regret">Regret</string>
     <string name="transactions_remove_filter">Remove filter</string>
     <string name="transactions_reset_all">Reset All</string>
@@ -1087,6 +1232,7 @@
     <string name="transactions_save_preset">Save Preset</string>
     <string name="transactions_saved_on_this_device_it">Saved on this device. It will sync when you\'re back online.</string>
     <string name="transactions_saved_presets">Saved Presets</string>
+    <string name="transactions_saved_summary">Saved %1$s · %2$s · %3$s added</string>
     <string name="transactions_scroll_to_top">Scroll to top</string>
     <string name="transactions_search_transactions">Search transactions</string>
     <string name="transactions_search_transactions_2">Search transactions...</string>
@@ -1109,6 +1255,7 @@
     <string name="transactions_update_income">Update income</string>
     <string name="transactions_use_existing_bill">Use existing bill</string>
     <string name="transactions_use_this_one">Use this one</string>
+    <string name="transactions_usually_repeats">%1$s usually repeats. Turn on to track it.</string>
     <string name="transactions_waiting_to_sync">Waiting to sync</string>
     <string name="transactions_where_or_what_like_starbucks">Where or what, like Starbucks</string>
     <string name="transactions_which_bill_is_this">Which bill is this?</string>
@@ -1135,4 +1282,164 @@
     <string name="widget_storm">Storm</string>
     <string name="widget_storm_mode">Storm Mode</string>
     <string name="widget_top_categories">Top Categories</string>
+    <plurals name="capture_select_category_before_saving">
+        <item quantity="one">Select a category for %1$s item before saving</item>
+        <item quantity="other">Select a category for %1$s items before saving</item>
+    </plurals>
+    <plurals name="count_bill">
+        <item quantity="one">%1$s bill</item>
+        <item quantity="other">%1$s bills</item>
+    </plurals>
+    <plurals name="count_entry">
+        <item quantity="one">%1$s entry</item>
+        <item quantity="other">%1$s entries</item>
+    </plurals>
+    <plurals name="count_item">
+        <item quantity="one">%1$s item</item>
+        <item quantity="other">%1$s items</item>
+    </plurals>
+    <plurals name="count_month">
+        <item quantity="one">%1$s month</item>
+        <item quantity="other">%1$s months</item>
+    </plurals>
+    <plurals name="count_page">
+        <item quantity="one">%1$s page</item>
+        <item quantity="other">%1$s pages</item>
+    </plurals>
+    <plurals name="count_past_transaction">
+        <item quantity="one">%1$s past transaction</item>
+        <item quantity="other">%1$s past transactions</item>
+    </plurals>
+    <plurals name="count_payment">
+        <item quantity="one">%1$s payment</item>
+        <item quantity="other">%1$s payments</item>
+    </plurals>
+    <plurals name="count_payment_received">
+        <item quantity="one">%1$s payment received</item>
+        <item quantity="other">%1$s payments received</item>
+    </plurals>
+    <plurals name="count_transaction">
+        <item quantity="one">%1$s transaction</item>
+        <item quantity="other">%1$s transactions</item>
+    </plurals>
+    <plurals name="home_days_count">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="home_due_in_days">
+        <item quantity="one">in %1$s day</item>
+        <item quantity="other">in %1$s days</item>
+    </plurals>
+    <plurals name="home_entries_still_to_come">
+        <item quantity="one">%1$s entry still to come</item>
+        <item quantity="other">%1$s entries still to come</item>
+    </plurals>
+    <plurals name="onboarding_categories_ready">
+        <item quantity="one">%1$s category ready</item>
+        <item quantity="other">%1$s categories ready</item>
+    </plurals>
+    <plurals name="plan_changes_didnt_apply">
+        <item quantity="one">%1$s change didn\'t apply</item>
+        <item quantity="other">%1$s changes didn\'t apply</item>
+    </plurals>
+    <plurals name="plan_changes_in_draft">
+        <item quantity="one">%1$s change in your draft</item>
+        <item quantity="other">%1$s changes in your draft</item>
+    </plurals>
+    <plurals name="plan_draft_changes">
+        <item quantity="one">Draft · %1$s change</item>
+        <item quantity="other">Draft · %1$s changes</item>
+    </plurals>
+    <plurals name="progress_days_remaining">
+        <item quantity="one">%1$s day remaining</item>
+        <item quantity="other">%1$s days remaining</item>
+    </plurals>
+    <plurals name="quota_smart_entries_left">
+        <item quantity="one">%1$s smart entry left this month</item>
+        <item quantity="other">%1$s smart entries left this month</item>
+    </plurals>
+    <plurals name="recurring_bills_paid">
+        <item quantity="one">%1$s of %2$s bill paid</item>
+        <item quantity="other">%1$s of %2$s bills paid</item>
+    </plurals>
+    <plurals name="recurring_entries_not_logged">
+        <item quantity="one">%1$s entry couldn\'t be logged.</item>
+        <item quantity="other">%1$s entries couldn\'t be logged.</item>
+    </plurals>
+    <plurals name="recurring_log_entries">
+        <item quantity="one">Log %1$s entry</item>
+        <item quantity="other">Log %1$s entries</item>
+    </plurals>
+    <plurals name="recurring_paused_months">
+        <item quantity="one">Paused %1$s month</item>
+        <item quantity="other">Paused %1$s months</item>
+    </plurals>
+    <plurals name="reports_recurring_mapped">
+        <item quantity="one">%1$s recurring obligation mapped</item>
+        <item quantity="other">%1$s recurring obligations mapped</item>
+    </plurals>
+    <plurals name="rule_past_updated">
+        <item quantity="one">%1$s past transaction updated.</item>
+        <item quantity="other">%1$s past transactions updated.</item>
+    </plurals>
+    <plurals name="scan_added_transactions">
+        <item quantity="one">%1$s transaction added</item>
+        <item quantity="other">%1$s transactions added</item>
+    </plurals>
+    <plurals name="scan_also_update_past">
+        <item quantity="one">Also update %1$s past %2$s transaction</item>
+        <item quantity="other">Also update %1$s past %2$s transactions</item>
+    </plurals>
+    <plurals name="scan_flagged_unchecked">
+        <item quantity="one">%1$s is already in Spenditos or isn\'t spending, so it starts unchecked.</item>
+        <item quantity="other">%1$s are already in Spenditos or aren\'t spending, so they start unchecked.</item>
+    </plurals>
+    <plurals name="scan_found_transactions">
+        <item quantity="one">Found %1$s transaction</item>
+        <item quantity="other">Found %1$s transactions</item>
+    </plurals>
+    <plurals name="scan_incomplete_items">
+        <item quantity="one">%1$s item needs an amount and a date before saving</item>
+        <item quantity="other">%1$s items need an amount and a date before saving</item>
+    </plurals>
+    <plurals name="scan_label_files">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
+    <plurals name="scan_label_photos">
+        <item quantity="one">%1$s photo</item>
+        <item quantity="other">%1$s photos</item>
+    </plurals>
+    <plurals name="scan_label_screenshots">
+        <item quantity="one">%1$s screenshot</item>
+        <item quantity="other">%1$s screenshots</item>
+    </plurals>
+    <plurals name="scan_missing_category">
+        <item quantity="one">%1$s item will save as Uncategorized — pick a category to refine reports</item>
+        <item quantity="other">%1$s items will save as Uncategorized — pick a category to refine reports</item>
+    </plurals>
+    <plurals name="scan_pages_unreadable">
+        <item quantity="one">%1$s page couldn\'t be read.</item>
+        <item quantity="other">%1$s pages couldn\'t be read.</item>
+    </plurals>
+    <plurals name="scan_ready_to_review">
+        <item quantity="one">%1$s transaction ready to review</item>
+        <item quantity="other">%1$s transactions ready to review</item>
+    </plurals>
+    <plurals name="settings_sign_out_unsynced">
+        <item quantity="one">Are you sure you want to sign out?\n\n%1$s unsynced transaction will stay queued on this device and sync the next time you sign in to this account.</item>
+        <item quantity="other">Are you sure you want to sign out?\n\n%1$s unsynced transactions will stay queued on this device and sync the next time you sign in to this account.</item>
+    </plurals>
+    <plurals name="streak_unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="transactions_delete_failed">
+        <item quantity="one">%1$s transaction couldn\'t be deleted. Try again.</item>
+        <item quantity="other">%1$s transactions couldn\'t be deleted. Try again.</item>
+    </plurals>
+    <plurals name="widget_day_streak">
+        <item quantity="one">%1$s day streak</item>
+        <item quantity="other">%1$s day streak</item>
+    </plurals>
 </resources>

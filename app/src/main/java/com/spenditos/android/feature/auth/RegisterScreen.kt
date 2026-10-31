@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
 import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
@@ -206,7 +207,7 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
                 val tint = if (requirement.isMet) Color(0xFF34C759) else Color.Gray
                 Row(
                     Modifier.semantics(mergeDescendants = true) {
-                        stateDescription = if (requirement.isMet) "met" else "not met"
+                        stateDescription = if (requirement.isMet) Strings.get(R.string.a11y_requirement_met) else Strings.get(R.string.a11y_requirement_not_met)
                     },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -226,11 +227,11 @@ private fun PasswordStrengthContent(strength: PasswordStrength, requirements: Li
 
 /** One spoken label for the color-only strength bars. */
 internal fun passwordStrengthAnnouncement(strength: PasswordStrength): String =
-    "Password strength: " + when (strength) {
-        PasswordStrength.WEAK -> "weak"
-        PasswordStrength.MEDIUM -> "fair"
-        PasswordStrength.STRONG -> "strong"
-    }
+    Strings.get(R.string.settings_password_strength, when (strength) {
+        PasswordStrength.WEAK -> Strings.get(R.string.a11y_strength_weak)
+        PasswordStrength.MEDIUM -> Strings.get(R.string.a11y_strength_fair)
+        PasswordStrength.STRONG -> Strings.get(R.string.a11y_strength_strong)
+    })
 
 @Composable
 private fun RegisterPrimaryButton(text: String, onClick: () -> Unit, enabled: Boolean, loading: Boolean, modifier: Modifier = Modifier) {
