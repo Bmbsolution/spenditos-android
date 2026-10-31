@@ -163,6 +163,8 @@ room {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // Per-app language on Android 9-12 (AppCompatDelegate.setApplicationLocales backport).
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
     implementation(libs.androidx.biometric)

@@ -48,7 +48,14 @@ class SettingsViewModel @Inject constructor(
     private val userSettings: com.spenditos.android.data.user.UserSettingsActions,
     private val purchases: com.spenditos.android.data.purchases.PurchasesService,
     private val proAccess: com.spenditos.android.data.entitlement.ProAccess,
+    private val languageMirror: com.spenditos.android.data.user.LanguageMirror,
 ) : ViewModel() {
+    /** Switches the app language now (UI recreates in it) and saves the account language right away. */
+    fun setLanguage(choice: com.spenditos.android.core.i18n.LanguageChoice) {
+        val account = com.spenditos.android.core.i18n.AppLanguage.apply(choice)
+        languageMirror.saveNow(account)
+    }
+
     /** Effective Pro (store OR server Premium) and the welcome-Premium row text. */
     val plan: StateFlow<SettingsPlan> = proAccess.state
         .map { SettingsPlanLabel.plan(it) }

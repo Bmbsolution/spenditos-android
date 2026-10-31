@@ -3,6 +3,7 @@ package com.spenditos.android.data.user
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.i18n.AppLanguage
 import com.spenditos.android.data.model.UserSettingsUpdate
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import javax.inject.Inject
@@ -19,6 +20,14 @@ class LanguageMirror @Inject constructor(
 ) {
     @Volatile
     private var lastMirrored: Pair<String, String>? = null
+
+    // Outlives view models: a language switch recreates the UI and clears them mid-request.
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+
+    /** Saves the just-chosen [language] to the account right away (fire and forget, best effort). */
+    fun saveNow(language: String) {
+        scope.launch { sync(language = language) }
+    }
 
     /** [known] is a settings read the caller just made (sign-in), to skip a second GET. */
     suspend fun sync(known: com.spenditos.android.data.model.UserSettings? = null, language: String = AppLanguage.resolved()) {
