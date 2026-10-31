@@ -1692,4 +1692,6 @@
     <string name="icon_covered">Couvert</string>
     <string name="icon_other">Autre</string>
     <string name="settings_other_group_icon">Autre icône&#160;: %1$s</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_device">Langue de l’appareil</string>
 </resources>

@@ -1,7 +1,7 @@
 package com.spenditos.android.app
 
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
     private companion object {
         /** The locale the process last drew the UI in; a change means view-model text is stale. */
         @Volatile var lastLocaleTag: String? = null

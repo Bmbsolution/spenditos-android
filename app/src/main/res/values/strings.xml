@@ -1647,4 +1647,6 @@
     <string name="icon_covered">Covered</string>
     <string name="icon_other">Other</string>
     <string name="settings_other_group_icon">Other %1$s icon</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_device">Device language</string>
 </resources>

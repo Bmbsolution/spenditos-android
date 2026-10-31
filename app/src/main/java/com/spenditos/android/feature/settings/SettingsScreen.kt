@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -70,6 +73,8 @@ fun SettingsScreen(
     androidx.compose.runtime.LaunchedEffect(viewModel) { viewModel.refreshPremium() }
     val restoreMessage by viewModel.restoreMessage.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
+    var showLanguage by remember { mutableStateOf(false) }
+    val languageChoice = com.spenditos.android.core.i18n.AppLanguage.currentChoice()
     val context = LocalContext.current
     val finance = LocalFinanceColors.current
     val slate = Color(0xFF64748B)
@@ -178,6 +183,14 @@ fun SettingsScreen(
             item { SectionHeader(stringResource(R.string.settings_preferences)) }
             item {
                 GroupedCard {
+                    IosRow(
+                        stringResource(R.string.settings_language),
+                        icon = SfSymbols.icon("globe"),
+                        iconTint = IosColors.info,
+                        value = languageChoice.nativeName ?: stringResource(R.string.settings_language_device),
+                        onClick = { showLanguage = true },
+                        modifier = Modifier.testTag("settings.language"),
+                    )
                     IosRow(
                         stringResource(R.string.common_progress),
                         subtitle = stringResource(R.string.settings_streak_level_and_achievements),
@@ -335,6 +348,36 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    if (showLanguage) {
+        AlertDialog(
+            onDismissRequest = { showLanguage = false },
+            title = { Text(stringResource(R.string.settings_language), style = IosText.headline) },
+            text = {
+                Column {
+                    com.spenditos.android.core.i18n.LanguageChoice.entries.forEach { choice ->
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .selectable(selected = choice == languageChoice, role = Role.RadioButton, onClick = {
+                                    showLanguage = false
+                                    if (choice != languageChoice) viewModel.setLanguage(choice)
+                                })
+                                .padding(vertical = 12.dp)
+                                .testTag("settings.language.${choice.name.lowercase()}"),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.material3.RadioButton(selected = choice == languageChoice, onClick = null)
+                            Spacer(Modifier.width(Spacing.m))
+                            Text(choice.nativeName ?: stringResource(R.string.settings_language_device), style = IosText.body, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguage = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
     }
 
     if (confirmSignOut) {
