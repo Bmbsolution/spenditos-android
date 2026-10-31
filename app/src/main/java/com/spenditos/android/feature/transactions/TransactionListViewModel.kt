@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -429,9 +431,9 @@ class TransactionListViewModel @Inject constructor(
             } catch (e: Exception) {
                 val message = when (e) {
                     is com.spenditos.android.data.transactions.TransactionBusyException -> e.message.orEmpty()
-                    is ApiError.Network -> "You're offline. Check your connection and try again."
-                    is ApiError.Unauthorized -> "Sign in again to delete."
-                    else -> "Couldn't delete. Please try again."
+                    is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+                    is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_delete)
+                    else -> Strings.get(R.string.transactions_couldn_t_delete_please_try)
                 }
                 refresh.update { it.copy(actionError = message) }
             }
@@ -450,16 +452,15 @@ class TransactionListViewModel @Inject constructor(
                 if (result.failed == 0) {
                     onDone()
                 } else {
-                    val noun = if (result.failed == 1) "1 transaction" else "${result.failed} transactions"
-                    refresh.update { it.copy(actionError = "$noun couldn't be deleted. Try again.") }
+                    refresh.update { it.copy(actionError = Strings.plural(R.plurals.transactions_delete_failed, result.failed)) }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 val message = when (e) {
-                    is ApiError.Network -> "You're offline. Check your connection and try again."
-                    is ApiError.Unauthorized -> "Sign in again to delete."
-                    else -> "Couldn't delete. Please try again."
+                    is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+                    is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_delete)
+                    else -> Strings.get(R.string.transactions_couldn_t_delete_please_try)
                 }
                 refresh.update { it.copy(actionError = message) }
             }
@@ -491,15 +492,15 @@ class TransactionListViewModel @Inject constructor(
     }
 
     private fun messageFor(error: Throwable): String = when (error) {
-        is ApiError.Network -> "You're offline. Showing what's saved on this device."
-        else -> "Couldn't refresh transactions. Pull down to try again."
+        is ApiError.Network -> Strings.get(R.string.transactions_you_re_offline_showing_what)
+        else -> Strings.get(R.string.transactions_couldn_t_refresh_transactions_pull)
     }
 
     private fun TransactionEntity.toRow(category: Category?) = TransactionRowUi(
         id = id,
-        title = description.ifBlank { category?.name ?: "Transaction" },
+        title = description.ifBlank { category?.name ?: Strings.get(R.string.common_transaction) },
         categoryId = categoryId,
-        categoryName = category?.name ?: "Uncategorized",
+        categoryName = category?.name ?: Strings.get(R.string.common_uncategorized),
         categoryColor = category?.color,
         categoryIcon = category?.icon,
         amount = amount,
@@ -565,41 +566,42 @@ internal fun activeFilterPillLabels(
     val pills = mutableListOf<String>()
     if (filters.dateRange != DateRangeFilter.THIS_MONTH) {
         val label = when (filters.dateRange) {
-            DateRangeFilter.LAST_MONTH -> "Date: Last Month"
+            DateRangeFilter.LAST_MONTH -> Strings.get(R.string.transactions_date_last_month)
             DateRangeFilter.CUSTOM -> {
                 val fmt = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale)
-                "Date: ${filters.customStart.format(fmt)} - ${filters.customEnd.format(fmt)}"
+                Strings.get(R.string.transactions_date, filters.customStart.format(fmt), filters.customEnd.format(fmt))
             }
-            DateRangeFilter.THIS_MONTH -> "Date: ${filters.dateRange.label}"
+            DateRangeFilter.THIS_MONTH -> Strings.get(R.string.transactions_date_2, filters.dateRange.label)
         }
         pills += label
     }
     filters.selectedType?.let { type ->
         val name = when (type) {
-            EntryType.INCOME -> "Income"
-            EntryType.EXPENSE -> "Expense"
+            EntryType.INCOME -> Strings.get(R.string.common_income)
+            EntryType.EXPENSE -> Strings.get(R.string.common_expense)
         }
-        pills += "Type: $name"
+        pills += Strings.get(R.string.transactions_type, name)
     }
     if (filters.selectedCategoryIds.isNotEmpty()) {
         val count = filters.selectedCategoryIds.size
         pills += if (count == 1) {
             val name = categoryNames[filters.selectedCategoryIds.first()] ?: ""
-            "Category: $name"
+            Strings.get(R.string.transactions_category, name)
         } else {
-            "Categories: $count"
+            Strings.get(R.string.transactions_categories, count)
         }
     }
     if (filters.minAmount != null || filters.maxAmount != null) {
-        val minStr = filters.minAmount?.let { "Min: ${Money.format(it, currency, locale)}" }.orEmpty()
-        val maxStr = filters.maxAmount?.let { "Max: ${Money.format(it, currency, locale)}" }.orEmpty()
+        val minStr = filters.minAmount?.let { Strings.get(R.string.transactions_min_2, Money.format(it, currency, locale)) }.orEmpty()
+        val maxStr = filters.maxAmount?.let { Strings.get(R.string.transactions_max_2, Money.format(it, currency, locale)) }.orEmpty()
         pills += listOf(minStr, maxStr).filter { it.isNotEmpty() }.joinToString(" · ")
     }
     return pills
 }
 
 internal fun sanitizeAmountInput(raw: String): String {
-    val filtered = raw.filter { it.isDigit() || it == '.' }
+    // A comma decimal separator (French keyboards) is stored as a dot.
+    val filtered = raw.replace(',', '.').filter { it.isDigit() || it == '.' }
     val dot = filtered.indexOf('.')
     if (dot < 0) return filtered
     return filtered.substring(0, dot + 1) + filtered.substring(dot + 1).filter { it != '.' }

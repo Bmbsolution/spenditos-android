@@ -1,5 +1,7 @@
 package com.spenditos.android.data.capture
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.content.Context
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.apiCall
@@ -208,7 +210,7 @@ class CaptureRepository @Inject constructor(
         val failures = linkedMapOf<String, String>()
         failedByIndex.forEach { (index, reason) -> items.getOrNull(index)?.let { failures[it.idempotencyKeyId] = reason } }
         unconfirmedIndices.forEach { index ->
-            failures[items[index].idempotencyKeyId] = "Couldn't confirm this transaction. Try again."
+            failures[items[index].idempotencyKeyId] = Strings.get(R.string.data_capture_couldn_t_confirm_this_transaction)
         }
         val savedCount = savedIndices.size
         if (savedCount > 0) {
@@ -299,6 +301,6 @@ class CaptureRepository @Inject constructor(
         const val POLL_INTERVAL_MILLIS = 1_000L
         const val POLL_COUNT = 60
         val POLL_WINDOW = 120.seconds
-        const val GENERIC_ANALYSIS_ERROR = "We couldn't finish that capture. Try again."
+        val GENERIC_ANALYSIS_ERROR: String get() = Strings.get(R.string.data_capture_we_couldn_t_finish_that)
     }
 }

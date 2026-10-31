@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.onboarding
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,7 +26,7 @@ data class OnboardingUiState(
     val displayName: String = "",
     val country: String = defaultCountry(),
     val currency: String = OnboardingData.currencyForCountry(defaultCountry()),
-    val language: String = if (Locale.getDefault().language == "fr") "fr" else "en",
+    val language: String = com.spenditos.android.core.i18n.AppLanguage.resolved(),
     val isDetectingCountry: Boolean = false,
     val countryLoaded: Boolean = false,
     val countryEdited: Boolean = false,
@@ -48,7 +50,7 @@ class OnboardingViewModel @Inject constructor(
             displayName = savedStateHandle[KEY_NAME] ?: "",
             country = savedStateHandle[KEY_COUNTRY] ?: defaultCountry(),
             currency = savedStateHandle[KEY_CURRENCY] ?: OnboardingData.currencyForCountry(defaultCountry()),
-            language = savedStateHandle[KEY_LANGUAGE] ?: if (Locale.getDefault().language == "fr") "fr" else "en",
+            language = com.spenditos.android.core.i18n.AppLanguage.resolved(),
             countryLoaded = savedStateHandle[KEY_COUNTRY_LOADED] ?: false,
             countryEdited = savedStateHandle[KEY_COUNTRY_EDITED] ?: false,
         ).let { it.copy(page = it.page.coerceIn(0, LAST_PAGE)) },
@@ -76,9 +78,9 @@ class OnboardingViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = if (e is ApiError.Network) {
-                    "You're offline. Check your country or retry."
+                    Strings.get(R.string.onboarding_you_re_offline_check_your)
                 } else {
-                    "Couldn't check your country. Retry or enter it below."
+                    Strings.get(R.string.onboarding_couldn_t_check_your_country)
                 }
                 update { it.copy(isDetectingCountry = false, error = message, errorKind = OnboardingErrorKind.COUNTRY) }
             }
@@ -106,21 +108,17 @@ class OnboardingViewModel @Inject constructor(
         it.copy(currency = value.filter(Char::isLetter).take(3).uppercase(), error = null, errorKind = null)
     }
 
-    fun onLanguageChange(value: String) {
-        if (value == "en" || value == "fr") update { it.copy(language = value, error = null, errorKind = null) }
-    }
-
     fun onContinue() {
         val current = _state.value
         when (current.page) {
             NAME_PAGE -> if (current.displayName.isBlank()) {
-                update { it.copy(error = "Enter your name to continue.", errorKind = OnboardingErrorKind.INPUT) }
+                update { it.copy(error = Strings.get(R.string.onboarding_enter_your_name_to_continue), errorKind = OnboardingErrorKind.INPUT) }
             } else {
                 update { it.copy(page = PREFERENCES_PAGE, error = null, errorKind = null) }
                 if (!_state.value.countryLoaded && !_state.value.isDetectingCountry) initialize()
             }
             PREFERENCES_PAGE -> if (current.country.length != 2 || current.currency.length != 3) {
-                update { it.copy(error = "Enter a two-letter country and three-letter currency code.", errorKind = OnboardingErrorKind.INPUT) }
+                update { it.copy(error = Strings.get(R.string.onboarding_enter_a_two_letter_country), errorKind = OnboardingErrorKind.INPUT) }
             } else {
                 update { it.copy(page = READY_PAGE, error = null, errorKind = null) }
             }
@@ -159,9 +157,9 @@ class OnboardingViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = if (e is ApiError.Network) {
-                    "You're offline. Check your connection and retry."
+                    Strings.get(R.string.onboarding_you_re_offline_check_your_2)
                 } else {
-                    "Couldn't finish setup. Please retry."
+                    Strings.get(R.string.onboarding_couldn_t_finish_setup_please)
                 }
                 update { it.copy(isSaving = false, error = message, errorKind = OnboardingErrorKind.COMPLETE) }
             }
@@ -175,7 +173,6 @@ class OnboardingViewModel @Inject constructor(
         savedStateHandle[KEY_NAME] = current.displayName
         savedStateHandle[KEY_COUNTRY] = current.country
         savedStateHandle[KEY_CURRENCY] = current.currency
-        savedStateHandle[KEY_LANGUAGE] = current.language
         savedStateHandle[KEY_COUNTRY_LOADED] = current.countryLoaded
         savedStateHandle[KEY_COUNTRY_EDITED] = current.countryEdited
     }
@@ -190,7 +187,6 @@ class OnboardingViewModel @Inject constructor(
         const val KEY_NAME = "onboarding.name"
         const val KEY_COUNTRY = "onboarding.country"
         const val KEY_CURRENCY = "onboarding.currency"
-        const val KEY_LANGUAGE = "onboarding.language"
         const val KEY_COUNTRY_LOADED = "onboarding.countryLoaded"
         const val KEY_COUNTRY_EDITED = "onboarding.countryEdited"
     }

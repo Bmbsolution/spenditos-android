@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -85,7 +88,7 @@ fun ScanReviewScreen(onClose: () -> Unit, onScanMore: () -> Unit) {
     IosScreen {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             ReviewTopBar(
-                title = if (state.phase == ScanReviewPhase.DONE) "" else "Review transactions",
+                title = if (state.phase == ScanReviewPhase.DONE) "" else stringResource(R.string.common_review_transactions),
                 showCancel = state.phase != ScanReviewPhase.DONE,
                 cancelEnabled = state.phase != ScanReviewPhase.SAVING,
                 onCancel = viewModel::requestClose,
@@ -117,7 +120,7 @@ private fun ReviewTopBar(title: String, showCancel: Boolean, cancelEnabled: Bool
         }
         if (showCancel) {
             TextButton(onClick = onCancel, enabled = cancelEnabled, modifier = Modifier.align(Alignment.CenterStart).testTag("review-cancel")) {
-                Text("Cancel", style = IosText.body, color = if (cancelEnabled) IosColors.spendOrange else IosColors.textTertiary)
+                Text(stringResource(R.string.common_cancel), style = IosText.body, color = if (cancelEnabled) IosColors.spendOrange else IosColors.textTertiary)
             }
         }
     }
@@ -151,13 +154,13 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 CircularProgressIndicator(Modifier.size(16.dp), color = IosColors.spendOrange, strokeWidth = 2.dp)
-                Text("Preparing categories and currencies…", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.scan_preparing_categories_and_currencies), style = IosText.subheadline, color = IosColors.textSecondary)
             }
         }
         val missing = state.missingCategoryCount
         if (missing > 0) {
             Text(
-                "${missing.counted("item")} will save as Uncategorized — pick a category to refine reports",
+                Strings.plural(R.plurals.scan_missing_category, missing),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.textSecondary,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.uncategorized"),
@@ -165,7 +168,7 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
         }
         if (state.conversionUnavailableCount > 0) {
             Text(
-                "One or more foreign-currency amounts could not be converted",
+                stringResource(R.string.scan_one_or_more_foreign_currency),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.warning,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.conversion"),
@@ -181,7 +184,7 @@ private fun ReviewBody(state: ScanReviewUiState, viewModel: ScanReviewViewModel,
         }
         if (state.incompleteCount > 0) {
             Text(
-                "${state.incompleteCount.counted("item")} ${if (state.incompleteCount == 1) "needs" else "need"} an amount and a date before saving",
+                Strings.plural(R.plurals.scan_incomplete_items, state.incompleteCount),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.warning,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("scan.review.incomplete"),
@@ -312,29 +315,28 @@ private fun SummaryHeader(state: ScanReviewUiState) {
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text(
-            "Found ${state.foundCount.counted("transaction")}",
+            Strings.plural(R.plurals.scan_found_transactions, state.foundCount),
             style = IosText.headline,
             color = IosColors.textPrimary,
             modifier = Modifier.testTag("review-found"),
         )
         if (flagged > 0) {
             Text(
-                "$flagged ${if (flagged == 1) "is" else "are"} already in Spenditos or ${if (flagged == 1) "isn't" else "aren't"} spending, " +
-                    "so ${if (flagged == 1) "it starts" else "they start"} unchecked.",
+                Strings.plural(R.plurals.scan_flagged_unchecked, flagged),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
             )
         }
         if (ruled > 0) {
             Text(
-                "$ruled handled by your rules. Pick a category once and Spenditos can remember it.",
+                stringResource(R.string.scan_handled_by_rules, ruled),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
                 modifier = Modifier.testTag("review-rules-summary"),
             )
         }
         if (state.failedDocuments > 0) {
-            Text("${state.failedDocuments.counted("page")} couldn't be read.", style = IosText.subheadline, color = IosColors.warning)
+            Text(Strings.plural(R.plurals.scan_pages_unreadable, state.failedDocuments), style = IosText.subheadline, color = IosColors.warning)
         }
     }
 }
@@ -343,8 +345,8 @@ private fun SummaryHeader(state: ScanReviewUiState) {
 @Composable
 private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore: () -> Unit, modifier: Modifier) {
     val lines = buildList {
-        if (state.skippedCount > 0) add("${state.skippedCount} skipped: already in Spenditos or not spending")
-        if (state.failedCount > 0) add("${state.failedCount} couldn't be saved")
+        if (state.skippedCount > 0) add(Strings.get(R.string.scan_skipped_summary, state.skippedCount))
+        if (state.failedCount > 0) add(Strings.get(R.string.scan_failed_summary, state.failedCount))
     }
     Column(
         modifier.fillMaxWidth().padding(Spacing.l),
@@ -354,7 +356,7 @@ private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore
         Spacer(Modifier.weight(1f))
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(67.2.dp))
         Text(
-            "${state.addedCount.counted("transaction")} added",
+            Strings.plural(R.plurals.scan_added_transactions, state.addedCount),
             style = IosText.title3.w(FontWeight.SemiBold),
             color = IosColors.textPrimary,
             textAlign = TextAlign.Center,
@@ -371,7 +373,7 @@ private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            PillButton("Done", onClick = onDone, modifier = Modifier.fillMaxWidth().testTag("review-done"))
+            PillButton(stringResource(R.string.common_done), onClick = onDone, modifier = Modifier.fillMaxWidth().testTag("review-done"))
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -381,7 +383,7 @@ private fun DoneContent(state: ScanReviewUiState, onDone: () -> Unit, onScanMore
                     .testTag("review-scan-more"),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Scan more", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.scan_scan_more), style = IosText.headline, color = IosColors.textPrimary)
             }
         }
     }
@@ -396,8 +398,8 @@ private fun OpenError(message: String, onRetry: () -> Unit, onClose: () -> Unit,
     ) {
         Icon(SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(48.dp))
         Text(message, style = IosText.body, color = IosColors.neutral, textAlign = TextAlign.Center, modifier = Modifier.testTag("scan.review.error"))
-        PillButton("Try Again", onClick = onRetry, modifier = Modifier.fillMaxWidth().testTag("scan.review.retry"))
-        PillButton("Close", onClick = onClose, filled = false, modifier = Modifier.fillMaxWidth().testTag("scan.review.close"))
+        PillButton(stringResource(R.string.common_try_again_2), onClick = onRetry, modifier = Modifier.fillMaxWidth().testTag("scan.review.retry"))
+        PillButton(stringResource(R.string.common_close), onClick = onClose, filled = false, modifier = Modifier.fillMaxWidth().testTag("scan.review.close"))
     }
 }
 
@@ -406,18 +408,18 @@ private fun OpenError(message: String, onRetry: () -> Unit, onClose: () -> Unit,
 private fun DiscardDialog(viewModel: ScanReviewViewModel) {
     AlertDialog(
         onDismissRequest = viewModel::keepReviewing,
-        title = { Text("Discard this scan?", style = IosText.headline) },
-        text = { Text("These transactions won't be added.", style = IosText.callout, color = IosColors.textSecondary) },
+        title = { Text(stringResource(R.string.scan_discard_this_scan), style = IosText.headline) },
+        text = { Text(stringResource(R.string.scan_these_transactions_won_t_be), style = IosText.callout, color = IosColors.textSecondary) },
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = viewModel::discardScan, modifier = Modifier.testTag("review-discard-scan")) {
-                    Text("Discard scan", style = IosText.body, color = IosColors.expense)
+                    Text(stringResource(R.string.scan_discard_scan), style = IosText.body, color = IosColors.expense)
                 }
                 TextButton(onClick = viewModel::reviewLater, modifier = Modifier.testTag("review-later")) {
-                    Text("Review later", style = IosText.body, color = IosColors.spendOrange)
+                    Text(stringResource(R.string.scan_review_later), style = IosText.body, color = IosColors.spendOrange)
                 }
                 TextButton(onClick = viewModel::keepReviewing, modifier = Modifier.testTag("review-keep")) {
-                    Text("Keep reviewing", style = IosText.body, color = IosColors.spendOrange)
+                    Text(stringResource(R.string.scan_keep_reviewing), style = IosText.body, color = IosColors.spendOrange)
                 }
             }
         },

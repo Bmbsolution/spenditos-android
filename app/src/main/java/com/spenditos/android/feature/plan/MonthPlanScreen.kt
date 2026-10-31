@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.plan
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
@@ -168,12 +172,12 @@ private fun MonthPlanContent(
 
             if (!state.isOnline) {
                 GlassCard(Modifier.testTag("monthPlan.offline")) {
-                    Text("You're offline. Apply and discard need a connection.", modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.plan_you_re_offline_apply_and), modifier = Modifier.padding(Spacing.m), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                 }
             }
             if (state.isPast) {
                 Text(
-                    "This month has passed. The draft can be discarded, not applied.",
+                    stringResource(R.string.plan_this_month_has_passed_the),
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
                         .background(IosColors.textSecondary.copy(alpha = 0.06f)).padding(Spacing.m),
                     style = IosText.subheadline,
@@ -213,7 +217,7 @@ private fun MonthPlanContent(
                     )
                 }
                 state.isLoading -> LoadingCard()
-                else -> ErrorCard("Couldn't load this month. Try again.", onRetry = viewModel::refresh)
+                else -> ErrorCard(stringResource(R.string.plan_couldn_t_load_this_month), onRetry = viewModel::refresh)
             }
         }
     }
@@ -241,25 +245,25 @@ private fun MonthPlanContent(
     when (confirmAction) {
         ConfirmAction.APPLY -> AlertDialog(
             onDismissRequest = { confirmAction = null },
-            title = { Text("Apply this plan?") },
-            text = { Text("This updates your records for ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0]))}.") },
+            title = { Text(stringResource(R.string.plan_apply_this_plan)) },
+            text = { Text(stringResource(R.string.plan_this_updates_records, state.month.format(LocalizedDate.formatter("MMMM yyyy", LocalConfiguration.current.locales[0])))) },
             confirmButton = {
                 TextButton(
                     onClick = { confirmAction = null; viewModel.applyAllFromScreen() },
                     modifier = Modifier.testTag("monthPlan.confirmApply"),
-                ) { Text("Apply") }
+                ) { Text(stringResource(R.string.plan_apply)) }
             },
             dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelApply")) { Text("Cancel") } },
         )
         ConfirmAction.DISCARD -> AlertDialog(
             onDismissRequest = { confirmAction = null },
-            title = { Text("Discard this draft?") },
-            text = { Text("These changes will be removed.") },
+            title = { Text(stringResource(R.string.plan_discard_this_draft)) },
+            text = { Text(stringResource(R.string.plan_these_changes_will_be_removed)) },
             confirmButton = {
                 TextButton(
                     onClick = { confirmAction = null; viewModel.discardFromScreen() },
                     modifier = Modifier.testTag("monthPlan.confirmDiscard"),
-                ) { Text("Discard") }
+                ) { Text(stringResource(R.string.common_discard)) }
             },
             dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelDiscard")) { Text("Cancel") } },
         )
@@ -281,13 +285,13 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", LocalConfiguration.current.locales[0])),
+                    state.month.format(LocalizedDate.formatter("MMMM yyyy", LocalConfiguration.current.locales[0])),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
                 )
                 if (state.draftChangeCount > 0) {
                     Text(
-                        "Draft · ${state.draftChangeCount} ${if (state.draftChangeCount == 1) "change" else "changes"}",
+                        Strings.plural(R.plurals.plan_draft_changes, state.draftChangeCount),
                         modifier = Modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
                             .padding(horizontal = 8.dp, vertical = 3.dp).testTag("monthPlan.draftCount"),
                         style = IosText.caption2.w(FontWeight.Bold),
@@ -312,7 +316,7 @@ private fun LoadingCard() {
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.loading")) {
         Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             CircularProgressIndicator(Modifier.size(20.dp), color = IosColors.spendOrange, strokeWidth = 2.dp)
-            Text("Loading your plan…", style = IosText.subheadline, color = IosColors.textPrimary)
+            Text(stringResource(R.string.plan_loading_your_plan), style = IosText.subheadline, color = IosColors.textPrimary)
         }
     }
 }
@@ -323,11 +327,11 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Icon(SfSymbols.icon("calendar.badge.exclamationmark"), contentDescription = null, tint = IosColors.textSecondary)
-                Text("Plan unavailable", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(stringResource(R.string.plan_plan_unavailable), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             }
             Text(message, style = IosText.subheadline, color = IosColors.textSecondary)
             TextButton(onClick = onRetry, modifier = Modifier.testTag("monthPlan.retryLoad"), contentPadding = PaddingValues(0.dp)) {
-                Text("Try again", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_try_again), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange)
             }
         }
     }
@@ -339,7 +343,7 @@ private fun ErrorInline(message: String, onRetry: () -> Unit) {
         Row(Modifier.padding(Spacing.m), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text(message, Modifier.weight(1f), style = IosText.subheadline, color = IosColors.expense)
             TextButton(onClick = onRetry, modifier = Modifier.testTag("monthPlan.retryRefresh"), contentPadding = PaddingValues(0.dp)) {
-                Text("Retry", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_retry), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.spendOrange)
             }
         }
     }
@@ -348,7 +352,7 @@ private fun ErrorInline(message: String, onRetry: () -> Unit) {
 @Composable
 private fun EmptyPlanCard() {
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.empty")) {
-        Text("Nothing scheduled this month yet.", modifier = Modifier.padding(Spacing.m), style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.plan_nothing_scheduled_this_month_yet), modifier = Modifier.padding(Spacing.m), style = IosText.subheadline, color = IosColors.textSecondary)
     }
 }
 
@@ -358,7 +362,7 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Text(
-                if (hasDraft) "After bills · with this draft" else "After bills",
+                if (hasDraft) stringResource(R.string.plan_after_bills_with_this_draft) else stringResource(R.string.plan_after_bills),
                 style = IosText.caption.w(FontWeight.Bold),
                 color = IosColors.textSecondary,
             )
@@ -370,7 +374,7 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
             )
             if (summary.draftLeft.signum() < 0) {
                 Text(
-                    "That's more than you'll have. Skip something, or move a one-time item to a later month.",
+                    stringResource(R.string.plan_that_s_more_than_you),
                     style = IosText.caption,
                     color = IosColors.expense,
                 )
@@ -382,23 +386,23 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     SummaryLine(
-                        "In your records now",
+                        stringResource(R.string.plan_in_your_records_now),
                         "≈ ${Money.format(summary.recordsLeft.toDouble(), currency)}",
                         IosColors.textPrimary,
                     )
                     val delta = summary.draftLeft.subtract(summary.recordsLeft)
                     SummaryLine(
-                        "Draft",
+                        stringResource(R.string.plan_draft),
                         (if (delta.signum() >= 0) "+" else "−") + Money.format(delta.abs().toDouble(), currency),
                         if (delta.signum() >= 0) finance.income else finance.expense,
                     )
                 }
             }
             HorizontalDivider(color = IosColors.separator)
-            SummaryLine("Income", "+${Money.format(summary.draftIncome.toDouble(), currency)}", finance.income)
-            SummaryLine("Bills", "−${Money.format(summary.draftBills.toDouble(), currency)}", finance.expense)
+            SummaryLine(stringResource(R.string.common_income), "+${Money.format(summary.draftIncome.toDouble(), currency)}", finance.income)
+            SummaryLine(stringResource(R.string.common_bills), "−${Money.format(summary.draftBills.toDouble(), currency)}", finance.expense)
             SummaryLine("One-time", "−${Money.format(summary.draftOneTime.toDouble(), currency)}", finance.expense)
-            Text("Your records change only when you apply.", style = IosText.caption2, color = IosColors.textSecondary)
+            Text(stringResource(R.string.plan_your_records_change_only_when), style = IosText.caption2, color = IosColors.textSecondary)
         }
     }
 }
@@ -420,20 +424,19 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
             if (state.draftChangeCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        val changeLabel = if (state.draftChangeCount == 1) "1 change" else "${state.draftChangeCount} changes"
                         Text(
-                            if (applyFailed) "$changeLabel didn't apply" else "$changeLabel in your draft",
+                            if (applyFailed) Strings.plural(R.plurals.plan_changes_didnt_apply, state.draftChangeCount) else Strings.plural(R.plurals.plan_changes_in_draft, state.draftChangeCount),
                             style = IosText.subheadline.w(FontWeight.Bold),
                             color = IosColors.textPrimary,
                         )
                         Text(
-                            if (applyFailed) "The rest is saved. Try again." else "Nothing is final until you apply.",
+                            if (applyFailed) stringResource(R.string.plan_the_rest_is_saved_try) else stringResource(R.string.plan_nothing_is_final_until_you),
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                         )
                     }
                     Text(
-                        "Discard",
+                        stringResource(R.string.common_discard),
                         modifier = Modifier.testTag("monthPlan.discard")
                             .clickable(enabled = !state.isApplying && state.isOnline, role = Role.Button) { onConfirm(ConfirmAction.DISCARD) },
                         style = IosText.subheadline.w(FontWeight.SemiBold),
@@ -449,7 +452,7 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                if (state.isApplying) "Applying…" else if (applyFailed) "Retry" else "Apply",
+                                if (state.isApplying) stringResource(R.string.plan_applying) else if (applyFailed) stringResource(R.string.common_retry) else stringResource(R.string.plan_apply),
                                 style = IosText.subheadline.w(FontWeight.Bold),
                                 color = androidx.compose.ui.graphics.Color.White,
                             )
@@ -459,7 +462,7 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
             }
             state.applyMessage?.let { Text(it, color = if (it.startsWith("Couldn't")) finance.expense else IosColors.textSecondary, style = IosText.caption) }
             state.draftMessage?.let { Text(it, color = IosColors.textSecondary, style = IosText.caption) }
-            if (state.isSavingDraft) Text("Saving draft…", style = IosText.caption, color = IosColors.textSecondary)
+            if (state.isSavingDraft) Text(stringResource(R.string.plan_saving_draft), style = IosText.caption, color = IosColors.textSecondary)
         }
     }
 }
@@ -474,12 +477,12 @@ private fun IncomeSection(
     onChange: (MonthPlanRecurringRow) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.income")) {
-        PlanSectionTitle("Income")
+        PlanSectionTitle(stringResource(R.string.common_income))
         GlassCard {
             Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 if (rows.isEmpty()) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("No income scheduled yet.", Modifier.weight(1f), style = IosText.subheadline, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.plan_no_income_scheduled_yet), Modifier.weight(1f), style = IosText.subheadline, color = IosColors.textSecondary)
                         IncomeBillsLink(onOpenIncomeAndBills)
                     }
                 }
@@ -492,7 +495,7 @@ private fun IncomeSection(
                     }
                 }
                 if (transactions.isNotEmpty()) {
-                    Text("In your records", Modifier.padding(top = Spacing.s, bottom = Spacing.xs), style = IosText.caption, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.plan_in_your_records), Modifier.padding(top = Spacing.s, bottom = Spacing.xs), style = IosText.caption, color = IosColors.textSecondary)
                     transactions.forEach { RecordedPlanEntry(it, state, viewModel) }
                 }
             }
@@ -503,7 +506,7 @@ private fun IncomeSection(
 @Composable
 private fun IncomeBillsLink(onClick: () -> Unit) {
     Text(
-        "Change in Income & bills",
+        stringResource(R.string.plan_change_in_income_bills),
         Modifier.clickable(role = Role.Button, onClick = onClick).testTag("monthPlan.openIncomeAndBills"),
         style = IosText.caption.w(FontWeight.Bold),
         color = IosColors.spendOrange,
@@ -513,10 +516,10 @@ private fun IncomeBillsLink(onClick: () -> Unit) {
 @Composable
 private fun BillsSection(rows: List<MonthPlanRecurringRow>, transactions: List<MonthPlanTransactionRow>, state: MonthPlanUiState, viewModel: MonthPlanViewModel, onChange: (MonthPlanRecurringRow) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.bills")) {
-        PlanSectionTitle("Bills")
+        PlanSectionTitle(stringResource(R.string.common_bills))
         if (rows.isEmpty()) {
             Text(
-                "No bills scheduled yet.",
+                stringResource(R.string.plan_no_bills_scheduled_yet),
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
                     .background(IosColors.textSecondary.copy(alpha = 0.04f)).padding(Spacing.m),
                 style = IosText.subheadline,
@@ -525,7 +528,7 @@ private fun BillsSection(rows: List<MonthPlanRecurringRow>, transactions: List<M
         }
         rows.forEach { row -> RecurringPlanRow(row, state, viewModel, onChange, isIncome = false, groupedIncome = false) }
         if (transactions.isNotEmpty()) {
-            PlanSectionTitle("In your records")
+            PlanSectionTitle(stringResource(R.string.plan_in_your_records))
             transactions.forEach { RecordedPlanEntry(it, state, viewModel) }
         }
     }
@@ -543,7 +546,7 @@ private fun RecordedPlanEntry(row: MonthPlanTransactionRow, state: MonthPlanUiSt
     GlassCard(Modifier.fillMaxWidth().testTag("monthPlan.transaction.${row.transaction.id}")) {
         IosRow(
             title = row.transaction.description,
-            subtitle = runCatching { LocalDate.parse(row.transaction.date.take(10)).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
+            subtitle = runCatching { LocalDate.parse(row.transaction.date.take(10)).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(row.transaction.date.take(10)),
             icon = SfSymbols.icon("receipt"),
             iconTint = if (row.isIncome) finance.income else finance.expense,
             divider = false,
@@ -560,7 +563,7 @@ private fun RecordedPlanEntry(row: MonthPlanTransactionRow, state: MonthPlanUiSt
                             enabled = !state.isApplying,
                             modifier = Modifier.testTag("monthPlan.transactionAction.${row.transaction.id}"),
                             contentPadding = PaddingValues(0.dp),
-                        ) { Text(if (row.isDeleted) "Undo" else "Remove", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary) }
+                        ) { Text(if (row.isDeleted) stringResource(R.string.common_undo) else stringResource(R.string.plan_remove), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary) }
                     }
                 }
             },
@@ -621,27 +624,27 @@ private fun RecurringPlanRow(
         // A debt's last payment is smaller than the rest: then the count alone is honest.
         val dates = if (row.occurrenceCount > 1) {
             if (row.hasUniformAmounts) "${row.occurrenceCount} × ${Money.format(row.amounts.first().toDouble(), state.currency)}"
-            else "${row.occurrenceCount} payments"
-        } else row.dates.firstOrNull()?.format(DateTimeFormatter.ofPattern("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
+            else Strings.plural(R.plurals.count_payment, row.occurrenceCount)
+        } else row.dates.firstOrNull()?.format(LocalizedDate.formatter("MMM d", LocalConfiguration.current.locales[0])).orEmpty()
         Text(dates, style = IosText.caption, color = IosColors.textSecondary)
         if (!state.isPast) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 PlanTextAction(
-                    if (row.isSkipped) "Undo skip" else "Skip",
+                    if (row.isSkipped) stringResource(R.string.plan_undo_skip) else stringResource(R.string.plan_skip),
                     "monthPlan.skip.${row.templateId}",
                     enabled = !state.isApplying,
                     onClick = { viewModel.stageSkip(row.templateId, row.dates, skipped = !row.isSkipped) },
                 )
                 if (!row.isSkipped) {
                     PlanTextAction(
-                        "Change",
+                        stringResource(R.string.plan_change),
                         "monthPlan.change.${row.templateId}",
                         enabled = !state.isApplying,
                         onClick = { onChange(row) },
                     )
                     if (row.hasAmountChange) {
                         PlanTextAction(
-                            "Reset",
+                            stringResource(R.string.plan_reset),
                             "monthPlan.reset.${row.templateId}",
                             enabled = !state.isApplying,
                             onClick = { viewModel.resetAmountChange(row.templateId) },
@@ -650,10 +653,10 @@ private fun RecurringPlanRow(
                 }
                 PlanTextAction(
                     when {
-                        row.isLogged && row.hasAmountChange -> "Logged in draft"
-                        row.isLogged -> "Undo log"
-                        isIncome -> "Log this month"
-                        else -> "Log as paid"
+                        row.isLogged && row.hasAmountChange -> stringResource(R.string.plan_logged_in_draft)
+                        row.isLogged -> stringResource(R.string.plan_undo_log)
+                        isIncome -> stringResource(R.string.plan_log_this_month)
+                        else -> stringResource(R.string.plan_log_as_paid)
                     },
                     "monthPlan.log.${row.templateId}",
                     enabled = !state.isApplying && !(row.isLogged && row.hasAmountChange),
@@ -668,10 +671,10 @@ private fun RecurringPlanRow(
 @Composable
 private fun DebtTag(modifier: Modifier = Modifier) {
     Text(
-        "Debt",
+        stringResource(R.string.common_debt),
         modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
             .padding(horizontal = 6.dp, vertical = 2.dp)
-            .semantics { contentDescription = "Debt payment" },
+            .semantics { contentDescription = Strings.get(R.string.plan_debt_payment) },
         style = IosText.caption2.w(FontWeight.Bold),
         color = IosColors.spendOrange,
     )
@@ -680,7 +683,7 @@ private fun DebtTag(modifier: Modifier = Modifier) {
 @Composable
 private fun DraftBadge() {
     Text(
-        "Draft",
+        stringResource(R.string.plan_draft),
         Modifier.background(IosColors.spendOrange.copy(alpha = 0.12f), CircleShape)
             .padding(horizontal = 6.dp, vertical = 2.dp),
         style = IosText.caption2.w(FontWeight.Bold),
@@ -720,7 +723,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Icon(SfSymbols.icon("plus"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.dp))
-                    Text("Add one-time item", style = IosText.caption.w(FontWeight.Bold), color = IosColors.spendOrange)
+                    Text(stringResource(R.string.plan_add_one_time_item), style = IosText.caption.w(FontWeight.Bold), color = IosColors.spendOrange)
                 }
             }
         }
@@ -728,7 +731,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
             Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 val saved = viewModel.savedEntries(state)
                 if (state.draft.entries.isEmpty() && saved.isEmpty()) {
-                    Text("No one-time items yet.", Modifier.padding(vertical = 10.dp), style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.plan_no_one_time_items_yet), Modifier.padding(vertical = 10.dp), style = IosText.subheadline, color = IosColors.textSecondary)
                 } else {
                     saved.forEach { row ->
                         val transaction = row.transaction
@@ -739,21 +742,21 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
-                                        transaction.description.ifEmpty { "Transaction" },
+                                        transaction.description.ifEmpty { stringResource(R.string.common_transaction) },
                                         style = IosText.subheadline.w(FontWeight.SemiBold),
                                         color = IosColors.textPrimary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
-                                        "Saved",
+                                        stringResource(R.string.common_saved),
                                         style = IosText.caption2.w(FontWeight.Bold),
                                         color = IosColors.textSecondary,
                                         modifier = Modifier.clip(CircleShape).background(IosColors.textSecondary.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
                                 Text(
-                                    runCatching { LocalDate.parse(transaction.date).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(transaction.date),
+                                    runCatching { LocalDate.parse(transaction.date).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(transaction.date),
                                     style = IosText.caption,
                                     color = IosColors.textSecondary,
                                 )
@@ -777,7 +780,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                                     DraftBadge()
                                 }
                                 Text(
-                                    runCatching { LocalDate.parse(entry.date).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(entry.date),
+                                    runCatching { LocalDate.parse(entry.date).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(entry.date),
                                     style = IosText.caption,
                                     color = IosColors.textSecondary,
                                 )
@@ -797,7 +800,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
                                 ) {
                                     Icon(
                                         SfSymbols.icon("xmark.circle.fill"),
-                                        contentDescription = "Remove ${entry.description}",
+                                        contentDescription = stringResource(R.string.plan_remove_2, entry.description),
                                         tint = IosColors.textSecondary,
                                         modifier = Modifier.size(17.dp),
                                     )
@@ -829,10 +832,10 @@ private fun MoreTools(
                 },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("More tools", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.plan_more_tools), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
                 Icon(
                     com.spenditos.android.ui.components.SfSymbols.icon(if (expanded) "chevron.down" else "chevron.right"),
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = if (expanded) stringResource(R.string.plan_collapse) else stringResource(R.string.plan_expand),
                     tint = IosColors.spendOrange,
                     modifier = Modifier.size(14.dp),
                 )
@@ -856,21 +859,21 @@ private fun CheckupCard(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
             Icon(com.spenditos.android.ui.components.SfSymbols.icon("sparkles"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
-            Text("Plan checkup", style = IosText.callout.w(FontWeight.Bold), color = IosColors.textPrimary)
+            Text(stringResource(R.string.plan_plan_checkup), style = IosText.callout.w(FontWeight.Bold), color = IosColors.textPrimary)
         }
         Text(
-            "We compare this plan with expenses from your last four completed months. Suggestions need your review before anything is added.",
+            stringResource(R.string.plan_we_compare_this_plan_with),
             style = IosText.subheadline,
             color = IosColors.textSecondary,
         )
         when {
             checkup == null -> CircularProgressIndicator(Modifier.size(18.dp).padding(top = 4.dp), strokeWidth = 2.dp, color = IosColors.spendOrange)
             checkup.monthsWithExpenseHistory < 2 -> Text(
-                "There isn't enough expense history yet. We need transactions in at least two completed months.",
+                stringResource(R.string.plan_there_isn_t_enough_expense),
                 style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.padding(top = 4.dp),
             )
             state.visibleSuggestions.isEmpty() -> Text(
-                "No repeated expenses appear to be missing from this month's plan.",
+                stringResource(R.string.plan_no_repeated_expenses_appear_to),
                 style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.padding(top = 4.dp),
             )
             else -> state.visibleSuggestions.forEach { suggestion ->
@@ -883,26 +886,26 @@ private fun CheckupCard(
                         Text(suggestion.description, style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            if (suggestion.strength == "likely") "Likely repeat" else "Possible repeat",
+                            if (suggestion.strength == "likely") stringResource(R.string.plan_likely_repeat) else stringResource(R.string.plan_possible_repeat),
                             style = IosText.caption2.w(FontWeight.Bold),
                             color = IosColors.spendOrange,
                         )
                     }
                     Text(
-                        "${suggestion.categoryName} · seen in ${suggestion.observedMonths.size} months · typical ${Money.format(suggestion.amount, state.currency)}",
+                        stringResource(R.string.plan_suggestion_detail, suggestion.categoryName, suggestion.observedMonths.size, Money.format(suggestion.amount, state.currency)),
                         style = IosText.caption,
                         color = IosColors.textSecondary,
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Hide",
+                            stringResource(R.string.plan_hide),
                             style = IosText.caption.w(FontWeight.SemiBold),
                             color = IosColors.textSecondary,
                             modifier = Modifier.clickable(role = Role.Button) { onHide(suggestion.id) }.padding(vertical = 6.dp),
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "Review draft",
+                            stringResource(R.string.plan_review_draft),
                             style = IosText.caption.w(FontWeight.Bold),
                             color = IosColors.spendOrange,
                             modifier = Modifier.clickable(enabled = !state.isPast, role = Role.Button) { onReview(suggestion) }

@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.progress
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
@@ -67,7 +70,7 @@ fun StreakChip(modifier: Modifier = Modifier) {
             Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("${days}d", style = IosText.caption)
+            Text(stringResource(R.string.progress_d, days), style = IosText.caption)
             Text("streak", style = IosText.caption2)
         }
     }
@@ -84,14 +87,14 @@ fun StreakTile(modifier: Modifier = Modifier) {
         androidx.compose.foundation.layout.Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFF06A3B), modifier = Modifier.size(14.4.dp))
-                Text("Streak", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                Text(stringResource(R.string.progress_streak), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("flame.fill"), contentDescription = null, tint = Color(0xFFFF7A3D), modifier = Modifier.size(34.dp))
                 Text("$days", style = IosText.rounded(34, FontWeight.ExtraBold), color = IosColors.textPrimary)
-                Text(if (days == 1) "day" else "days", style = IosText.subheadline.w(FontWeight.Medium), color = IosColors.textSecondary)
+                Text(Strings.plural(R.plurals.streak_unit_days, days), style = IosText.subheadline.w(FontWeight.Medium), color = IosColors.textSecondary)
             }
-            Text("Keep logging to build it", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+            Text(stringResource(R.string.progress_keep_logging_to_build_it), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         }
     }
 }

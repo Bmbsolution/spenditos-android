@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -70,13 +73,13 @@ internal fun RuleAskSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Text(
-                "Always file ${ask.merchant} under ${ask.categoryName}?",
+                stringResource(R.string.scan_always_file_under, ask.merchant, ask.categoryName),
                 style = IosText.headline,
                 color = IosColors.textPrimary,
                 modifier = Modifier.testTag("rule-ask-title"),
             )
             Text(
-                "Next time Spenditos sees ${ask.merchant} in a scan or import, it files it under ${ask.categoryName} for you.",
+                stringResource(R.string.scan_next_time_spenditos_sees_in, ask.merchant, ask.categoryName),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
             )
@@ -84,7 +87,7 @@ internal fun RuleAskSheet(
                 Row(
                     Modifier.fillMaxWidth()
                         .toggleable(value = alsoUpdatePast, role = Role.Checkbox, onValueChange = { onToggleUpdatePast() })
-                        .semantics { stateDescription = if (alsoUpdatePast) "On" else "Off" }
+                        .semantics { stateDescription = if (alsoUpdatePast) Strings.get(R.string.scan_on) else Strings.get(R.string.scan_off) }
                         .testTag("rule-ask-past"),
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -96,7 +99,7 @@ internal fun RuleAskSheet(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        "Also update $pastCount past ${ask.merchant} ${if (pastCount == 1) "transaction" else "transactions"}",
+                        Strings.plural(R.plurals.scan_also_update_past, pastCount, pastCount, ask.merchant),
                         style = IosText.callout,
                         color = IosColors.textPrimary,
                         modifier = Modifier.weight(1f),
@@ -114,7 +117,7 @@ internal fun RuleAskSheet(
                     if (isSaving) {
                         CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Always", style = IosText.headline, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(stringResource(R.string.scan_always), style = IosText.headline, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
                 Box(
@@ -123,7 +126,7 @@ internal fun RuleAskSheet(
                         .testTag("rule-ask-once"),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Just this once", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.scan_just_this_once), style = IosText.headline, color = IosColors.textPrimary)
                 }
             }
         }

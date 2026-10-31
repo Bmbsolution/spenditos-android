@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +50,7 @@ internal fun LazyListScope.debtsSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Debts",
+                Strings.get(R.string.debts_debts),
                 Modifier.weight(1f).testTag("debts.section").semantics { contentDescription = "Debts" },
                 style = IosText.headline,
                 color = IosColors.textSecondary,
@@ -91,9 +93,9 @@ internal fun LazyListScope.debtsSection(
                         .padding(Spacing.m).testTag("debts.empty"),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("No debts yet", style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary)
+                    Text(Strings.get(R.string.debts_no_debts_yet), style = IosText.body.w(FontWeight.Medium), color = IosColors.textPrimary)
                     Text(
-                        "Add what you owe, pick a payment, and see when you'll be done.",
+                        Strings.get(R.string.debts_add_what_you_owe_pick),
                         style = IosText.subheadline,
                         color = IosColors.textSecondary,
                     )
@@ -104,14 +106,14 @@ internal fun LazyListScope.debtsSection(
             Row(
                 Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.xs).fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange.copy(alpha = 0.10f))
-                    .clickable(role = Role.Button, onClickLabel = "Opens a form to add a debt", onClick = onAdd)
+                    .clickable(role = Role.Button, onClickLabel = Strings.get(R.string.debts_opens_a_form_to_add), onClick = onAdd)
                     .padding(horizontal = Spacing.m, vertical = Spacing.s + 2.dp)
                     .testTag("debts.add"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(19.2.dp))
-                Text("Add a debt", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                Text(Strings.get(R.string.common_add_a_debt), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                 Spacer(Modifier.weight(1f))
             }
         }

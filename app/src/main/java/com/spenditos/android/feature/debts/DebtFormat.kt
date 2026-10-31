@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.debts.DebtSummary
 import com.spenditos.android.data.debts.DebtWithPlan
@@ -56,7 +59,7 @@ internal object DebtFormat {
 
     /** "Jul 2028" from "2028-07-01". */
     fun monthYear(iso: String?, locale: Locale = Locale.getDefault()): String? =
-        parse(iso)?.format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+        parse(iso)?.format(LocalizedDate.formatter("MMM yyyy", locale))
 
     /** "Oct 1, 2026" from "2026-10-01". */
     fun shortDate(iso: String?, locale: Locale = Locale.getDefault()): String? =
@@ -77,14 +80,14 @@ internal object DebtFormat {
     fun paymentPeriod(frequency: String, repeatInterval: Int?): String {
         val n = maxOf(1, repeatInterval ?: 1)
         return when (frequency) {
-            "daily" -> if (n == 1) "/ day" else "every $n days"
-            "weekly" -> if (n == 1) "/ week" else "every $n weeks"
-            "bi-weekly" -> "every ${2 * n} weeks"
-            "semi-monthly" -> if (n == 1) "twice a month" else "every $n half-months"
-            "monthly" -> if (n == 1) "/ month" else "every $n months"
-            "quarterly" -> if (n == 1) "/ quarter" else "every ${3 * n} months"
-            "semi-annually" -> "every ${6 * n} months"
-            "yearly" -> if (n == 1) "/ year" else "every $n years"
+            "daily" -> if (n == 1) Strings.get(R.string.debts_period_day) else Strings.get(R.string.debts_period_every_n_days, n)
+            "weekly" -> if (n == 1) Strings.get(R.string.debts_period_week) else Strings.get(R.string.debts_period_every_n_weeks, n)
+            "bi-weekly" -> Strings.get(R.string.debts_period_every_n_weeks, 2 * n)
+            "semi-monthly" -> if (n == 1) Strings.get(R.string.debts_period_twice_a_month) else Strings.get(R.string.debts_period_every_n_half_months, n)
+            "monthly" -> if (n == 1) Strings.get(R.string.debts_period_month) else Strings.get(R.string.debts_period_every_n_months, n)
+            "quarterly" -> if (n == 1) Strings.get(R.string.debts_period_quarter) else Strings.get(R.string.debts_period_every_n_months, 3 * n)
+            "semi-annually" -> Strings.get(R.string.debts_period_every_n_months, 6 * n)
+            "yearly" -> if (n == 1) Strings.get(R.string.debts_period_year) else Strings.get(R.string.debts_period_every_n_years, n)
             else -> ""
         }
     }
@@ -117,15 +120,15 @@ internal object DebtFormat {
         val summary = plan.summary
         if (summary.isPaidOff) {
             val date = shortDate(summary.paidOffDate, locale)
-            return if (date != null) "Paid off on $date" else "Paid off"
+            return if (date != null) Strings.get(R.string.debts_paid_off_on, date) else Strings.get(R.string.debts_paid_off)
         }
-        val parts = mutableListOf("${money(summary.balance, currencyCode, locale)} left of ${money(plan.debt.startingBalance, currencyCode, locale)}")
+        val parts = mutableListOf(Strings.get(R.string.debts_left_of, money(summary.balance, currencyCode, locale), money(plan.debt.startingBalance, currencyCode, locale)))
         if (plan.paymentsStopped) {
-            parts += "Payments stopped"
+            parts += Strings.get(R.string.debts_payments_stopped)
         } else if (plan.projection.neverPaysOff) {
-            parts += "Payment too low to finish"
+            parts += Strings.get(R.string.debts_payment_too_low_to_finish)
         } else {
-            monthYear(plan.projection.payoffDate, locale)?.let { parts += "done by $it" }
+            monthYear(plan.projection.payoffDate, locale)?.let { parts += Strings.get(R.string.debts_done_by_inline, it) }
         }
         return parts.joinToString(" · ")
     }
@@ -138,15 +141,15 @@ internal object DebtFormat {
  * puts a short code in `error` ([ApiError.Server.serverMessage]); nothing here shows the code itself.
  */
 internal object DebtErrorMessage {
-    const val OFFLINE = "You're offline. Connect to the internet to change your debts."
-    const val NOT_FOUND = "This debt couldn't be found. It may have been deleted."
-    const val TARGET_TOO_SOON = "That month is too soon. Pick a later month, or a payment you can make."
-    const val FUTURE_DATE = "The date can't be in the future."
-    const val PAYMENT_INCOMPLETE = "Add how much you pay, how often, and the date of the next payment."
-    const val INVALID_INPUT = "Check the amounts and dates and try again."
-    const val CANT_REACH = "Can't reach Spenditos right now. Check your connection and try again."
-    const val GENERIC = "Something went wrong. Please try again."
-    const val CATEGORY_UNAVAILABLE = "The category for this debt isn't available anymore. Pick another one and try again."
+    val OFFLINE: String get() = Strings.get(R.string.debts_you_re_offline_connect_to)
+    val NOT_FOUND: String get() = Strings.get(R.string.debts_this_debt_couldn_t_be)
+    val TARGET_TOO_SOON: String get() = Strings.get(R.string.debts_that_month_is_too_soon)
+    val FUTURE_DATE: String get() = Strings.get(R.string.debts_the_date_can_t_be)
+    val PAYMENT_INCOMPLETE: String get() = Strings.get(R.string.debts_add_how_much_you_pay)
+    val INVALID_INPUT: String get() = Strings.get(R.string.debts_check_the_amounts_and_dates)
+    val CANT_REACH: String get() = Strings.get(R.string.debts_can_t_reach_spenditos_right)
+    val GENERIC: String get() = Strings.get(R.string.auth_something_went_wrong_please_try)
+    val CATEGORY_UNAVAILABLE: String get() = Strings.get(R.string.debts_the_category_for_this_debt)
 
     /**
      * [offline] is true when a write was refused because the device has no connection (nothing was
@@ -179,15 +182,15 @@ internal fun parseDebtAmount(text: String): Double? =
 
 /** "Enter how much you paid" style validation shared by the two debt sheets (iOS `amountError`). */
 internal fun extraPaymentAmountError(text: String, showErrors: Boolean): String? {
-    if (text.isBlank()) return if (showErrors) "Enter how much you paid" else null
+    if (text.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_how_much_you_paid) else null
     val amount = parseDebtAmount(text)
-    return if (amount == null || amount <= 0) "Enter an amount above zero" else null
+    return if (amount == null || amount <= 0) Strings.get(R.string.common_enter_an_amount_above_zero) else null
 }
 
 internal fun correctBalanceAmountError(text: String, showErrors: Boolean): String? {
-    if (text.isBlank()) return if (showErrors) "Enter what you owe today" else null
+    if (text.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_what_you_owe_today) else null
     val amount = parseDebtAmount(text)
-    return if (amount == null || amount < 0) "Enter zero or more" else null
+    return if (amount == null || amount < 0) Strings.get(R.string.debts_enter_zero_or_more) else null
 }
 
 /** The balance as the Correct balance field's starting text: "6040" or "6040.50". */

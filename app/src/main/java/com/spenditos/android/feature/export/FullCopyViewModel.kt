@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.export
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -118,13 +120,13 @@ class FullCopyViewModel @Inject constructor(
     }
 
     private fun message(error: Throwable): String = when (error) {
-        is ApiError.Network -> "You're offline. Check your connection and try again."
-        is ApiError.Unauthorized -> "Your session expired. Sign in and try again."
-        is SessionChangedException -> "The signed-in account changed, so nothing was saved. Try again."
-        is ExportSaveFailedException -> "Couldn't save the file there. Try another location."
+        is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+        is ApiError.Unauthorized -> Strings.get(R.string.export_your_session_expired_sign_in)
+        is SessionChangedException -> Strings.get(R.string.export_the_signed_in_account_changed_2)
+        is ExportSaveFailedException -> Strings.get(R.string.export_couldn_t_save_the_file)
         // `{error: "ExportFailed", message: "Could not build your data file. Please try again."}`
         is ApiError.Server -> error.serverMessage.takeIf { it.isNotBlank() && it != "Unknown error" }
-            ?: "Couldn't download your data. Try again."
-        else -> "Couldn't download your data. Try again."
+            ?: Strings.get(R.string.export_couldn_t_download_your_data)
+        else -> Strings.get(R.string.export_couldn_t_download_your_data)
     }
 }

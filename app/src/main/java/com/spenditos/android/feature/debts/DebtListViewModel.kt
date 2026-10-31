@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.sync.Aggregate
@@ -46,8 +48,8 @@ data class DebtListUiState(
     val headerSubtitle: String?
         get() = when {
             !hasDebts -> null
-            allPaidOff -> "All paid off"
-            else -> "${DebtFormat.money(totalOwed, currency)} owed"
+            allPaidOff -> Strings.get(R.string.debts_all_paid_off)
+            else -> Strings.get(R.string.debts_amount_owed, DebtFormat.money(totalOwed, currency))
         }
 
     fun debt(withId: String): DebtWithPlan? = debts.firstOrNull { it.id == withId }

@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
@@ -85,9 +88,9 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(SfSymbols.icon("envelope.badge.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(72.dp))
-                    Text("Verify your email", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
+                    Text(stringResource(R.string.auth_verify_your_email), style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
                     Text(
-                        "Enter the 6-digit code we sent to\n$email",
+                        stringResource(R.string.auth_enter_the_6_digit_code, email),
                         style = IosText.subheadline,
                         color = IosColors.textSecondary,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -108,7 +111,7 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                     state.error?.let { ErrorMessageBanner(it, Modifier.fillMaxWidth()) }
                     state.notice?.let { NoticeMessageBanner(it, Modifier.fillMaxWidth()) }
                     VerifyLoadingButton(
-                        text = "Verify",
+                        text = stringResource(R.string.auth_verify),
                         onClick = { viewModel.verify(email) },
                         enabled = state.canVerify,
                         loading = state.isLoading,
@@ -121,7 +124,7 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                         colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
                     ) {
                         Text(
-                            if (state.resendSecondsRemaining > 0) "Resend code in ${state.resendSecondsRemaining}s" else "Resend code",
+                            if (state.resendSecondsRemaining > 0) stringResource(R.string.auth_resend_code_in_s, state.resendSecondsRemaining) else stringResource(R.string.auth_resend_code),
                             style = IosText.subheadline,
                         )
                     }
@@ -131,7 +134,7 @@ fun VerifyEmailScreen(email: String, onVerified: () -> Unit, onBack: () -> Unit)
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("verify.back"),
                 colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-            ) { Text("Back", style = IosText.subheadline) }
+            ) { Text(stringResource(R.string.common_back), style = IosText.subheadline) }
         }
     }
 }
@@ -143,7 +146,7 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.height(56.dp).semantics { contentDescription = "Verification code" },
+        modifier = modifier.height(56.dp).semantics { contentDescription = Strings.get(R.string.auth_verification_code) },
         singleLine = true,
         textStyle = IosText.rounded(28, FontWeight.Bold).copy(color = Color.Transparent, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(Color.Transparent),
@@ -153,7 +156,7 @@ private fun OtpTextField(value: String, onValueChange: (String) -> Unit, modifie
         decorationBox = { innerTextField ->
             Box(contentAlignment = Alignment.Center) {
                 Row(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "6-digit verification code" },
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = Strings.get(R.string.auth_six_digit_verification_code) },
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     repeat(6) { index ->

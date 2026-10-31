@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -126,7 +129,7 @@ fun FilterSheet(
         Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().testTag("transaction-filter-sheet")) {
             Box(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.s)) {
                 Text(
-                    "Filters",
+                    stringResource(R.string.transactions_filters),
                     modifier = Modifier.align(Alignment.Center),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
@@ -135,7 +138,7 @@ fun FilterSheet(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.CenterEnd),
                 ) {
-                    Text("Done", style = IosText.body, color = IosColors.spendOrange)
+                    Text(stringResource(R.string.common_done), style = IosText.body, color = IosColors.spendOrange)
                 }
             }
             Column(
@@ -237,7 +240,7 @@ private fun PresetsSection(
     onDelete: (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SectionTitle("Saved Presets")
+        SectionTitle(stringResource(R.string.transactions_saved_presets))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             presets.forEachIndexed { index, preset ->
                 key(preset.id) {
@@ -259,7 +262,7 @@ private fun PresetsSection(
                             ) {
                                 Icon(
                                     SfSymbols.icon("trash"),
-                                    contentDescription = "Delete",
+                                    contentDescription = stringResource(R.string.common_delete),
                                     tint = Color.White,
                                     modifier = Modifier.size(19.2.dp),
                                 )
@@ -271,7 +274,7 @@ private fun PresetsSection(
                                 .fillMaxWidth()
                                 .semantics {
                                     customActions = listOf(
-                                        CustomAccessibilityAction("Delete preset") {
+                                        CustomAccessibilityAction(Strings.get(R.string.transactions_delete_preset)) {
                                             onDelete(index)
                                             true
                                         },
@@ -321,16 +324,16 @@ private fun QuickDatesSection(
     onLastDays: (Long) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SectionTitle("Quick Dates")
+        SectionTitle(stringResource(R.string.transactions_quick_dates))
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            QuickDateButton("Today", onToday)
-            QuickDateButton("This Week", onThisWeek)
-            QuickDateButton("This Month", onThisMonth)
-            QuickDateButton("Last 30d") { onLastDays(30) }
-            QuickDateButton("Last 90d") { onLastDays(90) }
+            QuickDateButton(stringResource(R.string.common_today), onToday)
+            QuickDateButton(stringResource(R.string.transactions_this_week), onThisWeek)
+            QuickDateButton(stringResource(R.string.transactions_this_month), onThisMonth)
+            QuickDateButton(stringResource(R.string.transactions_last_30d)) { onLastDays(30) }
+            QuickDateButton(stringResource(R.string.transactions_last_90d)) { onLastDays(90) }
         }
     }
 }
@@ -362,7 +365,7 @@ private fun DateRangeSection(
 ) {
     val medium = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SectionTitle("Date Range")
+        SectionTitle(stringResource(R.string.transactions_date_range))
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -388,8 +391,8 @@ private fun DateRangeSection(
             }
         }
         if (selected == DateRangeFilter.CUSTOM) {
-            DateBoundRow("From", customStart.format(medium), onPickStart)
-            DateBoundRow("To", customEnd.format(medium), onPickEnd)
+            DateBoundRow(stringResource(R.string.common_from), customStart.format(medium), onPickStart)
+            DateBoundRow(stringResource(R.string.common_to), customEnd.format(medium), onPickEnd)
         }
     }
 }
@@ -419,10 +422,10 @@ private fun AmountRangeSection(
     onMax: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SectionTitle("Amount Range")
+        SectionTitle(stringResource(R.string.transactions_amount_range))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
-            AmountField(symbol, minText, "Min", onMin, Modifier.weight(1f))
-            AmountField(symbol, maxText, "Max", onMax, Modifier.weight(1f))
+            AmountField(symbol, minText, stringResource(R.string.transactions_min), onMin, Modifier.weight(1f))
+            AmountField(symbol, maxText, stringResource(R.string.transactions_max), onMax, Modifier.weight(1f))
         }
     }
 }
@@ -464,15 +467,15 @@ private fun AmountField(
 @Composable
 private fun TypeSection(selected: EntryType?, onSelect: (EntryType?) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SectionTitle("Type")
+        SectionTitle(stringResource(R.string.common_type))
         Row(
             modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).clip(RoundedCornerShape(Radius.m)),
         ) {
-            TypeButton("All", selected == null, IosColors.spendOrange, Modifier.weight(1f)) { onSelect(null) }
-            TypeButton("Income", selected == EntryType.INCOME, IosColors.income, Modifier.weight(1f)) {
+            TypeButton(stringResource(R.string.common_all), selected == null, IosColors.spendOrange, Modifier.weight(1f)) { onSelect(null) }
+            TypeButton(stringResource(R.string.common_income), selected == EntryType.INCOME, IosColors.income, Modifier.weight(1f)) {
                 onSelect(EntryType.INCOME)
             }
-            TypeButton("Expenses", selected == EntryType.EXPENSE, IosColors.expense, Modifier.weight(1f)) {
+            TypeButton(stringResource(R.string.common_expenses), selected == EntryType.EXPENSE, IosColors.expense, Modifier.weight(1f)) {
                 onSelect(EntryType.EXPENSE)
             }
         }
@@ -514,11 +517,11 @@ private fun CategorySection(
     }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionTitle("Categories")
+            SectionTitle(stringResource(R.string.common_categories))
             Spacer(Modifier.weight(1f))
             if (selected.isNotEmpty()) {
                 Text(
-                    "Clear",
+                    stringResource(R.string.transactions_clear),
                     modifier = Modifier.clickable(role = Role.Button, onClick = onClear),
                     style = IosText.subheadline,
                     color = IosColors.spendOrange,
@@ -548,7 +551,7 @@ private fun CategorySection(
                 decorationBox = { inner ->
                     Box {
                         if (search.isEmpty()) {
-                            Text("Search categories...", style = IosText.callout, color = IosColors.textSecondary)
+                            Text(stringResource(R.string.common_search_categories), style = IosText.callout, color = IosColors.textSecondary)
                         }
                         inner()
                     }
@@ -566,7 +569,7 @@ private fun CategorySection(
                 ) {
                     Icon(
                         SfSymbols.icon("xmark.circle.fill"),
-                        contentDescription = "Clear",
+                        contentDescription = stringResource(R.string.transactions_clear),
                         tint = IosColors.textSecondary,
                         modifier = Modifier.size(18.dp),
                     )
@@ -622,10 +625,10 @@ private fun BottomActions(onSave: () -> Unit, onApply: () -> Unit, onReset: () -
                 tint = IosColors.spendOrange,
                 modifier = Modifier.size(20.4.dp),
             )
-            Text("Save Preset", style = IosText.headline, color = IosColors.spendOrange)
+            Text(stringResource(R.string.transactions_save_preset), style = IosText.headline, color = IosColors.spendOrange)
         }
         Text(
-            "Apply Filters",
+            stringResource(R.string.transactions_apply_filters),
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(Radius.m))
@@ -637,7 +640,7 @@ private fun BottomActions(onSave: () -> Unit, onApply: () -> Unit, onReset: () -
             textAlign = TextAlign.Center,
         )
         Text(
-            "Reset All",
+            stringResource(R.string.transactions_reset_all),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button, onClick = onReset)
@@ -654,10 +657,10 @@ private fun SavePresetDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Save Preset") },
+        title = { Text(stringResource(R.string.transactions_save_preset)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text("Enter a name for this filter preset.", style = IosText.callout, color = IosColors.textSecondary)
+                Text(stringResource(R.string.transactions_enter_a_name_for_this), style = IosText.callout, color = IosColors.textSecondary)
                 BasicTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -671,7 +674,7 @@ private fun SavePresetDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
                         .padding(Spacing.m),
                     decorationBox = { inner ->
                         Box {
-                            if (name.isEmpty()) Text("Preset Name", style = IosText.body, color = IosColors.textTertiary)
+                            if (name.isEmpty()) Text(stringResource(R.string.transactions_preset_name), style = IosText.body, color = IosColors.textTertiary)
                             inner()
                         }
                     },
@@ -683,10 +686,10 @@ private fun SavePresetDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
                 val trimmed = name.trim()
                 if (trimmed.isNotEmpty()) onSave(trimmed)
                 else onDismiss()
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.common_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
         },
     )
 }
@@ -705,7 +708,7 @@ private fun LocalDateDialog(initial: LocalDate, onDismiss: () -> Unit, onConfirm
                 if (millis != null) onConfirm(LocalDate.ofEpochDay(millis / MILLIS_PER_DAY)) else onDismiss()
             }) { Text("OK") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     ) { DatePicker(state = pickerState) }
 }
 
@@ -722,6 +725,5 @@ private fun currencySymbol(currency: String): String = when (currency.uppercase(
 
 /** Spoken label for the filter amount fields, mirroring the AddTransactionSheet amount pattern. */
 internal fun amountFieldDescription(placeholder: String, symbol: String): String {
-    val bound = if (placeholder.equals("Min", ignoreCase = true)) "Minimum" else "Maximum"
-    return "$bound amount in $symbol"
+    return if (placeholder.equals(Strings.get(R.string.transactions_min), ignoreCase = true)) Strings.get(R.string.transactions_min_amount_in, symbol) else Strings.get(R.string.transactions_max_amount_in, symbol)
 }

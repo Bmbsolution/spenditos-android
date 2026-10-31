@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -174,13 +176,13 @@ class IncomeAndBillsViewModel @Inject constructor(
     // Lifecycle (#403)
 
     fun pause(template: RecurringTemplate) = lifecycle(
-        text = "${template.description} paused",
+        text = Strings.get(R.string.recurring_x_paused, template.description),
         action = { recurring.pause(template.id) },
         undo = { recurring.resume(template.id) },
     )
 
     fun resume(template: RecurringTemplate) = lifecycle(
-        text = "${template.description} resumed",
+        text = Strings.get(R.string.recurring_x_resumed, template.description),
         action = { recurring.resume(template.id) },
         undo = { recurring.pause(template.id) },
     )
@@ -197,7 +199,7 @@ class IncomeAndBillsViewModel @Inject constructor(
         if (oneMore && next != null && !nextIsThisMonth) {
             val previous = template.occurrencesRemaining
             lifecycle(
-                text = "${template.description} ends after ${BillText.monthDay(next)}",
+                text = Strings.get(R.string.recurring_x_ends_after, template.description, BillText.monthDay(next)),
                 action = { recurring.endAfterNextPayment(template.id) },
                 undo = { recurring.update(template.id, BillLifecycleRequests.restoreOccurrences(previous)) },
             )
@@ -206,14 +208,14 @@ class IncomeAndBillsViewModel @Inject constructor(
 
         val wasPaused = template.lifecycle == BillLifecycle.PAUSED
         lifecycle(
-            text = "${template.description} ended",
+            text = Strings.get(R.string.recurring_x_ended, template.description),
             action = { recurring.end(template.id, keepUpcoming = oneMore) },
             undo = { if (wasPaused) recurring.pause(template.id) else recurring.resume(template.id) },
         )
     }
 
     fun startAgain(template: RecurringTemplate, nextDate: LocalDate) = lifecycle(
-        text = "${template.description} started again",
+        text = Strings.get(R.string.recurring_x_started_again, template.description),
         action = { recurring.startAgain(template.id, nextDate) },
         undo = null,
     )
@@ -283,12 +285,12 @@ class IncomeAndBillsViewModel @Inject constructor(
             it.copy(
                 isLoading = false,
                 isOffline = error is ApiError.Network || error is IOException,
-                error = if (error is ApiError.Network || error is IOException) "You're offline. Check your connection and try again." else "Couldn't load income and bills. Please try again.",
+                error = if (error is ApiError.Network || error is IOException) Strings.get(R.string.common_you_re_offline_check_your) else Strings.get(R.string.recurring_couldn_t_load_income_and),
             )
         }
     }
 
     private fun writeMessage(error: Throwable): String =
-        if (error is ApiError.Network || error is IOException) "You're offline. Reconnect to save changes."
-        else "Couldn't save changes. Please try again."
+        if (error is ApiError.Network || error is IOException) Strings.get(R.string.recurring_you_re_offline_reconnect_to)
+        else Strings.get(R.string.recurring_couldn_t_save_changes_please)
 }

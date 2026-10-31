@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.capture
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -255,7 +257,7 @@ class CaptureViewModel @Inject constructor(
     /** Called only after ActivityResultContracts.RequestPermission grants RECORD_AUDIO. */
     fun onRecordPermissionResult(granted: Boolean) {
         if (!granted) {
-            _state.update { it.copy(mode = CaptureMode.SPEAK, permissionDenied = true, error = "Allow microphone access in Settings to use voice capture.", offline = false) }
+            _state.update { it.copy(mode = CaptureMode.SPEAK, permissionDenied = true, error = Strings.get(R.string.capture_allow_microphone_access_in_settings_2), offline = false) }
             return
         }
         _state.update { it.copy(permissionDenied = false, error = null, offline = false) }
@@ -271,7 +273,7 @@ class CaptureViewModel @Inject constructor(
         val file = try {
             recorder.start()
         } catch (_: Exception) {
-            _state.update { it.copy(error = "Couldn't start recording. Try again.", offline = false) }
+            _state.update { it.copy(error = Strings.get(R.string.capture_couldn_t_start_recording_try), offline = false) }
             return
         }
         activeRecording = file
@@ -306,7 +308,7 @@ class CaptureViewModel @Inject constructor(
         persist()
         if (file == null) {
             activeRecording = null
-            _state.update { it.copy(step = CaptureStep.Input, error = "No recording file found.") }
+            _state.update { it.copy(step = CaptureStep.Input, error = Strings.get(R.string.capture_no_recording_file_found)) }
             return
         }
         operationJob = viewModelScope.launch {
@@ -403,7 +405,7 @@ class CaptureViewModel @Inject constructor(
                 if (remaining.none { it.include }) {
                     _state.value = current.copy(step = CaptureStep.Done, items = emptyList(), savedCount = savedTotal, error = null, offline = false)
                     persist()
-                    _events.send(CaptureEvent.Saved("Saved $savedTotal transactions"))
+                    _events.send(CaptureEvent.Saved(Strings.plural(R.plurals.capture_saved_transactions_n, savedTotal)))
                 } else {
                     _state.value = current.copy(step = CaptureStep.Review, items = remaining, savedCount = savedTotal, error = null, offline = false)
                     persist()
@@ -512,13 +514,13 @@ class CaptureViewModel @Inject constructor(
 
     private fun showError(error: Throwable, returnTo: CaptureStep) {
         val message = when (error) {
-            is ApiError.Network -> "You're offline. Try again when you're connected."
-            is ApiError.Server -> if (error.isQuotaExhausted) QuotaCopy.VOICE_EXHAUSTED else "Couldn't complete that. Try again."
-            CaptureFailure.NoSpeechDetected -> "No speech was detected. Please speak clearly and try again."
-            CaptureFailure.EmptyTranscript -> "No transcript was returned. Try again."
+            is ApiError.Network -> Strings.get(R.string.common_you_re_offline_try_again)
+            is ApiError.Server -> if (error.isQuotaExhausted) QuotaCopy.VOICE_EXHAUSTED else Strings.get(R.string.capture_couldn_t_complete_that_try)
+            CaptureFailure.NoSpeechDetected -> Strings.get(R.string.capture_no_speech_was_detected_please)
+            CaptureFailure.EmptyTranscript -> Strings.get(R.string.capture_no_transcript_was_returned_try)
             is CaptureFailure.AnalysisFailed -> error.userMessage
-            CaptureFailure.AnalysisTimeout -> "Analysis timed out. Try again."
-            else -> "Couldn't complete that. Try again."
+            CaptureFailure.AnalysisTimeout -> Strings.get(R.string.capture_analysis_timed_out_try_again)
+            else -> Strings.get(R.string.capture_couldn_t_complete_that_try)
         }
         val quotaHit = error is ApiError.Server && error.isQuotaExhausted
         _state.update { current ->

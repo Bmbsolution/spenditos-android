@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings.rules
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -124,7 +126,7 @@ private fun RulesListPage(state: RulesUiState, viewModel: RulesViewModel, onBack
 
     IosScreen {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-            RulesTopBar(title = "Rules", onBack = onBack, backTag = "rules.back") {
+            RulesTopBar(title = stringResource(R.string.settings_rules), onBack = onBack, backTag = "rules.back") {
                 IconButton(onClick = { showAdd = true }, modifier = Modifier.size(44.dp).testTag("rules.add")) {
                     Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
                 }
@@ -141,8 +143,8 @@ private fun RulesListPage(state: RulesUiState, viewModel: RulesViewModel, onBack
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.Center) {
                             EmptyState(
                                 icon = "arrow.triangle.branch",
-                                title = "No rules yet",
-                                subtitle = "Rules appear when you choose 'Always' while reviewing a scan.",
+                                title = stringResource(R.string.settings_no_rules_yet),
+                                subtitle = stringResource(R.string.settings_rules_appear_when_you_choose),
                                 modifier = Modifier.testTag("rules-empty"),
                             )
                         }
@@ -154,7 +156,7 @@ private fun RulesListPage(state: RulesUiState, viewModel: RulesViewModel, onBack
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
                             Text(
-                                "Learned from your reviews. Spenditos applies them to every scan and import.",
+                                stringResource(R.string.settings_learned_from_your_reviews_spenditos),
                                 style = IosText.subheadline,
                                 color = IosColors.textSecondary,
                                 modifier = Modifier.padding(horizontal = Spacing.xs).padding(bottom = Spacing.xs),
@@ -259,7 +261,7 @@ private fun RuleEditPage(
 
     IosScreen {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-            RulesTopBar(title = "Rule", onBack = onBack, backTag = "rules.edit.back")
+            RulesTopBar(title = stringResource(R.string.settings_rule), onBack = onBack, backTag = "rules.edit.back")
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.screen).padding(top = Spacing.m, bottom = Spacing.xl),
@@ -268,7 +270,7 @@ private fun RuleEditPage(
                 state.error?.let { ErrorBanner(it, Modifier.testTag("rules.error"), onDismiss = onDismissError) }
 
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text("When the merchant is", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.settings_when_the_merchant_is), style = IosText.subheadline, color = IosColors.textSecondary)
                     Text(
                         rule.displayName,
                         style = IosText.title3.w(FontWeight.SemiBold),
@@ -278,7 +280,7 @@ private fun RuleEditPage(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text("File it under", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.settings_file_it_under), style = IosText.subheadline, color = IosColors.textSecondary)
                     FlowRow(
                         Modifier.fillMaxWidth().alpha(if (skipIt) 0.4f else 1f),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -303,18 +305,18 @@ private fun RuleEditPage(
                         // With no category to go back to, the rule stays a skip rule until the user picks one.
                     },
                     toggleTag = "rule-edit-skip",
-                    footer = if (!skipIt && rule.ruleAction == RuleAction.SKIP) "Pick a category to finish." else null,
+                    footer = if (!skipIt && rule.ruleAction == RuleAction.SKIP) stringResource(R.string.settings_pick_a_category_to_finish) else null,
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    PillButton("Done", onClick = onBack, modifier = Modifier.fillMaxWidth().testTag("rule-edit-done"))
+                    PillButton(stringResource(R.string.common_done), onClick = onBack, modifier = Modifier.fillMaxWidth().testTag("rule-edit-done"))
                     Box(
                         Modifier.fillMaxWidth().heightIn(min = 44.dp)
                             .clickable(enabled = !state.isDeleting, role = Role.Button) { confirmDelete = true }
                             .testTag("rule-edit-delete"),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Delete rule", style = IosText.body, color = IosColors.expense)
+                        Text(stringResource(R.string.settings_delete_rule), style = IosText.body, color = IosColors.expense)
                     }
                 }
             }
@@ -324,14 +326,14 @@ private fun RuleEditPage(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete rule?", style = IosText.headline) },
-            text = { Text("Spenditos will stop applying the rule for \"${rule.displayName}\".", style = IosText.callout) },
+            title = { Text(stringResource(R.string.settings_delete_rule_2), style = IosText.headline) },
+            text = { Text(stringResource(R.string.settings_spenditos_will_stop_applying_the, rule.displayName), style = IosText.callout) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete() }, modifier = Modifier.testTag("rule-edit-delete-confirm")) {
-                    Text("Delete", color = IosColors.expense)
+                    Text(stringResource(R.string.common_delete), color = IosColors.expense)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -375,10 +377,10 @@ private fun SkipCard(skipIt: Boolean, onChange: (Boolean) -> Unit, toggleTag: St
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Skip it", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.settings_skip_it), style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = Modifier.weight(1f))
             IosSwitch(checked = skipIt, onCheckedChange = onChange, modifier = Modifier.testTag(toggleTag), tint = IosColors.spendOrange)
         }
-        Text("Card payments and transfers that aren't spending", style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.settings_card_payments_and_transfers_that), style = IosText.subheadline, color = IosColors.textSecondary)
         footer?.let { Text(it, style = IosText.subheadline, color = IosColors.spendOrange) }
     }
 }
@@ -411,9 +413,9 @@ private fun AddRuleSheet(
         Column(Modifier.fillMaxSize().dismissKeyboardOnTapOutside().navigationBarsPadding().testTag("rules.add.sheet")) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss, modifier = Modifier.width(80.dp)) {
-                    Text("Cancel", style = IosText.body, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.common_cancel), style = IosText.body, color = IosColors.textSecondary)
                 }
-                Text("New Rule", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.settings_new_rule), style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 Box(Modifier.width(80.dp))
             }
             Column(
@@ -424,7 +426,7 @@ private fun AddRuleSheet(
                 state.addError?.let { ErrorBanner(it, Modifier.testTag("rules.add.error"), onDismiss = onDismissError) }
 
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text("Merchant", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.settings_merchant), style = IosText.subheadline, color = IosColors.textSecondary)
                     BasicTextField(
                         value = merchant,
                         onValueChange = { merchant = it.take(200) },
@@ -436,13 +438,13 @@ private fun AddRuleSheet(
                         modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("rule-add-merchant"),
                         decorationBox = { inner ->
                             Box {
-                                if (merchant.isEmpty()) Text("e.g. Tim Hortons, Uber, Amazon", style = IosText.body, color = IosColors.textTertiary)
+                                if (merchant.isEmpty()) Text(stringResource(R.string.rules_merchant_placeholder), style = IosText.body, color = IosColors.textTertiary)
                                 inner()
                             }
                         },
                     )
                     Text(
-                        "Ignores case and punctuation. Matches transactions from this merchant.",
+                        stringResource(R.string.settings_ignores_case_and_punctuation_matches),
                         style = IosText.caption,
                         color = IosColors.textTertiary,
                     )
@@ -452,19 +454,19 @@ private fun AddRuleSheet(
 
                 if (!skipIt) {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        Text("File it under", style = IosText.subheadline, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.settings_file_it_under), style = IosText.subheadline, color = IosColors.textSecondary)
                         state.categories.filter { !it.isIncome }.takeIf { it.isNotEmpty() }?.let { rows ->
-                            CategorySection("Expense", rows, categoryId) { categoryId = it }
+                            CategorySection(stringResource(R.string.common_expense), rows, categoryId) { categoryId = it }
                         }
                         state.categories.filter { it.isIncome }.takeIf { it.isNotEmpty() }?.let { rows ->
-                            CategorySection("Income", rows, categoryId) { categoryId = it }
+                            CategorySection(stringResource(R.string.common_income), rows, categoryId) { categoryId = it }
                         }
                     }
                 }
 
                 Box(Modifier.fillMaxWidth()) {
                     PillButton(
-                        text = "Create Rule",
+                        text = stringResource(R.string.settings_create_rule),
                         onClick = { onSave(merchant, skipIt, categoryId) },
                         enabled = canSave,
                         modifier = Modifier.fillMaxWidth().testTag("rule-add-save"),

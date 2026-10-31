@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.pulse
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.feature.home.CashFlowStatus
 import java.math.BigDecimal
 import java.math.MathContext
@@ -23,8 +25,8 @@ object HealthScore {
         savingsRate = 0.0,
         trend = SpendingTrend.STABLE,
         recommendations = listOf(
-            "Start logging income and expenses to build your health score.",
-            "Add your first transaction to activate tracking.",
+            Strings.get(R.string.home_start_logging_income_and_expenses),
+            Strings.get(R.string.home_add_your_first_transaction_to_2),
         ),
     )
 
@@ -46,8 +48,8 @@ object HealthScore {
         val rate = status?.let(::savingsRate) ?: return NO_INCOME
         val trend = trend(weekExpenses)
         val factors = listOf(
-            "Savings Rate" to rate,
-            "Spending Trend" to when (trend) {
+            Strings.get(R.string.home_savings_rate) to rate,
+            Strings.get(R.string.common_spending_trend) to when (trend) {
                 SpendingTrend.DECREASING -> 1.0
                 SpendingTrend.STABLE -> 0.5
                 SpendingTrend.INCREASING -> 0.0
@@ -58,14 +60,14 @@ object HealthScore {
         for ((name, _) in factors.take(3)) {
             val tip = when (name) {
                 "Savings Rate" -> when {
-                    rate < 0.2 -> "Your savings rate is low. Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings."
-                    rate < 0.4 -> "Increase your savings rate by reviewing subscriptions and discretionary spending."
-                    else -> "Great savings rate. Consider automating transfers to a savings or investment account."
+                    rate < 0.2 -> Strings.get(R.string.home_your_savings_rate_is_low)
+                    rate < 0.4 -> Strings.get(R.string.home_increase_your_savings_rate_by)
+                    else -> Strings.get(R.string.home_great_savings_rate_consider_automating)
                 }
                 else -> when (trend) {
-                    SpendingTrend.INCREASING -> "Spending is trending up. Audit your last 7 days for impulse purchases."
-                    SpendingTrend.STABLE -> "Spending is flat. Look for one category to optimize this week."
-                    SpendingTrend.DECREASING -> "Spending is declining — nice work. Lock in the habit with a weekly review."
+                    SpendingTrend.INCREASING -> Strings.get(R.string.home_spending_is_trending_up_audit)
+                    SpendingTrend.STABLE -> Strings.get(R.string.home_spending_is_flat_look_for)
+                    SpendingTrend.DECREASING -> Strings.get(R.string.home_spending_is_declining_nice_work)
                 }
             }
             if (tip !in tips) tips += tip

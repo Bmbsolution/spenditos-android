@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.entitlement.ProAccessState
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -25,8 +27,8 @@ object SettingsPlanLabel {
     fun welcomePremiumText(state: ProAccessState, locale: Locale = Locale.getDefault(), zone: ZoneId = ZoneId.systemDefault()): String? {
         if (!state.isWelcomeOnly) return null
         val status = state.serverStatus ?: return null
-        val expires = status.expiresAtInstant ?: return "Welcome Premium"
+        val expires = status.expiresAtInstant ?: return Strings.get(R.string.settings_welcome_premium)
         val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).withZone(zone).format(expires)
-        return "Welcome Premium · ends $date"
+        return Strings.get(R.string.settings_welcome_premium_ends, date)
     }
 }

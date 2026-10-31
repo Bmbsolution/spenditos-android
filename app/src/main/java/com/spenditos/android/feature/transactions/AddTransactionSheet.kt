@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -327,14 +331,14 @@ fun AddTransactionSheet(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.width(64.dp))
                     Text(
-                        "Select Category",
+                        stringResource(R.string.common_select_category),
                         style = IosText.headline,
                         color = IosColors.textPrimary,
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
                     )
                     TextButton(onClick = { showCategoryPicker = false }, modifier = Modifier.width(64.dp)) {
-                        Text("Done", style = IosText.body, color = IosColors.spendOrange)
+                        Text(stringResource(R.string.common_done), style = IosText.body, color = IosColors.spendOrange)
                     }
                 }
                 CategorySearchField(
@@ -355,7 +359,7 @@ fun AddTransactionSheet(
                             modifier = Modifier.size(48.dp),
                         )
                         Spacer(Modifier.height(Spacing.m))
-                        Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.common_no_categories_found), style = IosText.body, color = IosColors.textSecondary)
                     }
                 } else {
                     LazyVerticalGrid(
@@ -381,7 +385,7 @@ fun AddTransactionSheet(
                 // iOS CategoryPickerView: create a category when the search has no exact match.
                 val query = categorySearchText.trim()
                 if (state.visibleCategories.none { it.name.equals(query, ignoreCase = true) }) {
-                    val kind = if (state.type == EntryType.INCOME) "Income" else "Expense"
+                    val kind = if (state.type == EntryType.INCOME) stringResource(R.string.common_income) else stringResource(R.string.common_expense)
                     Box(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m))
                             .background(IosColors.spendOrange.copy(alpha = 0.08f))
@@ -398,7 +402,7 @@ fun AddTransactionSheet(
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                             Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
                             Text(
-                                if (query.isEmpty()) "Add $kind Category" else "Add \"$query\"",
+                                if (query.isEmpty()) stringResource(R.string.transactions_add_category, kind) else stringResource(R.string.transactions_add, query),
                                 style = IosText.callout.w(FontWeight.SemiBold),
                                 color = IosColors.spendOrange,
                             )
@@ -412,8 +416,8 @@ fun AddTransactionSheet(
 
     if (showDiscardConfirmation) {
         DiscardChangesSheet(
-            title = if (state.isEditMode) "Discard your changes?" else "Discard this transaction?",
-            message = if (state.isEditMode) "Your edits won't be saved." else "What you entered won't be saved.",
+            title = if (state.isEditMode) stringResource(R.string.transactions_discard_your_changes) else stringResource(R.string.transactions_discard_this_transaction),
+            message = if (state.isEditMode) stringResource(R.string.transactions_your_edits_won_t_be) else stringResource(R.string.common_what_you_entered_won_t),
             onKeep = { showDiscardConfirmation = false },
             onDiscard = { showDiscardConfirmation = false; onDismiss() },
         )
@@ -422,16 +426,16 @@ fun AddTransactionSheet(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Transaction?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.transactions_delete_transaction)) },
+            text = { Text(stringResource(R.string.transactions_this_action_cannot_be_undone)) },
             confirmButton = {
                 TextButton(
                     onClick = { showDeleteConfirmation = false; viewModel.delete() },
                     enabled = !state.isSaving,
-                ) { Text("Delete", color = IosColors.expense) }
+                ) { Text(stringResource(R.string.common_delete), color = IosColors.expense) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteConfirmation = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -439,9 +443,9 @@ fun AddTransactionSheet(
     if (state.billChoices.isNotEmpty()) {
         val choices = state.billChoices
         val title = if (choices.size == 1) {
-            val kind = if (state.type == EntryType.INCOME) "income" else "bill"
-            "Is this your ${choices.first().billName} $kind?"
-        } else if (state.type == EntryType.INCOME) "Which income is this?" else "Which bill is this?"
+            val kind = if (state.type == EntryType.INCOME) stringResource(R.string.common_noun_income) else stringResource(R.string.common_noun_bill)
+            stringResource(R.string.transactions_is_this_your, choices.first().billName, kind)
+        } else if (state.type == EntryType.INCOME) stringResource(R.string.transactions_which_income_is_this) else stringResource(R.string.transactions_which_bill_is_this)
         AlertDialog(
             onDismissRequest = viewModel::dismissBillQuestion,
             title = { Text(title) },
@@ -450,16 +454,16 @@ fun AddTransactionSheet(
                 Column(horizontalAlignment = Alignment.End) {
                     choices.forEach { candidate ->
                         TextButton(onClick = { viewModel.chooseBill(candidate) }) {
-                            Text(if (choices.size == 1) "Use this one" else candidateLabel(candidate, state.currency))
+                            Text(if (choices.size == 1) stringResource(R.string.transactions_use_this_one) else candidateLabel(candidate, state.currency))
                         }
                     }
                     TextButton(onClick = viewModel::saveSeparate) {
-                        Text(if (choices.size == 1) "Save as separate" else "None of these, save as separate")
+                        Text(if (choices.size == 1) stringResource(R.string.transactions_save_as_separate) else stringResource(R.string.transactions_none_of_these_save_as))
                     }
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissBillQuestion) { Text("Cancel") }
+                TextButton(onClick = viewModel::dismissBillQuestion) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -467,25 +471,25 @@ fun AddTransactionSheet(
     state.existingBill?.let { bill ->
         AlertDialog(
             onDismissRequest = viewModel::dismissBillQuestion,
-            title = { Text("You already have ${bill.description}") },
+            title = { Text(stringResource(R.string.transactions_you_already_have, bill.description)) },
             text = {
                 Text(
-                    "${bill.description} · ${moneyText(bill.amount, state.currency)} · next ${formatShortDate(bill.firstOccurrenceDate)}. " +
-                        "Link this payment to it instead of creating a second bill?",
+                    stringResource(R.string.transactions_bill_summary_next, bill.description, moneyText(bill.amount, state.currency), formatShortDate(bill.firstOccurrenceDate)) + " " +
+                        stringResource(R.string.transactions_link_this_payment_to_it),
                 )
             },
             confirmButton = {
                 Column(horizontalAlignment = Alignment.End) {
                     TextButton(onClick = viewModel::useExistingBill, enabled = !state.isSaving) {
-                        Text("Use existing bill")
+                        Text(stringResource(R.string.transactions_use_existing_bill))
                     }
                     TextButton(onClick = viewModel::createNewBill, enabled = !state.isSaving) {
-                        Text("Create a new bill")
+                        Text(stringResource(R.string.transactions_create_a_new_bill))
                     }
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissBillQuestion) { Text("Cancel") }
+                TextButton(onClick = viewModel::dismissBillQuestion) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -523,10 +527,10 @@ fun AddTransactionSheet(
                 }) { Text("OK", color = IosColors.spendOrange) }
             },
             dismissButton = {
-                TextButton(onClick = { showNextDuePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showNextDuePicker = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         ) {
-            DatePicker(state = pickerState, title = { Text("Next due") }, showModeToggle = false, colors = datePickerColors())
+            DatePicker(state = pickerState, title = { Text(stringResource(R.string.transactions_next_due)) }, showModeToggle = false, colors = datePickerColors())
         }
     }
 }
@@ -551,7 +555,7 @@ private fun QuickAddHeader(
         ) {
             Icon(
                 SfSymbols.icon("xmark"),
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.common_close),
                 tint = IosColors.textPrimary,
                 modifier = Modifier.size(19.dp),
             )
@@ -570,7 +574,7 @@ private fun EntryTypeSwitch(selected: EntryType, onSelect: (EntryType) -> Unit) 
     val tertiary = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
     Row(
         Modifier.clip(CircleShape).background(tertiary).padding(3.dp)
-            .semantics { contentDescription = "Transaction type" }
+            .semantics { contentDescription = Strings.get(R.string.transactions_transaction_type) }
             .testTag("quick-add-type-picker"),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -598,7 +602,7 @@ private fun EntryTypeSwitch(selected: EntryType, onSelect: (EntryType) -> Unit) 
                     modifier = Modifier.size(14.dp),
                 )
                 Text(
-                    if (type == EntryType.EXPENSE) "Expense" else "Income",
+                    if (type == EntryType.EXPENSE) stringResource(R.string.common_expense) else stringResource(R.string.common_income),
                     style = IosText.subheadline.w(FontWeight.SemiBold),
                     color = content,
                     maxLines = 1,
@@ -620,9 +624,9 @@ private fun AssistedEntryBanner(source: String) {
     ) {
         Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Suggested from $source", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(stringResource(R.string.transactions_suggested_from, source), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Text(
-                "Review the suggested values before saving. Every field remains editable.",
+                stringResource(R.string.transactions_review_the_suggested_values_before),
                 style = IosText.caption,
                 color = IosColors.textSecondary,
             )
@@ -651,7 +655,7 @@ private fun SmartEntriesUsedBanner(onSeePro: (() -> Unit)?) {
             Text(QuotaCopy.SENTENCE_EXHAUSTED_BODY, style = IosText.caption, color = IosColors.textSecondary)
             if (onSeePro != null) {
                 Text(
-                    "See Pro",
+                    stringResource(R.string.transactions_see_pro),
                     style = IosText.caption.w(FontWeight.SemiBold),
                     color = IosColors.spendOrange,
                     modifier = Modifier.padding(top = 2.dp).clickable(role = Role.Button, onClick = onSeePro)
@@ -680,13 +684,13 @@ private fun UndoBanner(
     ) {
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(20.dp))
         Text(
-            "Saved " + description.ifEmpty { "transaction" } + " · " + moneyText(amount, currency) + " · $addedCount added",
+            stringResource(R.string.transactions_saved_summary, description.ifEmpty { stringResource(R.string.common_transaction).lowercase() }, moneyText(amount, currency), addedCount),
             style = IosText.subheadline,
             color = IosColors.textPrimary,
             modifier = Modifier.weight(1f),
         )
         Text(
-            "Undo",
+            stringResource(R.string.common_undo),
             style = IosText.subheadline.w(FontWeight.SemiBold),
             color = IosColors.spendOrange,
             modifier = Modifier.clickable(role = Role.Button, onClick = onUndo),
@@ -729,7 +733,7 @@ private fun HeroAmountField(
                 interactionSource = interactionSource,
                 textStyle = IosText.rounded(46, FontWeight.ExtraBold).copy(color = amountTint),
                 modifier = Modifier.weight(1f).alignBy(FirstBaseline).focusRequester(focusRequester)
-                    .semantics { contentDescription = "Amount in $currency. Enter the transaction amount" },
+                    .semantics { contentDescription = Strings.get(R.string.transactions_amount_in_enter_the_transaction, currency) },
                 decorationBox = { innerTextField ->
                     Box {
                         if (value.isEmpty()) {
@@ -753,7 +757,7 @@ private fun HeroAmountField(
                 else -> cardBorder()
             },
         )
-        if (missing) ValidationMessage("Enter an amount above zero")
+        if (missing) ValidationMessage(stringResource(R.string.common_enter_an_amount_above_zero))
     }
 }
 
@@ -783,7 +787,7 @@ private fun DescriptionField(
     modifier: Modifier = Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.fillMaxWidth()) {
-        Text("Merchant or description", style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.transactions_merchant_or_description), style = IosText.subheadline, color = IosColors.textSecondary)
         val shape = RoundedCornerShape(Radius.m)
         Row(
             Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer, shape)
@@ -806,7 +810,7 @@ private fun DescriptionField(
                     Box {
                         if (value.isEmpty()) {
                             Text(
-                                "Where or what, like Starbucks",
+                                stringResource(R.string.transactions_where_or_what_like_starbucks),
                                 style = IosText.callout,
                                 color = IosColors.textSecondary.copy(alpha = 0.55f),
                             )
@@ -829,7 +833,7 @@ private fun CategorySection(
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-            Text("Category", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+            Text(stringResource(R.string.common_category), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
             Spacer(Modifier.weight(1f))
             state.categorySuggestionSource?.let { source ->
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
@@ -854,13 +858,13 @@ private fun CategorySection(
             }
             val empty = state.visibleCategories.isEmpty()
             FormChip(
-                title = if (empty) "Add a category" else "More",
+                title = if (empty) stringResource(R.string.transactions_add_a_category) else stringResource(R.string.transactions_more),
                 systemImage = if (empty) "plus" else "square.grid.2x2",
                 onClick = onMore,
                 modifier = Modifier.testTag("add.category"),
             )
         }
-        if (state.categoryMissing) ValidationMessage("Pick a category")
+        if (state.categoryMissing) ValidationMessage(stringResource(R.string.transactions_pick_a_category))
     }
 }
 
@@ -918,7 +922,7 @@ private fun DateChoices(
     onPickDate: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text("Date", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+        Text(stringResource(R.string.common_date), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
         val today = date == LocalDate.now()
         val yesterday = date == LocalDate.now().minusDays(1)
         // The Pick date chip lights up only for a custom date (and then shows it), never because
@@ -929,10 +933,10 @@ private fun DateChoices(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            DateChip("Today", today, onToday)
-            DateChip("Yesterday", yesterday, onYesterday)
+            DateChip(stringResource(R.string.common_today), today, onToday)
+            DateChip(stringResource(R.string.common_yesterday), yesterday, onYesterday)
             DateChip(
-                if (custom) formatShortDate(date.toString()) else "Pick date",
+                if (custom) formatShortDate(date.toString()) else stringResource(R.string.transactions_pick_date),
                 custom,
                 onPickDate,
                 symbol = "calendar",
@@ -973,7 +977,7 @@ private fun EntryDatePickerDialog(date: LocalDate, onDismiss: () -> Unit, onPick
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     ) {
         DatePicker(
             state = pickerState,
@@ -1031,7 +1035,7 @@ private fun RecurringSection(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Make it recurring", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(stringResource(R.string.transactions_make_it_recurring), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                 Text(state.recurringSubtitle, style = IosText.caption, color = IosColors.textSecondary)
             }
             com.spenditos.android.ui.components.IosSwitch(
@@ -1053,7 +1057,7 @@ private fun RecurringSection(
                     .testTag("quick-add-next-due"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Next due", style = IosText.callout, color = IosColors.textPrimary)
+                Text(stringResource(R.string.transactions_next_due), style = IosText.callout, color = IosColors.textPrimary)
                 Spacer(Modifier.weight(1f))
                 Text(formatShortDate(state.nextDue.toString()), style = IosText.callout, color = IosColors.textSecondary)
                 Spacer(Modifier.width(Spacing.xs))
@@ -1080,7 +1084,7 @@ private fun CompactMoodPicker(
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("How did it feel?", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+            Text(stringResource(R.string.transactions_how_did_it_feel), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
             Spacer(Modifier.weight(1f))
             Text("OPTIONAL", style = IosText.caption2.w(FontWeight.Bold), color = IosColors.textTertiary)
         }
@@ -1136,7 +1140,7 @@ private fun DeleteTransactionButton(onClick: () -> Unit, modifier: Modifier = Mo
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(19.dp))
-        Text("Delete transaction", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.expense)
+        Text(stringResource(R.string.transactions_delete_transaction_2), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.expense)
     }
 }
 
@@ -1158,7 +1162,7 @@ private fun QuickAddBottomBar(
     ) {
         if (state.isEditMode) {
             QuickAddLoadingButton(
-                text = if (state.type == EntryType.EXPENSE) "Update expense" else "Update income",
+                text = if (state.type == EntryType.EXPENSE) stringResource(R.string.transactions_update_expense) else stringResource(R.string.transactions_update_income),
                 isSaving = state.isSaving,
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().testTag("quick-add-save"),
@@ -1178,7 +1182,7 @@ private fun QuickAddBottomBar(
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                         MethodBarButton(
                             icon = "square.and.pencil",
-                            label = "Form",
+                            label = stringResource(R.string.transactions_form),
                             selected = true,
                             width = iconWidth,
                             onClick = {},
@@ -1187,7 +1191,7 @@ private fun QuickAddBottomBar(
                         onVoice?.let { callback ->
                             MethodBarButton(
                                 icon = "mic.fill",
-                                label = "Voice",
+                                label = stringResource(R.string.common_voice),
                                 selected = false,
                                 width = iconWidth,
                                 onClick = callback,
@@ -1198,7 +1202,7 @@ private fun QuickAddBottomBar(
                         onSentence?.let { callback ->
                             MethodBarButton(
                                 icon = "text.alignleft",
-                                label = "Sentence",
+                                label = stringResource(R.string.common_sentence),
                                 selected = false,
                                 width = iconWidth,
                                 onClick = callback,
@@ -1209,7 +1213,7 @@ private fun QuickAddBottomBar(
                             onScanReceipt?.let { callback ->
                                 MethodBarButton(
                                     icon = "doc.viewfinder",
-                                    label = "Scan",
+                                    label = stringResource(R.string.common_scan),
                                     selected = false,
                                     width = iconWidth,
                                     onClick = callback,
@@ -1257,7 +1261,7 @@ private fun SaveSplitButton(
         Row(
             Modifier.weight(1f).fillMaxHeight()
                 .clickable(enabled = !isSaving, role = Role.Button, onClick = onSave)
-                .semantics { if (isSaving) stateDescription = "Saving" }
+                .semantics { if (isSaving) stateDescription = Strings.get(R.string.common_saving) }
                 .testTag("quick-add-save"),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
@@ -1266,14 +1270,14 @@ private fun SaveSplitButton(
                 CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(Spacing.s))
             }
-            Text("Save", style = IosText.headline, color = Color.White, maxLines = 1, modifier = Modifier.testTag("add.save"))
+            Text(stringResource(R.string.common_save), style = IosText.headline, color = Color.White, maxLines = 1, modifier = Modifier.testTag("add.save"))
         }
         Box(Modifier.width(1.dp).height(24.dp).background(Color.White.copy(alpha = 0.3f)))
         Box {
             Box(
                 Modifier.width(chevronWidth).fillMaxHeight()
                     .clickable(role = Role.Button) { menuOpen = true }
-                    .semantics { contentDescription = "More save options" }
+                    .semantics { contentDescription = Strings.get(R.string.transactions_more_save_options) }
                     .testTag("quick-add-save-menu"),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1281,7 +1285,7 @@ private fun SaveSplitButton(
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Save and add another", style = IosText.callout) },
+                    text = { Text(stringResource(R.string.transactions_save_and_add_another), style = IosText.callout) },
                     leadingIcon = { Icon(SfSymbols.icon("plus.circle"), contentDescription = null, modifier = Modifier.size(20.dp)) },
                     enabled = !isSaving,
                     onClick = {
@@ -1371,7 +1375,7 @@ private fun CategorySearchField(value: String, onValueChange: (String) -> Unit, 
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->
                 Box {
-                    if (value.isEmpty()) Text("Search categories...", style = IosText.callout, color = IosColors.textSecondary)
+                    if (value.isEmpty()) Text(stringResource(R.string.common_search_categories), style = IosText.callout, color = IosColors.textSecondary)
                     innerTextField()
                 }
             },
@@ -1379,7 +1383,7 @@ private fun CategorySearchField(value: String, onValueChange: (String) -> Unit, 
         if (value.isNotEmpty()) {
             Icon(
                 SfSymbols.icon("xmark.circle.fill"),
-                contentDescription = "Clear search",
+                contentDescription = stringResource(R.string.common_clear_search),
                 tint = IosColors.textSecondary,
                 modifier = Modifier.size(20.dp).clickable(role = Role.Button) { onValueChange("") },
             )
@@ -1454,7 +1458,7 @@ private fun moneyText(amount: Double, currency: String): String = runCatching {
 
 private fun formatShortDate(iso: String): String =
     runCatching {
-        LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
+        LocalDate.parse(iso).format(LocalizedDate.formatter("MMM d", Locale.getDefault()))
     }.getOrDefault(iso)
 
 private fun candidateLabel(candidate: BillCandidate, currency: String): String =
@@ -1463,17 +1467,16 @@ private fun candidateLabel(candidate: BillCandidate, currency: String): String =
 private fun billChoiceMessage(choices: List<BillCandidate>, currency: String): String {
     if (choices.size == 1) {
         val only = choices.first()
-        return only.billName + " · " + moneyText(only.estimate, currency) + " · due " +
-            formatShortDate(only.dueDate) + ". Using it replaces the estimate, so it isn't counted twice."
+        return Strings.get(R.string.transactions_bill_choice_message, only.billName, moneyText(only.estimate, currency), formatShortDate(only.dueDate))
     }
-    return "It looks like more than one upcoming bill. Pick the one it pays so it isn't counted twice."
+    return Strings.get(R.string.transactions_it_looks_like_more_than)
 }
 
 private fun moodLabel(mood: TransactionMood): String = when (mood) {
-    TransactionMood.WORTH_IT -> "Worth It"
-    TransactionMood.NECESSARY -> "Necessary"
-    TransactionMood.REGRET -> "Regret"
-    TransactionMood.IMPULSIVE -> "Impulsive"
+    TransactionMood.WORTH_IT -> Strings.get(R.string.transactions_worth_it)
+    TransactionMood.NECESSARY -> Strings.get(R.string.transactions_necessary)
+    TransactionMood.REGRET -> Strings.get(R.string.transactions_regret)
+    TransactionMood.IMPULSIVE -> Strings.get(R.string.transactions_impulsive)
 }
 
 private fun moodIcon(mood: TransactionMood): String = when (mood) {

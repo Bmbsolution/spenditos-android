@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.plan
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -72,12 +74,12 @@ fun ChangeAmountSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_cancel), Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Text(row.description, style = IosText.headline, color = IosColors.textPrimary, maxLines = 1)
                 }
                 Text(
-                    "Save",
+                    stringResource(R.string.common_save),
                     Modifier.testTag("monthPlan.changeAmount.save").clickable(enabled = canSave, role = Role.Button) {
                         amount?.let { onSave(it); onDismiss() }
                     },
@@ -92,7 +94,7 @@ fun ChangeAmountSheet(
                     Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Amount", style = IosText.body, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_amount), style = IosText.body, color = IosColors.textPrimary)
                     Spacer(Modifier.weight(1f))
                     BasicTextField(
                         value = amountText,
@@ -107,18 +109,18 @@ fun ChangeAmountSheet(
                 }
             }
             Text(
-                "Only this month. ${row.description} stays ${Money.format(row.usualAmount.toDouble(), currency)} in Income & bills. It's logged with your amount when you apply your plan.",
+                stringResource(R.string.plan_only_this_month_stays_in, row.description, Money.format(row.usualAmount.toDouble(), currency)),
                 style = IosText.footnote,
                 color = IosColors.textSecondary,
             )
             if (row.dates.size > 10) {
-                Text("Amount changes are unavailable for this schedule.", style = IosText.caption, color = IosColors.expense)
+                Text(stringResource(R.string.plan_amount_changes_are_unavailable_for), style = IosText.caption, color = IosColors.expense)
             }
             // Only an amount override can be reset: resetAmountChange also drops a pending "Log as paid".
             if (row.hasAmountChange) {
                 HorizontalDivider(color = IosColors.separator)
                 Text(
-                    "Reset to usual amount",
+                    stringResource(R.string.plan_reset_to_usual_amount),
                     Modifier.fillMaxWidth().testTag("monthPlan.changeAmount.reset")
                         .clickable(role = Role.Button) { onReset(); onDismiss() }
                         .padding(vertical = Spacing.s),

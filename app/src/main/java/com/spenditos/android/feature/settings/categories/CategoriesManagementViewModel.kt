@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings.categories
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -86,9 +88,9 @@ class CategoriesManagementViewModel @Inject constructor(
                             isLoading = false,
                             isOffline = error is ApiError.Network,
                             error = when (error) {
-                                is ApiError.Network -> "You're offline. Showing saved categories."
+                                is ApiError.Network -> Strings.get(R.string.settings_you_re_offline_showing_saved)
                                 is ApiError.Server -> error.serverMessage
-                                else -> "Couldn't load categories. Try again."
+                                else -> Strings.get(R.string.settings_couldn_t_load_categories_try)
                             },
                         )
                     }
@@ -100,18 +102,18 @@ class CategoriesManagementViewModel @Inject constructor(
     fun saveCategory(id: String?, draft: CategoryDraft) {
         val name = draft.name.trim()
         if (name.isEmpty()) {
-            screen.update { it.copy(error = "Enter a category name.") }
+            screen.update { it.copy(error = Strings.get(R.string.common_enter_a_category_name)) }
             return
         }
         if (name.length > 100) {
-            screen.update { it.copy(error = "Name must be 100 characters or fewer.") }
+            screen.update { it.copy(error = Strings.get(R.string.common_name_must_be_100_characters)) }
             return
         }
         val duplicate = state.value.categories.firstOrNull { existing ->
             existing.id != id && existing.isIncome == draft.isIncome && normalizeCategoryName(existing.name) == normalizeCategoryName(name)
         }
         if (duplicate != null) {
-            screen.update { it.copy(error = "\"${duplicate.name}\" already exists.") }
+            screen.update { it.copy(error = Strings.get(R.string.common_category_already_exists, duplicate.name)) }
             return
         }
 
@@ -138,9 +140,9 @@ class CategoriesManagementViewModel @Inject constructor(
                             isSaving = false,
                             isOffline = error is ApiError.Network,
                             error = when (error) {
-                                is ApiError.Network -> "You're offline. Try again when you're connected."
+                                is ApiError.Network -> Strings.get(R.string.common_you_re_offline_try_again)
                                 is ApiError.Server -> error.serverMessage
-                                else -> "Couldn't save this category. Try again."
+                                else -> Strings.get(R.string.settings_couldn_t_save_this_category)
                             },
                         )
                     }
@@ -173,9 +175,9 @@ class CategoriesManagementViewModel @Inject constructor(
                                 isSaving = false,
                                 isOffline = error is ApiError.Network,
                                 error = when (error) {
-                                    is ApiError.Network -> "You're offline. Try again when you're connected."
+                                    is ApiError.Network -> Strings.get(R.string.common_you_re_offline_try_again)
                                     is ApiError.Server -> DELETE_ERROR_COPY[error.serverMessage] ?: error.serverMessage
-                                    else -> "Couldn't delete this category. Try again."
+                                    else -> Strings.get(R.string.settings_couldn_t_delete_this_category)
                                 },
                             )
                         }
@@ -199,6 +201,6 @@ internal fun normalizeCategoryName(value: String): String =
 private const val CATEGORY_IN_USE = "CategoryHasReferences"
 
 private val DELETE_ERROR_COPY = mapOf(
-    CATEGORY_IN_USE to "This category is still used by transactions or income and bills. Move them to another category first.",
-    "CategoryDeleteInProgress" to "This category is already being deleted. Try again in a moment.",
+    CATEGORY_IN_USE to Strings.get(R.string.settings_this_category_is_still_used),
+    "CategoryDeleteInProgress" to Strings.get(R.string.settings_this_category_is_already_being),
 )

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -66,9 +68,9 @@ class RegisterViewModel @Inject constructor(private val accounts: AccountOperati
 }
 
 internal fun accountErrorMessage(error: Throwable): String = when (error) {
-    is ApiError.Network -> "Can't reach Spenditos. Check your connection and try again."
+    is ApiError.Network -> Strings.get(R.string.auth_can_t_reach_spenditos_check)
     is ApiError.Server -> ACCOUNT_ERROR_COPY[error.serverMessage] ?: error.serverMessage
-    else -> "Something went wrong. Please try again."
+    else -> Strings.get(R.string.auth_something_went_wrong_please_try)
 }
 
 /**
@@ -77,8 +79,8 @@ internal fun accountErrorMessage(error: Throwable): String = when (error) {
  * confirm-registration 1093-1140) would otherwise be shown verbatim.
  */
 private val ACCOUNT_ERROR_COPY = mapOf(
-    "UserAlreadyExists" to "An account with this email already exists. Sign in or reset your password.",
-    "InvalidPassword" to "That password doesn't meet the requirements.",
-    "CodeMismatch" to "That code isn't right. Check your email and try again.",
-    "ExpiredCode" to "That code has expired. Request a new one.",
+    "UserAlreadyExists" to Strings.get(R.string.auth_an_account_with_this_email),
+    "InvalidPassword" to Strings.get(R.string.auth_that_password_doesn_t_meet),
+    "CodeMismatch" to Strings.get(R.string.auth_that_code_isn_t_right),
+    "ExpiredCode" to Strings.get(R.string.auth_that_code_has_expired_request),
 )

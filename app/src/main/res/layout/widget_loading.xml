@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Open Spenditos"
+        android:text="@string/widget_open_spenditos"
         android:textColor="#28231F"
         android:textSize="16sp" />
 </LinearLayout>

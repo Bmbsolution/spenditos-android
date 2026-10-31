@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings.categories
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -127,7 +129,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
             if (state.isOffline) {
                 item {
                     Text(
-                        "Check your connection and try again.",
+                        stringResource(R.string.settings_check_your_connection_and_try),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("categories.offline"),
@@ -147,7 +149,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                     item {
                         Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                if (selectedIncome) "Income categories" else "Expense categories",
+                                if (selectedIncome) stringResource(R.string.settings_income_categories) else stringResource(R.string.settings_expense_categories),
                                 style = IosText.subheadline.w(FontWeight.SemiBold),
                                 color = IosColors.textSecondary,
                                 modifier = Modifier.weight(1f).testTag("categories.section"),
@@ -175,7 +177,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                             ) {
                                 Icon(SfSymbols.icon("plus"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
-                                Text("Add category", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                                Text(stringResource(R.string.settings_add_category), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                             }
                         }
                     }
@@ -206,12 +208,12 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
     categoryToDelete?.takeIf { state.reassignFor == null }?.let { category ->
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
-            title = { Text("Delete Category", style = IosText.headline) },
+            title = { Text(stringResource(R.string.settings_delete_category), style = IosText.headline) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text("Are you sure you want to delete \"${category.name}\"? This action cannot be undone.", style = IosText.body)
+                    Text(stringResource(R.string.settings_are_you_sure_you_want_3, category.name), style = IosText.body)
                     state.error?.let { Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.delete.error")) }
-                    if (state.isOffline) Text("Check your connection and try again.", style = IosText.footnote, modifier = Modifier.testTag("categories.delete.offline"))
+                    if (state.isOffline) Text(stringResource(R.string.settings_check_your_connection_and_try), style = IosText.footnote, modifier = Modifier.testTag("categories.delete.offline"))
                 }
             },
             confirmButton = {
@@ -253,16 +255,16 @@ private fun ReassignCategoryDialog(
     AlertDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
         modifier = Modifier.testTag("categories.reassign"),
-        title = { Text("Move before deleting", style = IosText.headline) },
+        title = { Text(stringResource(R.string.settings_move_before_deleting), style = IosText.headline) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text(
-                    "\"${category.name}\" is still in use. Choose where its transactions and bills should go. They keep their amounts and dates.",
+                    stringResource(R.string.settings_category_in_use, category.name),
                     style = IosText.body,
                 )
                 if (candidates.isEmpty()) {
                     Text(
-                        "Add another ${if (category.isIncome) "income" else "expense"} category first, so there is somewhere to move them.",
+                        if (category.isIncome) stringResource(R.string.settings_add_another_income_category) else stringResource(R.string.settings_add_another_expense_category),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                     )
@@ -280,7 +282,7 @@ private fun ReassignCategoryDialog(
                                 val chosen = candidate.id == selectedId
                                 Icon(
                                     SfSymbols.icon(if (chosen) "checkmark.circle" else "circle"),
-                                    contentDescription = if (chosen) "Selected" else null,
+                                    contentDescription = if (chosen) stringResource(R.string.settings_selected) else null,
                                     tint = if (chosen) IosColors.spendOrange else IosColors.textTertiary,
                                     modifier = Modifier.size(22.dp),
                                 )
@@ -296,7 +298,7 @@ private fun ReassignCategoryDialog(
                 onClick = { selected?.let(onConfirm) },
                 enabled = selected != null && !isSaving,
                 modifier = Modifier.testTag("categories.reassign.confirm"),
-            ) { Text(selected?.let { "Move to ${it.name} and delete" } ?: "Choose a category") }
+            ) { Text(selected?.let { stringResource(R.string.settings_move_to_and_delete, it.name) } ?: stringResource(R.string.settings_choose_a_category)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isSaving, modifier = Modifier.testTag("categories.reassign.cancel")) { Text("Cancel") }
@@ -310,7 +312,7 @@ private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
             Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
-        Text("Categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(stringResource(R.string.common_categories), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
             Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
@@ -338,7 +340,7 @@ private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
             modifier = Modifier.weight(1f).testTag("categories.search"),
             decorationBox = { inner ->
                 Box {
-                    if (value.isEmpty()) Text("Search categories", style = IosText.callout, color = IosColors.textTertiary)
+                    if (value.isEmpty()) Text(stringResource(R.string.settings_search_categories), style = IosText.callout, color = IosColors.textTertiary)
                     inner()
                 }
             },
@@ -359,14 +361,14 @@ private fun EmptyCategories(isIncome: Boolean, onAdd: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(SfSymbols.icon("tag.slash"), contentDescription = null, tint = IosColors.spendOrange.copy(alpha = 0.6f), modifier = Modifier.size(48.dp))
-        Text("No ${if (isIncome) "income" else "expense"} categories", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
-        Text("Add a category to get started", style = IosText.callout, color = IosColors.textSecondary, maxLines = 3)
+        Text(if (isIncome) stringResource(R.string.settings_no_income_categories) else stringResource(R.string.settings_no_expense_categories), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("categories.empty"))
+        Text(stringResource(R.string.settings_add_a_category_to_get), style = IosText.callout, color = IosColors.textSecondary, maxLines = 3)
         Box(
             Modifier.clip(RoundedCornerShape(10.dp)).background(IosColors.spendOrange)
                 .clickable(role = Role.Button, onClick = onAdd).padding(horizontal = 24.dp, vertical = 8.dp).testTag("categories.empty.add"),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Add category", style = IosText.callout.w(FontWeight.Bold), color = Color.Black)
+            Text(stringResource(R.string.settings_add_category), style = IosText.callout.w(FontWeight.Bold), color = Color.Black)
         }
     }
 }
@@ -378,7 +380,7 @@ private fun CategoryTypePicker(selectedIncome: Boolean, onSelectIncome: (Boolean
             .clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        listOf(false to "Expenses", true to "Income").forEach { (income, label) ->
+        listOf(false to stringResource(R.string.common_expenses), true to stringResource(R.string.common_income)).forEach { (income, label) ->
             val selected = selectedIncome == income
             val tint = if (selected) IosColors.textPrimary else IosColors.textSecondary
             Row(
@@ -418,7 +420,7 @@ private fun CategoryManagementRow(category: Category, onOpen: () -> Unit) {
             Text(category.name, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
             if (category.isSystemSuggestion) {
                 Text(
-                    "Default",
+                    stringResource(R.string.settings_default),
                     style = IosText.caption,
                     color = IosColors.textSecondary,
                     modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(horizontal = Spacing.s, vertical = Spacing.xs),

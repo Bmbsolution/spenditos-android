@@ -120,6 +120,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    lint {
+        // Every English string must ship in French (values-fr), and nothing may exist only in French.
+        error += setOf("MissingTranslation", "ExtraTranslation")
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true

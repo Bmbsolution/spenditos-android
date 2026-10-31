@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.TransactionEntity
@@ -266,7 +268,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun refreshMessage(@Suppress("UNUSED_PARAMETER") error: Throwable): String =
-        "Couldn't refresh Home. Pull down to try again."
+        Strings.get(R.string.home_couldn_t_refresh_home_pull)
 
     private fun TransactionEntity.toModel() = Transaction(
         id = id,
@@ -288,7 +290,7 @@ internal fun recentActivity(transactions: List<Transaction>, categories: List<Ca
         .take(limit)
         .map { (tx, date) ->
             val category = byId[tx.categoryId]
-            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: "Transaction" }, category?.name ?: "Uncategorized", date, tx.amount, category?.isIncome == true, category?.color, category?.icon)
+            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: Strings.get(R.string.common_transaction) }, category?.name ?: Strings.get(R.string.common_uncategorized), date, tx.amount, category?.isIncome == true, category?.color, category?.icon)
         }
 }
 

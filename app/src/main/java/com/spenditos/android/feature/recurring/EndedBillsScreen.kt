@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +85,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-private val EndedFilters = listOf("All", "Income", "Bills")
+private val EndedFilters: List<String> get() = listOf(Strings.get(R.string.common_all), Strings.get(R.string.common_income), Strings.get(R.string.common_bills))
 
 /**
  * iOS `EndedBillsView` (#403): income and bills that stopped for good, grouped by the year they
@@ -137,7 +140,7 @@ fun EndedBillsScreen(onBack: () -> Unit, viewModel: IncomeAndBillsViewModel = hi
         Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
                 Box {
-                    LargeTitle("Ended")
+                    LargeTitle(stringResource(R.string.common_ended))
                     IconButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp, start = Spacing.s).size(44.dp).testTag("ended.back")) {
                         Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
                     }
@@ -149,9 +152,9 @@ fun EndedBillsScreen(onBack: () -> Unit, viewModel: IncomeAndBillsViewModel = hi
                         verticalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterVertically),
                     ) {
                         Icon(Icons.Outlined.Archive, contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(44.dp))
-                        Text("Nothing has ended", style = IosText.headline, color = IosColors.textPrimary)
+                        Text(stringResource(R.string.recurring_nothing_has_ended), style = IosText.headline, color = IosColors.textPrimary)
                         Text(
-                            "Income and bills you end move here, with what they added up to.",
+                            stringResource(R.string.recurring_income_and_bills_you_end),
                             Modifier.padding(horizontal = Spacing.xl),
                             style = IosText.callout,
                             color = IosColors.textSecondary,
@@ -284,7 +287,7 @@ private fun EndedBillDetailSheet(
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Text(template.description, style = IosText.headline, color = IosColors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Text("Done", Modifier.clickable(role = Role.Button, onClick = onDismiss).testTag("ended.detail.done"), style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_done), Modifier.clickable(role = Role.Button, onClick = onDismiss).testTag("ended.detail.done"), style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             }
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = Spacing.xl)) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -309,7 +312,7 @@ private fun EndedBillDetailSheet(
                 HorizontalDivider(color = IosColors.separator)
                 DetailAction(
                     icon = SfSymbols.icon("arrow.clockwise"),
-                    text = "Start again",
+                    text = stringResource(R.string.recurring_start_again),
                     color = IosColors.spendOrange,
                     enabled = !isWriting,
                     tag = "ended.startAgain",
@@ -317,7 +320,7 @@ private fun EndedBillDetailSheet(
                 HorizontalDivider(color = IosColors.separator, modifier = Modifier.padding(start = Spacing.screen))
                 DetailAction(
                     icon = SfSymbols.icon("trash"),
-                    text = "Delete for good",
+                    text = stringResource(R.string.recurring_delete_for_good),
                     color = IosColors.expense,
                     enabled = !isWriting,
                     tag = "ended.delete",
@@ -325,7 +328,7 @@ private fun EndedBillDetailSheet(
                 HorizontalDivider(color = IosColors.separator)
 
                 Text(
-                    if (isIncome) "Payments received" else "Payments",
+                    if (isIncome) stringResource(R.string.recurring_payments_received) else stringResource(R.string.recurring_payments),
                     Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).padding(top = Spacing.m, bottom = Spacing.s),
                     style = IosText.subheadline.w(FontWeight.SemiBold),
                     color = IosColors.textSecondary,
@@ -351,8 +354,8 @@ private fun EndedBillDetailSheet(
                             )
                         }
                     }
-                    historyFailed -> Text("Couldn't load payments right now.", Modifier.padding(horizontal = Spacing.screen).testTag("ended.detail.failed"), style = IosText.subheadline, color = IosColors.textSecondary)
-                    history != null -> Text("No payments were logged.", Modifier.padding(horizontal = Spacing.screen).testTag("ended.detail.none"), style = IosText.subheadline, color = IosColors.textSecondary)
+                    historyFailed -> Text(stringResource(R.string.recurring_couldn_t_load_payments_right), Modifier.padding(horizontal = Spacing.screen).testTag("ended.detail.failed"), style = IosText.subheadline, color = IosColors.textSecondary)
+                    history != null -> Text(stringResource(R.string.recurring_no_payments_were_logged), Modifier.padding(horizontal = Spacing.screen).testTag("ended.detail.none"), style = IosText.subheadline, color = IosColors.textSecondary)
                     else -> Box(Modifier.fillMaxWidth().padding(Spacing.m), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.size(24.dp))
                     }
@@ -375,13 +378,13 @@ private fun EndedBillDetailSheet(
                         onStartAgain(picked)
                     },
                     modifier = Modifier.testTag("ended.startAgain.confirm"),
-                ) { Text("Start $noun again") }
+                ) { Text(stringResource(R.string.recurring_start_again_2, noun)) }
             },
-            dismissButton = { TextButton(onClick = { showStartAgain = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showStartAgain = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) {
             Column {
                 Text(
-                    "When is the next payment due?",
+                    stringResource(R.string.recurring_when_is_the_next_payment),
                     Modifier.padding(horizontal = Spacing.l).padding(top = Spacing.m),
                     style = IosText.callout,
                     color = IosColors.textSecondary,
@@ -394,11 +397,11 @@ private fun EndedBillDetailSheet(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete for good?") },
-            text = { Text("Past payments stay in your transactions.") },
+            title = { Text(stringResource(R.string.recurring_delete_for_good_2)) },
+            text = { Text(stringResource(R.string.recurring_past_payments_stay_in_your)) },
             confirmButton = {
                 TextButton(onClick = { showDeleteConfirm = false; onDelete() }, modifier = Modifier.testTag("ended.delete.confirm")) {
-                    Text("Delete", color = IosColors.expense)
+                    Text(stringResource(R.string.common_delete), color = IosColors.expense)
                 }
             },
             dismissButton = { TextButton(onClick = { showDeleteConfirm = false }, modifier = Modifier.testTag("ended.delete.cancel")) { Text("Cancel") } },

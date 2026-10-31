@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -124,9 +127,9 @@ private fun ReadyCard(card: ScanCardState, onClick: () -> Unit) {
                 Text(it, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Text("Review", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.spendOrange)
+        Text(stringResource(R.string.scan_review), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.spendOrange)
     }
 }
 
 // iOS says "We'll let you know when it's ready." (a push). Android sends none: the card itself turns into "Ready to review".
-private const val READING_FALLBACK = "It'll show up here when it's ready."
+private val READING_FALLBACK: String get() = Strings.get(R.string.scan_it_ll_show_up_here)

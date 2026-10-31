@@ -133,6 +133,7 @@ class TransactionFilterTest {
         assertEquals("12.50", sanitizeAmountInput("12.50"))
         assertEquals("12.5", sanitizeAmountInput("12a.5b"))
         assertEquals("12.34", sanitizeAmountInput("12.3.4"))
+        assertEquals("12.5", sanitizeAmountInput("12,5"))
         assertEquals("", sanitizeAmountInput(""))
     }
 }

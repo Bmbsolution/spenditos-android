@@ -1,5 +1,7 @@
 package com.spenditos.android.data.purchases
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.LogLevel
@@ -101,7 +103,7 @@ class RevenueCatPurchasesService @Inject constructor(
 
     override suspend fun purchase(activity: Activity, packageId: String): PurchaseResult {
         if (!ensureConfigured()) return PurchaseResult.Failed(UNAVAILABLE)
-        val target = lastPackages[packageId] ?: return PurchaseResult.Failed("That plan isn't available right now. Refresh and try again.")
+        val target = lastPackages[packageId] ?: return PurchaseResult.Failed(Strings.get(R.string.data_purchases_that_plan_isn_t_available))
         return try {
             Purchases.sharedInstance.awaitPurchase(PurchaseParams.Builder(activity, target).build())
             PurchaseResult.Success
@@ -122,14 +124,14 @@ class RevenueCatPurchasesService @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            PurchaseResult.Failed("Couldn't restore purchases. Try again.")
+            PurchaseResult.Failed(Strings.get(R.string.data_purchases_couldn_t_restore_purchases_try))
         }
     }
 
     private fun classify(error: PurchasesError, userCancelled: Boolean): PurchaseResult = when {
         userCancelled || error.code == PurchasesErrorCode.PurchaseCancelledError -> PurchaseResult.Cancelled
         error.code == PurchasesErrorCode.PaymentPendingError -> PurchaseResult.Pending
-        error.code == PurchasesErrorCode.NetworkError -> PurchaseResult.Failed("You're offline. Check your connection and try again.")
+        error.code == PurchasesErrorCode.NetworkError -> PurchaseResult.Failed(Strings.get(R.string.common_you_re_offline_check_your))
         error.code == PurchasesErrorCode.ProductAlreadyPurchasedError -> PurchaseResult.Success
         else -> PurchaseResult.Failed(GENERIC)
     }
@@ -151,8 +153,8 @@ class RevenueCatPurchasesService @Inject constructor(
     )
 
     companion object {
-        const val UNAVAILABLE = "Subscriptions aren't available in this build."
-        const val GENERIC = "The purchase didn't go through. You haven't been charged. Try again."
+        val UNAVAILABLE: String get() = Strings.get(R.string.pro_subscriptions_aren_t_available_in)
+        val GENERIC: String get() = Strings.get(R.string.data_purchases_the_purchase_didn_t_go)
 
         /** Only builds with a RevenueCat key, outside the test flavors, can sell anything. */
         internal fun isConfigurable(apiKey: String, isHarness: Boolean, stage: String): Boolean =

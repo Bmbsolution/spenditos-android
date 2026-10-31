@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.plan
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -304,7 +307,7 @@ class MonthPlanViewModel @Inject constructor(
         val current = mutableState.value
         if (current.isPast || current.isApplying) return false
         if (current.applyIncomplete) {
-            mutableState.update { it.copy(draftMessage = "Finish or discard the plan before adding more entries.") }
+            mutableState.update { it.copy(draftMessage = Strings.get(R.string.plan_finish_or_discard_the_plan)) }
             return false
         }
         val cleanDescription = description.trim()
@@ -313,7 +316,7 @@ class MonthPlanViewModel @Inject constructor(
         if (cleanDescription.isEmpty() || cleanDescription.length > 200 || amount.signum() <= 0 ||
             amount > BigDecimal("1000000000") || categoryId.isBlank() || categories.none { it.id == categoryId } ||
             YearMonth.from(date) != month || current.draft.entries.size >= 100) {
-            mutableState.update { it.copy(draftMessage = "Enter a description, amount, category, and date in this month.") }
+            mutableState.update { it.copy(draftMessage = Strings.get(R.string.plan_enter_a_description_amount_category)) }
             return false
         }
         val id = UUID.randomUUID().toString().lowercase()
@@ -334,7 +337,7 @@ class MonthPlanViewModel @Inject constructor(
         val current = mutableState.value
         if (current.isPast) return
         if (current.applyIncomplete) {
-            mutableState.update { it.copy(draftMessage = "Finish or discard the plan before removing entries.") }
+            mutableState.update { it.copy(draftMessage = Strings.get(R.string.plan_finish_or_discard_the_plan_2)) }
             return
         }
         updateDraft(current.draft.copy(entries = current.draft.entries.filterNot { it.id == id }))
@@ -411,7 +414,7 @@ class MonthPlanViewModel @Inject constructor(
             mutableState.update { it.copy(isSavingDraft = false) }
             throw cancelled
         } catch (_: Exception) {
-            mutableState.update { it.copy(isSavingDraft = false, draftMessage = "The draft could not be saved. It is kept on screen.") }
+            mutableState.update { it.copy(isSavingDraft = false, draftMessage = Strings.get(R.string.plan_the_draft_could_not_be)) }
             false
         }
     }
@@ -420,7 +423,7 @@ class MonthPlanViewModel @Inject constructor(
         val current = mutableState.value
         if (current.draftChangeCount == 0 || current.isApplying || current.isPast) return
         if (!current.isOnline) {
-            mutableState.update { it.copy(applyMessage = "You're offline. Your draft stays here.") }
+            mutableState.update { it.copy(applyMessage = Strings.get(R.string.plan_you_re_offline_your_draft)) }
             return
         }
         val validation = current.draft.validationError(current.month)
@@ -431,7 +434,7 @@ class MonthPlanViewModel @Inject constructor(
         mutableState.update { it.copy(isApplying = true, applyMessage = null, draftMessage = null) }
         try {
             if (!flushAutosave()) {
-                mutableState.update { it.copy(applyMessage = "Save the draft before applying it.") }
+                mutableState.update { it.copy(applyMessage = Strings.get(R.string.plan_save_the_draft_before_applying)) }
                 return
             }
             val month = mutableState.value.month
@@ -439,12 +442,12 @@ class MonthPlanViewModel @Inject constructor(
                 MonthPlanApplyResult.Applied -> {
                     savedDraft = null
                     mutableState.update {
-                        it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = "${month.format(MONTH_LABEL)} plan applied.")
+                        it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = Strings.get(R.string.plan_month_plan_applied, month.format(MONTH_LABEL)))
                     }
                     refreshSnapshot(month)
                 }
                 is MonthPlanApplyResult.Failed -> mutableState.update {
-                    it.copy(applyIncomplete = true, applyMessage = "Couldn't finish the plan. Your draft is saved. Try again.")
+                    it.copy(applyIncomplete = true, applyMessage = Strings.get(R.string.plan_couldn_t_finish_the_plan))
                 }
             }
         } finally {
@@ -456,7 +459,7 @@ class MonthPlanViewModel @Inject constructor(
         val current = mutableState.value
         if (current.isApplying || current.draftChangeCount == 0) return
         if (!current.isOnline) {
-            mutableState.update { it.copy(applyMessage = "You're offline. Your draft stays here.") }
+            mutableState.update { it.copy(applyMessage = Strings.get(R.string.plan_you_re_offline_your_draft)) }
             return
         }
         val month = current.month
@@ -466,12 +469,12 @@ class MonthPlanViewModel @Inject constructor(
             autosaveInFlight?.join()
             repository.deleteDraft(month)
             savedDraft = null
-            mutableState.update { it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = "Draft discarded.", draftMessage = null) }
+            mutableState.update { it.copy(draft = MonthPlanDraftState(), applyIncomplete = false, applyMessage = Strings.get(R.string.plan_draft_discarded), draftMessage = null) }
             refreshSnapshot(month)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            mutableState.update { it.copy(applyMessage = "Couldn't discard the draft. Try again.") }
+            mutableState.update { it.copy(applyMessage = Strings.get(R.string.plan_couldn_t_discard_the_draft)) }
         }
     }
 
@@ -609,8 +612,8 @@ class MonthPlanViewModel @Inject constructor(
     }
 
     private fun loadError(error: Exception, online: Boolean): String = when {
-        error is ApiError.Network || !online -> "You're offline. The plan could not be loaded."
-        else -> "Couldn't load this month. Try again."
+        error is ApiError.Network || !online -> Strings.get(R.string.plan_you_re_offline_the_plan)
+        else -> Strings.get(R.string.plan_couldn_t_load_this_month)
     }
 
     private fun com.spenditos.android.data.model.MonthlyPlanDraftData?.toDraftState() = this?.let {
@@ -619,7 +622,7 @@ class MonthPlanViewModel @Inject constructor(
 
     companion object {
         const val AUTOSAVE_DELAY_MS = 900L
-        private val MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy")
+        private val MONTH_LABEL: DateTimeFormatter get() = LocalizedDate.formatter("MMMM yyyy")
     }
 }
 

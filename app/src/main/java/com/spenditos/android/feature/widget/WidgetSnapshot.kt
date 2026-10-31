@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.widget
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.feature.home.CashFlowStatus
@@ -41,11 +43,11 @@ data class WidgetSnapshot(
 
     val stateLabel: String?
         get() = when (state) {
-            CashFlowStatus.State.ON_TRACK -> "On track"
-            CashFlowStatus.State.WATCH -> "Watch your pace"
-            CashFlowStatus.State.TIGHT -> "Getting tight"
-            CashFlowStatus.State.OVER -> "Over"
-            CashFlowStatus.State.SETUP -> "Income needed"
+            CashFlowStatus.State.ON_TRACK -> Strings.get(R.string.common_on_track)
+            CashFlowStatus.State.WATCH -> Strings.get(R.string.common_watch_your_pace)
+            CashFlowStatus.State.TIGHT -> Strings.get(R.string.common_getting_tight)
+            CashFlowStatus.State.OVER -> Strings.get(R.string.widget_over)
+            CashFlowStatus.State.SETUP -> Strings.get(R.string.widget_income_needed)
             null -> null
         }
 
@@ -101,7 +103,7 @@ data class WidgetSnapshot(
                     ownRecent.filter { it.date == day }.sumOf { it.amount }
                 },
                 topCategories = expenses.groupBy { it.categoryId }
-                    .map { (id, rows) -> WidgetCategory(byName[id]?.name ?: "Other", rows.sumOf { it.amount }, byName[id]?.color) }
+                    .map { (id, rows) -> WidgetCategory(byName[id]?.name ?: Strings.get(R.string.common_other), rows.sumOf { it.amount }, byName[id]?.color) }
                     .sortedByDescending { it.amount }
                     .take(3),
                 streakDays = streakDays,

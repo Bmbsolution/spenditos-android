@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.onboarding
 
+import com.spenditos.android.R
+import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.data.model.OnboardingCategoryRequest
 
 data class OnboardingCategorySeed(
@@ -16,25 +18,25 @@ data class OnboardingCategorySeed(
 
 /** Seed data copied from iOS `Features/Onboarding/OnboardingView.swift:19-52`. */
 object OnboardingData {
-    val categorySeeds = listOf(
-        OnboardingCategorySeed("SUGGESTED_INCOME_SALARY", "Salary", "#22c55e", "💰", true, 0, "Income"),
-        OnboardingCategorySeed("SUGGESTED_INCOME_FREELANCE", "Freelance / Side Income", "#16a34a", "💼", true, 1, "Income"),
-        OnboardingCategorySeed("SUGGESTED_EXP_RENT", "Rent / Mortgage", "#ef4444", "🏠", false, 10, "Housing & Utilities"),
-        OnboardingCategorySeed("SUGGESTED_EXP_UTILITIES", "Utilities", "#3b82f6", "⚡", false, 11, "Housing & Utilities"),
-        OnboardingCategorySeed("SUGGESTED_EXP_INTERNET", "Internet", "#0ea5e9", "🌐", false, 12, "Housing & Utilities"),
-        OnboardingCategorySeed("SUGGESTED_EXP_GROCERIES", "Groceries", "#facc15", "🛒", false, 20, "Groceries & Food"),
-        OnboardingCategorySeed("SUGGESTED_EXP_EATING_OUT", "Eating Out", "#f97316", "🍕", false, 21, "Groceries & Food"),
-        OnboardingCategorySeed("SUGGESTED_EXP_COFFEE_SNACKS", "Coffee & Snacks", "#fb923c", "☕", false, 22, "Groceries & Food"),
-        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_PUBLIC", "Public Transport", "#6366f1", "🚌", false, 30, "Transportation"),
-        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_FUEL", "Fuel / Gas", "#a855f7", "⛽", false, 31, "Transportation"),
-        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_MAINTENANCE", "Car Maintenance", "#7c3aed", "🔧", false, 32, "Transportation"),
-        OnboardingCategorySeed("SUGGESTED_EXP_SUBSCRIPTIONS", "Subscriptions", "#06b6d4", "📺", false, 40, "Subscriptions & Entertainment"),
-        OnboardingCategorySeed("SUGGESTED_EXP_ENTERTAINMENT", "Entertainment", "#ec4899", "🎮", false, 41, "Subscriptions & Entertainment"),
-        OnboardingCategorySeed("SUGGESTED_EXP_SAVINGS", "Savings", "#22c55e", "🐷", false, 50, "Savings & Debt"),
-        OnboardingCategorySeed("SUGGESTED_EXP_DEBT_PAYMENTS", "Debt Payments", "#f97316", "💳", false, 51, "Savings & Debt"),
-        OnboardingCategorySeed("SUGGESTED_EXP_HEALTH", "Health & Medical", "#10b981", "❤️", false, 60, "Miscellaneous"),
-        OnboardingCategorySeed("SUGGESTED_EXP_PERSONAL_CARE", "Personal Care", "#8b5cf6", "✨", false, 61, "Miscellaneous"),
-        OnboardingCategorySeed("SUGGESTED_EXP_MISC", "Miscellaneous", "#64748b", "🏷️", false, 62, "Miscellaneous"),
+    val categorySeeds: List<OnboardingCategorySeed> get() = listOf(
+        OnboardingCategorySeed("SUGGESTED_INCOME_SALARY", Strings.get(R.string.onboarding_seed_salary), "#22c55e", "💰", true, 0, Strings.get(R.string.onboarding_group_income)),
+        OnboardingCategorySeed("SUGGESTED_INCOME_FREELANCE", Strings.get(R.string.onboarding_seed_freelance_side_income), "#16a34a", "💼", true, 1, Strings.get(R.string.onboarding_group_income)),
+        OnboardingCategorySeed("SUGGESTED_EXP_RENT", Strings.get(R.string.onboarding_seed_rent_mortgage), "#ef4444", "🏠", false, 10, Strings.get(R.string.onboarding_group_housing_utilities)),
+        OnboardingCategorySeed("SUGGESTED_EXP_UTILITIES", Strings.get(R.string.onboarding_seed_utilities), "#3b82f6", "⚡", false, 11, Strings.get(R.string.onboarding_group_housing_utilities)),
+        OnboardingCategorySeed("SUGGESTED_EXP_INTERNET", Strings.get(R.string.onboarding_seed_internet), "#0ea5e9", "🌐", false, 12, Strings.get(R.string.onboarding_group_housing_utilities)),
+        OnboardingCategorySeed("SUGGESTED_EXP_GROCERIES", Strings.get(R.string.onboarding_seed_groceries), "#facc15", "🛒", false, 20, Strings.get(R.string.onboarding_group_groceries_food)),
+        OnboardingCategorySeed("SUGGESTED_EXP_EATING_OUT", Strings.get(R.string.onboarding_seed_eating_out), "#f97316", "🍕", false, 21, Strings.get(R.string.onboarding_group_groceries_food)),
+        OnboardingCategorySeed("SUGGESTED_EXP_COFFEE_SNACKS", Strings.get(R.string.onboarding_seed_coffee_snacks), "#fb923c", "☕", false, 22, Strings.get(R.string.onboarding_group_groceries_food)),
+        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_PUBLIC", Strings.get(R.string.onboarding_seed_public_transport), "#6366f1", "🚌", false, 30, Strings.get(R.string.onboarding_group_transportation)),
+        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_FUEL", Strings.get(R.string.onboarding_seed_fuel_gas), "#a855f7", "⛽", false, 31, Strings.get(R.string.onboarding_group_transportation)),
+        OnboardingCategorySeed("SUGGESTED_EXP_TRANSPORT_MAINTENANCE", Strings.get(R.string.onboarding_seed_car_maintenance), "#7c3aed", "🔧", false, 32, Strings.get(R.string.onboarding_group_transportation)),
+        OnboardingCategorySeed("SUGGESTED_EXP_SUBSCRIPTIONS", Strings.get(R.string.onboarding_seed_subscriptions), "#06b6d4", "📺", false, 40, Strings.get(R.string.onboarding_group_subscriptions_entertainment)),
+        OnboardingCategorySeed("SUGGESTED_EXP_ENTERTAINMENT", Strings.get(R.string.onboarding_seed_entertainment), "#ec4899", "🎮", false, 41, Strings.get(R.string.onboarding_group_subscriptions_entertainment)),
+        OnboardingCategorySeed("SUGGESTED_EXP_SAVINGS", Strings.get(R.string.onboarding_seed_savings), "#22c55e", "🐷", false, 50, Strings.get(R.string.onboarding_group_savings_debt)),
+        OnboardingCategorySeed("SUGGESTED_EXP_DEBT_PAYMENTS", Strings.get(R.string.onboarding_seed_debt_payments), "#f97316", "💳", false, 51, Strings.get(R.string.onboarding_group_savings_debt)),
+        OnboardingCategorySeed("SUGGESTED_EXP_HEALTH", Strings.get(R.string.onboarding_seed_health_medical), "#10b981", "❤️", false, 60, Strings.get(R.string.onboarding_group_miscellaneous)),
+        OnboardingCategorySeed("SUGGESTED_EXP_PERSONAL_CARE", Strings.get(R.string.onboarding_seed_personal_care), "#8b5cf6", "✨", false, 61, Strings.get(R.string.onboarding_group_miscellaneous)),
+        OnboardingCategorySeed("SUGGESTED_EXP_MISC", Strings.get(R.string.onboarding_seed_miscellaneous), "#64748b", "🏷️", false, 62, Strings.get(R.string.onboarding_group_miscellaneous)),
     )
 
     /** ISO 3166-1 alpha-2 to ISO 4217, from iOS `OnboardingView.swift:59-149`. */
