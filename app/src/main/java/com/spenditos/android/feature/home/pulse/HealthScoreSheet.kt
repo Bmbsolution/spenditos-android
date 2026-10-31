@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.home.pulse
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,11 +62,11 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
         else -> listOf(Color(0xFF22C55E), Color(0xFF16A34A))
     }
     val status = when (breakdown.score) {
-        in 80..100 -> "Excellent"
-        in 60..79 -> "Good"
-        in 40..59 -> "Needs Attention"
-        in 30..39 -> "At Risk"
-        else -> "Critical"
+        in 80..100 -> stringResource(R.string.home_excellent)
+        in 60..79 -> stringResource(R.string.common_good)
+        in 40..59 -> stringResource(R.string.home_needs_attention)
+        in 30..39 -> stringResource(R.string.home_at_risk)
+        else -> stringResource(R.string.home_critical)
     }
     val (trendIcon, trendColor, trendLabel) = when (breakdown.trend) {
         SpendingTrend.INCREASING -> Triple<ImageVector, Color, String>(SfSymbols.icon("arrow.up.forward"), IosColors.expense, "Increasing")
@@ -82,7 +85,7 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
                 .padding(horizontal = Spacing.screen, vertical = Spacing.m).testTag("home.healthSheet"),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
-            Text("Health Score", style = IosText.headline, color = IosColors.textPrimary)
+            Text(stringResource(R.string.home_health_score), style = IosText.headline, color = IosColors.textPrimary)
 
             Column(
                 Modifier.fillMaxWidth().then(glassCardModifier(shadowAlpha = 0.12f)).padding(vertical = 32.dp),
@@ -90,7 +93,7 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Canvas(Modifier.size(150.dp).clearAndSetSemantics { contentDescription = "Financial health score: ${breakdown.score} out of 100" }) {
+                    Canvas(Modifier.size(150.dp).clearAndSetSemantics { contentDescription = Strings.get(R.string.home_financial_health_score_out_of, breakdown.score) }) {
                         val stroke = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
                         val inset = stroke.width / 2
                         val arc = Size(size.width - stroke.width, size.height - stroke.width)
@@ -114,13 +117,13 @@ fun HealthScoreSheet(breakdown: HealthScoreBreakdown, onDismiss: () -> Unit) {
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                Text("Score Breakdown", style = IosText.headline, color = IosColors.textPrimary)
-                FactorCard("Savings Rate", "Income left after expenses", "80%", breakdown.savingsRate, null, SfSymbols.icon("banknote"), IosColors.income)
-                FactorCard("Spending Trend", "Recent spending direction", "20%", trendScore, trendLabel, trendIcon, trendColor)
+                Text(stringResource(R.string.home_score_breakdown), style = IosText.headline, color = IosColors.textPrimary)
+                FactorCard(stringResource(R.string.home_savings_rate), stringResource(R.string.home_income_left_after_expenses), "80%", breakdown.savingsRate, null, SfSymbols.icon("banknote"), IosColors.income)
+                FactorCard(stringResource(R.string.common_spending_trend), stringResource(R.string.home_recent_spending_direction), "20%", trendScore, trendLabel, trendIcon, trendColor)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                Text("Recommendations", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.home_recommendations), style = IosText.headline, color = IosColors.textPrimary)
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     breakdown.recommendations.forEach { tip ->
                         Row(

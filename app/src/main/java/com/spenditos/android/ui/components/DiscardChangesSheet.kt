@@ -1,5 +1,7 @@
 package com.spenditos.android.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,8 +44,8 @@ fun DiscardChangesSheet(
     onKeep: () -> Unit,
     onDiscard: () -> Unit,
     modifier: Modifier = Modifier,
-    keepText: String = "Keep editing",
-    discardText: String = "Discard",
+    keepText: String = stringResource(R.string.common_keep_editing),
+    discardText: String = stringResource(R.string.common_discard),
 ) {
     ModalBottomSheet(
         onDismissRequest = onKeep,

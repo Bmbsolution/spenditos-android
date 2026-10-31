@@ -1,12 +1,15 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
+
 data class PasswordRequirement(val label: String, val isMet: Boolean)
 
 enum class PasswordStrength { WEAK, MEDIUM, STRONG }
 
 /** The five registration checks in iOS `Features/Auth/AuthViewModel.swift:91-99`. */
 object PasswordRules {
-    val labels = listOf("At least 8 characters", "Uppercase letter", "Lowercase letter", "Number", "Special character")
+    val labels = listOf(Strings.get(R.string.common_at_least_8_characters), Strings.get(R.string.auth_uppercase_letter), Strings.get(R.string.auth_lowercase_letter), Strings.get(R.string.auth_number), Strings.get(R.string.auth_special_character))
 
     fun requirements(password: String): List<PasswordRequirement> = listOf(
         PasswordRequirement(labels[0], password.length >= 8),

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.progress
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -86,7 +88,7 @@ internal fun ProgressLoadingState() {
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.size(24.dp))
-        Text("Loading progress...", style = IosText.callout, color = IosColors.textTertiary)
+        Text(stringResource(R.string.progress_loading_progress), style = IosText.callout, color = IosColors.textTertiary)
     }
 }
 
@@ -117,7 +119,7 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                             style = IosText.title2.w(FontWeight.Bold),
                             color = streakColor(streak.currentStreak),
                         )
-                        Text("Longest: ${streak.longestStreak} days", style = IosText.subheadline, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.progress_longest_days, streak.longestStreak), style = IosText.subheadline, color = IosColors.textSecondary)
                     }
                     FreezeBadge(streak.streakFreezes, Modifier.align(Alignment.CenterVertically))
                 }
@@ -126,20 +128,20 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                     StreakFreezeButton(state.isUsingStreakFreeze, state.streakFreezeUsed, onUseFreeze)
                     if (state.streakFreezeFailed) {
                         Text(
-                            "Couldn't use a streak freeze. Try again.",
+                            stringResource(R.string.progress_couldn_t_use_a_streak),
                             style = IosText.footnote,
                             color = IosColors.expense,
                             modifier = Modifier.testTag("progress.streakFreeze.error"),
                         )
                     }
                 }
-                if (state.streakFailed) InlineQuietLine("Couldn't load", "progress.streak.error")
+                if (state.streakFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_load), "progress.streak.error")
             }
         }
     } else {
         when {
-            !state.streakLoaded -> QuietLine("Loading…", "progress.streak.loading")
-            state.streakFailed -> QuietLine("Couldn't load", "progress.streak.error")
+            !state.streakLoaded -> QuietLine(stringResource(R.string.progress_loading), "progress.streak.loading")
+            state.streakFailed -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.streak.error")
         }
         ProgressCalendarSection(state, locale)
     }
@@ -180,7 +182,7 @@ private fun StreakFreezeButton(isUsingFreeze: Boolean, freezeUsed: Boolean, onUs
             )
         }
         Text(
-            if (freezeUsed) "Freeze Applied" else "Use Streak Freeze",
+            if (freezeUsed) stringResource(R.string.progress_freeze_applied) else stringResource(R.string.progress_use_streak_freeze),
             style = IosText.subheadline.w(FontWeight.Bold),
             color = tint,
         )
@@ -190,11 +192,11 @@ private fun StreakFreezeButton(isUsingFreeze: Boolean, freezeUsed: Boolean, onUs
 @Composable
 internal fun ProgressCalendarSection(state: ProgressUiState, locale: java.util.Locale) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Streak calendar", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.progress_streak_calendar), style = IosText.headline, color = IosColors.textSecondary)
         when {
-            state.calendarFailed && state.calendar.isEmpty() -> QuietLine("Couldn't load", "progress.calendar.error")
-            !state.calendarLoaded && state.calendar.isEmpty() -> QuietLine("Loading…", "progress.calendar.loading")
-            state.calendar.isEmpty() -> QuietLine("No active days this month", "progress.calendar.empty")
+            state.calendarFailed && state.calendar.isEmpty() -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.calendar.error")
+            !state.calendarLoaded && state.calendar.isEmpty() -> QuietLine(stringResource(R.string.progress_loading), "progress.calendar.loading")
+            state.calendar.isEmpty() -> QuietLine(stringResource(R.string.progress_no_active_days_this_month), "progress.calendar.empty")
             else -> GlassCard(modifier = Modifier.fillMaxWidth().testTag("progress.calendar.card")) {
                 StreakCalendarContent(state, locale, insideStreakCard = false)
             }
@@ -205,9 +207,9 @@ internal fun ProgressCalendarSection(state: ProgressUiState, locale: java.util.L
 @Composable
 private fun StreakCalendarContent(state: ProgressUiState, locale: java.util.Locale, insideStreakCard: Boolean) {
     when {
-        state.calendarFailed && state.calendar.isEmpty() -> InlineQuietLine("Couldn't load", "progress.calendar.error")
-        !state.calendarLoaded && state.calendar.isEmpty() -> InlineQuietLine("Loading…", "progress.calendar.loading")
-        state.calendar.isEmpty() -> InlineQuietLine("No active days this month", "progress.calendar.empty")
+        state.calendarFailed && state.calendar.isEmpty() -> InlineQuietLine(stringResource(R.string.progress_couldn_t_load), "progress.calendar.error")
+        !state.calendarLoaded && state.calendar.isEmpty() -> InlineQuietLine(stringResource(R.string.progress_loading), "progress.calendar.loading")
+        state.calendar.isEmpty() -> InlineQuietLine(stringResource(R.string.progress_no_active_days_this_month), "progress.calendar.empty")
         else -> {
             Column(
                 Modifier.fillMaxWidth().testTag(if (insideStreakCard) "progress.calendar.card" else "progress.calendar.content"),
@@ -223,7 +225,7 @@ private fun StreakCalendarContent(state: ProgressUiState, locale: java.util.Loca
                         StreakDay(day.date, day.hasEntry && day.isStreakDay, day.freezeUsed, Modifier, locale)
                     }
                 }
-                if (state.calendarFailed) InlineQuietLine("Couldn't refresh", "progress.calendar.refreshError")
+                if (state.calendarFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_refresh), "progress.calendar.refreshError")
             }
         }
     }
@@ -290,8 +292,8 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
     val level = state.level
     if (points == null && level == null) {
         when {
-            state.pointsFailed || state.levelFailed -> QuietLine("Couldn't load", "progress.points.error")
-            else -> QuietLine("Loading…", "progress.points.loading")
+            state.pointsFailed || state.levelFailed -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.points.error")
+            else -> QuietLine(stringResource(R.string.progress_loading), "progress.points.loading")
         }
         return
     }
@@ -320,7 +322,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                     Text(levelNumber.toString(), style = IosText.title3.w(FontWeight.SemiBold), color = Color.White)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(level?.title ?: "Level $levelNumber", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                    Text(level?.title ?: stringResource(R.string.progress_level, levelNumber), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                     Text("$total XP Total", style = IosText.subheadline, color = XpGold)
                 }
                 points?.let { PointsBadge(it.available) }
@@ -334,7 +336,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("$total / $pointsToNextLevel XP", style = IosText.subheadline, color = IosColors.textTertiary)
-                    Text("Next: Level ${levelNumber + 1}", style = IosText.subheadline, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_next_level, levelNumber + 1), style = IosText.subheadline, color = IosColors.textTertiary)
                 }
             }
             if (!level?.unlocks.isNullOrEmpty()) {
@@ -346,7 +348,7 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(SfSymbols.icon("star.fill"), contentDescription = null, tint = IosColors.spendGold, modifier = Modifier.size(14.4.dp))
-                        Text("Level Benefits", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary)
+                        Text(stringResource(R.string.progress_level_benefits), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.textSecondary)
                         Spacer(Modifier.weight(1f))
                         Icon(
                             if (showBenefits) SfSymbols.icon("chevron.up") else SfSymbols.icon("chevron.down"),
@@ -362,13 +364,13 @@ internal fun ProgressPointsSection(state: ProgressUiState) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(SfSymbols.icon("lock.open.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.4.dp))
-                            Text("Unlocked: ${level!!.unlocks.joinToString(", ")}", style = IosText.subheadline, color = IosColors.textSecondary)
+                            Text(stringResource(R.string.progress_unlocked, level!!.unlocks.joinToString(", ")), style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                     }
                 }
             }
-            if (state.pointsFailed) InlineQuietLine("Couldn't load points", "progress.points.balanceError")
-            if (state.levelFailed) InlineQuietLine("Couldn't load level", "progress.points.levelError")
+            if (state.pointsFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_load_points), "progress.points.balanceError")
+            if (state.levelFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_load_level), "progress.points.levelError")
         }
     }
 }
@@ -392,9 +394,9 @@ internal fun ProgressChallengeSection(state: ProgressUiState, onComplete: () -> 
     val challenge = state.challenge
     if (challenge == null && !state.challengeFailed) return
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text("Today's Challenge", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.progress_today_s_challenge), style = IosText.headline, color = IosColors.textSecondary)
         if (challenge == null) {
-            QuietLine("Couldn't load", "progress.challenge.error")
+            QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.challenge.error")
         } else {
             ChallengeCard(challenge, state.isCompletingChallenge, state.challengeActionFailed, state.challengeFailed, onComplete)
         }
@@ -460,8 +462,8 @@ private fun ChallengeCard(
                         Text(timeRemaining, style = IosText.subheadline, color = IosColors.textTertiary)
                     }
                 }
-                if (actionFailed) InlineQuietLine("Couldn't complete", "progress.challenge.actionError")
-                if (challengeFailed) InlineQuietLine("Couldn't refresh", "progress.challenge.refreshError")
+                if (actionFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_complete), "progress.challenge.actionError")
+                if (challengeFailed) InlineQuietLine(stringResource(R.string.progress_couldn_t_refresh), "progress.challenge.refreshError")
             }
             if (completed) {
                 Column(
@@ -470,7 +472,7 @@ private fun ChallengeCard(
                     verticalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterVertically),
                 ) {
                     Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(48.dp))
-                    Text("Completed!", style = IosText.headline, color = IosColors.income)
+                    Text(stringResource(R.string.progress_completed), style = IosText.headline, color = IosColors.income)
                 }
             }
         }
@@ -492,7 +494,7 @@ private fun CompleteChallengeButton(isCompleting: Boolean, onComplete: () -> Uni
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
             if (isCompleting) CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
             else Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(19.2.dp))
-            Text("Complete Challenge", style = IosText.headline, color = Color.White)
+            Text(stringResource(R.string.progress_complete_challenge), style = IosText.headline, color = Color.White)
         }
     }
 }
@@ -501,11 +503,11 @@ private fun CompleteChallengeButton(isCompleting: Boolean, onComplete: () -> Uni
 internal fun ProgressAchievementsSection(state: ProgressUiState, onClick: (UserAchievement) -> Unit) {
     var showAll by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Achievements", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.progress_achievements), style = IosText.headline, color = IosColors.textSecondary)
         when {
-            !state.achievementsLoaded && state.achievements.isEmpty() && !state.achievementsFailed -> QuietLine("Loading…", "progress.achievements.loading")
-            state.achievementsFailed && state.achievements.isEmpty() -> QuietLine("Couldn't load", "progress.achievements.error")
-            state.achievements.isEmpty() -> QuietLine("No achievements yet", "progress.achievements.empty")
+            !state.achievementsLoaded && state.achievements.isEmpty() && !state.achievementsFailed -> QuietLine(stringResource(R.string.progress_loading), "progress.achievements.loading")
+            state.achievementsFailed && state.achievements.isEmpty() -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.achievements.error")
+            state.achievements.isEmpty() -> QuietLine(stringResource(R.string.progress_no_achievements_yet), "progress.achievements.empty")
             else -> {
                 val sorted = state.achievements.sortedWith(
                     compareByDescending<UserAchievement> { it.unlockedAt != null }
@@ -528,11 +530,11 @@ internal fun ProgressAchievementsSection(state: ProgressUiState, onClick: (UserA
                         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("View All", style = IosText.subheadline, color = IosColors.spendOrange)
+                        Text(stringResource(R.string.progress_view_all), style = IosText.subheadline, color = IosColors.spendOrange)
                         Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.4.dp))
                     }
                 }
-                if (state.achievementsFailed) QuietLine("Couldn't refresh", "progress.achievements.refreshError")
+                if (state.achievementsFailed) QuietLine(stringResource(R.string.progress_couldn_t_refresh), "progress.achievements.refreshError")
             }
         }
     }
@@ -586,7 +588,7 @@ private fun AchievementCard(achievement: UserAchievement, modifier: Modifier, on
         when {
             unlocked -> PointsBadge(achievement.target)
             inProgress -> AchievementProgressBar(achievement)
-            else -> Text("Locked", style = IosText.caption, color = IosColors.textTertiary)
+            else -> Text(stringResource(R.string.common_locked), style = IosText.caption, color = IosColors.textTertiary)
         }
     }
 }
@@ -602,7 +604,7 @@ private fun AchievementProgressBar(achievement: UserAchievement) {
 @Composable
 internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Points History", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.progress_points_history), style = IosText.headline, color = IosColors.textSecondary)
         when {
             !state.pointsHistoryLoaded && state.pointsHistory.isEmpty() && !state.pointsHistoryFailed -> {
                 Column(
@@ -611,7 +613,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.size(24.dp))
-                    Text("Loading history...", style = IosText.callout, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_loading_history), style = IosText.callout, color = IosColors.textTertiary)
                 }
             }
             state.pointsHistoryFailed && state.pointsHistory.isEmpty() -> {
@@ -620,7 +622,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
-                    Text("Couldn't load", style = IosText.body, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_couldn_t_load), style = IosText.body, color = IosColors.textTertiary)
                     Row(
                         Modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                             .clickable(role = Role.Button, onClick = onRetry)
@@ -629,7 +631,7 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(SfSymbols.icon("arrow.clockwise"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.4.dp))
-                        Text("Retry", style = IosText.headline, color = IosColors.spendOrange)
+                        Text(stringResource(R.string.common_retry), style = IosText.headline, color = IosColors.spendOrange)
                     }
                 }
             }
@@ -640,15 +642,15 @@ internal fun ProgressPointsHistorySection(state: ProgressUiState, onRetry: () ->
                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     Icon(SfSymbols.icon("clock.arrow.circlepath"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-                    Text("No points history yet", style = IosText.callout, color = IosColors.textTertiary)
-                    Text("Earn XP to see your history here!", style = IosText.subheadline, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_no_points_history_yet), style = IosText.callout, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.progress_earn_xp_to_see_your), style = IosText.subheadline, color = IosColors.textTertiary)
                 }
             }
             else -> {
                 Column(Modifier.fillMaxWidth().testTag("progress.history.list")) {
                     state.pointsHistory.forEach { entry -> PointsHistoryRow(entry) }
                 }
-                if (state.pointsHistoryFailed) QuietLine("Couldn't refresh", "progress.history.refreshError")
+                if (state.pointsHistoryFailed) QuietLine(stringResource(R.string.progress_couldn_t_refresh), "progress.history.refreshError")
             }
         }
     }
@@ -676,18 +678,18 @@ private fun PointsHistoryRow(entry: PointsTransaction) {
 @Composable
 internal fun ProgressChallengeHistorySection(state: ProgressUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Challenge history", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.progress_challenge_history), style = IosText.headline, color = IosColors.textSecondary)
         when {
-            !state.challengeHistoryLoaded && state.challengeHistory.isEmpty() && !state.challengeHistoryFailed -> QuietLine("Loading…", "progress.challengeHistory.loading")
-            state.challengeHistoryFailed && state.challengeHistory.isEmpty() -> QuietLine("Couldn't load", "progress.challengeHistory.error")
+            !state.challengeHistoryLoaded && state.challengeHistory.isEmpty() && !state.challengeHistoryFailed -> QuietLine(stringResource(R.string.progress_loading), "progress.challengeHistory.loading")
+            state.challengeHistoryFailed && state.challengeHistory.isEmpty() -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.challengeHistory.error")
             state.challengeHistory.isEmpty() -> Column(
                 Modifier.fillMaxWidth().testTag("progress.challengeHistory.empty"),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 Icon(SfSymbols.icon("questionmark.circle"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(57.6.dp))
-                Text("No challenge history yet", style = IosText.headline, color = IosColors.textTertiary)
-                Text("Complete challenges to see them here", style = IosText.callout, color = IosColors.textTertiary)
+                Text(stringResource(R.string.progress_no_challenge_history_yet), style = IosText.headline, color = IosColors.textTertiary)
+                Text(stringResource(R.string.progress_complete_challenges_to_see_them), style = IosText.callout, color = IosColors.textTertiary)
             }
             else -> {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.l)) {
@@ -695,7 +697,7 @@ internal fun ProgressChallengeHistorySection(state: ProgressUiState) {
                         ChallengeHistoryCard(challenge)
                     }
                 }
-                if (state.challengeHistoryFailed) QuietLine("Couldn't refresh", "progress.challengeHistory.refreshError")
+                if (state.challengeHistoryFailed) QuietLine(stringResource(R.string.progress_couldn_t_refresh), "progress.challengeHistory.refreshError")
             }
         }
     }
@@ -785,8 +787,8 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                 modifier = Modifier.then(subtleGlassModifier(RoundedCornerShape(Radius.s))).padding(horizontal = Spacing.m, vertical = Spacing.xs),
             )
             when {
-                state.isLoadingAchievementDetail -> QuietLine("Loading…", "progress.achievementDetail.loading")
-                state.achievementDetailFailed -> QuietLine("Couldn't load", "progress.achievementDetail.error")
+                state.isLoadingAchievementDetail -> QuietLine(stringResource(R.string.progress_loading), "progress.achievementDetail.loading")
+                state.achievementDetailFailed -> QuietLine(stringResource(R.string.progress_couldn_t_load), "progress.achievementDetail.error")
             }
             if (unlocked) {
                 Column(
@@ -797,7 +799,7 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                     Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(28.8.dp))
                     val whenUnlocked = state.achievementDetail?.unlockedAt ?: achievement.unlockedAt
                     if (whenUnlocked != null) {
-                        Text("Unlocked ${formatUnlocked(whenUnlocked)}", style = IosText.subheadline, color = IosColors.textTertiary)
+                        Text(stringResource(R.string.progress_unlocked_2, formatUnlocked(whenUnlocked)), style = IosText.subheadline, color = IosColors.textTertiary)
                     }
                 }
             } else {
@@ -806,7 +808,7 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                     verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Progress", style = IosText.callout, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.common_progress), style = IosText.callout, color = IosColors.textSecondary)
                         Spacer(Modifier.weight(1f))
                         Text("$progressValue / ${achievement.target}", style = IosText.callout.w(FontWeight.Bold), color = IosColors.textPrimary)
                     }
@@ -826,7 +828,7 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                 Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Reward", style = IosText.callout, color = IosColors.textSecondary)
+                Text(stringResource(R.string.progress_reward), style = IosText.callout, color = IosColors.textSecondary)
                 Spacer(Modifier.weight(1f))
                 PointsBadge(achievement.target)
             }
@@ -838,7 +840,7 @@ internal fun AchievementDetailSheet(state: ProgressUiState, onDismiss: () -> Uni
                     .testTag("progress.achievementDetail.close"),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Done", style = IosText.headline, color = Color.White)
+                Text(stringResource(R.string.common_done), style = IosText.headline, color = Color.White)
             }
         }
     }
@@ -881,15 +883,15 @@ private fun rememberChallengeTime(expiresAt: String?): String? {
         null
     } ?: return null
     val interval = (expires - now) / 1000
-    if (interval <= 0) return "Expired"
+    if (interval <= 0) return stringResource(R.string.progress_expired)
     val hours = interval / 3600
     val minutes = interval % 3600 / 60
     val days = hours / 24
     return when {
-        days > 30 -> "No time limit"
+        days > 30 -> stringResource(R.string.progress_no_time_limit)
         days >= 2 -> "$days days remaining"
-        hours > 0 -> "${hours}h ${minutes}m remaining"
-        else -> "${minutes}m remaining"
+        hours > 0 -> stringResource(R.string.progress_h_m_remaining, hours, minutes)
+        else -> stringResource(R.string.progress_m_remaining, minutes)
     }
 }
 

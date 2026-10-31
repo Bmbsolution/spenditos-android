@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.home.pulse
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -104,7 +107,7 @@ fun PulseHero(
             .background(Brush.linearGradient(weather.gradient))
             .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), center = Offset(900f, 250f), radius = 520f))
             .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0.05f))), shape)
-            .clickable(role = Role.Button, onClickLabel = if (expanded) "Show less" else "Show more") { expanded = !expanded }
+            .clickable(role = Role.Button, onClickLabel = if (expanded) stringResource(R.string.home_show_less) else stringResource(R.string.home_show_more)) { expanded = !expanded }
             .padding(18.dp)
             .testTag("home.statusCard"),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -141,7 +144,7 @@ fun PulseHero(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(SfSymbols.icon("hourglass"), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.4.dp))
-                Text("${status.daysRemaining}d left", style = IosText.caption.w(FontWeight.Bold), color = Color.White)
+                Text(stringResource(R.string.home_d_left, status.daysRemaining), style = IosText.caption.w(FontWeight.Bold), color = Color.White)
             }
         }
 
@@ -152,8 +155,8 @@ fun PulseHero(
                     Icon(SfSymbols.icon("banknote"), contentDescription = null, tint = Color.White, modifier = Modifier.size(31.2.dp))
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Let’s set up your month", style = IosText.rounded(22, FontWeight.Bold), color = Color.White)
-                    Text("Two steps to see what’s left after bills.", style = IosText.subheadline, color = Color.White.copy(alpha = 0.9f))
+                    Text(stringResource(R.string.home_let_s_set_up_your), style = IosText.rounded(22, FontWeight.Bold), color = Color.White)
+                    Text(stringResource(R.string.home_two_steps_to_see_what), style = IosText.subheadline, color = Color.White.copy(alpha = 0.9f))
                 }
             }
         } else {
@@ -178,7 +181,7 @@ fun PulseHero(
                         overflow = TextOverflow.Ellipsis,
                     )
                     val chip = if (short) {
-                        "Trim ≈ ${money(status.leftAfterBills.negate().divide(BigDecimal(maxOf(status.daysRemaining, 1)), 2, RoundingMode.HALF_UP))} a day"
+                        stringResource(R.string.home_trim_a_day, money(status.leftAfterBills.negate().divide(BigDecimal(maxOf(status.daysRemaining, 1)), 2, RoundingMode.HALF_UP)))
                     } else {
                         "≈ ${money(status.affordablePace.setScale(2, RoundingMode.HALF_UP))} a day"
                     }
@@ -216,16 +219,16 @@ fun PulseHero(
 
         StatsStrip(
             listOf(
-                StripEntry("arrow.down.circle.fill", "Income", whole(status.income, currency, locale)),
-                StripEntry("cart.fill", "Spent", whole(status.spent, currency, locale)),
-                StripEntry("calendar.badge.clock", "Bills left", whole(status.billsLeft, currency, locale), onOpenBillsLeft, "home.billsLeft"),
+                StripEntry("arrow.down.circle.fill", stringResource(R.string.common_income), whole(status.income, currency, locale)),
+                StripEntry("cart.fill", stringResource(R.string.common_spent), whole(status.spent, currency, locale)),
+                StripEntry("calendar.badge.clock", stringResource(R.string.home_bills_left), whole(status.billsLeft, currency, locale), onOpenBillsLeft, "home.billsLeft"),
             ),
         )
 
         if (status.carriedIn.signum() > 0) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text(
-                    "Carried in ${money(status.carriedIn)} from ${MonthBalanceCopy.previousMonthName(status.today)}",
+                    stringResource(R.string.home_carried_in_from, money(status.carriedIn), MonthBalanceCopy.previousMonthName(status.today)),
                     style = IosText.subheadline.w(FontWeight.SemiBold),
                     color = Color.White.copy(alpha = 0.95f),
                     modifier = Modifier.weight(1f).testTag("home.carriedIn"),
@@ -257,12 +260,12 @@ fun PulseHero(
         ) {
             Icon(SfSymbols.icon("list.bullet.rectangle"), contentDescription = null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(14.4.dp))
             Spacer(Modifier.width(6.dp))
-            Text("See the math", style = IosText.caption.w(FontWeight.Bold), color = Color.White.copy(alpha = 0.95f))
+            Text(stringResource(R.string.home_see_the_math), style = IosText.caption.w(FontWeight.Bold), color = Color.White.copy(alpha = 0.95f))
         }
 
         when (status.state) {
-            CashFlowStatus.State.OVER -> HeroButton("Review your plan", SfSymbols.icon("slider.horizontal.3"), onReviewPlan, "home.reviewPlan", weather.gradient.last())
-            CashFlowStatus.State.SETUP -> HeroButton("Add income", SfSymbols.icon("plus"), onAddIncome, "home.addIncome", weather.gradient.last())
+            CashFlowStatus.State.OVER -> HeroButton(stringResource(R.string.home_review_your_plan), SfSymbols.icon("slider.horizontal.3"), onReviewPlan, "home.reviewPlan", weather.gradient.last())
+            CashFlowStatus.State.SETUP -> HeroButton(stringResource(R.string.common_add_income), SfSymbols.icon("plus"), onAddIncome, "home.addIncome", weather.gradient.last())
             else -> Unit
         }
 
@@ -271,7 +274,7 @@ fun PulseHero(
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
                     Icon(SfSymbols.icon("info.circle"), contentDescription = null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(13.2.dp))
                     Text(
-                        "The orb is the share of this month’s income still left after spending and bills.",
+                        stringResource(R.string.home_the_orb_is_the_share),
                         style = IosText.caption2,
                         color = Color.White.copy(alpha = 0.9f),
                     )
@@ -287,10 +290,10 @@ fun PulseHero(
 @Composable
 private fun HealthBadge(score: Int, onOpen: () -> Unit) {
     val status = when (score) {
-        in 80..100 -> "Excellent"
-        in 60..79 -> "Good"
-        in 40..59 -> "Needs attention"
-        else -> "Critical"
+        in 80..100 -> stringResource(R.string.home_excellent)
+        in 60..79 -> stringResource(R.string.common_good)
+        in 40..59 -> stringResource(R.string.home_needs_attention_2)
+        else -> stringResource(R.string.home_critical)
     }
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.12f))
@@ -305,7 +308,7 @@ private fun HealthBadge(score: Int, onOpen: () -> Unit) {
             }
             Text("$score", style = IosText.caption2.w(FontWeight.Bold), color = Color.White)
         }
-        Text("Health: $score/100 · $status", style = IosText.caption.w(FontWeight.SemiBold), color = Color.White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.home_health_100, score, status), style = IosText.caption.w(FontWeight.SemiBold), color = Color.White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
         Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.4.dp))
     }
 }
@@ -371,10 +374,10 @@ private fun CashFlowSparkline(history: List<DayFlow>, currency: String, locale: 
         .divide(BigDecimal(maxOf(history.size, 1)), 2, RoundingMode.HALF_UP)
     Column(Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home.sparkline"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("7-Day Cash Flow", color = Color.White.copy(alpha = 0.8f), style = IosText.caption2.w(FontWeight.Medium))
+            Text(stringResource(R.string.home_7_day_cash_flow), color = Color.White.copy(alpha = 0.8f), style = IosText.caption2.w(FontWeight.Medium))
             Text("${Money.format(avg.toDouble(), currency, locale)} avg/day", color = Color.White.copy(alpha = 0.9f), style = IosText.caption2.w(FontWeight.SemiBold))
         }
-        Canvas(Modifier.fillMaxWidth().height(40.dp).clearAndSetSemantics { contentDescription = "Net cash flow for the last 7 days" }) {
+        Canvas(Modifier.fillMaxWidth().height(40.dp).clearAndSetSemantics { contentDescription = Strings.get(R.string.home_net_cash_flow_for_the) }) {
             if (points.isEmpty()) return@Canvas
             val xy = points.map { Offset(it.first * size.width, it.second * size.height) }
             val fill = Path().apply {

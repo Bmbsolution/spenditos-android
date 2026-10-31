@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,8 +62,8 @@ internal fun DebtProgressBar(progress: Double, modifier: Modifier = Modifier, is
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier.fillMaxWidth().height(height).clip(CircleShape).background(IosColors.textPrimary.copy(alpha = 0.10f))
             .clearAndSetSemantics {
-                contentDescription = "Progress"
-                stateDescription = if (isPaidOff) "Paid off" else "$percent percent paid off"
+                contentDescription = Strings.get(R.string.common_progress)
+                stateDescription = if (isPaidOff) Strings.get(R.string.debts_paid_off) else "$percent percent paid off"
             },
     ) {
         // The fill is never narrower than a dot once there is some progress, like the iOS capsule.
@@ -75,7 +78,7 @@ internal fun DebtProgressBar(progress: Double, modifier: Modifier = Modifier, is
 @Composable
 internal fun PaidOffPill(modifier: Modifier = Modifier) {
     Text(
-        "Paid off",
+        stringResource(R.string.debts_paid_off),
         modifier.background(IosColors.income.copy(alpha = 0.14f), CircleShape).padding(horizontal = 6.dp, vertical = 2.dp),
         style = IosText.caption2.w(FontWeight.Bold),
         color = IosColors.income,
@@ -96,7 +99,7 @@ internal fun DebtRowView(plan: DebtWithPlan, currency: String, onClick: () -> Un
     val percent = (summary.progress * 100).toInt()
     val label = buildList {
         add(plan.debt.name)
-        if (isPaidOff) add("Paid off")
+        if (isPaidOff) add(stringResource(R.string.debts_paid_off))
         if (paymentLine != null) add(paymentLine)
     }.joinToString(", ")
     val value = if (isPaidOff) progressLine else "$progressLine, $percent percent paid off"
@@ -104,7 +107,7 @@ internal fun DebtRowView(plan: DebtWithPlan, currency: String, onClick: () -> Un
     Row(
         modifier.fillMaxWidth().alpha(if (isPaidOff) 0.6f else 1f)
             .then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
-            .clickable(role = Role.Button, onClickLabel = "Opens this debt", onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.debts_opens_this_debt), onClick = onClick)
             .padding(horizontal = Spacing.m, vertical = Spacing.s + 2.dp)
             .clearAndSetSemantics {
                 contentDescription = label
@@ -213,7 +216,7 @@ internal fun DebtLoadingButton(title: String, isLoading: Boolean, modifier: Modi
     Row(
         modifier.fillMaxWidth().height(52.dp).clip(shape).background(background)
             .clickable(enabled = !isLoading && !isDisabled, role = Role.Button, onClick = onClick)
-            .semantics { stateDescription = if (isLoading) "Saving" else if (isDisabled) "Unavailable" else "" },
+            .semantics { stateDescription = if (isLoading) Strings.get(R.string.common_saving) else if (isDisabled) Strings.get(R.string.debts_unavailable) else "" },
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {

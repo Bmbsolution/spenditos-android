@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,14 +84,14 @@ internal fun ReportMonthSelector(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            ReportScopeButton("chevron.left", "Previous month", "$tag.previous", onPrevious)
+            ReportScopeButton("chevron.left", stringResource(R.string.reports_previous_month), "$tag.previous", onPrevious)
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, style = IosText.system(16, FontWeight.SemiBold), color = IosColors.textPrimary, maxLines = 1)
                 if (subtitle.isNotEmpty()) {
                     Text(subtitle, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1)
                 }
             }
-            ReportScopeButton("chevron.right", "Next month", "$tag.next", onNext)
+            ReportScopeButton("chevron.right", stringResource(R.string.reports_next_month), "$tag.next", onNext)
         }
     }
 }
@@ -116,13 +119,13 @@ internal fun ReportsStatusCard(
     status: ReportLoadStatus,
     onRetry: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    errorTitle: String = "Reports unavailable",
+    errorTitle: String = stringResource(R.string.reports_reports_unavailable),
     errorMessage: String? = null,
 ) {
     val title = when (status) {
-        ReportLoadStatus.OFFLINE -> "You're offline"
+        ReportLoadStatus.OFFLINE -> stringResource(R.string.reports_you_re_offline)
         ReportLoadStatus.ERROR -> errorTitle
-        ReportLoadStatus.PRO_REQUIRED -> "Pro feature"
+        ReportLoadStatus.PRO_REQUIRED -> stringResource(R.string.common_pro_feature)
     }
     val message = if (status == ReportLoadStatus.ERROR && errorMessage != null) {
         errorMessage
@@ -140,11 +143,11 @@ internal fun ReportsStatusCard(
             Text(message, style = IosText.callout, color = IosColors.textSecondary)
             if (status == ReportLoadStatus.PRO_REQUIRED) {
                 com.spenditos.android.feature.pro.LocalOpenPro.current?.let { openPro ->
-                    PillButton("See Spenditos Pro", openPro, modifier = Modifier.fillMaxWidth().testTag("reports.seePro"), filled = false)
+                    PillButton(stringResource(R.string.common_see_spenditos_pro), openPro, modifier = Modifier.fillMaxWidth().testTag("reports.seePro"), filled = false)
                 }
             }
             if (onRetry != null && status != ReportLoadStatus.PRO_REQUIRED) {
-                PillButton("Try again", onRetry, modifier = Modifier.fillMaxWidth().testTag("reports.retry"))
+                PillButton(stringResource(R.string.common_try_again), onRetry, modifier = Modifier.fillMaxWidth().testTag("reports.retry"))
             }
         }
     }
@@ -166,7 +169,7 @@ internal fun ReportInlineStatus(status: ReportLoadStatus, onRetry: () -> Unit, t
                 color = if (status == ReportLoadStatus.OFFLINE) finance.warning else IosColors.textPrimary,
             )
             if (status != ReportLoadStatus.PRO_REQUIRED) {
-                PillButton("Retry", onRetry, modifier = Modifier.testTag("reports.retry"), filled = false)
+                PillButton(stringResource(R.string.common_retry), onRetry, modifier = Modifier.testTag("reports.retry"), filled = false)
             }
         }
     }
@@ -254,7 +257,7 @@ internal fun DailyExpenseChart(
     val highest = rows.maxByOrNull { it.expenses }
     val lowest = rows.minByOrNull { it.expenses }
     Column(
-        modifier.fillMaxWidth().semantics { contentDescription = "Daily expense bars with a seven day average" }
+        modifier.fillMaxWidth().semantics { contentDescription = Strings.get(R.string.reports_daily_expense_bars_with_a) }
             .testTag("reports.daily.chart"),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
@@ -318,8 +321,8 @@ internal fun DailyExpenseChart(
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ChartLegendDot(finance.income, "Below or at avg")
-            ChartLegendDot(finance.expense, "Above avg")
+            ChartLegendDot(finance.income, stringResource(R.string.reports_below_or_at_avg))
+            ChartLegendDot(finance.expense, stringResource(R.string.reports_above_avg))
             ChartLegendDot(IosColors.textSecondary, "7-day avg", dotSize = 6.dp)
         }
     }
@@ -349,7 +352,7 @@ internal fun WeeklyComparisonChart(
     val previousColor = currentColor.copy(alpha = 0.35f)
     val scale = maxValue.takeIf { it.signum() > 0 }?.toDouble() ?: 1.0
     Column(
-        modifier.fillMaxWidth().semantics { contentDescription = "Weekly comparison bars" }
+        modifier.fillMaxWidth().semantics { contentDescription = Strings.get(R.string.reports_weekly_comparison_bars) }
             .testTag("reports.comparison.chart"),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {

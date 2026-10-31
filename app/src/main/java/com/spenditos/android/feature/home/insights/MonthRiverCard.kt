@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.home.insights
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -74,9 +77,9 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Your month", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.home_your_month), style = IosText.headline, color = IosColors.textPrimary)
                     Text(
-                        "Money coming in and going out, with bills and income ahead",
+                        stringResource(R.string.home_money_coming_in_and_going),
                         style = IosText.caption,
                         color = IosColors.textSecondary,
                     )
@@ -205,7 +208,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             var pillWidth by remember { mutableIntStateOf(0) }
             val density = LocalDensity.current
             Text(
-                "Today",
+                stringResource(R.string.common_today),
                 style = IosText.caption2.w(FontWeight.Bold),
                 color = Color.White,
                 modifier = Modifier
@@ -234,8 +237,8 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
-                RiverLegend("In", insights.monthIn, inColor, currency, locale)
-                RiverLegend("Out", insights.monthOut, OutColor, currency, locale)
+                RiverLegend(stringResource(R.string.home_in), insights.monthIn, inColor, currency, locale)
+                RiverLegend(stringResource(R.string.home_out), insights.monthOut, OutColor, currency, locale)
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val scheduled = IosColors.textTertiary
@@ -262,7 +265,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                 ) {
                     IconChip(SfSymbols.icon("exclamationmark.triangle.fill"), OutColor, size = 32.dp)
                     Text(
-                        "Out is ahead of in $until, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}. That part comes from savings or what’s already in your account.",
+                        stringResource(R.string.home_out_is_ahead_of_in, until, Money.format(shortfall.amount.toDouble(), currency, locale)),
                         style = IosText.caption,
                         color = IosColors.textPrimary,
                     )
@@ -272,9 +275,9 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (upcoming.isEmpty()) {
                     Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.4.dp))
-                    Text("No more bills or income this month", style = IosText.caption, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_no_more_bills_or_income), style = IosText.caption, color = IosColors.textSecondary)
                 } else {
-                    Text("Coming up", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_coming_up), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
                     upcoming.forEach { pin ->
                         Row(
                             Modifier.testTag("home.river.pin.${pin.id}").clip(CircleShape).background(IosColors.textTertiary.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 3.dp),
@@ -316,10 +319,10 @@ private fun RiverLegend(label: String, amount: BigDecimal, color: Color, currenc
 
 private fun riverDescription(insights: HomeInsights, currency: String, locale: Locale): String {
     val parts = mutableListOf(
-        "Your month. In ${Money.format(insights.monthIn.toDouble(), currency, locale)}, out ${Money.format(insights.monthOut.toDouble(), currency, locale)}, ${signedAmount(insights.monthEndGap, currency, locale)} left at month end.",
+        Strings.get(R.string.home_your_month_in_out_left, Money.format(insights.monthIn.toDouble(), currency, locale), Money.format(insights.monthOut.toDouble(), currency, locale), signedAmount(insights.monthEndGap, currency, locale)),
     )
     insights.shortfall?.let { shortfall ->
-        parts += "Out is ahead of in from ${shortfall.start.format(dayFormatter(locale))} through ${shortfall.end.format(dayFormatter(locale))}, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}."
+        parts += Strings.get(R.string.home_out_is_ahead_of_in_2, shortfall.start.format(dayFormatter(locale)), shortfall.end.format(dayFormatter(locale)), Money.format(shortfall.amount.toDouble(), currency, locale))
     }
     val upcoming = insights.pins.filterNot { it.isPast }
     if (upcoming.isNotEmpty()) {

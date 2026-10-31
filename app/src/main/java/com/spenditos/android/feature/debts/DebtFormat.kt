@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.debts.DebtSummary
 import com.spenditos.android.data.debts.DebtWithPlan
@@ -117,13 +119,13 @@ internal object DebtFormat {
         val summary = plan.summary
         if (summary.isPaidOff) {
             val date = shortDate(summary.paidOffDate, locale)
-            return if (date != null) "Paid off on $date" else "Paid off"
+            return if (date != null) Strings.get(R.string.debts_paid_off_on, date) else Strings.get(R.string.debts_paid_off)
         }
         val parts = mutableListOf("${money(summary.balance, currencyCode, locale)} left of ${money(plan.debt.startingBalance, currencyCode, locale)}")
         if (plan.paymentsStopped) {
-            parts += "Payments stopped"
+            parts += Strings.get(R.string.debts_payments_stopped)
         } else if (plan.projection.neverPaysOff) {
-            parts += "Payment too low to finish"
+            parts += Strings.get(R.string.debts_payment_too_low_to_finish)
         } else {
             monthYear(plan.projection.payoffDate, locale)?.let { parts += "done by $it" }
         }
@@ -179,15 +181,15 @@ internal fun parseDebtAmount(text: String): Double? =
 
 /** "Enter how much you paid" style validation shared by the two debt sheets (iOS `amountError`). */
 internal fun extraPaymentAmountError(text: String, showErrors: Boolean): String? {
-    if (text.isBlank()) return if (showErrors) "Enter how much you paid" else null
+    if (text.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_how_much_you_paid) else null
     val amount = parseDebtAmount(text)
-    return if (amount == null || amount <= 0) "Enter an amount above zero" else null
+    return if (amount == null || amount <= 0) Strings.get(R.string.common_enter_an_amount_above_zero) else null
 }
 
 internal fun correctBalanceAmountError(text: String, showErrors: Boolean): String? {
-    if (text.isBlank()) return if (showErrors) "Enter what you owe today" else null
+    if (text.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_what_you_owe_today) else null
     val amount = parseDebtAmount(text)
-    return if (amount == null || amount < 0) "Enter zero or more" else null
+    return if (amount == null || amount < 0) Strings.get(R.string.debts_enter_zero_or_more) else null
 }
 
 /** The balance as the Correct balance field's starting text: "6040" or "6040.50". */

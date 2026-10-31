@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.receipt
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -49,7 +51,7 @@ enum class ReceiptScanStep { CHOOSE, PREPARING, READING, FAILURE, QUOTA, DONE }
 /** What the reading screen shows; filled in as the upload and the server-side scan progress (iOS `ReadingState`). */
 data class ScanReadingState(
     val label: String = "",
-    val unit: String = "Image",
+    val unit: String = Strings.get(R.string.common_image),
     val uploaded: Int = 0,
     val uploadTotal: Int? = null,
     val scanId: String? = null,
@@ -67,15 +69,15 @@ data class ScanReadingState(
         }
 
     val title: String
-        get() = label.trim().let { if (it.isEmpty()) "Reading your scan…" else "Reading $it…" }
+        get() = label.trim().let { if (it.isEmpty()) Strings.get(R.string.common_reading_your_scan) else Strings.get(R.string.common_reading, it) }
 
     val progressText: String
         get() {
             if (scanId == null) {
                 val count = uploadTotal
-                return if (count != null && count > 0) "Uploading ${minOf(uploaded + 1, count)} of $count" else "Uploading…"
+                return if (count != null && count > 0) Strings.get(R.string.receipt_uploading_of, minOf(uploaded + 1, count), count) else Strings.get(R.string.receipt_uploading)
             }
-            if (total <= 1) return "Matching what you already have"
+            if (total <= 1) return Strings.get(R.string.receipt_matching_what_you_already_have)
             return "$unit ${minOf(done + 1, total)} of $total · matching what you already have"
         }
 }
@@ -107,7 +109,7 @@ fun ReceiptResult.toPrefill() = AddTransactionPrefill(
     date = date,
     categoryId = categoryId,
     categoryHint = categoryHint,
-    source = "Receipt scan",
+    source = Strings.get(R.string.receipt_receipt_scan),
 )
 
 /**

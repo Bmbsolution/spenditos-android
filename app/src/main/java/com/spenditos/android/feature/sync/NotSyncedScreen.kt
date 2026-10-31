@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.sync
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,12 +62,12 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                     IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
                         Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
                     }
-                    Text("Offline Changes", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+                    Text(stringResource(R.string.sync_offline_changes), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
                     TextButton(
                         onClick = { failed.filter { it.canRetry }.forEach { viewModel.retry(it.id) } },
                         enabled = failed.any { it.canRetry },
                         modifier = Modifier.align(Alignment.CenterEnd).testTag("notSynced.retryAll"),
-                    ) { Text("Retry", style = IosText.body, color = if (failed.any { it.canRetry }) IosColors.spendOrange else IosColors.textTertiary) }
+                    ) { Text(stringResource(R.string.common_retry), style = IosText.body, color = if (failed.any { it.canRetry }) IosColors.spendOrange else IosColors.textTertiary) }
                 }
             }
 
@@ -86,7 +88,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                 }
                 item {
                     Text(
-                        "These transactions are stored on this device and keep their idempotency key across retries.",
+                        stringResource(R.string.sync_these_transactions_are_stored_on),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
@@ -111,7 +113,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                 }
                 item {
                     Text(
-                        "Retryable connection failures also retry automatically when you reconnect. Validation and category errors stay here until you fix or discard them.",
+                        stringResource(R.string.sync_retryable_connection_failures_also_retry),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s),
@@ -127,9 +129,9 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
                         verticalArrangement = Arrangement.spacedBy(Spacing.s),
                     ) {
                         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(48.dp))
-                        Text("All Changes Synced", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                        Text(stringResource(R.string.sync_all_changes_synced), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                         Text(
-                            "New offline transactions will appear here until they reach the server.",
+                            stringResource(R.string.sync_new_offline_transactions_will_appear),
                             style = IosText.subheadline,
                             color = IosColors.textSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -142,20 +144,20 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
 
     confirmDiscard?.let { id ->
         val item = state.items.firstOrNull { it.id == id }
-        val description = item?.description?.takeIf(String::isNotEmpty) ?: "Transaction"
+        val description = item?.description?.takeIf(String::isNotEmpty) ?: stringResource(R.string.common_transaction)
         AlertDialog(
             onDismissRequest = { confirmDiscard = null },
-            title = { Text("Discard this saved transaction?", style = IosText.headline) },
+            title = { Text(stringResource(R.string.sync_discard_this_saved_transaction), style = IosText.headline) },
             text = { Text("$description will be removed from this device and cannot be retried.", style = IosText.body) },
-            confirmButton = { TextButton(onClick = { viewModel.discard(id); confirmDiscard = null }) { Text("Discard", color = IosColors.expense) } },
-            dismissButton = { TextButton(onClick = { confirmDiscard = null }) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { viewModel.discard(id); confirmDiscard = null }) { Text(stringResource(R.string.common_discard), color = IosColors.expense) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
     state.notice?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissNotice,
-            title = { Text("Can't discard yet", style = IosText.headline) },
+            title = { Text(stringResource(R.string.sync_can_t_discard_yet), style = IosText.headline) },
             text = { Text(message, style = IosText.body) },
             confirmButton = {
                 TextButton(onClick = viewModel::dismissNotice, modifier = Modifier.testTag("notSynced.notice.ok")) {
@@ -172,14 +174,14 @@ private fun QueuedTransactionRow(item: QueuedItemUi, currency: String, onRetry: 
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(item.description.ifBlank { "Transaction" }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)
-                Text(if (item.isFailed) "Sync failed" else "Saved locally", style = IosText.subheadline.w(FontWeight.SemiBold), color = if (item.isFailed) finance.expense else IosColors.spendOrange)
+                Text(item.description.ifBlank { stringResource(R.string.common_transaction) }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                Text(if (item.isFailed) stringResource(R.string.sync_sync_failed) else stringResource(R.string.sync_saved_locally), style = IosText.subheadline.w(FontWeight.SemiBold), color = if (item.isFailed) finance.expense else IosColors.spendOrange)
             }
             Text(Money.format(item.amount, currency), style = IosText.rounded(17, FontWeight.Medium), color = IosColors.textPrimary)
         }
 
         Text(
-            item.message ?: if (item.isFailed) "This change needs attention before it can sync." else "Waiting for a connection to sync.",
+            item.message ?: if (item.isFailed) stringResource(R.string.sync_this_change_needs_attention_before) else stringResource(R.string.sync_waiting_for_a_connection_to),
             style = IosText.subheadline,
             color = IosColors.textSecondary,
         )
@@ -189,9 +191,9 @@ private fun QueuedTransactionRow(item: QueuedItemUi, currency: String, onRetry: 
             Text(item.date, style = IosText.subheadline, color = IosColors.textSecondary)
             Spacer(Modifier.weight(1f))
             if (item.isFailed && item.canRetry) {
-                TextButton(onClick = onRetry) { Text("Retry", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.common_retry), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
             }
-            TextButton(onClick = onDiscard) { Text("Discard", style = IosText.subheadline.w(FontWeight.SemiBold), color = finance.expense) }
+            TextButton(onClick = onDiscard) { Text(stringResource(R.string.common_discard), style = IosText.subheadline.w(FontWeight.SemiBold), color = finance.expense) }
         }
     }
 }

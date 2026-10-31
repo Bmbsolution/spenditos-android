@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.content.Context
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.network.SpenditosJson
@@ -19,9 +21,9 @@ enum class DateRangeFilter {
 
     val label: String
         get() = when (this) {
-            THIS_MONTH -> "This Month"
-            LAST_MONTH -> "Last Month"
-            CUSTOM -> "Custom"
+            THIS_MONTH -> Strings.get(R.string.transactions_this_month)
+            LAST_MONTH -> Strings.get(R.string.transactions_last_month)
+            CUSTOM -> Strings.get(R.string.common_custom)
         }
 }
 

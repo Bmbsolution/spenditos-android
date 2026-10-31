@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.monthbalance
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,11 +75,11 @@ fun MonthBalanceCard(
         card.error?.let { Text(it, style = IosText.caption, color = IosColors.expense, modifier = Modifier.testTag("month-balance-error")) }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             if (data.kind == MonthBalanceKind.SHORTFALL) {
-                Pill("Add debt", primary = true, enabled = !card.isSaving, tag = "month-balance-add-debt", onClick = onAddDebt)
-                Pill("Not needed", primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
+                Pill(stringResource(R.string.common_add_debt), primary = true, enabled = !card.isSaving, tag = "month-balance-add-debt", onClick = onAddDebt)
+                Pill(stringResource(R.string.home_not_needed), primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
             } else {
-                Pill("Carry over", primary = true, enabled = !card.isSaving, tag = "month-balance-carry") { onAnswer(MonthBalanceChoice.CARRIED) }
-                Pill("No thanks", primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
+                Pill(stringResource(R.string.home_carry_over), primary = true, enabled = !card.isSaving, tag = "month-balance-carry") { onAnswer(MonthBalanceChoice.CARRIED) }
+                Pill(stringResource(R.string.home_no_thanks), primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
             }
         }
     }

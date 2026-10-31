@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.model.ScanOutcome
@@ -70,8 +72,8 @@ class ScanCardsViewModel @Inject constructor(
             } catch (error: Throwable) {
                 val text = when (error) {
                     is ScanFailure -> error.userMessage
-                    is ApiError.Network -> "You're offline. Reconnect to open this scan."
-                    else -> "Couldn't open this scan. Try again."
+                    is ApiError.Network -> Strings.get(R.string.scan_you_re_offline_reconnect_to)
+                    else -> Strings.get(R.string.scan_couldn_t_open_this_scan)
                 }
                 _events.send(ScanCardEvent.Message(text))
                 coordinator.refresh()

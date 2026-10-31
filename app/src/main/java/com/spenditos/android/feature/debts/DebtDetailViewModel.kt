@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -122,7 +124,7 @@ data class DebtDetailUiState(
     val paidOffOnText: String?
         get() {
             if (!isPaidOff) return null
-            return DebtFormat.shortDate(summary?.paidOffDate)?.let { "Paid off on $it" } ?: "Paid off"
+            return DebtFormat.shortDate(summary?.paidOffDate)?.let { Strings.get(R.string.debts_paid_off_on, it) } ?: Strings.get(R.string.debts_paid_off)
         }
 
     /** A payment that is actually scheduled. */
@@ -235,7 +237,7 @@ data class DebtDetailUiState(
     val applyWhatIfTitle: String?
         get() {
             val newPayment = newPayment ?: return null
-            return if (extra > 0) "Pay ${money(newPayment)} from now on" else null
+            return if (extra > 0) Strings.get(R.string.debts_pay_from_now_on, money(newPayment)) else null
         }
 
     /**
@@ -269,10 +271,10 @@ data class DebtDetailUiState(
             val title: String
             val amountText: String
             when (entry.kind) {
-                DebtHistoryKind.PAYMENT -> { title = "Payment"; amountText = money(entry.amount) }
-                DebtHistoryKind.EXTRA_PAYMENT -> { title = "Extra payment"; amountText = money(entry.amount) }
-                DebtHistoryKind.ADJUSTMENT -> { title = "Balance corrected"; amountText = "Set to ${money(entry.amount)}" }
-                DebtHistoryKind.UNKNOWN -> { title = "Update"; amountText = money(entry.amount) }
+                DebtHistoryKind.PAYMENT -> { title = Strings.get(R.string.debts_payment); amountText = money(entry.amount) }
+                DebtHistoryKind.EXTRA_PAYMENT -> { title = Strings.get(R.string.debts_extra_payment); amountText = money(entry.amount) }
+                DebtHistoryKind.ADJUSTMENT -> { title = Strings.get(R.string.debts_balance_corrected); amountText = Strings.get(R.string.debts_set_to, money(entry.amount)) }
+                DebtHistoryKind.UNKNOWN -> { title = Strings.get(R.string.debts_update); amountText = money(entry.amount) }
             }
             DebtHistoryRow(
                 id = "$index-${entry.kind.wire}-${entry.date}",
@@ -280,8 +282,8 @@ data class DebtDetailUiState(
                 title = title,
                 dateText = DebtFormat.shortDate(entry.date) ?: entry.date,
                 amountText = amountText,
-                interestNote = if (entry.interest > 0) "Includes ${money(entry.interest)} interest" else null,
-                balanceAfterText = "Balance ${money(entry.balanceAfter)}",
+                interestNote = if (entry.interest > 0) Strings.get(R.string.debts_includes_interest, money(entry.interest)) else null,
+                balanceAfterText = Strings.get(R.string.debts_balance, money(entry.balanceAfter)),
             )
         }
 

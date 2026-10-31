@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -161,7 +163,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                 if (state.isOffline) {
                     item {
                         Text(
-                            "Check your connection and try again.",
+                            stringResource(R.string.settings_check_your_connection_and_try),
                             style = IosText.footnote,
                             color = IosColors.textSecondary,
                             modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("profile.offline"),
@@ -172,7 +174,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                 item {
                     GroupedCard {
                         IosRow(
-                            title = "Display Name",
+                            title = stringResource(R.string.settings_display_name),
                             icon = SfSymbols.icon("person.fill"),
                             iconTint = IosColors.spendOrange,
                             chevron = false,
@@ -188,7 +190,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                                     decorationBox = { inner ->
                                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                                             if (state.displayName.isEmpty()) {
-                                                Text("Not set", style = IosText.subheadline, color = IosColors.textTertiary, modifier = Modifier.testTag("profile.empty"))
+                                                Text(stringResource(R.string.settings_not_set), style = IosText.subheadline, color = IosColors.textTertiary, modifier = Modifier.testTag("profile.empty"))
                                             }
                                             inner()
                                         }
@@ -197,7 +199,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                             },
                         )
                         IosRow(
-                            title = "Currency",
+                            title = stringResource(R.string.common_currency),
                             value = state.currency,
                             icon = SfSymbols.icon("dollarsign.circle.fill"),
                             iconTint = finance.income,
@@ -211,7 +213,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                 item {
                     GroupedCard {
                         IosRow(
-                            "Change Password",
+                            stringResource(R.string.settings_change_password),
                             icon = SfSymbols.icon("lock.fill"),
                             iconTint = IosColors.info,
                             onClick = onOpenChangePassword,
@@ -225,14 +227,14 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                     GroupedCard {
                         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             if (state.success) {
-                                Text("Profile saved.", style = IosText.footnote, color = finance.income, modifier = Modifier.testTag("profile.success"))
+                                Text(stringResource(R.string.settings_profile_saved), style = IosText.footnote, color = finance.income, modifier = Modifier.testTag("profile.success"))
                             }
                             if (state.error != null) {
                                 TextButton(onClick = viewModel::load, modifier = Modifier.testTag("profile.retry")) { Text("Try again") }
                             }
                             Box(Modifier.fillMaxWidth()) {
                                 PillButton(
-                                    text = "Save",
+                                    text = stringResource(R.string.common_save),
                                     onClick = viewModel::save,
                                     enabled = !state.isSaving,
                                     modifier = Modifier.fillMaxWidth().testTag("profile.save"),
@@ -259,13 +261,13 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                             if (state.isDeletingAccount) {
                                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = IosColors.expense)
                             }
-                            Text("Delete Account", style = IosText.body, color = IosColors.expense)
+                            Text(stringResource(R.string.settings_delete_account), style = IosText.body, color = IosColors.expense)
                         }
                     }
                 }
                 item {
                     Text(
-                        "Deleting removes your transactions and income or bills. You have 30 days to contact support to cancel.",
+                        stringResource(R.string.settings_deleting_removes_your_transactions_and),
                         style = IosText.footnote,
                         color = IosColors.textSecondary,
                         modifier = Modifier.padding(horizontal = Spacing.screen + Spacing.m, vertical = Spacing.s),
@@ -279,29 +281,29 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
     if (deleteStep == 1) {
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
-            title = { Text("Delete Account") },
-            text = { Text("This will permanently schedule your account for deletion. All your data will be erased. You have 30 days to contact support to cancel.\n\nYou will be signed out immediately.") },
-            confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = IosColors.expense) } },
-            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+            title = { Text(stringResource(R.string.settings_delete_account)) },
+            text = { Text(stringResource(R.string.settings_this_will_permanently_schedule_your)) },
+            confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text(stringResource(R.string.common_continue), color = IosColors.expense) } },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
     if (deleteStep == 2) {
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
-            title = { Text("Are you absolutely sure?") },
-            text = { Text("This action cannot be undone. Your account will be permanently deleted.") },
+            title = { Text(stringResource(R.string.settings_are_you_absolutely_sure)) },
+            text = { Text(stringResource(R.string.settings_this_action_cannot_be_undone)) },
             confirmButton = {
                 TextButton(onClick = { deleteStep = 0; viewModel.deleteAccount() }, modifier = Modifier.testTag("profile.deleteAccount.confirm")) {
-                    Text("Delete My Account", color = IosColors.expense)
+                    Text(stringResource(R.string.settings_delete_my_account), color = IosColors.expense)
                 }
             },
-            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
     state.deleteError?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissDeleteError,
-            title = { Text("Delete Account") },
+            title = { Text(stringResource(R.string.settings_delete_account)) },
             text = { Text(message) },
             confirmButton = { TextButton(onClick = viewModel::dismissDeleteError) { Text("OK") } },
         )
@@ -315,7 +317,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
         ) {
             DismissKeyboardWhenInactive()
             Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(horizontal = Spacing.screen)) {
-                Text("Currency", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s))
+                Text(stringResource(R.string.common_currency), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(horizontal = Spacing.m, vertical = Spacing.s),
                     verticalAlignment = Alignment.CenterVertically,
@@ -332,7 +334,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                     modifier = Modifier.weight(1f).testTag("profile.currency.search"),
                     decorationBox = { inner ->
                         Box {
-                            if (currencySearch.isEmpty()) Text("Search 180+ currencies", style = IosText.body, color = IosColors.textTertiary)
+                            if (currencySearch.isEmpty()) Text(stringResource(R.string.settings_search_180_currencies), style = IosText.body, color = IosColors.textTertiary)
                             inner()
                         }
                     },
@@ -365,7 +367,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                                 showCurrencyPicker = false
                             }
                         }
-                        if (matches.isEmpty()) item { Text("No currencies found.", style = IosText.body, color = IosColors.textSecondary, modifier = Modifier.padding(Spacing.m).testTag("profile.currency.empty")) }
+                        if (matches.isEmpty()) item { Text(stringResource(R.string.settings_no_currencies_found), style = IosText.body, color = IosColors.textSecondary, modifier = Modifier.padding(Spacing.m).testTag("profile.currency.empty")) }
                     }
                 }
             }
@@ -394,6 +396,6 @@ private fun ProfileHeader(onBack: () -> Unit) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
             Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
         }
-        Text("Profile", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(stringResource(R.string.settings_profile), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }
 }

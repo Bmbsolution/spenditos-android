@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.capture
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -152,14 +155,14 @@ internal fun ReviewSummaryRow(
     val income = item.transactionType.equals("income", ignoreCase = true)
     val choices = categories.filter { it.isIncome == income }
     val selectedCategory = choices.firstOrNull { it.id == item.categoryId }
-    val categoryLabel = selectedCategory?.name ?: item.categoryHint?.takeIf { it.isNotBlank() } ?: "Select category"
+    val categoryLabel = selectedCategory?.name ?: item.categoryHint?.takeIf { it.isNotBlank() } ?: stringResource(R.string.capture_select_category)
     val sourceCurrency = item.currency?.uppercase()?.takeIf { it.isNotBlank() && !it.equals(currency, ignoreCase = true) }
     val subtitle = listOfNotNull(
         categoryLabel,
         item.date.takeIf { it.isNotBlank() },
         // Scan rows are converted into the user's currency (iOS "USD → CAD"); voice and typed amounts are saved as
         // parsed, so those say what was parsed.
-        sourceCurrency?.let { source -> item.convertedTo?.let { "$source → $it" } ?: "Parsed as $source" },
+        sourceCurrency?.let { source -> item.convertedTo?.let { "$source → $it" } ?: stringResource(R.string.capture_parsed_as, source) },
     ).joinToString(" · ")
     Row(
         Modifier.fillMaxWidth()
@@ -194,7 +197,7 @@ internal fun ReviewSummaryRow(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             Text(
-                item.description.ifBlank { "Transaction" },
+                item.description.ifBlank { stringResource(R.string.common_transaction) },
                 style = IosText.callout.w(FontWeight.SemiBold),
                 color = IosColors.textPrimary,
                 maxLines = 1,
@@ -216,7 +219,7 @@ internal fun ReviewSummaryRow(
             }
             if (item.isFrozen) {
                 Text(
-                    "Retry to confirm this save before editing.",
+                    stringResource(R.string.capture_retry_to_confirm_this_save),
                     style = IosText.footnote,
                     color = IosColors.textSecondary,
                     modifier = Modifier.testTag("capture.frozen.$key"),
@@ -291,18 +294,18 @@ internal fun ReviewItemEditorSheet(
                 .verticalScroll(rememberScrollState()),
         ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onDismiss) { Text("Cancel", style = IosText.body, color = IosColors.spendOrange) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel), style = IosText.body, color = IosColors.spendOrange) }
                 Text(
-                    "Edit Item",
+                    stringResource(R.string.capture_edit_item),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                 )
-                TextButton(onClick = commit) { Text("Done", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
+                TextButton(onClick = commit) { Text(stringResource(R.string.common_done), style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
             }
             Text(
-                "Transaction details",
+                stringResource(R.string.capture_transaction_details),
                 style = IosText.footnote,
                 color = IosColors.textSecondary,
                 modifier = Modifier.padding(start = Spacing.screen, top = Spacing.m, bottom = Spacing.s),
@@ -314,7 +317,7 @@ internal fun ReviewItemEditorSheet(
                             ReviewInputField(
                                 value = draftAmount,
                                 onValueChange = { draftAmount = it },
-                                label = "Amount",
+                                label = stringResource(R.string.common_amount),
                                 enabled = editable,
                                 keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
                                 modifier = Modifier.testTag("capture.amount.$key"),
@@ -325,7 +328,7 @@ internal fun ReviewItemEditorSheet(
                         // iOS segmented Picker("Type"), 180pt wide.
                         Box(Modifier.padding(top = 18.dp).width(220.dp)) { // 180 + IosSegmented's 20dp side insets
                             IosSegmented(
-                                options = listOf("− Expense", "+ Income"),
+                                options = listOf(stringResource(R.string.capture_expense), stringResource(R.string.capture_income)),
                                 selectedIndex = if (income) 1 else 0,
                                 onSelect = { index ->
                                     val next = index == 1
@@ -341,16 +344,16 @@ internal fun ReviewItemEditorSheet(
                     ReviewInputField(
                         value = draftDescription,
                         onValueChange = { draftDescription = it },
-                        label = "Description",
+                        label = stringResource(R.string.common_description),
                         enabled = editable,
                         modifier = Modifier.testTag("capture.description.$key"),
                     )
                     if (!item.currency.isNullOrBlank() && !item.currency.equals(currency, ignoreCase = true)) {
                         Text(
                             if (item.convertedTo != null && item.reviewCurrency == null) {
-                                "Converted from ${item.currency.uppercase()}"
+                                stringResource(R.string.capture_converted_from, item.currency.uppercase())
                             } else {
-                                "Parsed as ${item.currency.uppercase()}"
+                                stringResource(R.string.capture_parsed_as, item.currency.uppercase())
                             },
                             style = IosText.footnote,
                             color = IosColors.textSecondary,
@@ -360,7 +363,7 @@ internal fun ReviewItemEditorSheet(
                 }
             }
             Text(
-                "Category",
+                stringResource(R.string.common_category),
                 style = IosText.footnote,
                 color = IosColors.textSecondary,
                 modifier = Modifier.padding(start = Spacing.screen, top = Spacing.l, bottom = Spacing.s),
@@ -373,7 +376,7 @@ internal fun ReviewItemEditorSheet(
                 enabled = editable,
             )
             Text(
-                "Date",
+                stringResource(R.string.common_date),
                 style = IosText.footnote,
                 color = IosColors.textSecondary,
                 modifier = Modifier.padding(start = Spacing.screen, top = Spacing.l, bottom = Spacing.s),
@@ -415,7 +418,7 @@ internal fun ReviewItemEditorSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
                     Icon(SfSymbols.icon("minus"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(18.dp))
-                    Text("Don't include this item", style = IosText.body, color = IosColors.expense)
+                    Text(stringResource(R.string.capture_don_t_include_this_item), style = IosText.body, color = IosColors.expense)
                 }
             }
             Spacer(Modifier.height(Spacing.l))
@@ -466,15 +469,15 @@ internal fun ReviewCategoryPickerSheet(
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.width(44.dp))
-                Text("Select Category", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                Text(stringResource(R.string.common_select_category), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                 TextButton(onClick = onDismiss, modifier = Modifier.width(64.dp)) {
-                    Text("Done", style = IosText.body.w(FontWeight.Medium), color = IosColors.spendOrange)
+                    Text(stringResource(R.string.common_done), style = IosText.body.w(FontWeight.Medium), color = IosColors.spendOrange)
                 }
             }
             ReviewCategorySearch(value = searchText, onValueChange = onSearchChange)
             if (allowNone) {
                 ReviewChoice(
-                    text = "Uncategorized",
+                    text = stringResource(R.string.common_uncategorized),
                     symbol = "tag",
                     onClick = { onSelect(null) },
                     modifier = Modifier.testTag("capture.category.none.$tagKey"),
@@ -489,7 +492,7 @@ internal fun ReviewCategoryPickerSheet(
                 ) {
                     Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(Spacing.m))
-                    Text("No categories found", style = IosText.body, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.common_no_categories_found), style = IosText.body, color = IosColors.textSecondary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -564,8 +567,8 @@ private fun ReviewCategorySelectionRow(
             } else {
                 Icon(SfSymbols.icon("tag"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(20.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(hint ?: "Select category", style = IosText.body, color = IosColors.textPrimary)
-                    if (hint != null) Text("Suggested category", style = IosText.caption, color = IosColors.textSecondary)
+                    Text(hint ?: stringResource(R.string.capture_select_category), style = IosText.body, color = IosColors.textPrimary)
+                    if (hint != null) Text(stringResource(R.string.capture_suggested_category), style = IosText.caption, color = IosColors.textSecondary)
                 }
             }
             Spacer(Modifier.weight(1f))
@@ -618,7 +621,7 @@ private fun ReviewCategorySearch(value: String, onValueChange: (String) -> Unit)
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->
                 Box {
-                    if (value.isEmpty()) Text("Search categories...", style = IosText.callout, color = IosColors.textSecondary)
+                    if (value.isEmpty()) Text(stringResource(R.string.common_search_categories), style = IosText.callout, color = IosColors.textSecondary)
                     innerTextField()
                 }
             },
@@ -626,7 +629,7 @@ private fun ReviewCategorySearch(value: String, onValueChange: (String) -> Unit)
         if (value.isNotEmpty()) {
             Icon(
                 SfSymbols.icon("xmark.circle.fill"),
-                contentDescription = "Clear search",
+                contentDescription = stringResource(R.string.common_clear_search),
                 tint = IosColors.textSecondary,
                 modifier = Modifier.size(18.dp).clickable(role = Role.Button) { onValueChange("") },
             )
@@ -690,15 +693,15 @@ internal fun reviewFlagLabels(item: CaptureReviewItem, currency: String, locale:
                 item.duplicateDate?.let { shortDate(it, locale) },
                 item.duplicateAmount?.let { com.spenditos.android.ui.components.Money.format(it, currency, locale) },
             ).joinToString(" · ")
-            labels += if (detail.isNotEmpty()) "Already added ($detail)" else "Already added"
+            labels += if (detail.isNotEmpty()) Strings.get(R.string.capture_already_added, detail) else Strings.get(R.string.capture_already_added_2)
         }
-        "payment" -> labels += "Card payment"
-        "transfer" -> labels += "Transfer"
+        "payment" -> labels += Strings.get(R.string.capture_card_payment)
+        "transfer" -> labels += Strings.get(R.string.capture_transfer)
         "rule" -> labels += SKIPPED_BY_RULE_LABEL
-        else -> if (matched) labels += "Possible duplicate"
+        else -> if (matched) labels += Strings.get(R.string.capture_possible_duplicate)
     }
     if (item.ruleId != null && item.skipReason != "rule") labels += YOUR_RULE_LABEL
-    if (item.isPending == true) labels += "Pending"
+    if (item.isPending == true) labels += Strings.get(R.string.capture_pending)
     return labels
 }
 

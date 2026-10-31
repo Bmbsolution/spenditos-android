@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.export
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.auth.SessionChangedException
@@ -25,10 +27,10 @@ import javax.inject.Inject
 
 /** iOS `SpreadsheetRange.Preset`. */
 enum class ExportRange(val label: String) {
-    THIS_MONTH("This month"),
-    THIS_YEAR("This year"),
-    LAST_YEAR("Last year"),
-    CUSTOM("Custom"),
+    THIS_MONTH(Strings.get(R.string.common_this_month)),
+    THIS_YEAR(Strings.get(R.string.export_this_year)),
+    LAST_YEAR(Strings.get(R.string.export_last_year)),
+    CUSTOM(Strings.get(R.string.common_custom)),
 }
 
 data class ExportUiState(
@@ -42,8 +44,8 @@ data class ExportUiState(
 ) {
     val validationError: String?
         get() = when {
-            end.isBefore(start) -> "The end date must be on or after the start date."
-            ChronoUnit.DAYS.between(start, end) > MAX_DAYS -> "Choose a range of up to two years."
+            end.isBefore(start) -> Strings.get(R.string.export_the_end_date_must_be)
+            ChronoUnit.DAYS.between(start, end) > MAX_DAYS -> Strings.get(R.string.export_choose_a_range_of_up)
             else -> null
         }
     val canExport: Boolean get() = !isExporting && validationError == null
@@ -116,15 +118,15 @@ class ExportViewModel @Inject constructor(
     }
 
     private fun message(error: Throwable): String = when (error) {
-        is ApiError.Network -> "You're offline. Check your connection and try again."
-        is ApiError.Unauthorized -> "Your session expired. Sign in and try again."
-        is SessionChangedException -> "The signed-in account changed, so nothing was downloaded. Try again."
+        is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+        is ApiError.Unauthorized -> Strings.get(R.string.export_your_session_expired_sign_in)
+        is SessionChangedException -> Strings.get(R.string.export_the_signed_in_account_changed)
         is ApiError.Server -> when {
             error.status == 400 && error.serverMessage.isNotBlank() && error.serverMessage != "Unknown error" -> error.serverMessage
-            error.status >= 500 -> "Downloads are temporarily unavailable. Try again."
-            else -> "Couldn't download your transactions. Try again."
+            error.status >= 500 -> Strings.get(R.string.export_downloads_are_temporarily_unavailable_try)
+            else -> Strings.get(R.string.export_couldn_t_download_your_transactions)
         }
-        else -> "Couldn't download your transactions. Try again."
+        else -> Strings.get(R.string.export_couldn_t_download_your_transactions)
     }
 
     private fun rangeFor(range: ExportRange): Pair<LocalDate, LocalDate> = when (range) {

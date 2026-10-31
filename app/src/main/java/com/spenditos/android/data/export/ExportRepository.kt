@@ -1,5 +1,7 @@
 package com.spenditos.android.data.export
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
@@ -215,11 +217,11 @@ class ExportRepository @Inject constructor(
 
     /** The export handlers answer `{error, message}`; show the readable `message` first. */
     private fun readableMessage(body: String?): String {
-        if (body.isNullOrBlank()) return "Unknown error"
+        if (body.isNullOrBlank()) return Strings.get(R.string.data_export_unknown_error)
         return runCatching {
             val obj = SpenditosJson.parseToJsonElement(body).jsonObject
             obj["message"]?.jsonPrimitive?.contentOrNull ?: obj["error"]?.jsonPrimitive?.contentOrNull
-        }.getOrNull() ?: "Unknown error"
+        }.getOrNull() ?: Strings.get(R.string.data_export_unknown_error)
     }
 
     companion object {

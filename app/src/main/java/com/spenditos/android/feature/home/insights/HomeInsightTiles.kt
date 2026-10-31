@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.insights
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -81,12 +83,12 @@ fun NextBillTile(
     onOpen: (HomeInsights.Pin) -> Unit = {},
 ) {
     BentoTile(
-        "Next bill", "calendar.badge.clock", IosColors.spendOrange, modifier.testTag("home.nextBill"),
+        stringResource(R.string.home_next_bill), "calendar.badge.clock", IosColors.spendOrange, modifier.testTag("home.nextBill"),
         onClick = pin?.let { { onOpen(it) } },
     ) {
         if (pin == null) {
             Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(36.dp))
-            Text("No more bills this month", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(stringResource(R.string.home_no_more_bills_this_month), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.textPrimary)
         } else {
             val days = (pin.date.toEpochDay() - today.toEpochDay()).toInt()
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -98,7 +100,7 @@ fun NextBillTile(
             }
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    if (days <= 1) (if (days == 1) "Tomorrow" else "Today") else "$days",
+                    if (days <= 1) (if (days == 1) stringResource(R.string.home_tomorrow) else stringResource(R.string.common_today)) else "$days",
                     style = IosText.rounded(if (days <= 1) 22 else 30, FontWeight.ExtraBold),
                     color = IosColors.spendOrange,
                 )
@@ -117,9 +119,9 @@ fun NextBillTile(
 @Composable
 fun WeekTile(week: List<HomeInsights.WeekDay>, tint: Color, currency: String, locale: Locale, modifier: Modifier = Modifier) {
     val total = week.fold(java.math.BigDecimal.ZERO) { sum, day -> sum + day.amount }
-    val description = "Everyday spending in the last 7 days: ${Money.format(total.toDouble(), currency, locale)}"
+    val description = stringResource(R.string.home_everyday_spending_in_the_last, Money.format(total.toDouble(), currency, locale))
     val maxAmount = week.maxOfOrNull { it.amount.toDouble() }?.coerceAtLeast(1.0) ?: 1.0
-    BentoTile("Last 7 days", "chart.bar.fill", tint, modifier.testTag("home.week")) {
+    BentoTile(stringResource(R.string.home_last_7_days), "chart.bar.fill", tint, modifier.testTag("home.week")) {
         Text(
             Money.format(total.toDouble(), currency, locale),
             style = IosText.rounded(20, FontWeight.Bold),
@@ -158,9 +160,9 @@ fun WeekTile(week: List<HomeInsights.WeekDay>, tint: Color, currency: String, lo
 
 @Composable
 fun TopCategoryTile(top: HomeInsights.TopCategory?, currency: String, locale: Locale, modifier: Modifier = Modifier) {
-    BentoTile("Most spent on", "crown.fill", IosColors.spendGold, modifier.testTag("home.topCategory")) {
+    BentoTile(stringResource(R.string.home_most_spent_on), "crown.fill", IosColors.spendGold, modifier.testTag("home.topCategory")) {
         if (top == null) {
-            Text("Log a few expenses to see where your money goes.", style = IosText.subheadline, color = IosColors.textSecondary)
+            Text(stringResource(R.string.home_log_a_few_expenses_to), style = IosText.subheadline, color = IosColors.textSecondary)
         } else {
             val color = categoryColor(top.colorHex)
             val sharePercent = top.share.multiply(java.math.BigDecimal(100)).setScale(0, java.math.RoundingMode.HALF_UP)

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -50,9 +52,9 @@ class ProfileViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = if (e is com.spenditos.android.core.network.ApiError.Network) {
-                    "You're offline. Check your connection and try again."
+                    Strings.get(R.string.common_you_re_offline_check_your)
                 } else {
-                    "Couldn't delete your account. Please try again."
+                    Strings.get(R.string.settings_couldn_t_delete_your_account)
                 }
                 _state.update { it.copy(deleteError = message) }
             } finally {
@@ -89,9 +91,9 @@ class ProfileViewModel @Inject constructor(
                             isLoading = false,
                             isOffline = error is ApiError.Network,
                             error = when (error) {
-                                is ApiError.Network -> "You're offline. Profile details may be out of date."
+                                is ApiError.Network -> Strings.get(R.string.settings_you_re_offline_profile_details)
                                 is ApiError.Server -> error.serverMessage
-                                else -> "Couldn't load your profile. Try again."
+                                else -> Strings.get(R.string.settings_couldn_t_load_your_profile)
                             },
                         )
                     }
@@ -128,9 +130,9 @@ class ProfileViewModel @Inject constructor(
                             isSaving = false,
                             isOffline = error is ApiError.Network,
                             error = when (error) {
-                                is ApiError.Network -> "You're offline. Try again when you're connected."
+                                is ApiError.Network -> Strings.get(R.string.common_you_re_offline_try_again)
                                 is ApiError.Server -> error.serverMessage
-                                else -> "Couldn't save your profile. Try again."
+                                else -> Strings.get(R.string.settings_couldn_t_save_your_profile)
                             },
                         )
                     }

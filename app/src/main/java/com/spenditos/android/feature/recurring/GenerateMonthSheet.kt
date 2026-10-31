@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -123,9 +125,9 @@ fun GenerateMonthSheet(
     ) {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
-                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss).testTag("recurring.generate.cancel"), style = IosText.body, color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_cancel), Modifier.clickable(role = Role.Button, onClick = onDismiss).testTag("recurring.generate.cancel"), style = IosText.body, color = IosColors.textPrimary)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Generate a month", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_generate_a_month), style = IosText.headline, color = IosColors.textPrimary)
                 }
                 Spacer(Modifier.size(52.dp))
             }
@@ -144,14 +146,14 @@ fun GenerateMonthSheet(
                     CircularProgressIndicator(color = IosColors.spendOrange, modifier = Modifier.testTag("recurring.generate.loading"))
                 }
                 items.isEmpty() -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("Nothing falls in ${BillText.monthName(month, locale)}", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("recurring.generate.empty"))
+                    Text(stringResource(R.string.recurring_nothing_falls_in, BillText.monthName(month, locale)), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.testTag("recurring.generate.empty"))
                 }
                 else -> {
                     LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("recurring.generate.list")) {
                         if (loadFailed) {
                             item("failed") {
                                 Text(
-                                    "Couldn't check what's already logged. Logging again never makes duplicates.",
+                                    stringResource(R.string.recurring_couldn_t_check_what_s),
                                     Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.xs).testTag("recurring.generate.error"),
                                     style = IosText.caption,
                                     color = IosColors.textSecondary,
@@ -197,15 +199,15 @@ private fun MonthChips(
     val earlier = (2L..6L).map { current.minusMonths(it) }
     var showEarlier by remember { mutableStateOf(false) }
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs + 2.dp)) {
-        MonthChip(BillText.shortMonthName(last, locale), month == last, "Last month, ${BillText.monthName(last, locale)}", "recurring.generate.month.last", Modifier.weight(1f)) { onSelect(last) }
-        MonthChip(BillText.shortMonthName(current, locale), month == current, "This month, ${BillText.monthName(current, locale)}", "recurring.generate.month.this", Modifier.weight(1f)) { onSelect(current) }
-        MonthChip(BillText.shortMonthName(next, locale), month == next, "Next month, ${BillText.monthName(next, locale)}", "recurring.generate.month.next", Modifier.weight(1f)) { onSelect(next) }
+        MonthChip(BillText.shortMonthName(last, locale), month == last, stringResource(R.string.recurring_last_month, BillText.monthName(last, locale)), "recurring.generate.month.last", Modifier.weight(1f)) { onSelect(last) }
+        MonthChip(BillText.shortMonthName(current, locale), month == current, stringResource(R.string.recurring_this_month, BillText.monthName(current, locale)), "recurring.generate.month.this", Modifier.weight(1f)) { onSelect(current) }
+        MonthChip(BillText.shortMonthName(next, locale), month == next, stringResource(R.string.recurring_next_month, BillText.monthName(next, locale)), "recurring.generate.month.next", Modifier.weight(1f)) { onSelect(next) }
         Box(Modifier.weight(1f)) {
             val isEarlier = month in earlier
             MonthChip(
-                if (isEarlier) BillText.shortMonthName(month, locale) else "Earlier",
+                if (isEarlier) BillText.shortMonthName(month, locale) else stringResource(R.string.recurring_earlier),
                 isEarlier,
-                "Earlier months",
+                stringResource(R.string.recurring_earlier_months),
                 "recurring.generate.month.earlier",
                 Modifier.fillMaxWidth(),
             ) { showEarlier = true }
@@ -257,7 +259,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.FutureMonth(
         Icon(SfSymbols.icon("calendar"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
         Text("${BillText.monthName(month, locale)} is still ahead", style = IosText.headline, color = IosColors.textPrimary)
         Text(
-            "Plan it in Month plan. Its entries are logged on their dates.",
+            stringResource(R.string.recurring_plan_it_in_month_plan),
             Modifier.padding(horizontal = Spacing.xl),
             style = IosText.callout,
             color = IosColors.textSecondary,
@@ -272,7 +274,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.FutureMonth(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Plan ${BillText.monthName(month, locale)}", style = IosText.callout.w(FontWeight.SemiBold), color = Color.White)
+                Text(stringResource(R.string.recurring_plan, BillText.monthName(month, locale)), style = IosText.callout.w(FontWeight.SemiBold), color = Color.White)
                 Icon(SfSymbols.icon("arrow.right"), contentDescription = null, tint = Color.White, modifier = Modifier.size(17.dp))
             }
         }
@@ -313,7 +315,7 @@ private fun GenerateRow(item: GenerateItem, isOn: Boolean, currency: String, loc
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    if (item.isFullyLogged) "Already logged" else BillText.generateDates(item, locale),
+                    if (item.isFullyLogged) stringResource(R.string.recurring_already_logged) else BillText.generateDates(item, locale),
                     style = IosText.caption,
                     color = IosColors.textSecondary,
                 )
@@ -353,7 +355,7 @@ private fun GenerateFooter(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                if (entryCount == 0) "Nothing to log" else "Log ${counted(entryCount, "entry", "entries")}",
+                if (entryCount == 0) stringResource(R.string.recurring_nothing_to_log) else "Log ${counted(entryCount, "entry", "entries")}",
                 style = IosText.callout.w(FontWeight.SemiBold),
                 color = Color.White,
             )

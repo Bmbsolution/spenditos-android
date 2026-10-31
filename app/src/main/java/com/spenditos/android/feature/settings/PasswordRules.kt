@@ -1,19 +1,22 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
+
 data class PasswordRequirement(val label: String, val isMet: Boolean)
 
 /** The five password checks used by iOS AuthViewModel.swift:91-99. */
 fun passwordRequirements(password: String): List<PasswordRequirement> = listOf(
-    PasswordRequirement("At least 8 characters", password.codePointCount(0, password.length) >= 8),
-    PasswordRequirement("Contains uppercase letter", password.anyCodePoint { Character.isUpperCase(it) }),
-    PasswordRequirement("Contains lowercase letter", password.anyCodePoint { Character.isLowerCase(it) }),
-    PasswordRequirement("Contains number", password.anyCodePoint { codePoint ->
+    PasswordRequirement(Strings.get(R.string.common_at_least_8_characters), password.codePointCount(0, password.length) >= 8),
+    PasswordRequirement(Strings.get(R.string.settings_contains_uppercase_letter), password.anyCodePoint { Character.isUpperCase(it) }),
+    PasswordRequirement(Strings.get(R.string.settings_contains_lowercase_letter), password.anyCodePoint { Character.isLowerCase(it) }),
+    PasswordRequirement(Strings.get(R.string.settings_contains_number), password.anyCodePoint { codePoint ->
         val type = Character.getType(codePoint)
         type == Character.DECIMAL_DIGIT_NUMBER.toInt() ||
             type == Character.LETTER_NUMBER.toInt() ||
             type == Character.OTHER_NUMBER.toInt()
     }),
-    PasswordRequirement("Contains special character", password.anyCodePoint { !it.isAsciiLetterOrDigit() }),
+    PasswordRequirement(Strings.get(R.string.settings_contains_special_character), password.anyCodePoint { !it.isAsciiLetterOrDigit() }),
 )
 
 private fun String.anyCodePoint(predicate: (Int) -> Boolean): Boolean {

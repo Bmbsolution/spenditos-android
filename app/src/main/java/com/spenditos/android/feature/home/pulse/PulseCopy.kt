@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.pulse
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.feature.home.CashFlowStatus
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -15,9 +17,9 @@ object PulseCopy {
         return when (status.state) {
             CashFlowStatus.State.SETUP ->
                 if (status.spent.signum() > 0) {
-                    "No income this month yet. You've spent ${money(status.spent)}. Add income to see what's left."
+                    Strings.get(R.string.home_no_income_this_month_yet, money(status.spent))
                 } else {
-                    "Add your income and log a first expense. This card then shows what's left after bills."
+                    Strings.get(R.string.home_add_your_income_and_log)
                 }
             CashFlowStatus.State.OVER ->
                 "Spending and bills due are ${money(status.leftAfterBills.negate())} more than this month's income${if (status.carriedIn.signum() > 0) " and what you carried in" else ""}."
@@ -29,15 +31,15 @@ object PulseCopy {
                     status.state == CashFlowStatus.State.TIGHT -> {
                         val runOut = status.runOutDate(status.today)
                         if (runOut != null) {
-                            "At about ${perDay(status.pace)}, you'll run short around ${day(runOut)}."
+                            Strings.get(R.string.home_at_about_you_ll_run, perDay(status.pace), day(runOut))
                         } else {
-                            "You're spending about ${perDay(status.pace)}; ${perDay(status.affordablePace)} keeps you on track."
+                            Strings.get(R.string.home_you_re_spending_about_keeps, perDay(status.pace), perDay(status.affordablePace))
                         }
                     }
-                    else -> "You're spending about ${perDay(status.pace)}. Up to ${perDay(status.affordablePace)} keeps you on track."
+                    else -> Strings.get(R.string.home_you_re_spending_about_up, perDay(status.pace), perDay(status.affordablePace))
                 }
             CashFlowStatus.State.ON_TRACK ->
-                "After bills, you can spend about ${perDay(status.affordablePace)} until ${day(status.monthEnd)}."
+                Strings.get(R.string.home_after_bills_you_can_spend, perDay(status.affordablePace), day(status.monthEnd))
         }
     }
 

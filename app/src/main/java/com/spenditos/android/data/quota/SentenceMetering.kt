@@ -1,5 +1,7 @@
 package com.spenditos.android.data.quota
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.QuotaOverview
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -44,18 +46,17 @@ data class SentenceMeter(
             if (remaining == 1) "1 smart entry left this month" else "$remaining smart entries left this month"
 
         fun bannerCopy(remaining: Int): String =
-            "Smart entries are a Pro feature — ${maxOf(0, remaining)} left this month."
+            Strings.get(R.string.data_quota_smart_entries_are_a_pro, maxOf(0, remaining))
     }
 }
 
 /** Plain-language copy for quota errors. The raw server string ("QuotaExhausted") is never shown. */
 object QuotaCopy {
-    const val SCAN_EXHAUSTED = "You've used all your free scan credits for this month."
-    const val SCAN_UPGRADE = "Upgrade to Pro to keep scanning."
-    const val VOICE_EXHAUSTED = "You've used all your free voice entries for this month."
-    const val SENTENCE_EXHAUSTED_TITLE = "You've used this month's smart entries"
-    const val SENTENCE_EXHAUSTED_BODY =
-        "Your text is in the description. Add the details and save, or upgrade to Pro for more smart entries."
+    val SCAN_EXHAUSTED: String get() = Strings.get(R.string.quota_scan_exhausted)
+    val SCAN_UPGRADE: String get() = Strings.get(R.string.quota_scan_upgrade)
+    val VOICE_EXHAUSTED: String get() = Strings.get(R.string.quota_voice_exhausted)
+    val SENTENCE_EXHAUSTED_TITLE: String get() = Strings.get(R.string.quota_sentence_exhausted_title)
+    val SENTENCE_EXHAUSTED_BODY: String get() = Strings.get(R.string.data_quota_your_text_is_in_the)
 }
 
 /** What the manual form gets when a sentence can't be parsed because the monthly quota is used up. */

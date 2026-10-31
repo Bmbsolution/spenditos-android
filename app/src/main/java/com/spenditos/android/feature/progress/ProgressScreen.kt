@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.progress
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -44,7 +46,7 @@ fun ProgressScreen(onBack: () -> Unit) {
                 IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("progress.back")) {
                     Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back")
                 }
-                Text("Progress", style = IosText.headline, modifier = Modifier.align(Alignment.Center))
+                Text(stringResource(R.string.common_progress), style = IosText.headline, modifier = Modifier.align(Alignment.Center))
             }
         },
     ) { padding ->

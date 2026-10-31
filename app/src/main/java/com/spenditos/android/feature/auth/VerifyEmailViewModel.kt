@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.auth.AccountOperations
@@ -53,7 +55,7 @@ class VerifyEmailViewModel @Inject constructor(private val accounts: AccountOper
             result.fold(
                 onSuccess = {
                     cooldownJob?.cancel()
-                    _state.update { it.copy(code = "", isLoading = false, isVerified = true, notice = "Email confirmed, sign in") }
+                    _state.update { it.copy(code = "", isLoading = false, isVerified = true, notice = Strings.get(R.string.auth_email_confirmed_sign_in)) }
                     _events.send(VerifyEmailEvent.Verified)
                 },
                 onFailure = { error -> _state.update { it.copy(isLoading = false, error = accountErrorMessage(error)) } },
@@ -68,7 +70,7 @@ class VerifyEmailViewModel @Inject constructor(private val accounts: AccountOper
             val result = runCatching { accounts.resendCode(email) }
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, resendSecondsRemaining = RESEND_COOLDOWN_SECONDS, notice = "Code sent. Check your email.") }
+                    _state.update { it.copy(isLoading = false, resendSecondsRemaining = RESEND_COOLDOWN_SECONDS, notice = Strings.get(R.string.auth_code_sent_check_your_email)) }
                     startCooldown()
                     _events.send(VerifyEmailEvent.CodeResent)
                 },

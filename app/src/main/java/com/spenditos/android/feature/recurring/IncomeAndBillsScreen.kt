@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -169,7 +172,7 @@ fun IncomeAndBillsScreen(
                     snackbar.currentSnackbarData?.dismiss()
                     val result = snackbar.showSnackbar(
                         event.text,
-                        actionLabel = event.undo?.let { "Undo" },
+                        actionLabel = event.undo?.let { Strings.get(R.string.common_undo) },
                         duration = SnackbarDuration.Short,
                     )
                     if (result == SnackbarResult.ActionPerformed) event.undo?.invoke()
@@ -203,7 +206,7 @@ fun IncomeAndBillsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         LinearProgressIndicator(Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
-                        Text("Updating…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.recurring_updating), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -212,7 +215,7 @@ fun IncomeAndBillsScreen(
                     GlassCard(Modifier.padding(horizontal = Spacing.screen).testTag("recurring.error")) {
                         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                             Text(error, color = MaterialTheme.colorScheme.error)
-                            if (state.isOffline) Text(if (state.templates.isEmpty()) "No saved list yet." else "Showing saved data.", modifier = Modifier.testTag("recurring.offline"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (state.isOffline) Text(if (state.templates.isEmpty()) stringResource(R.string.recurring_no_saved_list_yet) else stringResource(R.string.recurring_showing_saved_data), modifier = Modifier.testTag("recurring.offline"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("recurring.retry")) { Text("Try again") }
                         }
                     }
@@ -228,9 +231,9 @@ fun IncomeAndBillsScreen(
                         ) {
                             Icon(SfSymbols.icon("arrow.triangle.2.circlepath"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(56.dp))
                             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("No income or bills yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+                                Text(stringResource(R.string.recurring_no_income_or_bills_yet), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
                                 Text(
-                                    "Everything that comes in or goes out on a schedule. Each one is logged on its date.",
+                                    stringResource(R.string.recurring_everything_that_comes_in_or),
                                     style = IosText.callout,
                                     color = IosColors.textSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -246,7 +249,7 @@ fun IncomeAndBillsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
-                                Text("Add income", style = IosText.headline, color = IosColors.textPrimary)
+                                Text(stringResource(R.string.common_add_income), style = IosText.headline, color = IosColors.textPrimary)
                             }
                             Row(
                                 Modifier.clickable(role = Role.Button) { showAddDebt = true }.testTag("debts.empty.add"),
@@ -254,7 +257,7 @@ fun IncomeAndBillsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(SfSymbols.icon("creditcard"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(19.2.dp))
-                                Text("Add a debt", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                                Text(stringResource(R.string.common_add_a_debt), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                             }
                         }
                     }
@@ -269,7 +272,7 @@ fun IncomeAndBillsScreen(
                     }
                 }
                 if (!state.isLoading && state.billTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
-                    item("bills.empty") { SectionEmptyMessage("No bills yet.", Modifier.testTag("recurring.bills.empty")) }
+                    item("bills.empty") { SectionEmptyMessage(stringResource(R.string.recurring_no_bills_yet), Modifier.testTag("recurring.bills.empty")) }
                 }
                 items(state.billTemplates, key = RecurringTemplate::id) { template ->
                     BillRow(template, state, now, viewModel, onEdit = { templateToEditId = template.id; showEditor = true }, onEnd = { templateToEndId = template.id }, onDelete = { templateToDeleteId = template.id })
@@ -279,7 +282,7 @@ fun IncomeAndBillsScreen(
 
                 item("income.header") { RecurringSectionHeader("Income", Modifier.testTag("recurring.section.income")) }
                 if (!state.isLoading && state.incomeTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
-                    item("income.empty") { SectionEmptyMessage("No income yet.", Modifier.testTag("recurring.income.empty")) }
+                    item("income.empty") { SectionEmptyMessage(stringResource(R.string.recurring_no_income_yet), Modifier.testTag("recurring.income.empty")) }
                 }
                 items(state.incomeTemplates, key = RecurringTemplate::id) { template ->
                     BillRow(template, state, now, viewModel, onEdit = { templateToEditId = template.id; showEditor = true }, onEnd = { templateToEndId = template.id }, onDelete = { templateToDeleteId = template.id })
@@ -323,17 +326,17 @@ fun IncomeAndBillsScreen(
                     }
                     DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }, offset = DpOffset(0.dp, (-8).dp)) {
                         DropdownMenuItem(
-                            text = { Text("Add income", style = IosText.subheadline) },
+                            text = { Text(stringResource(R.string.common_add_income), style = IosText.subheadline) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.down.circle"), contentDescription = null) },
                             onClick = { showAddMenu = false; addPresetIncome = true; templateToEditId = null; showEditor = true },
                         )
                         DropdownMenuItem(
-                            text = { Text("Add bill", style = IosText.subheadline) },
+                            text = { Text(stringResource(R.string.recurring_add_bill), style = IosText.subheadline) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.up.circle"), contentDescription = null) },
                             onClick = { showAddMenu = false; addPresetIncome = false; templateToEditId = null; showEditor = true },
                         )
                         DropdownMenuItem(
-                            text = { Text("Add a debt", style = IosText.subheadline) },
+                            text = { Text(stringResource(R.string.common_add_a_debt), style = IosText.subheadline) },
                             leadingIcon = { Icon(SfSymbols.icon("creditcard"), contentDescription = null) },
                             onClick = { showAddMenu = false; showAddDebt = true },
                             modifier = Modifier.testTag("recurring.fab.addDebt"),
@@ -372,10 +375,10 @@ fun IncomeAndBillsScreen(
         val deletingIncome = state.categories.firstOrNull { it.id == template.categoryId }?.isIncome == true
         AlertDialog(
             onDismissRequest = { templateToDeleteId = null },
-            title = { Text(if (deletingIncome) "Delete this income?" else "Delete this bill?") },
+            title = { Text(if (deletingIncome) stringResource(R.string.recurring_delete_this_income) else stringResource(R.string.recurring_delete_this_bill)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text("Are you sure you want to delete this income or bill? This action cannot be undone.")
+                    Text(stringResource(R.string.recurring_are_you_sure_you_want))
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("recurring.delete.error")) }
                 }
             },
@@ -411,7 +414,7 @@ fun IncomeAndBillsScreen(
 }
 
 private fun generatedMessage(result: com.spenditos.android.data.model.GenerateTransactionsResult): String {
-    val logged = if (result.generated == 1) "Logged 1 entry." else "Logged ${result.generated} entries."
+    val logged = if (result.generated == 1) Strings.get(R.string.recurring_logged_1_entry) else Strings.get(R.string.recurring_logged_entries, result.generated)
     return if (result.errors > 0) "$logged ${counted(result.errors, "entry", "entries")} couldn't be logged." else logged
 }
 
@@ -449,13 +452,13 @@ private fun BillsMonthSummaryCard(summary: BillsMonthSummary, currency: String) 
 private fun PausedHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
-            .clickable(role = Role.Button, onClickLabel = if (expanded) "Hides paused income and bills" else "Shows paused income and bills", onClick = onToggle)
+            .clickable(role = Role.Button, onClickLabel = if (expanded) stringResource(R.string.recurring_hides_paused_income_and_bills) else stringResource(R.string.recurring_shows_paused_income_and_bills), onClick = onToggle)
             .padding(horizontal = Spacing.screen).padding(top = Spacing.s, bottom = Spacing.s)
             .testTag("recurring.paused.toggle"),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Paused · $count", style = IosText.headline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.recurring_paused_2, count), style = IosText.headline, color = IosColors.textSecondary)
         Icon(SfSymbols.icon(if (expanded) "chevron.up" else "chevron.down"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
         Spacer(Modifier.weight(1f))
     }
@@ -470,7 +473,7 @@ private fun EndedRow(count: Int, onClick: () -> Unit) {
             .testTag("recurring.ended.row"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Ended · $count", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textSecondary)
+        Text(stringResource(R.string.common_ended_2, count), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textSecondary)
         Spacer(Modifier.weight(1f))
         Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.dp))
     }
@@ -484,15 +487,15 @@ private fun EndBillDialog(template: RecurringTemplate, onEnd: (oneMore: Boolean)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(BillText.endDialogTitle(template)) },
-        text = { Text("Is there one more payment? It moves to Ended. Past payments stay in your transactions.") },
+        text = { Text(stringResource(R.string.recurring_is_there_one_more_payment)) },
         confirmButton = {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
                 TextButton(onClick = { onEnd(false) }, modifier = Modifier.testTag("recurring.end.now")) {
-                    Text("No, end it now", color = IosColors.expense)
+                    Text(stringResource(R.string.recurring_no_end_it_now), color = IosColors.expense)
                 }
                 if (next != null) {
                     TextButton(onClick = { onEnd(true) }, modifier = Modifier.testTag("recurring.end.oneMore")) {
-                        Text("Yes, one more on ${BillText.monthDay(next, locale)}")
+                        Text(stringResource(R.string.recurring_yes_one_more_on, BillText.monthDay(next, locale)))
                     }
                 }
                 TextButton(onClick = onDismiss, modifier = Modifier.testTag("recurring.end.cancel")) { Text("Cancel") }
@@ -587,7 +590,7 @@ private fun IncomeBillRow(
                 .combinedClickable(
                     role = Role.Button,
                     onClick = { if (canEdit) onEdit() else showActions = true },
-                    onLongClickLabel = "More actions",
+                    onLongClickLabel = stringResource(R.string.common_more_actions),
                     onLongClick = { showActions = true },
                 )
                 .padding(horizontal = Spacing.m, vertical = Spacing.s)
@@ -637,7 +640,7 @@ private fun IncomeBillRow(
                     }
                     if (longPaused) {
                         Text(
-                            "End it?",
+                            stringResource(R.string.recurring_end_it),
                             // 18dp in the layout like iOS, but a 48dp touch target that overflows it.
                             Modifier.height(18.dp).wrapContentHeight(unbounded = true).requiredHeight(48.dp)
                                 .clickable(role = Role.Button, onClick = onEnd)
@@ -649,7 +652,7 @@ private fun IncomeBillRow(
                     }
                     if (!canEdit) {
                         Text(
-                            "Old estimate · not logged",
+                            stringResource(R.string.recurring_old_estimate_not_logged),
                             Modifier.background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 5.dp, vertical = 1.dp),
                             style = IosText.caption2.w(FontWeight.SemiBold),
@@ -658,7 +661,7 @@ private fun IncomeBillRow(
                     }
                     if (isMain) {
                         Text(
-                            "Main Income",
+                            stringResource(R.string.recurring_main_income),
                             Modifier.testTag("recurring.mainIncome.badge.${template.id}")
                                 .background(finance.income.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 5.dp, vertical = 1.dp),
@@ -677,7 +680,7 @@ private fun IncomeBillRow(
                         ) {
                             Icon(
                                 SfSymbols.icon(if (isMain) "star.fill" else "star"),
-                                contentDescription = if (isMain) "Main income" else "Set as main income",
+                                contentDescription = if (isMain) stringResource(R.string.recurring_main_income_2) else stringResource(R.string.recurring_set_as_main_income),
                                 tint = if (isMain) IosColors.spendGold else IosColors.neutral,
                                 modifier = Modifier.size(14.dp),
                             )
@@ -688,8 +691,8 @@ private fun IncomeBillRow(
             // Android has no iOS swipe actions; a visible button keeps the row actions discoverable.
             Box(
                 Modifier.size(36.dp).clip(CircleShape)
-                    .clickable(role = Role.Button, onClickLabel = "More actions") { showActions = true }
-                    .semantics { contentDescription = "More actions for ${template.description}" }
+                    .clickable(role = Role.Button, onClickLabel = stringResource(R.string.common_more_actions)) { showActions = true }
+                    .semantics { contentDescription = Strings.get(R.string.recurring_more_actions_for, template.description) }
                     .testTag("recurring.more.${template.id}"),
                 contentAlignment = Alignment.Center,
             ) {
@@ -700,20 +703,20 @@ private fun IncomeBillRow(
             if (!canEdit) {
                 // Old estimates are delete-only until the #336 wipe.
                 DropdownMenuItem(
-                    text = { Text("Delete", style = IosText.subheadline, color = IosColors.expense) },
+                    text = { Text(stringResource(R.string.common_delete), style = IosText.subheadline, color = IosColors.expense) },
                     leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
                     onClick = { showActions = false; onDelete() },
                     modifier = Modifier.testTag("recurring.delete.${template.id}"),
                 )
             } else {
                 DropdownMenuItem(
-                    text = { Text("Edit", style = IosText.subheadline) },
+                    text = { Text(stringResource(R.string.common_edit), style = IosText.subheadline) },
                     leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
                     onClick = { showActions = false; onEdit() },
                     modifier = Modifier.testTag("recurring.edit.${template.id}"),
                 )
                 DropdownMenuItem(
-                    text = { Text(if (isPaused) "Resume" else "Pause", style = IosText.subheadline) },
+                    text = { Text(if (isPaused) stringResource(R.string.recurring_resume) else stringResource(R.string.recurring_pause), style = IosText.subheadline) },
                     leadingIcon = { Icon(if (isPaused) Icons.Outlined.PlayCircle else Icons.Outlined.PauseCircle, contentDescription = null) },
                     onClick = { showActions = false; onPauseResume() },
                     modifier = Modifier.testTag("recurring.pauseResume.${template.id}"),
@@ -721,7 +724,7 @@ private fun IncomeBillRow(
                 HorizontalDivider()
                 // Delete lives in Ended (#403): ending keeps the history.
                 DropdownMenuItem(
-                    text = { Text(if (isIncome) "End income" else "End bill", style = IosText.subheadline, color = IosColors.expense) },
+                    text = { Text(if (isIncome) stringResource(R.string.recurring_end_income) else stringResource(R.string.recurring_end_bill), style = IosText.subheadline, color = IosColors.expense) },
                     leadingIcon = { Icon(Icons.Outlined.StopCircle, contentDescription = null, tint = IosColors.expense) },
                     onClick = { showActions = false; onEnd() },
                     modifier = Modifier.testTag("recurring.end.${template.id}"),

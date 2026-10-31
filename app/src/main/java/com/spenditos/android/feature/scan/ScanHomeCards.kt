@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.scan
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -124,7 +126,7 @@ private fun ReadyCard(card: ScanCardState, onClick: () -> Unit) {
                 Text(it, style = IosText.subheadline, color = IosColors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Text("Review", style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.spendOrange)
+        Text(stringResource(R.string.scan_review), style = IosText.subheadline.w(FontWeight.Bold), color = IosColors.spendOrange)
     }
 }
 

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.insights
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.feature.home.CashFlowStatus
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
@@ -112,7 +114,7 @@ data class HomeInsights(
                     Pin(
                         id = transaction.id,
                         date = transactionDay,
-                        name = transaction.description.ifEmpty { category?.name ?: "Bill" },
+                        name = transaction.description.ifEmpty { category?.name ?: Strings.get(R.string.common_bill) },
                         amount = CashFlowStatus.cashAmount(transaction.amount),
                         isIncome = income,
                         isPast = transactionDay <= today,
@@ -150,7 +152,7 @@ data class HomeInsights(
             val topCategory = if (everydayTotal.signum() > 0 && largest != null) {
                 val category = sampleByCategory[largest.key]?.let { categoryById[it.categoryId] }
                 TopCategory(
-                    name = category?.name ?: "Other",
+                    name = category?.name ?: Strings.get(R.string.common_other),
                     icon = category?.icon,
                     colorHex = category?.color,
                     amount = largest.value,

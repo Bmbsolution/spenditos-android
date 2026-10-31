@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
@@ -81,8 +83,8 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Create Account", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
-                    Text("Start tracking your finances", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.auth_create_account), style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
+                    Text(stringResource(R.string.auth_start_tracking_your_finances), style = IosText.subheadline, color = IosColors.textSecondary)
                 }
 
                 Column(
@@ -92,14 +94,14 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                     RoundedRegisterTextField(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
-                        placeholder = "Email",
+                        placeholder = stringResource(R.string.auth_email),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth().testTag("register.email"),
                     )
                     RoundedRegisterTextField(
                         value = state.password,
                         onValueChange = { if (it.length <= 128) viewModel.onPasswordChange(it) },
-                        placeholder = "Password (min 8 characters)",
+                        placeholder = stringResource(R.string.auth_password_min_8_characters),
                         keyboardOptions = doneKeyboardOptions(KeyboardType.Password),
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth().testTag("register.password"),
@@ -108,7 +110,7 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                     RoundedRegisterTextField(
                         value = state.confirmPasswordText,
                         onValueChange = viewModel::onConfirmPasswordChange,
-                        placeholder = "Confirm Password",
+                        placeholder = stringResource(R.string.auth_confirm_password),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = doneKeyboardOptions(KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth().testTag("register.confirmPassword"),
@@ -116,7 +118,7 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                     if (state.confirmPasswordText.isNotEmpty() && !state.passwordsMatch) {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                             Text(
-                                "Passwords do not match",
+                                stringResource(R.string.common_passwords_do_not_match),
                                 color = Color(0xFFFF3B30),
                                 style = IosText.caption,
                                 modifier = Modifier.testTag("register.passwordMismatch"),
@@ -127,7 +129,7 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                         RegisterErrorBanner(error, Modifier.fillMaxWidth())
                     }
                     RegisterPrimaryButton(
-                        text = "Create Account",
+                        text = stringResource(R.string.auth_create_account),
                         onClick = viewModel::register,
                         enabled = state.canRegister,
                         loading = state.isLoading,
@@ -139,7 +141,7 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("register.back"),
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-            ) { Text("Back", style = IosText.subheadline) }
+            ) { Text(stringResource(R.string.common_back), style = IosText.subheadline) }
         }
     }
 }

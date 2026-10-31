@@ -1,5 +1,7 @@
 package com.spenditos.android.data.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.ScanStatus
 import com.spenditos.android.data.model.ScanSummary
 
@@ -36,14 +38,14 @@ data class ScanCardState(
                     scanId = scan.scanId,
                     phase = Phase.READY,
                     title = "${scan.itemCount.counted("transaction")} ready to review",
-                    subtitle = label.takeIf { it.isNotEmpty() }?.let { "From $it" },
+                    subtitle = label.takeIf { it.isNotEmpty() }?.let { Strings.get(R.string.data_scan_from, it) },
                 )
             } else {
                 val progress = scan.progress.takeIf { it.total > 0 }?.let { "${minOf(it.done, it.total)} of ${it.total}" }
                 ScanCardState(
                     scanId = scan.scanId,
                     phase = Phase.READING,
-                    title = if (label.isEmpty()) "Reading your scan…" else "Reading $label…",
+                    title = if (label.isEmpty()) Strings.get(R.string.common_reading_your_scan) else Strings.get(R.string.common_reading, label),
                     subtitle = progress,
                 )
             }

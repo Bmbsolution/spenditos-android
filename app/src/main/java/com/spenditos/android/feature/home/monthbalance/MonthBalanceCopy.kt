@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home.monthbalance
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.monthbalance.MonthBalanceData
 import com.spenditos.android.data.monthbalance.MonthBalanceKind
 import com.spenditos.android.feature.debts.add.DebtPrefill
@@ -40,12 +42,12 @@ object MonthBalanceCopy {
     /** "Includes $150 you carried into October." when last month carried something in, so the total is never a mystery. */
     fun note(data: MonthBalanceData, money: (Double) -> String): String? {
         if (data.kind == MonthBalanceKind.NONE || data.previousCarriedIn <= 0) return null
-        return "Includes ${money(data.previousCarriedIn)} you carried into ${monthName(data.previousMonth)}."
+        return Strings.get(R.string.home_includes_you_carried_into, money(data.previousCarriedIn), monthName(data.previousMonth))
     }
 
     fun question(data: MonthBalanceData): String? = when (data.kind) {
-        MonthBalanceKind.SHORTFALL -> "Track it as a debt?"
-        MonthBalanceKind.SURPLUS -> "Include it in ${monthName(data.month)}?"
+        MonthBalanceKind.SHORTFALL -> Strings.get(R.string.home_track_it_as_a_debt)
+        MonthBalanceKind.SURPLUS -> Strings.get(R.string.home_include_it_in, monthName(data.month))
         MonthBalanceKind.NONE -> null
     }
 
@@ -56,8 +58,8 @@ object MonthBalanceCopy {
     fun followUpLine(data: MonthBalanceData, money: (Double) -> String): String? {
         val previous = monthName(data.previousMonth)
         return when (data.kind) {
-            MonthBalanceKind.SURPLUS -> "Not included: $previous ended ${money(abs(data.balance))} ahead"
-            MonthBalanceKind.SHORTFALL -> "Not tracked: $previous ended ${money(abs(data.balance))} short"
+            MonthBalanceKind.SURPLUS -> Strings.get(R.string.home_not_included_ended_ahead, previous, money(abs(data.balance)))
+            MonthBalanceKind.SHORTFALL -> Strings.get(R.string.home_not_tracked_ended_short, previous, money(abs(data.balance)))
             MonthBalanceKind.NONE -> null
         }
     }

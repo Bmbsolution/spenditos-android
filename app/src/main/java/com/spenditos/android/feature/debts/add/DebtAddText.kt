@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts.add
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.core.network.ApiError
 import java.time.LocalDate
 import java.time.YearMonth
@@ -22,15 +24,15 @@ internal object DebtAddText {
         listOf("weekly", "bi-weekly", "semi-monthly", "monthly", "quarterly", "semi-annually", "yearly")
 
     fun frequencyLabel(frequency: String): String = when (frequency) {
-        "daily" -> "Every day"
-        "weekly" -> "Every week"
-        "bi-weekly" -> "Every 2 weeks"
-        "semi-monthly" -> "Twice a month"
-        "monthly" -> "Every month"
-        "quarterly" -> "Every 3 months"
-        "semi-annually" -> "Every 6 months"
-        "yearly" -> "Every year"
-        else -> "Every month"
+        "daily" -> Strings.get(R.string.debts_every_day)
+        "weekly" -> Strings.get(R.string.debts_every_week)
+        "bi-weekly" -> Strings.get(R.string.common_every_2_weeks)
+        "semi-monthly" -> Strings.get(R.string.common_twice_a_month)
+        "monthly" -> Strings.get(R.string.debts_every_month)
+        "quarterly" -> Strings.get(R.string.debts_every_3_months)
+        "semi-annually" -> Strings.get(R.string.debts_every_6_months)
+        "yearly" -> Strings.get(R.string.debts_every_year)
+        else -> Strings.get(R.string.debts_every_month)
     }
 
     /** Whole amounts drop the cents ("$6,240"); anything else keeps two decimals ("$6,240.50"). */
@@ -86,7 +88,7 @@ internal object DebtAddText {
      */
     fun message(error: Throwable, isWrite: Boolean, online: Boolean): String = when (error) {
         is ApiError.Network -> if (isWrite && !online) OFFLINE else CANNOT_REACH
-        is ApiError.Unauthorized -> "Sign in again to continue."
+        is ApiError.Unauthorized -> Strings.get(R.string.debts_sign_in_again_to_continue)
         is ApiError.Server -> serverMessage(error)
         else -> GENERIC
     }
@@ -100,7 +102,7 @@ internal object DebtAddText {
             "PaymentIncomplete" -> PAYMENT_INCOMPLETE
             "ValidationError", "InvalidAsOf", "InvalidIdempotencyKey" -> INVALID_INPUT
             "CategoryNotFound", "CategoryMustBeExpense", "CategoryBeingDeleted" ->
-                "The category for this debt isn't available anymore. Pick another one and try again."
+                Strings.get(R.string.debts_the_category_for_this_debt)
             else -> GENERIC
         }
     }

@@ -1,5 +1,8 @@
 package com.spenditos.android.app
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Add
@@ -69,11 +72,11 @@ import kotlinx.coroutines.launch
 
 /** iOS MainTabView symbols: outline when idle, filled when selected. */
 private enum class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector = icon) {
-    HOME("home", "Home", SfSymbols.icon("house"), SfSymbols.icon("house.fill")),
-    TRANSACTIONS("transactions", "Transactions", SfSymbols.icon("list.bullet"), SfSymbols.icon("list.bullet.rectangle.fill")),
-    PLAN("plan", "Plan", SfSymbols.icon("calendar"), SfSymbols.icon("calendar.badge.checkmark")),
-    REPORTS("reports", "Reports", SfSymbols.icon("chart.line.uptrend.xyaxis")),
-    SETTINGS("settings", "Settings", SfSymbols.icon("gearshape"), SfSymbols.icon("gearshape.fill")),
+    HOME("home", Strings.get(R.string.app_home), SfSymbols.icon("house"), SfSymbols.icon("house.fill")),
+    TRANSACTIONS("transactions", Strings.get(R.string.common_transactions), SfSymbols.icon("list.bullet"), SfSymbols.icon("list.bullet.rectangle.fill")),
+    PLAN("plan", Strings.get(R.string.app_plan), SfSymbols.icon("calendar"), SfSymbols.icon("calendar.badge.checkmark")),
+    REPORTS("reports", Strings.get(R.string.common_reports), SfSymbols.icon("chart.line.uptrend.xyaxis")),
+    SETTINGS("settings", Strings.get(R.string.common_settings), SfSymbols.icon("gearshape"), SfSymbols.icon("gearshape.fill")),
 }
 
 private const val NOT_SYNCED_ROUTE = "not-synced"
@@ -333,7 +336,7 @@ fun MainScaffold(
                         GradientFab(
                             onClick = { showAdd = true },
                             glyph = SfSymbols.icon("plus"),
-                            contentDescription = "Add transaction",
+                            contentDescription = stringResource(R.string.app_add_transaction),
                             modifier = Modifier.padding(end = 20.dp).testTag("fab.add"),
                         )
                     }

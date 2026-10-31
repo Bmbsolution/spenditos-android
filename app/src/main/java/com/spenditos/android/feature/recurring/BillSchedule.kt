@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.BillHistorySummary
 import com.spenditos.android.data.model.BillLifecycle
 import com.spenditos.android.data.model.RecurringTemplate
@@ -159,7 +161,7 @@ object BillText {
         parts += if (paid != null) "$paid of ${counted(summary.billCount, "bill")} paid" else counted(summary.billCount, "bill")
         val name = summary.nextName
         val date = summary.nextDate
-        if (name != null && date != null) parts += "Next: $name, ${monthDay(date, locale)}"
+        if (name != null && date != null) parts += Strings.get(R.string.recurring_next, name, monthDay(date, locale))
         return parts.joinToString(" · ")
     }
 
@@ -193,22 +195,22 @@ object BillText {
         BillLifecycle.PAUSED -> {
             val since = pausedDate(template)
             when {
-                since == null -> "Paused"
+                since == null -> Strings.get(R.string.recurring_paused)
                 isLongPaused(template, now, zone) -> {
                     val months = ChronoUnit.MONTHS.between(since.atZone(zone), now.atZone(zone)).toInt()
                     "Paused ${counted(months, "month")}"
                 }
-                else -> "Paused since ${monthDay(since.atZone(zone).toLocalDate(), locale)}"
+                else -> Strings.get(R.string.recurring_paused_since, monthDay(since.atZone(zone).toLocalDate(), locale))
             }
         }
-        BillLifecycle.ENDED -> "Ended"
+        BillLifecycle.ENDED -> Strings.get(R.string.common_ended)
         BillLifecycle.ACTIVE -> {
             val today = now.atZone(zone).toLocalDate()
             // Strictly after yesterday: a payment due today still reads "Next".
             val next = if (template.isLegacyEstimate) null else BillSchedule.nextDate(template, today.minusDays(1))
             next?.let {
                 val day = monthDay(it, locale)
-                if (template.occurrencesRemaining == 1) "Last payment $day" else "Next $day"
+                if (template.occurrencesRemaining == 1) Strings.get(R.string.recurring_last_payment, day) else Strings.get(R.string.recurring_next_2, day)
             }
         }
     }
@@ -231,7 +233,7 @@ object BillText {
             if (item.isIncome) sum + amount else sum - amount
         }
         val sign = if (net.signum() >= 0) "+" else "−"
-        return "Net $sign${Money.format(net.abs().toDouble(), currency)} for ${monthName(month, locale)}"
+        return Strings.get(R.string.recurring_net_for, sign, Money.format(net.abs().toDouble(), currency), monthName(month, locale))
     }
 
     /** "Ended Oct 2026 · 12 payments · $1,378.32" (income: "payments received"). */
@@ -248,7 +250,7 @@ object BillText {
         parts += if (ended != null) {
             "Ended " + ended.atZone(zone).format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
         } else {
-            "Ended"
+            Strings.get(R.string.common_ended)
         }
         if (history != null && history.count > 0) {
             parts += if (isIncome) counted(history.count, "payment received", "payments received") else counted(history.count, "payment")
@@ -270,11 +272,11 @@ object BillText {
     }
 
     /** "Ended in 2026"; year 0 (unknown) reads just "Ended". */
-    fun endedGroupTitle(year: Int): String = if (year == 0) "Ended" else "Ended in $year"
+    fun endedGroupTitle(year: Int): String = if (year == 0) Strings.get(R.string.common_ended) else Strings.get(R.string.recurring_ended_in, year)
 
     /** The end-bill question's dialog title: "End Bell internet?" */
     fun endDialogTitle(template: RecurringTemplate?): String =
-        if (template == null) "End this bill?" else "End ${template.description}?"
+        if (template == null) Strings.get(R.string.recurring_end_this_bill) else Strings.get(R.string.recurring_end, template.description)
 }
 
 /** The calendar year a bill ended in (its `endedAt`, else `updatedAt`), 0 if unknown. */

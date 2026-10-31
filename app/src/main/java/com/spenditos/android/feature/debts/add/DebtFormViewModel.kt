@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts.add
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ConnectivityStatus
@@ -32,11 +34,11 @@ import kotlinx.coroutines.withContext
 
 /** "Plan by" (iOS `DebtFormViewModel.PlanMode`). */
 enum class DebtPlanMode(val label: String) {
-    WHAT_I_PAY("What I pay"),
-    WHEN_IM_DONE("When I'm done"),
+    WHAT_I_PAY(Strings.get(R.string.debts_what_i_pay)),
+    WHEN_IM_DONE(Strings.get(R.string.debts_when_i_m_done)),
 
     /** No payment plan: the debt is paid down as the user can (no bill). */
-    WHEN_I_CAN("When I can"),
+    WHEN_I_CAN(Strings.get(R.string.debts_when_i_can)),
 }
 
 /**
@@ -92,43 +94,43 @@ data class DebtFormUiState(
 
     val nameError: String?
         get() = when {
-            trimmedName.isEmpty() -> if (showErrors) "Give this debt a name" else null
-            trimmedName.length > MAX_NAME_LENGTH -> "Use 80 characters or fewer"
+            trimmedName.isEmpty() -> if (showErrors) Strings.get(R.string.debts_give_this_debt_a_name) else null
+            trimmedName.length > MAX_NAME_LENGTH -> Strings.get(R.string.debts_use_80_characters_or_fewer)
             else -> null
         }
 
     val owedError: String?
         get() {
-            if (owedText.isBlank()) return if (showErrors) "Enter how much you owe" else null
+            if (owedText.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_how_much_you_owe) else null
             val value = owed
-            return if (value == null || value <= 0) "Enter an amount above zero" else null
+            return if (value == null || value <= 0) Strings.get(R.string.common_enter_an_amount_above_zero) else null
         }
 
     val paymentError: String?
         get() {
             if (mode != DebtPlanMode.WHAT_I_PAY) return null
-            if (paymentText.isBlank()) return if (showErrors) "Enter how much you pay each time" else null
+            if (paymentText.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_how_much_you_pay) else null
             val value = payment
-            return if (value == null || value <= 0) "Enter an amount above zero" else null
+            return if (value == null || value <= 0) Strings.get(R.string.common_enter_an_amount_above_zero) else null
         }
 
     val targetError: String?
         get() = if (mode == DebtPlanMode.WHEN_IM_DONE && targetMonth < YearMonth.from(firstPaymentDate)) {
-            "Pick a month on or after your next payment"
+            Strings.get(R.string.debts_pick_a_month_on_or)
         } else {
             null
         }
 
     val firstPaymentError: String?
-        get() = if (mode != DebtPlanMode.WHEN_I_CAN && firstPaymentDate < today) "Pick today or a later date" else null
+        get() = if (mode != DebtPlanMode.WHEN_I_CAN && firstPaymentDate < today) Strings.get(R.string.debts_pick_today_or_a_later) else null
 
     private val aprInRange: Boolean get() = aprValue?.let { it > 0 && it < 100 } == true
 
     val aprError: String?
         get() {
             if (!chargesInterest) return null
-            if (aprText.isBlank()) return if (showErrors) "Enter the yearly rate" else null
-            return if (aprInRange) null else "Enter a rate above 0 and below 100"
+            if (aprText.isBlank()) return if (showErrors) Strings.get(R.string.debts_enter_the_yearly_rate) else null
+            return if (aprInRange) null else Strings.get(R.string.debts_enter_a_rate_above_0)
         }
 
     /** Everything the Save button needs, ignoring [showErrors]. */
@@ -195,16 +197,16 @@ data class DebtFormUiState(
     val previewHeadline: String?
         get() {
             val plan = preview ?: return null
-            if (plan.neverPaysOff) return "Never paid off — pay more each time"
+            if (plan.neverPaysOff) return Strings.get(R.string.debts_never_paid_off_pay_more)
             val done = DebtAddText.monthYear(plan.payoffDate)
             return when (mode) {
                 DebtPlanMode.WHAT_I_PAY -> buildList {
-                    if (done != null) add("Paid off by $done")
+                    if (done != null) add(Strings.get(R.string.debts_paid_off_by_2, done))
                     add(paymentsPhrase(plan))
                     interestPhrase(plan)?.let(::add)
                 }.joinToString(" · ")
                 DebtPlanMode.WHEN_IM_DONE -> {
-                    val pay = "Pay ${DebtAddText.paymentLine(plan.payment, frequency, currency)}"
+                    val pay = Strings.get(R.string.debts_pay, DebtAddText.paymentLine(plan.payment, frequency, currency))
                     if (done != null) "$pay · done by $done" else pay
                 }
                 DebtPlanMode.WHEN_I_CAN -> null

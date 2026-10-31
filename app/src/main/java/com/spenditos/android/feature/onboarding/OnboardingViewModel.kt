@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.onboarding
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -76,9 +78,9 @@ class OnboardingViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = if (e is ApiError.Network) {
-                    "You're offline. Check your country or retry."
+                    Strings.get(R.string.onboarding_you_re_offline_check_your)
                 } else {
-                    "Couldn't check your country. Retry or enter it below."
+                    Strings.get(R.string.onboarding_couldn_t_check_your_country)
                 }
                 update { it.copy(isDetectingCountry = false, error = message, errorKind = OnboardingErrorKind.COUNTRY) }
             }
@@ -114,13 +116,13 @@ class OnboardingViewModel @Inject constructor(
         val current = _state.value
         when (current.page) {
             NAME_PAGE -> if (current.displayName.isBlank()) {
-                update { it.copy(error = "Enter your name to continue.", errorKind = OnboardingErrorKind.INPUT) }
+                update { it.copy(error = Strings.get(R.string.onboarding_enter_your_name_to_continue), errorKind = OnboardingErrorKind.INPUT) }
             } else {
                 update { it.copy(page = PREFERENCES_PAGE, error = null, errorKind = null) }
                 if (!_state.value.countryLoaded && !_state.value.isDetectingCountry) initialize()
             }
             PREFERENCES_PAGE -> if (current.country.length != 2 || current.currency.length != 3) {
-                update { it.copy(error = "Enter a two-letter country and three-letter currency code.", errorKind = OnboardingErrorKind.INPUT) }
+                update { it.copy(error = Strings.get(R.string.onboarding_enter_a_two_letter_country), errorKind = OnboardingErrorKind.INPUT) }
             } else {
                 update { it.copy(page = READY_PAGE, error = null, errorKind = null) }
             }
@@ -159,9 +161,9 @@ class OnboardingViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = if (e is ApiError.Network) {
-                    "You're offline. Check your connection and retry."
+                    Strings.get(R.string.onboarding_you_re_offline_check_your_2)
                 } else {
-                    "Couldn't finish setup. Please retry."
+                    Strings.get(R.string.onboarding_couldn_t_finish_setup_please)
                 }
                 update { it.copy(isSaving = false, error = message, errorKind = OnboardingErrorKind.COMPLETE) }
             }

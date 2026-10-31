@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,7 +58,7 @@ fun PaycheckPeriodsScreen(
     val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Pay periods", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar(stringResource(R.string.reports_pay_periods), onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -63,7 +66,7 @@ fun PaycheckPeriodsScreen(
         ) {
             when {
                 state.isLoading -> ReportLoadingState(
-                    "Loading pay periods...",
+                    stringResource(R.string.reports_loading_pay_periods),
                     IosColors.spendOrange,
                     Modifier.fillMaxSize().testTag("reports.paycheck.list"),
                 )
@@ -81,7 +84,7 @@ fun PaycheckPeriodsScreen(
                     )
                     ReportEmptyState(
                         icon = "banknote.fill",
-                        title = "No pay periods",
+                        title = stringResource(R.string.reports_no_pay_periods),
                         subtitle = "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
@@ -112,7 +115,7 @@ fun PaycheckPeriodsScreen(
                         if (state.isEmpty && state.loadStatus == null) {
                             item {
                                 ReportEmptyCard(
-                                    "No pay periods",
+                                    stringResource(R.string.reports_no_pay_periods),
                                     "No pay periods overlap ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
                                 )
                             }
@@ -135,18 +138,18 @@ private fun PaycheckSummaryCard(summary: PaycheckPeriodsSummary, currency: Strin
     val finance = LocalFinanceColors.current
     GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.paycheck.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Period summary", style = IosText.headline, color = IosColors.textPrimary)
+            Text(stringResource(R.string.reports_period_summary), style = IosText.headline, color = IosColors.textPrimary)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
                 Column(Modifier.weight(1f)) {
-                    Text("Income", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(stringResource(R.string.common_income), style = IosText.subheadline, color = IosColors.neutral)
                     Text(Money.format(summary.totalIncome.toDouble(), currency), style = IosText.rounded(17, FontWeight.Medium), color = finance.income)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Expenses", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(stringResource(R.string.common_expenses), style = IosText.subheadline, color = IosColors.neutral)
                     Text(Money.format(summary.totalExpenses.toDouble(), currency), style = IosText.rounded(17, FontWeight.Medium), color = finance.expense)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Avg coverage", style = IosText.subheadline, color = IosColors.neutral)
+                    Text(stringResource(R.string.reports_avg_coverage), style = IosText.subheadline, color = IosColors.neutral)
                     Text(
                         "${summary.averageCoverage?.setScale(0, RoundingMode.HALF_UP) ?: BigDecimal.ZERO}%",
                         style = IosText.rounded(17, FontWeight.Medium),
@@ -165,9 +168,9 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
     val isExact = remaining.abs() < BigDecimal("0.01")
     val isCovered = viewModel.isCovered(period)
     val statusText = when {
-        isExact -> "Exact"
-        isCovered -> "Covered"
-        else -> "Gap"
+        isExact -> stringResource(R.string.reports_exact)
+        isCovered -> stringResource(R.string.reports_covered)
+        else -> stringResource(R.string.reports_gap)
     }
     val statusColor = when {
         isExact -> IosColors.spendOrange
@@ -212,9 +215,9 @@ private fun PaycheckPeriodCard(period: PaycheckPeriod, viewModel: PaycheckPeriod
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 verticalAlignment = Alignment.Top,
             ) {
-                PeriodAmount("Income", viewModel.incomeAmount(period), currency, finance.income, Alignment.Start, Modifier.weight(1f))
-                PeriodAmount("Expenses", viewModel.expenseAmount(period), currency, finance.expense, Alignment.CenterHorizontally, Modifier.weight(1f))
-                PeriodAmount("Remaining", viewModel.remainingAmount(period), currency, if (remaining.signum() >= 0) finance.income else finance.expense, Alignment.End, Modifier.weight(1f))
+                PeriodAmount(stringResource(R.string.common_income), viewModel.incomeAmount(period), currency, finance.income, Alignment.Start, Modifier.weight(1f))
+                PeriodAmount(stringResource(R.string.common_expenses), viewModel.expenseAmount(period), currency, finance.expense, Alignment.CenterHorizontally, Modifier.weight(1f))
+                PeriodAmount(stringResource(R.string.common_remaining), viewModel.remainingAmount(period), currency, if (remaining.signum() >= 0) finance.income else finance.expense, Alignment.End, Modifier.weight(1f))
             }
         }
     }
@@ -243,7 +246,7 @@ private fun formatPeriodMoney(value: BigDecimal, currency: String): String {
 private fun displayPeriodLabel(period: PaycheckPeriod, locale: Locale): String {
     val prefix = period.label.take(10)
     val parsed = runCatching { LocalDate.parse(prefix) }.getOrNull() ?: return period.label
-    return "Paycheck ${formatPeriodDate(parsed, locale)}"
+    return Strings.get(R.string.reports_paycheck, formatPeriodDate(parsed, locale))
 }
 
 private fun formatPeriodDate(date: LocalDate, locale: Locale): String = date.format(DateTimeFormatter.ofPattern("MMM d", locale))

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -283,12 +285,12 @@ class IncomeAndBillsViewModel @Inject constructor(
             it.copy(
                 isLoading = false,
                 isOffline = error is ApiError.Network || error is IOException,
-                error = if (error is ApiError.Network || error is IOException) "You're offline. Check your connection and try again." else "Couldn't load income and bills. Please try again.",
+                error = if (error is ApiError.Network || error is IOException) Strings.get(R.string.common_you_re_offline_check_your) else Strings.get(R.string.recurring_couldn_t_load_income_and),
             )
         }
     }
 
     private fun writeMessage(error: Throwable): String =
-        if (error is ApiError.Network || error is IOException) "You're offline. Reconnect to save changes."
-        else "Couldn't save changes. Please try again."
+        if (error is ApiError.Network || error is IOException) Strings.get(R.string.recurring_you_re_offline_reconnect_to)
+        else Strings.get(R.string.recurring_couldn_t_save_changes_please)
 }

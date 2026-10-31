@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -173,7 +176,7 @@ fun HomeScreen(
                     }
                     if (state.showingSavedData) {
                         Text(
-                            "Showing saved data",
+                            stringResource(R.string.home_showing_saved_data),
                             style = IosText.footnote,
                             color = IosColors.textSecondary,
                             modifier = Modifier.fillMaxWidth().testTag("home.offline"),
@@ -320,13 +323,13 @@ private fun EmptyHomeState(onLogFirst: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Text(
-                "Build your financial picture",
+                stringResource(R.string.home_build_your_financial_picture),
                 style = IosText.title2.w(FontWeight.Bold),
                 color = IosColors.textPrimary,
                 textAlign = TextAlign.Center,
             )
             Text(
-                "Add your first transaction to see cash flow, category signals, and habit progress in one place.",
+                stringResource(R.string.home_add_your_first_transaction_to),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -341,7 +344,7 @@ private fun EmptyHomeState(onLogFirst: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
-            Text("Log First Transaction", style = IosText.headline, color = Color.White)
+            Text(stringResource(R.string.common_log_first_transaction), style = IosText.headline, color = Color.White)
         }
     }
 }
@@ -350,9 +353,9 @@ private fun EmptyHomeState(onLogFirst: () -> Unit) {
 private fun GreetingHeader(today: LocalDate, displayName: String, locale: Locale) {
     val hour = LocalTime.now().hour
     val greeting = when {
-        hour < 12 -> "Good morning"
-        hour < 18 -> "Good afternoon"
-        else -> "Good evening"
+        hour < 12 -> stringResource(R.string.home_good_morning)
+        hour < 18 -> stringResource(R.string.home_good_afternoon)
+        else -> stringResource(R.string.home_good_evening)
     }
     val name = displayName.trim()
     val (symbol, colors) = when (hour) {
@@ -417,10 +420,10 @@ private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, 
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(SfSymbols.icon("clock.arrow.circlepath"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.4.dp))
-                Text("Recent activity", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.home_recent_activity), style = IosText.headline, color = IosColors.textPrimary)
             }
             Text(
-                "See all",
+                stringResource(R.string.home_see_all),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.spendOrange,
                 modifier = Modifier.clickable(role = Role.Button, onClick = onSeeAll).padding(vertical = 8.dp).testTag("home.recent.seeAll"),
@@ -464,7 +467,7 @@ private fun RecentActivitySection(rows: List<RecentActivity>, currency: String, 
 }
 
 private fun relativeDay(date: LocalDate): String = when {
-    date == LocalDate.now() -> "Today"
-    date == LocalDate.now().minusDays(1) -> "Yesterday"
+    date == LocalDate.now() -> Strings.get(R.string.common_today)
+    date == LocalDate.now().minusDays(1) -> Strings.get(R.string.common_yesterday)
     else -> date.format(DateTimeFormatter.ofPattern("MMM d"))
 }

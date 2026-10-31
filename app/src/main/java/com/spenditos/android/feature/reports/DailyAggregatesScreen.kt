@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.reports
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,7 +55,7 @@ fun DailyAggregatesScreen(
     val locale = LocalConfiguration.current.locales[0]
     LaunchedEffect(viewModel) { viewModel.load() }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Daily Spending", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar(stringResource(R.string.reports_daily_spending), onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -61,7 +63,7 @@ fun DailyAggregatesScreen(
         ) {
             when {
                 state.isLoading -> ReportLoadingState(
-                    "Loading spending data...",
+                    stringResource(R.string.reports_loading_spending_data),
                     IosColors.spendOrange,
                     Modifier.fillMaxSize().testTag("reports.daily.list"),
                 )
@@ -79,7 +81,7 @@ fun DailyAggregatesScreen(
                     )
                     ReportEmptyState(
                         icon = "chart.bar.fill",
-                        title = "No Spending Data",
+                        title = stringResource(R.string.reports_no_spending_data),
                         subtitle = "No daily spending aggregates were found for ${state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))}.",
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
@@ -109,7 +111,7 @@ fun DailyAggregatesScreen(
                             item {
                                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                                        Text("Spending Trend", style = IosText.headline, color = IosColors.textPrimary)
+                                        Text(stringResource(R.string.common_spending_trend), style = IosText.headline, color = IosColors.textPrimary)
                                         DailyExpenseChart(
                                             state.aggregates,
                                             state.aggregates.indices.map(viewModel::movingAverageAt),
@@ -122,7 +124,7 @@ fun DailyAggregatesScreen(
                             }
                             item {
                                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                                    Text("Daily Breakdown", style = IosText.headline, color = IosColors.textPrimary)
+                                    Text(stringResource(R.string.reports_daily_breakdown), style = IosText.headline, color = IosColors.textPrimary)
                                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                                         state.aggregates.forEachIndexed { index, aggregate ->
                                             DailyAggregateRow(aggregate, state, locale)
@@ -152,13 +154,13 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
     GlassCard(modifier = Modifier.fillMaxWidth().testTag("reports.daily.summary")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(Modifier.testTag("reports.daily.summary.incomeExpenses")) {
-                SummaryValue("Income", Money.format(summary.totalIncome.toDouble(), state.currency), finance.income, Modifier.weight(1f))
-                SummaryValue("Expenses", Money.format(summary.totalExpenses.toDouble(), state.currency), finance.expense, Modifier.weight(1f))
+                SummaryValue(stringResource(R.string.common_income), Money.format(summary.totalIncome.toDouble(), state.currency), finance.income, Modifier.weight(1f))
+                SummaryValue(stringResource(R.string.common_expenses), Money.format(summary.totalExpenses.toDouble(), state.currency), finance.expense, Modifier.weight(1f))
             }
             Row(Modifier.testTag("reports.daily.summary.highLow")) {
                 SummaryValue("Avg/Day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), IosColors.spendOrange, Modifier.weight(1f))
                 SummaryValue(
-                    "Highest Day",
+                    stringResource(R.string.reports_highest_day),
                     summary.highestSpendingDay?.format(DateTimeFormatter.ofPattern("MMM d", locale)) ?: "—",
                     if (summary.highestSpendingDay == null) IosColors.neutral else finance.expense,
                     Modifier.weight(1f),

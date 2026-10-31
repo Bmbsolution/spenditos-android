@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.onboarding
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -92,23 +95,23 @@ import java.util.Locale
 private val welcomeSlides = listOf(
     WelcomeSlideData(
         symbol = "chart.bar.fill",
-        title = "Track Your Spending",
-        subtitle = "See where your money goes with beautiful charts and clear insights.",
+        title = Strings.get(R.string.onboarding_track_your_spending),
+        subtitle = Strings.get(R.string.onboarding_see_where_your_money_goes),
     ),
     WelcomeSlideData(
         symbol = "target",
-        title = "Hit Your Goals",
-        subtitle = "Set savings targets that keep you motivated every day.",
+        title = Strings.get(R.string.onboarding_hit_your_goals),
+        subtitle = Strings.get(R.string.onboarding_set_savings_targets_that_keep),
     ),
     WelcomeSlideData(
         symbol = "flame.fill",
-        title = "Build Streaks",
-        subtitle = "Log daily to build habits, earn XP, and unlock achievements.",
+        title = Strings.get(R.string.onboarding_build_streaks),
+        subtitle = Strings.get(R.string.onboarding_log_daily_to_build_habits),
     ),
     WelcomeSlideData(
         symbol = null,
-        title = "Ready to Start",
-        subtitle = "Let's set up your account in just a few quick steps.",
+        title = Strings.get(R.string.onboarding_ready_to_start),
+        subtitle = Strings.get(R.string.onboarding_let_s_set_up_your),
     ),
 )
 
@@ -162,7 +165,7 @@ fun OnboardingScreen(
                         onClick = viewModel::onBack,
                         modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("onboarding.back"),
                         colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-                    ) { Text("Back", style = IosText.callout) }
+                    ) { Text(stringResource(R.string.common_back), style = IosText.callout) }
                 }
             }
 
@@ -176,7 +179,7 @@ fun OnboardingScreen(
                         onClick = viewModel::retry,
                         modifier = Modifier.testTag("onboarding.retry"),
                         colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-                    ) { Text("Retry", style = IosText.subheadline) }
+                    ) { Text(stringResource(R.string.common_retry), style = IosText.subheadline) }
                 }
             }
 
@@ -187,13 +190,13 @@ fun OnboardingScreen(
             ) {
                 when (state.page) {
                     1 -> OnboardingActionButton(
-                        text = "Continue",
+                        text = stringResource(R.string.common_continue),
                         onClick = viewModel::onContinue,
                         enabled = !state.isSaving,
                         modifier = Modifier.fillMaxWidth().testTag("onboarding.continue"),
                     )
                     2 -> OnboardingActionButton(
-                        text = "Continue",
+                        text = stringResource(R.string.common_continue),
                         onClick = viewModel::onContinue,
                         enabled = !state.isSaving,
                         modifier = Modifier.fillMaxWidth().testTag("onboarding.continue"),
@@ -275,7 +278,7 @@ private fun WelcomePage(onGetStarted: () -> Unit) {
                 }
             }
             if (page == welcomeSlides.lastIndex) {
-            OnboardingActionButton("Get Started", onGetStarted, modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).testTag("onboarding.continue"))
+            OnboardingActionButton(stringResource(R.string.onboarding_get_started), onGetStarted, modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).testTag("onboarding.continue"))
             }
         }
     }
@@ -291,14 +294,14 @@ private fun NamePage(name: String, onNameChange: (String) -> Unit) {
         Spacer(Modifier.weight(1f))
         Icon(SfSymbols.icon("person.crop.circle.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("What should we call you?", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-            Text("This is shown on your dashboard", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.onboarding_what_should_we_call_you), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.onboarding_this_is_shown_on_your), style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = 32.dp)) {
             OnboardingTextField(
                 value = name,
                 onValueChange = onNameChange,
-                placeholder = "Your name",
+                placeholder = stringResource(R.string.onboarding_your_name),
                 style = IosText.headline,
                 centered = true,
                 modifier = Modifier.fillMaxWidth().testTag("onboarding.name"),
@@ -326,8 +329,8 @@ private fun PreferencesPage(
         ) {
         Icon(SfSymbols.icon("gearshape.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Set your preferences", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-            Text("You can always change these later in Settings", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.onboarding_set_your_preferences), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.onboarding_you_can_always_change_these), style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
 
         Column(
@@ -339,7 +342,7 @@ private fun PreferencesPage(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-                Text("Currency", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.common_currency), style = IosText.subheadline, color = IosColors.textSecondary)
                 val quickPicks = listOf(state.currency) + popularCurrencyCodes.filter { it != state.currency }.take(3)
                 quickPicks.chunked(2).forEach { rowCodes ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
@@ -357,7 +360,7 @@ private fun PreferencesPage(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = onShowCurrencyPicker, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("All currencies", style = IosText.subheadline, color = IosColors.spendOrange)
+                            Text(stringResource(R.string.onboarding_all_currencies), style = IosText.subheadline, color = IosColors.spendOrange)
                             Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(14.dp))
                         }
                     }
@@ -365,12 +368,12 @@ private fun PreferencesPage(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text("Language", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.onboarding_language), style = IosText.subheadline, color = IosColors.textSecondary)
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("onboarding.languageOptions"),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
-                    LanguageChip("en", "English", state.language == "en", onLanguageChange)
+                    LanguageChip("en", stringResource(R.string.onboarding_english), state.language == "en", onLanguageChange)
                     LanguageChip("fr", "Français", state.language == "fr", onLanguageChange)
                 }
             }
@@ -380,18 +383,18 @@ private fun PreferencesPage(
                 OnboardingTextField(
                     value = state.country,
                     onValueChange = onCountryChange,
-                    placeholder = "Country code",
+                    placeholder = stringResource(R.string.onboarding_country_code),
                     modifier = Modifier.fillMaxWidth().testTag("onboarding.country"),
                 )
-                Text("Two letters, such as CA", style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.s))
+                Text(stringResource(R.string.onboarding_two_letters_such_as_ca), style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.s))
                 OnboardingTextField(
                     value = state.currency,
                     onValueChange = onCurrencyChange,
-                    placeholder = "Currency",
+                    placeholder = stringResource(R.string.common_currency),
                     modifier = Modifier.fillMaxWidth().testTag("onboarding.currency"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
                 )
-                Text("Three-letter code, such as CAD", style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.s))
+                Text(stringResource(R.string.onboarding_three_letter_code_such_as), style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.padding(start = Spacing.s))
             }
 
             if (state.isDetectingCountry) {
@@ -401,14 +404,14 @@ private fun PreferencesPage(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CircularProgressIndicator(Modifier.size(18.dp), color = IosColors.spendOrange, strokeWidth = 2.dp)
-                    Text("Checking your country…", style = IosText.callout, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.onboarding_checking_your_country), style = IosText.callout, color = IosColors.textSecondary)
                 }
             }
             if (state.errorKind == OnboardingErrorKind.COUNTRY) {
                 state.error?.let { OnboardingErrorBanner(it, Modifier.fillMaxWidth(), Modifier.testTag("onboarding.countryError")) }
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                     TextButton(onClick = onRetry, modifier = Modifier.testTag("onboarding.countryRetry"), colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange)) {
-                        Text("Retry", style = IosText.subheadline)
+                        Text(stringResource(R.string.common_retry), style = IosText.subheadline)
                     }
                 }
             }
@@ -430,7 +433,7 @@ private fun DetectedCountryCard(country: String, currency: String) {
         Text(countryFlag(country), style = IosText.system(28))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(countryName(country), style = IosText.body, color = IosColors.textPrimary)
-            Text("Detected currency: $currency", style = IosText.subheadline, color = IosColors.textSecondary)
+            Text(stringResource(R.string.onboarding_detected_currency, currency), style = IosText.subheadline, color = IosColors.textSecondary)
         }
         Icon(SfSymbols.icon("checkmark.circle"), contentDescription = null, tint = income, modifier = Modifier.size(22.dp))
     }
@@ -504,9 +507,9 @@ private fun ReadyPage(state: OnboardingUiState) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            Text("Your essentials are ready.", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.onboarding_your_essentials_are_ready), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             Text(
-                "Log one transaction now to see your financial picture.",
+                stringResource(R.string.onboarding_log_one_transaction_now_to),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -514,7 +517,7 @@ private fun ReadyPage(state: OnboardingUiState) {
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.padding(Spacing.m)) {
-            SummaryRow(icon = "dollarsign.circle", text = "Currency: ${state.currency}")
+            SummaryRow(icon = "dollarsign.circle", text = stringResource(R.string.onboarding_currency, state.currency))
             SummaryRow(icon = "square.grid.2x2", text = "${OnboardingData.categorySeeds.size} categories ready")
         }
         Spacer(Modifier.weight(1f))
@@ -590,7 +593,7 @@ private fun OnboardingCompletionButton(loading: Boolean, onClick: () -> Unit, mo
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
             if (loading) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-            Text("Log First Transaction", style = IosText.headline, color = Color.White)
+            Text(stringResource(R.string.common_log_first_transaction), style = IosText.headline, color = Color.White)
         }
     }
 }
@@ -618,7 +621,7 @@ private fun OnboardingCurrencyPicker(selectedCurrency: String, onCurrencySelecte
     ModalBottomSheet(onDismissRequest = onDismiss) {
         DismissKeyboardWhenInactive()
         Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(horizontal = Spacing.screen)) {
-            Text("Currency", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.m))
+            Text(stringResource(R.string.common_currency), style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.m))
             BasicTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -630,16 +633,16 @@ private fun OnboardingCurrencyPicker(selectedCurrency: String, onCurrencySelecte
                 cursorBrush = SolidColor(IosColors.spendOrange),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (search.isEmpty()) Text("Search currencies", style = IosText.body, color = IosColors.textSecondary)
+                        if (search.isEmpty()) Text(stringResource(R.string.onboarding_search_currencies), style = IosText.body, color = IosColors.textSecondary)
                         inner()
                     }
                 },
             )
             LazyColumn(Modifier.fillMaxWidth().weight(1f).padding(top = Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
                 if (search.isBlank()) {
-                    item { CurrencySection("Popular", popular, selectedCurrency, onCurrencySelected, onDismiss) }
+                    item { CurrencySection(stringResource(R.string.common_popular), popular, selectedCurrency, onCurrencySelected, onDismiss) }
                     item {
-                        CurrencySection("All currencies", allCurrencies.filterNot { item -> popular.any { it.code == item.code } }, selectedCurrency, onCurrencySelected, onDismiss)
+                        CurrencySection(stringResource(R.string.onboarding_all_currencies), allCurrencies.filterNot { item -> popular.any { it.code == item.code } }, selectedCurrency, onCurrencySelected, onDismiss)
                     }
                 } else {
                     item { CurrencySection(null, filtered, selectedCurrency, onCurrencySelected, onDismiss) }
@@ -701,7 +704,7 @@ private fun currencySymbol(code: String): String = when (code) {
     "JPY" -> "¥"
     "CAD" -> "C$"
     "AUD" -> "A$"
-    "CHF" -> "Fr"
+    "CHF" -> Strings.get(R.string.onboarding_fr)
     "INR" -> "₹"
     "SEK", "NOK", "DKK" -> "kr"
     "NZD" -> "NZ$"
@@ -713,25 +716,25 @@ private fun currencySymbol(code: String): String = when (code) {
 
 private fun currencyName(code: String): String = when (code) {
     "USD" -> "US Dollar"
-    "EUR" -> "Euro"
-    "GBP" -> "British Pound"
-    "CAD" -> "Canadian Dollar"
-    "AUD" -> "Australian Dollar"
-    "JPY" -> "Japanese Yen"
-    "CHF" -> "Swiss Franc"
-    "CNY" -> "Chinese Yuan"
-    "INR" -> "Indian Rupee"
-    "MXN" -> "Mexican Peso"
-    "BRL" -> "Brazilian Real"
-    "ZAR" -> "South African Rand"
-    "SEK" -> "Swedish Krona"
-    "NOK" -> "Norwegian Krone"
-    "DKK" -> "Danish Krone"
-    "NZD" -> "New Zealand Dollar"
-    "SGD" -> "Singapore Dollar"
-    "HKD" -> "Hong Kong Dollar"
-    "XOF" -> "West African CFA"
-    "XAF" -> "Central African CFA"
+    "EUR" -> Strings.get(R.string.onboarding_euro)
+    "GBP" -> Strings.get(R.string.onboarding_british_pound)
+    "CAD" -> Strings.get(R.string.onboarding_canadian_dollar)
+    "AUD" -> Strings.get(R.string.onboarding_australian_dollar)
+    "JPY" -> Strings.get(R.string.onboarding_japanese_yen)
+    "CHF" -> Strings.get(R.string.onboarding_swiss_franc)
+    "CNY" -> Strings.get(R.string.onboarding_chinese_yuan)
+    "INR" -> Strings.get(R.string.onboarding_indian_rupee)
+    "MXN" -> Strings.get(R.string.onboarding_mexican_peso)
+    "BRL" -> Strings.get(R.string.onboarding_brazilian_real)
+    "ZAR" -> Strings.get(R.string.onboarding_south_african_rand)
+    "SEK" -> Strings.get(R.string.onboarding_swedish_krona)
+    "NOK" -> Strings.get(R.string.onboarding_norwegian_krone)
+    "DKK" -> Strings.get(R.string.onboarding_danish_krone)
+    "NZD" -> Strings.get(R.string.onboarding_new_zealand_dollar)
+    "SGD" -> Strings.get(R.string.onboarding_singapore_dollar)
+    "HKD" -> Strings.get(R.string.onboarding_hong_kong_dollar)
+    "XOF" -> Strings.get(R.string.onboarding_west_african_cfa)
+    "XAF" -> Strings.get(R.string.onboarding_central_african_cfa)
     else -> runCatching { Currency.getInstance(code).getDisplayName(Locale.getDefault()) }.getOrDefault(code)
 }
 

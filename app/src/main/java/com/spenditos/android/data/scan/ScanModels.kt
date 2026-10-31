@@ -1,5 +1,7 @@
 package com.spenditos.android.data.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.net.Uri
 import com.spenditos.android.data.model.CreateScanDocument
 import com.spenditos.android.data.model.CreateScanRequest
@@ -67,7 +69,7 @@ data class ScanContext(
 
 /** Why a scan could not be read, with the copy iOS `ScanError` shows. */
 sealed class ScanFailure(val userMessage: String) : Exception(userMessage) {
-    data object NoDocuments : ScanFailure("Choose at least one photo or file.")
+    data object NoDocuments : ScanFailure(Strings.get(R.string.data_scan_choose_at_least_one_photo))
     data class UnreadableImage(val name: String?) : ScanFailure("Couldn't read ${name ?: "one of the images"}.")
     data class PdfLocked(val name: String?) :
         ScanFailure("${name ?: "That PDF"} is password protected. Remove the password and try again.")
@@ -76,13 +78,13 @@ sealed class ScanFailure(val userMessage: String) : Exception(userMessage) {
     data class UnsupportedFile(val name: String?) :
         ScanFailure("${name ?: "That file"} isn't a type Spenditos can read. Try a photo, PDF, CSV or Excel file.")
     data class Failed(val serverMessage: String?) :
-        ScanFailure(serverMessage?.takeIf { it.isNotBlank() } ?: "Couldn't read transactions from this scan.")
-    data object Timeout : ScanFailure("Reading is taking longer than expected. We'll keep going in the background.")
-    data object NoTransactionsFound : ScanFailure("No transactions were found in this scan.")
-    data object Cancelled : ScanFailure("This scan was cancelled.")
-    data object AlreadySaved : ScanFailure("Those transactions were already added.")
-    data object InvalidUploadUrl : ScanFailure("Couldn't upload that file. Try again.")
-    data class UploadFailed(val status: Int) : ScanFailure("Couldn't upload that file. Try again.")
+        ScanFailure(serverMessage?.takeIf { it.isNotBlank() } ?: Strings.get(R.string.data_scan_couldn_t_read_transactions_from))
+    data object Timeout : ScanFailure(Strings.get(R.string.data_scan_reading_is_taking_longer_than))
+    data object NoTransactionsFound : ScanFailure(Strings.get(R.string.data_scan_no_transactions_were_found_in))
+    data object Cancelled : ScanFailure(Strings.get(R.string.data_scan_this_scan_was_cancelled))
+    data object AlreadySaved : ScanFailure(Strings.get(R.string.data_scan_those_transactions_were_already_added))
+    data object InvalidUploadUrl : ScanFailure(Strings.get(R.string.data_scan_couldn_t_upload_that_file))
+    data class UploadFailed(val status: Int) : ScanFailure(Strings.get(R.string.data_scan_couldn_t_upload_that_file))
 }
 
 /** Where a ready scan leads (iOS `ScanResolution`). */
@@ -157,9 +159,9 @@ object ScanRules {
 
     /** The reading screen's unit: pages for a PDF, images for photos, files otherwise. */
     fun readingUnit(inputs: List<ScanInput>): String = when {
-        inputs.any { it.kind == ScanInputKind.PDF } -> "Page"
-        inputs.all { it.kind == ScanInputKind.IMAGE } -> "Image"
-        else -> "File"
+        inputs.any { it.kind == ScanInputKind.PDF } -> Strings.get(R.string.data_scan_page)
+        inputs.all { it.kind == ScanInputKind.IMAGE } -> Strings.get(R.string.common_image)
+        else -> Strings.get(R.string.data_scan_file)
     }
 
     /** Body for `POST /scans`. A spreadsheet never carries a `pdfGroupId` (the server rejects it with 400). */
@@ -200,9 +202,9 @@ object ScanCredits {
     fun overLimitMessage(estimatedCredits: Int, remaining: Int?): String? {
         if (remaining == null || remaining <= 0 || estimatedCredits <= remaining) return null
         return if (remaining == 1) {
-            "You have 1 scan left — pick up to 1"
+            Strings.get(R.string.data_scan_you_have_1_scan_left)
         } else {
-            "You have $remaining scans left — pick up to $remaining"
+            Strings.get(R.string.data_scan_you_have_scans_left_pick, remaining, remaining)
         }
     }
 }

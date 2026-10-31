@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.receipt
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -257,7 +260,7 @@ private fun ScanTopBar(onBack: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            "Scan",
+            stringResource(R.string.common_scan),
             style = IosText.headline,
             color = IosColors.textPrimary,
             modifier = Modifier.semantics { heading() },
@@ -269,7 +272,7 @@ private fun ScanTopBar(onBack: () -> Unit) {
                 .padding(horizontal = Spacing.m)
                 .heightIn(min = 44.dp)
                 .testTag("receipt.cancel")
-                .semantics { contentDescription = "Back" },
+                .semantics { contentDescription = Strings.get(R.string.common_back) },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
@@ -279,7 +282,7 @@ private fun ScanTopBar(onBack: () -> Unit) {
                 tint = IosColors.textPrimary,
                 modifier = Modifier.size(19.2.dp),
             )
-            Text("Back", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
+            Text(stringResource(R.string.common_back), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
         }
     }
 }
@@ -359,7 +362,7 @@ private fun ReceiptCameraChrome(
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.weight(1f))
         Text(
-            "Point at a receipt",
+            stringResource(R.string.receipt_point_at_a_receipt),
             style = IosText.callout,
             color = Color.White,
             modifier = Modifier
@@ -380,7 +383,7 @@ private fun ReceiptCameraChrome(
                     Modifier
                         .size(72.dp)
                         .testTag("receipt.takePhoto")
-                        .semantics { contentDescription = "Take photo" }
+                        .semantics { contentDescription = Strings.get(R.string.receipt_take_photo) }
                         .clickable(role = Role.Button, onClick = onShutter),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -405,7 +408,7 @@ private fun ReceiptGalleryButton(onPickLibrary: () -> Unit) {
             .background(Color.White.copy(alpha = 0.2f))
             .clickable(role = Role.Button, onClick = onPickLibrary)
             .testTag("receipt.chooseFromLibrary")
-            .semantics { contentDescription = "Choose from photo library" },
+            .semantics { contentDescription = Strings.get(R.string.receipt_choose_from_photo_library) },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -431,20 +434,20 @@ private fun ReceiptPermissionDenied(onOpenSettings: () -> Unit) {
             modifier = Modifier.size(52.8.dp),
         )
         Text(
-            "Camera Access Required",
+            stringResource(R.string.receipt_camera_access_required),
             style = IosText.title3.w(FontWeight.SemiBold),
             color = IosColors.textPrimary,
             textAlign = TextAlign.Center,
         )
         Text(
-            "Allow camera access in Settings to scan receipts. You can still upload below.",
+            stringResource(R.string.receipt_allow_camera_access_in_settings),
             style = IosText.callout,
             color = IosColors.neutral,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp),
         )
         Text(
-            "Open Settings",
+            stringResource(R.string.common_open_settings),
             style = IosText.headline,
             color = Color.Black,
             modifier = Modifier
@@ -496,7 +499,7 @@ private fun ReceiptPhotoPreview(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Retake",
+                    stringResource(R.string.receipt_retake),
                     style = IosText.headline,
                     color = Color.White,
                     modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m),
@@ -513,7 +516,7 @@ private fun ReceiptPhotoPreview(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Use Photo",
+                    stringResource(R.string.receipt_use_photo),
                     style = IosText.headline,
                     color = Color.Black,
                     modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.m),

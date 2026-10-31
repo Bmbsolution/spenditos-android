@@ -1,5 +1,7 @@
 package com.spenditos.android.core.sync
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.core.db.FailureCode
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.model.BulkCreateResult
@@ -24,26 +26,26 @@ object FailureClassifier {
         result.results.firstNotNullOfOrNull { it.transaction }?.let { return SendOutcome.Created(it) }
         if (result.duplicates > 0) return SendOutcome.AlreadySaved
         val reason = result.failed.firstOrNull()?.reason ?: result.results.firstNotNullOfOrNull { it.error }
-            ?: return SendOutcome.Failed(FailureCode.UNKNOWN, "The server did not save this transaction.")
+            ?: return SendOutcome.Failed(FailureCode.UNKNOWN, Strings.get(R.string.core_sync_the_server_did_not_save))
         return SendOutcome.Failed(validationCode(reason), reason)
     }
 
     fun fromError(error: Throwable): SendOutcome.Failed = when (error) {
-        is ApiError.Network -> SendOutcome.Failed(FailureCode.TRANSPORT, "Connection failed. We will retry when you are online.")
-        is ApiError.KeystoreUnavailable -> SendOutcome.Failed(FailureCode.TRANSPORT, "Secure storage is locked. We will retry shortly.")
-        is ApiError.Unauthorized -> SendOutcome.Failed(FailureCode.AUTHENTICATION, "Your session expired. Sign in, then retry this transaction.")
+        is ApiError.Network -> SendOutcome.Failed(FailureCode.TRANSPORT, Strings.get(R.string.core_sync_connection_failed_we_will_retry))
+        is ApiError.KeystoreUnavailable -> SendOutcome.Failed(FailureCode.TRANSPORT, Strings.get(R.string.core_sync_secure_storage_is_locked_we))
+        is ApiError.Unauthorized -> SendOutcome.Failed(FailureCode.AUTHENTICATION, Strings.get(R.string.core_sync_your_session_expired_sign_in))
         is ApiError.Server -> fromStatus(error.status, error.serverMessage)
-        else -> SendOutcome.Failed(FailureCode.UNKNOWN, error.message ?: "Something went wrong.")
+        else -> SendOutcome.Failed(FailureCode.UNKNOWN, error.message ?: Strings.get(R.string.core_sync_something_went_wrong))
     }
 
     private fun fromStatus(status: Int, message: String): SendOutcome.Failed = when {
         status == 400 || status == 422 -> SendOutcome.Failed(
             validationCode(message),
-            message.ifBlank { "The server rejected this transaction. Review it and try again." },
+            message.ifBlank { Strings.get(R.string.core_sync_the_server_rejected_this_transaction) },
         )
-        status == 401 || status == 403 -> SendOutcome.Failed(FailureCode.AUTHENTICATION, "Your session cannot submit this transaction. Sign in and retry.")
-        status >= 500 || status == 408 || status == 429 -> SendOutcome.Failed(FailureCode.SERVER, "The server is temporarily unavailable. We will retry this transaction.")
-        else -> SendOutcome.Failed(FailureCode.PERMANENT, message.ifBlank { "The server rejected this transaction." })
+        status == 401 || status == 403 -> SendOutcome.Failed(FailureCode.AUTHENTICATION, Strings.get(R.string.core_sync_your_session_cannot_submit_this))
+        status >= 500 || status == 408 || status == 429 -> SendOutcome.Failed(FailureCode.SERVER, Strings.get(R.string.core_sync_the_server_is_temporarily_unavailable))
+        else -> SendOutcome.Failed(FailureCode.PERMANENT, message.ifBlank { Strings.get(R.string.core_sync_the_server_rejected_this_transaction_2) })
     }
 
     private fun validationCode(message: String): FailureCode {

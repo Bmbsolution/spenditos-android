@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
@@ -85,13 +87,13 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 ) {
                     ForgotHeaderIcon(isEmailStep = state.step == ForgotPasswordStep.EMAIL)
                     Text(
-                        if (state.step == ForgotPasswordStep.EMAIL) "Forgot Password?" else "Reset Password",
+                        if (state.step == ForgotPasswordStep.EMAIL) stringResource(R.string.auth_forgot_password) else stringResource(R.string.auth_reset_password),
                         style = IosText.largeTitle.w(FontWeight.Bold),
                         color = IosColors.textPrimary,
                     )
                     Text(
-                        if (state.step == ForgotPasswordStep.EMAIL) "Enter your email to receive a reset code"
-                        else "Enter the code we sent to ${state.email}",
+                        if (state.step == ForgotPasswordStep.EMAIL) stringResource(R.string.auth_enter_your_email_to_receive)
+                        else stringResource(R.string.auth_enter_the_code_we_sent, state.email),
                         style = IosText.subheadline,
                         color = IosColors.textSecondary,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -107,7 +109,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                         RoundedForgotTextField(
                             value = state.email,
                             onValueChange = viewModel::onEmailChange,
-                            placeholder = "Email",
+                            placeholder = stringResource(R.string.auth_email),
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
                             modifier = Modifier.fillMaxWidth().testTag("forgot.email"),
                         )
@@ -125,7 +127,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                         RoundedForgotTextField(
                             value = state.newPassword,
                             onValueChange = { if (it.length <= 128) viewModel.onNewPasswordChange(it) },
-                            placeholder = "New password (min 8 characters)",
+                            placeholder = stringResource(R.string.auth_new_password_min_8_characters),
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = doneKeyboardOptions(KeyboardType.Password),
                             modifier = Modifier.fillMaxWidth().testTag("forgot.newPassword"),
@@ -136,13 +138,13 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     }
                     state.notice?.let { notice ->
                         if (state.isDone) {
-                            ForgotSuccessBanner("Password reset! You can now sign in.", Modifier.fillMaxWidth().testTag("forgot.notice"))
+                            ForgotSuccessBanner(stringResource(R.string.auth_password_reset_you_can_now), Modifier.fillMaxWidth().testTag("forgot.notice"))
                         } else {
                             Text(notice, style = IosText.subheadline, color = Color(0xFF34C759), modifier = Modifier.fillMaxWidth().testTag("forgot.notice"))
                         }
                     }
                     ForgotPrimaryButton(
-                        text = if (state.step == ForgotPasswordStep.EMAIL) "Send Code" else "Reset Password",
+                        text = if (state.step == ForgotPasswordStep.EMAIL) stringResource(R.string.auth_send_code) else stringResource(R.string.auth_reset_password),
                         onClick = { if (state.step == ForgotPasswordStep.EMAIL) viewModel.sendCode() else viewModel.resetPassword() },
                         enabled = if (state.step == ForgotPasswordStep.EMAIL) state.canSendCode else state.canReset,
                         loading = state.isLoading,
@@ -153,7 +155,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                             onClick = onDone,
                             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
                             colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-                        ) { Text("Back to Sign In", style = IosText.headline) }
+                        ) { Text(stringResource(R.string.auth_back_to_sign_in), style = IosText.headline) }
                     }
                 }
             }
@@ -161,7 +163,7 @@ fun ForgotPasswordScreen(onDone: () -> Unit, onBack: () -> Unit) {
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("forgot.back"),
                 colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-            ) { Text("Back", style = IosText.subheadline) }
+            ) { Text(stringResource(R.string.common_back), style = IosText.subheadline) }
         }
     }
 }

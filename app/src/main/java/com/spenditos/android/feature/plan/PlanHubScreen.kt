@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.plan
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,7 +58,7 @@ fun PlanHubScreen(onOpenDebt: (debtId: String) -> Unit = {}, onOpenEnded: () -> 
     // "Plan November" from Generate (#403): the month Month plan should open on, as "yyyy-MM".
     var requestedMonthKey by rememberSaveable { mutableStateOf<String?>(null) }
     val requestedMonth = requestedMonthKey?.let { key -> runCatching { YearMonth.parse(key) }.getOrNull() }
-    val labels = listOf("Income & bills", "Month plan")
+    val labels = listOf(stringResource(R.string.plan_income_bills), stringResource(R.string.plan_month_plan))
 
     IosScreen {
         Column(Modifier.fillMaxSize()) {
@@ -87,7 +89,7 @@ fun PlanHubScreen(onOpenDebt: (debtId: String) -> Unit = {}, onOpenEnded: () -> 
                     ) {
                         Icon(
                             SfSymbols.icon("plus"),
-                            contentDescription = "Add one-time item",
+                            contentDescription = stringResource(R.string.plan_add_one_time_item),
                             tint = IosColors.spendOrange,
                             modifier = Modifier.size(20.dp),
                         )
@@ -139,14 +141,14 @@ private fun BillsOverflowMenu(endedCount: Int, isGenerating: Boolean, onGenerate
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text("Generate a month", style = IosText.subheadline) },
+                text = { Text(stringResource(R.string.common_generate_a_month), style = IosText.subheadline) },
                 leadingIcon = { Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null) },
                 enabled = !isGenerating,
                 onClick = { expanded = false; onGenerate() },
                 modifier = Modifier.testTag("bills.more.generate"),
             )
             DropdownMenuItem(
-                text = { Text(if (endedCount == 0) "Ended" else "Ended · $endedCount", style = IosText.subheadline) },
+                text = { Text(if (endedCount == 0) stringResource(R.string.common_ended) else stringResource(R.string.common_ended_2, endedCount), style = IosText.subheadline) },
                 leadingIcon = { Icon(Icons.Outlined.Archive, contentDescription = null) },
                 onClick = { expanded = false; onEnded() },
                 modifier = Modifier.testTag("bills.more.ended"),

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -63,9 +65,9 @@ class ChangePasswordViewModel @Inject constructor(
                             isSaving = false,
                             isOffline = error is ApiError.Network,
                             error = when (error) {
-                                is ApiError.Network -> "You're offline. Try again when you're connected."
+                                is ApiError.Network -> Strings.get(R.string.common_you_re_offline_try_again)
                                 is ApiError.Server -> CHANGE_PASSWORD_ERROR_COPY[error.serverMessage] ?: error.serverMessage
-                                else -> "Couldn't change your password. Try again."
+                                else -> Strings.get(R.string.settings_couldn_t_change_your_password)
                             },
                         )
                     }
@@ -77,7 +79,7 @@ class ChangePasswordViewModel @Inject constructor(
 
 /** Error codes of `POST /user/change-password` (packages/functions/src/user.ts:797-812). */
 private val CHANGE_PASSWORD_ERROR_COPY = mapOf(
-    "InvalidPassword" to "Your current password is incorrect.",
-    "WeakPassword" to "Your new password doesn't meet the requirements.",
-    "RateLimited" to "Too many attempts. Try again later.",
+    "InvalidPassword" to Strings.get(R.string.settings_your_current_password_is_incorrect),
+    "WeakPassword" to Strings.get(R.string.settings_your_new_password_doesn_t),
+    "RateLimited" to Strings.get(R.string.settings_too_many_attempts_try_again),
 )

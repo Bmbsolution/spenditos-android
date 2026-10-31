@@ -1,5 +1,7 @@
 package com.spenditos.android.data.push
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -41,7 +43,7 @@ class SpenditosMessagingService : FirebaseMessagingService() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
         val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Reminders and progress", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, Strings.get(R.string.data_push_reminders_and_progress), NotificationManager.IMPORTANCE_DEFAULT))
         val open = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(DeepLink.EXTRA_TYPE, type)

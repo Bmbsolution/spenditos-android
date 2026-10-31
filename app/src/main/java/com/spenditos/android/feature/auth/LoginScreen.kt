@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.Canvas
@@ -98,8 +100,8 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     BrandMark()
-                    Text("Spenditos", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
-                    Text("Welcome back", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.auth_spenditos), style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary)
+                    Text(stringResource(R.string.auth_welcome_back), style = IosText.subheadline, color = IosColors.textSecondary)
                     envName?.let { EnvBadge(it, Modifier.padding(top = Spacing.xs)) }
                 }
 
@@ -111,14 +113,14 @@ fun LoginScreen(
                     RoundedAuthTextField(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
-                        placeholder = "Email",
+                        placeholder = stringResource(R.string.auth_email),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth().testTag("login.email"),
                     )
                     RoundedAuthTextField(
                         value = state.password,
                         onValueChange = viewModel::onPasswordChange,
-                        placeholder = "Password",
+                        placeholder = stringResource(R.string.auth_password),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { dismissKeyboard(); viewModel.signIn() }),
@@ -137,14 +139,14 @@ fun LoginScreen(
                                 ) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                         androidx.compose.material3.Icon(SfSymbols.icon("envelope.badge.fill"), contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Text("Enter Verification Code", style = IosText.subheadline.w(FontWeight.Bold), textAlign = TextAlign.Center)
+                                        Text(stringResource(R.string.auth_enter_verification_code), style = IosText.subheadline.w(FontWeight.Bold), textAlign = TextAlign.Center)
                                     }
                                 }
                             }
                         }
                     }
                     LoadingActionButton(
-                        text = "Sign In",
+                        text = stringResource(R.string.auth_sign_in),
                         onClick = viewModel::signIn,
                         enabled = state.canSubmit,
                         loading = state.isLoading,
@@ -154,7 +156,7 @@ fun LoginScreen(
                         onClick = onForgotPassword,
                         modifier = Modifier.fillMaxWidth().testTag("login.forgotPassword"),
                         colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-                    ) { Text("Forgot Password?", style = IosText.subheadline) }
+                    ) { Text(stringResource(R.string.auth_forgot_password), style = IosText.subheadline) }
                 }
 
                 HorizontalDivider(color = Color.Gray.copy(alpha = 0.4f))
@@ -163,7 +165,7 @@ fun LoginScreen(
                     onClick = onCreateAccount,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp).testTag("login.createAccount"),
                     colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
-                ) { Text("Create Account", style = IosText.subheadline) }
+                ) { Text(stringResource(R.string.auth_create_account), style = IosText.subheadline) }
             }
         }
     }

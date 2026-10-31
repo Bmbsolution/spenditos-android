@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -53,9 +55,9 @@ class LoginViewModel @Inject constructor(private val auth: LoginOperations) : Vi
 
     /** Mirrors iOS AuthViewModel: 401 = wrong credentials, 403 = email not confirmed. */
     private fun messageFor(error: Throwable): String = when {
-        error is ApiError.Server && error.status == 401 -> "Email or password is incorrect."
-        error is ApiError.Server && error.status == 403 -> "Confirm your email before signing in. Check your inbox for the code."
-        error is ApiError.Network -> "Can't reach Spenditos. Check your connection and try again."
-        else -> "Something went wrong. Please try again."
+        error is ApiError.Server && error.status == 401 -> Strings.get(R.string.auth_email_or_password_is_incorrect)
+        error is ApiError.Server && error.status == 403 -> Strings.get(R.string.auth_confirm_your_email_before_signing)
+        error is ApiError.Network -> Strings.get(R.string.auth_can_t_reach_spenditos_check)
+        else -> Strings.get(R.string.auth_something_went_wrong_please_try)
     }
 }

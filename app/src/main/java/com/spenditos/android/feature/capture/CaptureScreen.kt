@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.capture
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -152,13 +155,13 @@ fun CaptureScreen(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
                             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = IosColors.spendOrange)
-                            Text("Loading categories…", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("capture.categories.loading"))
+                            Text(stringResource(R.string.capture_loading_categories), style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("capture.categories.loading"))
                         }
                     }
                 }
 
                 if (state.offline) {
-                    CaptureMessage("You're offline. Try again when you're connected.", warning = true, Modifier.testTag("capture.offline"))
+                    CaptureMessage(stringResource(R.string.common_you_re_offline_try_again), warning = true, Modifier.testTag("capture.offline"))
                 } else if (state.error != null && !voiceTranscribeError) {
                     CaptureMessage(state.error!!, warning = false, Modifier.testTag("capture.error"))
                 }
@@ -181,9 +184,9 @@ fun CaptureScreen(
                                 Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
                                 verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                             ) {
-                                Text("Describe the transaction", style = IosText.headline, color = IosColors.textPrimary)
+                                Text(stringResource(R.string.capture_describe_the_transaction), style = IosText.headline, color = IosColors.textPrimary)
                                 Text(
-                                    "Enter the amount, merchant, and any details. Spenditos will turn it into a transaction.",
+                                    stringResource(R.string.capture_enter_the_amount_merchant_and),
                                     style = IosText.subheadline,
                                     color = IosColors.textSecondary,
                                 )
@@ -198,7 +201,7 @@ fun CaptureScreen(
                                 state.sentenceMeter?.let { SentenceMeterLine(it, com.spenditos.android.feature.pro.LocalOpenPro.current) }
                             }
                             PillButton(
-                                text = "Use text",
+                                text = stringResource(R.string.capture_use_text),
                                 onClick = viewModel::parseTypedText,
                                 enabled = state.text.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parse"),
@@ -238,12 +241,12 @@ fun CaptureScreen(
                     is CaptureStep.Analyzing -> {
                         val transcribing = step.phase == CaptureAnalysisPhase.TRANSCRIBE
                         CaptureProgress(
-                            title = if (transcribing) "Transcribing…" else "Finding transactions…",
-                            detail = if (transcribing) "Turning your recording into editable text" else "Turning your words into transaction drafts",
+                            title = if (transcribing) stringResource(R.string.capture_transcribing) else stringResource(R.string.capture_finding_transactions),
+                            detail = if (transcribing) stringResource(R.string.capture_turning_your_recording_into_editable) else stringResource(R.string.capture_turning_your_words_into_transaction),
                             modifier = Modifier.testTag("capture.loading"),
                         )
                         PillButton(
-                            text = "Cancel",
+                            text = stringResource(R.string.common_cancel),
                             onClick = { viewModel.cancel(); onBack() },
                             filled = false,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.cancel"),
@@ -254,8 +257,8 @@ fun CaptureScreen(
                             Modifier.fillMaxWidth().padding(horizontal = Spacing.screen),
                             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                         ) {
-                            Text("Describe the transaction", style = IosText.headline, color = IosColors.textPrimary)
-                            Text("Edit the transcript, then review the transactions it finds.", style = IosText.subheadline, color = IosColors.textSecondary)
+                            Text(stringResource(R.string.capture_describe_the_transaction), style = IosText.headline, color = IosColors.textPrimary)
+                            Text(stringResource(R.string.capture_edit_the_transcript_then_review), style = IosText.subheadline, color = IosColors.textSecondary)
                         }
                         CaptureTextInput(
                             value = state.transcript,
@@ -264,7 +267,7 @@ fun CaptureScreen(
                             fieldModifier = Modifier.testTag("capture.transcript"),
                         )
                         PillButton(
-                            text = "Find transactions",
+                            text = stringResource(R.string.capture_find_transactions),
                             onClick = viewModel::parseTranscript,
                             enabled = state.transcript.isNotBlank(),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.parseTranscript"),
@@ -282,10 +285,10 @@ fun CaptureScreen(
                                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                                 ) {
                                     Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(48.dp))
-                                    Text("Nothing recognized — try naming an amount.", modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                                    Text(stringResource(R.string.capture_nothing_recognized_try_naming_an), modifier = Modifier.testTag("capture.empty"), style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                                 }
                             }
-                            PillButton(text = "Try again", onClick = viewModel::retryEmptyAnalysis, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.tryAgain"))
+                            PillButton(text = stringResource(R.string.common_try_again), onClick = viewModel::retryEmptyAnalysis, filled = false, modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.tryAgain"))
                         } else {
                             CaptureReviewStep(
                                 items = state.items,
@@ -303,7 +306,7 @@ fun CaptureScreen(
                                 val noun = if (missingCategoryCount == 1) "item" else "items"
                                 Text(
                                     if (state.offline) {
-                                        "Select a category for $missingCategoryCount $noun before saving"
+                                        stringResource(R.string.capture_select_a_category_for_before, missingCategoryCount, noun)
                                     } else {
                                         "$missingCategoryCount $noun will save as Uncategorized — pick a category to refine reports"
                                     },
@@ -314,7 +317,7 @@ fun CaptureScreen(
                             }
                             if (state.transcript.isBlank()) {
                                 PillButton(
-                                    text = "Start over",
+                                    text = stringResource(R.string.capture_start_over),
                                     onClick = viewModel::restart,
                                     filled = false,
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).testTag("capture.restart"),
@@ -322,7 +325,7 @@ fun CaptureScreen(
                             }
                         }
                     }
-                    CaptureStep.Saving -> CaptureProgress(title = "Saving transactions…", modifier = Modifier.testTag("capture.saving"))
+                    CaptureStep.Saving -> CaptureProgress(title = stringResource(R.string.capture_saving_transactions), modifier = Modifier.testTag("capture.saving"))
                     CaptureStep.Done -> {
                         DoneContent(
                             savedCount = state.savedCount,
@@ -371,16 +374,16 @@ private fun CaptureHeader(title: String?, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(SfSymbols.icon("chevron.left"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(19.dp))
-            Text("Back", style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary, modifier = Modifier.padding(start = Spacing.xs))
+            Text(stringResource(R.string.common_back), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary, modifier = Modifier.padding(start = Spacing.xs))
         }
     }
 }
 
 private fun captureTitle(step: CaptureStep, mode: CaptureMode): String? = when (step) {
-    CaptureStep.Input -> if (mode == CaptureMode.SPEAK) "Voice Entry" else null
-    CaptureStep.CheckTranscript -> "Check what we heard"
-    CaptureStep.Review -> "Review transactions"
-    is CaptureStep.Analyzing -> if (step.phase == CaptureAnalysisPhase.TRANSCRIBE) "Voice Entry" else null
+    CaptureStep.Input -> if (mode == CaptureMode.SPEAK) Strings.get(R.string.capture_voice_entry) else null
+    CaptureStep.CheckTranscript -> Strings.get(R.string.capture_check_what_we_heard)
+    CaptureStep.Review -> Strings.get(R.string.common_review_transactions)
+    is CaptureStep.Analyzing -> if (step.phase == CaptureAnalysisPhase.TRANSCRIBE) Strings.get(R.string.capture_voice_entry) else null
     else -> null
 }
 
@@ -390,8 +393,8 @@ private fun CaptureMethodBar(selected: CaptureMode, enabled: Boolean, onSelect: 
         modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m))).padding(Spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        CaptureMethodButton(CaptureMode.TYPE, "text.alignleft", "Sentence", selected, enabled, onSelect)
-        CaptureMethodButton(CaptureMode.SPEAK, "mic.fill", "Voice", selected, enabled, onSelect)
+        CaptureMethodButton(CaptureMode.TYPE, "text.alignleft", stringResource(R.string.common_sentence), selected, enabled, onSelect)
+        CaptureMethodButton(CaptureMode.SPEAK, "mic.fill", stringResource(R.string.common_voice), selected, enabled, onSelect)
     }
 }
 
@@ -456,10 +459,10 @@ private fun VoiceIdleContent(onRecord: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(67.dp).padding(bottom = Spacing.s))
-        Text("Tap and speak", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-        Text("Recording stops automatically when you pause", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_tap_and_speak), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_recording_stops_automatically_when_you), style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
-            text = "Start Recording",
+            text = stringResource(R.string.capture_start_recording),
             onClick = onRecord,
             modifier = Modifier.padding(top = Spacing.m).testTag("capture.record"),
         )
@@ -493,9 +496,9 @@ private fun RecordingContent(time: String, onStop: () -> Unit) {
                 Icon(SfSymbols.icon("mic.fill"), contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
             }
         }
-        Text("Auto-stops after 1.5s of silence", style = IosText.subheadline, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_auto_stops_after_1_5s), style = IosText.subheadline, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
-            text = "Stop & Transcribe",
+            text = stringResource(R.string.capture_stop_transcribe),
             onClick = onStop,
             modifier = Modifier.testTag("capture.stop"),
             fill = IosColors.expense,
@@ -513,10 +516,10 @@ private fun PermissionContent(onOpenSettings: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(SfSymbols.icon("mic.slash.fill"), contentDescription = null, tint = IosColors.neutral, modifier = Modifier.size(67.dp))
-        Text("Microphone Access Required", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-        Text("Allow microphone access in Settings to use voice entry.", style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_microphone_access_required), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_allow_microphone_access_in_settings), style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
         VoiceActionButton(
-            text = "Open Settings",
+            text = stringResource(R.string.common_open_settings),
             onClick = onOpenSettings,
             cornerRadius = Radius.m,
             modifier = Modifier.testTag("capture.openSettings"),
@@ -553,11 +556,11 @@ private fun ExamplePrompts() {
         Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).then(subtleGlassModifier(shape)).padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Text("Try saying:", style = IosText.subheadline, color = IosColors.neutral)
+        Text(stringResource(R.string.capture_try_saying), style = IosText.subheadline, color = IosColors.neutral)
         listOf(
-            "Spent \$25 at Starbucks for coffee",
-            "Received \$500 salary deposit",
-            "Paid \$12.50 for lunch today",
+            stringResource(R.string.capture_spent_25_at_starbucks_for),
+            stringResource(R.string.capture_received_500_salary_deposit),
+            stringResource(R.string.capture_paid_12_50_for_lunch),
         ).forEach { text ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("quote.opening"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(18.dp))
@@ -607,10 +610,10 @@ private fun TranscriptBanner(transcript: String, onRestart: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Icon(SfSymbols.icon("waveform"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(18.dp))
-            Text("Transcript", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(stringResource(R.string.capture_transcript), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Spacer(Modifier.weight(1f))
             Text(
-                "Start over",
+                stringResource(R.string.capture_start_over),
                 style = IosText.caption.w(FontWeight.SemiBold),
                 color = IosColors.expense,
                 modifier = Modifier.clickable(role = Role.Button, onClick = onRestart).testTag("capture.restart"),
@@ -633,7 +636,7 @@ private fun VoiceErrorContent(message: String, onRetry: () -> Unit, onCancel: ()
             tint = IosColors.expense,
             modifier = Modifier.size((48 * 1.2).dp).testTag("capture.error"),
         )
-        Text("Couldn't transcribe", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.capture_couldn_t_transcribe), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
         Text(message, style = IosText.callout, color = IosColors.neutral, textAlign = TextAlign.Center)
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             val retryShape = RoundedCornerShape(Radius.m)
@@ -643,7 +646,7 @@ private fun VoiceErrorContent(message: String, onRetry: () -> Unit, onCancel: ()
                     .padding(vertical = Spacing.m),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Try Again", style = IosText.headline, color = Color.Black)
+                Text(stringResource(R.string.common_try_again_2), style = IosText.headline, color = Color.Black)
             }
             Box(
                 Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
@@ -651,7 +654,7 @@ private fun VoiceErrorContent(message: String, onRetry: () -> Unit, onCancel: ()
                     .padding(vertical = Spacing.m),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Cancel", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_cancel), style = IosText.headline, color = IosColors.textPrimary)
             }
         }
     }
@@ -690,7 +693,7 @@ internal fun CaptureReviewFooter(
             }
             Spacer(Modifier.weight(1f))
             PillButton(
-                text = buttonText ?: "Add $count",
+                text = buttonText ?: stringResource(R.string.common_add, count),
                 onClick = onSave,
                 enabled = enabled,
                 modifier = Modifier.weight(1f).then(modifier).testTag(saveTag),
@@ -708,10 +711,10 @@ private fun DoneContent(savedCount: Int, onDone: () -> Unit, modifier: Modifier 
     ) {
         Spacer(Modifier.height(32.dp))
         Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(67.dp))
-        Text("Transactions added", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = modifier)
+        Text(stringResource(R.string.capture_transactions_added), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, modifier = modifier)
         Text("$savedCount transactions", style = IosText.body, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         Spacer(Modifier.weight(1f))
-        PillButton("Done", onClick = onDone, modifier = Modifier.fillMaxWidth().then(buttonModifier))
+        PillButton(stringResource(R.string.common_done), onClick = onDone, modifier = Modifier.fillMaxWidth().then(buttonModifier))
     }
 }
 
@@ -739,7 +742,7 @@ private fun SentenceMeterLine(meter: SentenceMeter, onUpgrade: (() -> Unit)?) {
             Text(banner, style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.weight(1f))
             if (onUpgrade != null) {
                 Text(
-                    "Upgrade",
+                    stringResource(R.string.capture_upgrade),
                     style = IosText.caption.w(FontWeight.SemiBold),
                     color = IosColors.spendOrange,
                     modifier = Modifier.clickable(role = Role.Button, onClick = onUpgrade).testTag("quick-add-sentence-upgrade"),
@@ -771,15 +774,15 @@ private fun QuotaExceededContent(onUpgrade: (() -> Unit)?, onFillManually: () ->
             modifier = Modifier.size(67.dp),
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-            Text("Monthly Limit Reached", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.common_monthly_limit_reached), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             Text(
-                "You've used all your free voice entries for this month.",
+                stringResource(R.string.capture_you_ve_used_all_your),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = Spacing.xl),
             )
-            Text("Upgrade to Pro for unlimited voice entries.", style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.capture_upgrade_to_pro_for_unlimited), style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             if (onUpgrade != null) {
@@ -792,7 +795,7 @@ private fun QuotaExceededContent(onUpgrade: (() -> Unit)?, onFillManually: () ->
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Text("Upgrade to Pro", style = IosText.headline, color = Color.White)
+                    Text(stringResource(R.string.common_upgrade_to_pro), style = IosText.headline, color = Color.White)
                 }
             }
             Box(
@@ -801,7 +804,7 @@ private fun QuotaExceededContent(onUpgrade: (() -> Unit)?, onFillManually: () ->
                     .padding(horizontal = Spacing.xl, vertical = Spacing.m)
                     .testTag("capture.quota.manual"),
             ) {
-                Text("Fill Manually", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_fill_manually), style = IosText.headline, color = IosColors.textPrimary)
             }
         }
     }

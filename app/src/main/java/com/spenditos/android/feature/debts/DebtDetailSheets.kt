@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.debts
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,10 +68,10 @@ internal fun DebtExtraPaymentSheet(
     var showErrors by rememberSaveable { mutableStateOf(false) }
     val amount = parseDebtAmount(amountText)
     val error = extraPaymentAmountError(amountText, showErrors)
-    DebtSheetFrame(title = "Extra payment", cancelTag = "debt.extra.cancel", onDismiss = onDismiss, enabled = !state.isWorking) {
+    DebtSheetFrame(title = stringResource(R.string.debts_extra_payment), cancelTag = "debt.extra.cancel", onDismiss = onDismiss, enabled = !state.isWorking) {
         state.error?.let { ErrorBanner(it, onDismiss = onDismissError, modifier = Modifier.testTag("debt.extra.error")) }
         DebtAmountField(
-            title = "Extra payment",
+            title = stringResource(R.string.debts_extra_payment),
             placeholder = "0",
             text = amountText,
             onTextChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
@@ -84,7 +86,7 @@ internal fun DebtExtraPaymentSheet(
             color = IosColors.textTertiary,
         )
         DebtLoadingButton(
-            "Add extra payment",
+            stringResource(R.string.debts_add_extra_payment),
             isLoading = state.isWorking,
             modifier = Modifier.testTag("debt.extra.submit"),
         ) {
@@ -107,10 +109,10 @@ internal fun DebtCorrectBalanceSheet(
     var showErrors by rememberSaveable { mutableStateOf(false) }
     val amount = parseDebtAmount(amountText)
     val error = correctBalanceAmountError(amountText, showErrors)
-    DebtSheetFrame(title = "Correct balance", cancelTag = "debt.correct.cancel", onDismiss = onDismiss, enabled = !state.isWorking) {
+    DebtSheetFrame(title = stringResource(R.string.debts_correct_balance), cancelTag = "debt.correct.cancel", onDismiss = onDismiss, enabled = !state.isWorking) {
         state.error?.let { ErrorBanner(it, onDismiss = onDismissError, modifier = Modifier.testTag("debt.correct.error")) }
         Text(
-            "Use this when the lender's number is different from yours. Your balance is set to what you enter from that day on.",
+            stringResource(R.string.debts_use_this_when_the_lender),
             style = IosText.subheadline,
             color = IosColors.textSecondary,
         )
@@ -125,7 +127,7 @@ internal fun DebtCorrectBalanceSheet(
         )
         DebtDateField(epochDay = epochDay, onChange = { epochDay = it }, tag = "debt.correct.date")
         DebtLoadingButton(
-            "Correct balance",
+            stringResource(R.string.debts_correct_balance),
             isLoading = state.isWorking,
             modifier = Modifier.testTag("debt.correct.submit"),
         ) {
@@ -159,7 +161,7 @@ private fun DebtSheetFrame(
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Cancel",
+                    stringResource(R.string.common_cancel),
                     Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onDismiss).testTag(cancelTag),
                     style = IosText.body,
                     color = IosColors.spendOrange,
@@ -181,7 +183,7 @@ private fun DebtDateField(epochDay: Long, onChange: (Long) -> Unit, tag: String)
     DismissKeyboardWhen(showPicker)
     val date = LocalDate.ofEpochDay(epochDay)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text("Date", style = IosText.subheadline, color = IosColors.textSecondary)
+        Text(stringResource(R.string.common_date), style = IosText.subheadline, color = IosColors.textSecondary)
         Text(
             DebtFormat.shortDate(date.toString()) ?: date.toString(),
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
@@ -213,7 +215,7 @@ private fun DebtDateField(epochDay: Long, onChange: (Long) -> Unit, tag: String)
                     showPicker = false
                 }) { Text("OK", color = IosColors.spendOrange) }
             },
-            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) {
             DatePicker(
                 state = pickerState,

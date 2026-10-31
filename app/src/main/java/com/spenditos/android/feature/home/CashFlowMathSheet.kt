@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,25 +63,25 @@ fun CashFlowMathSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.title")) {
-                Text("How it’s calculated", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.home_how_it_s_calculated), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                 TextButton(onClick = onDismiss, modifier = Modifier.testTag("home.math.done")) {
-                    Text("Done", style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                    Text(stringResource(R.string.common_done), style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
                 }
             }
 
             GlassCard {
                 Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    Text("This month", style = IosText.footnote.w(FontWeight.SemiBold), color = IosColors.textSecondary)
-                    EquationRow("Income received", status.received, "+", currency, locale)
-                    EquationRow("Income expected", status.expected, "+", currency, locale)
+                    Text(stringResource(R.string.common_this_month), style = IosText.footnote.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    EquationRow(stringResource(R.string.home_income_received), status.received, "+", currency, locale)
+                    EquationRow(stringResource(R.string.home_income_expected), status.expected, "+", currency, locale)
                     if (status.carriedIn.signum() > 0) {
                         EquationRow(
-                            title = "Carried in",
+                            title = stringResource(R.string.home_carried_in),
                             amount = status.carriedIn,
                             sign = "+",
                             currency = currency,
                             locale = locale,
-                            detail = "Last month’s balance you chose to include",
+                            detail = stringResource(R.string.home_last_month_s_balance_you),
                             action = onRemoveCarriedIn?.let { remove ->
                                 {
                                     TextButton(
@@ -93,7 +95,7 @@ fun CashFlowMathSheet(
                         )
                     }
                     EquationRow(
-                        title = "Spent so far",
+                        title = stringResource(R.string.home_spent_so_far),
                         amount = status.spent,
                         sign = "−",
                         currency = currency,
@@ -102,7 +104,7 @@ fun CashFlowMathSheet(
                     )
                     val entries = if (status.billsLeftCount == 1) "1 entry still to come" else "${status.billsLeftCount} entries still to come"
                     EquationRow(
-                        title = "Bills left",
+                        title = stringResource(R.string.home_bills_left),
                         amount = status.billsLeft,
                         sign = "−",
                         currency = currency,
@@ -111,7 +113,7 @@ fun CashFlowMathSheet(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("home.math.total")) {
                         Text(
-                            if (status.leftAfterBills < BigDecimal.ZERO) "Short after bills" else "Left after bills",
+                            if (status.leftAfterBills < BigDecimal.ZERO) stringResource(R.string.home_short_after_bills) else stringResource(R.string.home_left_after_bills),
                             style = IosText.callout.w(FontWeight.Bold),
                             color = IosColors.textPrimary,
                             modifier = Modifier.weight(1f),
@@ -125,24 +127,24 @@ fun CashFlowMathSheet(
                     followUp?.let { FollowUpRow(it, currency, locale, saving, onCarryOver, onAddDebt) }
                     if (status.income.signum() > 0) {
                         Text(
-                            "That’s ${percent(status.incomeLeftShare)} of this month’s income (${money(status.income, currency, locale)}).",
+                            stringResource(R.string.home_that_s_of_this_month, percent(status.incomeLeftShare), money(status.income, currency, locale)),
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                         )
                     }
                     Text(
-                        "Entries dated today or earlier count as received or spent; later ones as expected or still to come. Bills are entries created from a bill in Plan › Bills.",
+                        stringResource(R.string.home_entries_dated_today_or_earlier),
                         style = IosText.caption,
                         color = IosColors.textSecondary,
                     )
                 }
             }
 
-            BreakdownGroup("Income received", breakdown.received, currency, locale)
-            BreakdownGroup("Income expected", breakdown.expected, currency, locale)
-            BreakdownGroup("Bills paid", breakdown.billsPaid, currency, locale)
-            BreakdownGroup("Everyday spending", breakdown.everyday, currency, locale)
-            BreakdownGroup("Bills left", breakdown.billsLeft, currency, locale)
+            BreakdownGroup(stringResource(R.string.home_income_received), breakdown.received, currency, locale)
+            BreakdownGroup(stringResource(R.string.home_income_expected), breakdown.expected, currency, locale)
+            BreakdownGroup(stringResource(R.string.home_bills_paid), breakdown.billsPaid, currency, locale)
+            BreakdownGroup(stringResource(R.string.home_everyday_spending), breakdown.everyday, currency, locale)
+            BreakdownGroup(stringResource(R.string.home_bills_left), breakdown.billsLeft, currency, locale)
         }
     }
 }
@@ -198,7 +200,7 @@ private fun FollowUpRow(
             onClick = if (surplus) onCarryOver else onAddDebt,
             enabled = !saving,
             modifier = Modifier.testTag(if (surplus) "month-balance-carry-again" else "month-balance-add-debt-again"),
-        ) { Text(if (surplus) "Carry over" else "Add debt", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
+        ) { Text(if (surplus) stringResource(R.string.home_carry_over) else stringResource(R.string.common_add_debt), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.spendOrange) }
     }
 }
 

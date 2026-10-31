@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.debts.add
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -151,13 +154,13 @@ private fun AddDebtSheetContent(
             // Inline navigation title with Cancel on the left.
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Cancel",
+                    stringResource(R.string.common_cancel),
                     Modifier.clickable(role = Role.Button, onClick = cancel).testTag("debts.add.cancel"),
                     style = IosText.body,
                     color = IosColors.spendOrange,
                 )
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Add a debt", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_add_a_debt), style = IosText.headline, color = IosColors.textPrimary)
                 }
                 Spacer(Modifier.width(48.dp))
             }
@@ -182,7 +185,7 @@ private fun AddDebtSheetContent(
             InterestSection(state, viewModel)
             PreviewCard(state)
             DebtSavePill(
-                text = "Add debt",
+                text = stringResource(R.string.common_add_debt),
                 isLoading = state.isSaving,
                 onClick = {
                     dismissKeyboard()
@@ -217,11 +220,11 @@ private fun AddDebtSheetContent(
                     modifier = Modifier.testTag("debts.add.date.confirm"),
                 ) { Text("OK", color = IosColors.spendOrange) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) {
             DatePicker(
                 state = pickerState,
-                title = { Text("Next payment", Modifier.padding(start = 24.dp, top = 16.dp)) },
+                title = { Text(stringResource(R.string.debts_next_payment), Modifier.padding(start = 24.dp, top = 16.dp)) },
                 showModeToggle = false,
                 colors = DatePickerDefaults.colors(
                     selectedDayContainerColor = IosColors.spendOrange,
@@ -235,12 +238,12 @@ private fun AddDebtSheetContent(
     if (showDiscardAlert) {
         AlertDialog(
             onDismissRequest = { showDiscardAlert = false },
-            title = { Text("Discard this debt?") },
-            text = { Text("What you entered won't be saved.") },
+            title = { Text(stringResource(R.string.debts_discard_this_debt)) },
+            text = { Text(stringResource(R.string.common_what_you_entered_won_t)) },
             confirmButton = {
-                TextButton(onClick = { showDiscardAlert = false; onDismiss() }) { Text("Discard", color = IosColors.expense) }
+                TextButton(onClick = { showDiscardAlert = false; onDismiss() }) { Text(stringResource(R.string.common_discard), color = IosColors.expense) }
             },
-            dismissButton = { TextButton(onClick = { showDiscardAlert = false }) { Text("Keep editing") } },
+            dismissButton = { TextButton(onClick = { showDiscardAlert = false }) { Text(stringResource(R.string.common_keep_editing)) } },
         )
     }
 }
@@ -250,7 +253,7 @@ private fun AddDebtSheetContent(
 @Composable
 private fun NameSection(state: DebtFormUiState, viewModel: DebtFormViewModel, onNext: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        FieldLabel("Name")
+        FieldLabel(stringResource(R.string.common_name))
         Row(
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                 .errorStroke(state.nameError != null).padding(Spacing.m),
@@ -283,7 +286,7 @@ private fun NameSection(state: DebtFormUiState, viewModel: DebtFormViewModel, on
 private fun PlanBySection(state: DebtFormUiState, viewModel: DebtFormViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            FieldLabel("Plan by")
+            FieldLabel(stringResource(R.string.debts_plan_by))
             IosSegmented(
                 options = DebtPlanMode.entries.map { it.label },
                 selectedIndex = state.mode.ordinal,
@@ -295,7 +298,7 @@ private fun PlanBySection(state: DebtFormUiState, viewModel: DebtFormViewModel) 
         }
         when (state.mode) {
             DebtPlanMode.WHAT_I_PAY -> DebtAmountField(
-                title = "Each payment",
+                title = stringResource(R.string.debts_each_payment),
                 placeholder = "0",
                 value = state.paymentText,
                 onValueChange = viewModel::onPaymentChange,
@@ -305,7 +308,7 @@ private fun PlanBySection(state: DebtFormUiState, viewModel: DebtFormViewModel) 
             )
             DebtPlanMode.WHEN_IM_DONE -> TargetMonthPicker(state, viewModel)
             DebtPlanMode.WHEN_I_CAN -> Text(
-                "No payments are planned. Record each payment when you make it.",
+                stringResource(R.string.debts_no_payments_are_planned_record),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
                 modifier = Modifier.testTag("debts.add.whenICanNote"),
@@ -319,11 +322,11 @@ private fun TargetMonthPicker(state: DebtFormUiState, viewModel: DebtFormViewMod
     val locale = LocalConfiguration.current.locales[0]
     val years = (state.today.year..(state.today.year + 40)).toList()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        FieldLabel("Paid off by")
+        FieldLabel(stringResource(R.string.debts_paid_off_by))
         Row(
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                 .padding(horizontal = Spacing.m, vertical = Spacing.s)
-                .semantics { contentDescription = "Paid off by" },
+                .semantics { contentDescription = Strings.get(R.string.debts_paid_off_by) },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
@@ -348,7 +351,7 @@ private fun TargetMonthPicker(state: DebtFormUiState, viewModel: DebtFormViewMod
 @Composable
 private fun FrequencySection(state: DebtFormUiState, viewModel: DebtFormViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        FieldLabel("How often")
+        FieldLabel(stringResource(R.string.debts_how_often))
         Row(
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                 .padding(horizontal = Spacing.m, vertical = Spacing.s),
@@ -369,7 +372,7 @@ private fun FrequencySection(state: DebtFormUiState, viewModel: DebtFormViewMode
 @Composable
 private fun NextPaymentSection(state: DebtFormUiState, onPick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        FieldLabel("Next payment")
+        FieldLabel(stringResource(R.string.debts_next_payment))
         Row(
             Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                 .clickable(role = Role.Button, onClick = onPick)
@@ -393,8 +396,8 @@ private fun InterestSection(state: DebtFormUiState, viewModel: DebtFormViewModel
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Charges interest", style = IosText.callout, color = IosColors.textPrimary)
-                Text("Off for money you borrowed from a friend.", style = IosText.caption, color = IosColors.textTertiary)
+                Text(stringResource(R.string.debts_charges_interest), style = IosText.callout, color = IosColors.textPrimary)
+                Text(stringResource(R.string.debts_off_for_money_you_borrowed), style = IosText.caption, color = IosColors.textTertiary)
             }
             IosSwitch(
                 checked = state.chargesInterest,
@@ -405,7 +408,7 @@ private fun InterestSection(state: DebtFormUiState, viewModel: DebtFormViewModel
         }
         if (state.chargesInterest) {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FieldLabel("Interest rate (% a year)")
+                FieldLabel(stringResource(R.string.debts_interest_rate_a_year))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                         .errorStroke(state.aprError != null).padding(Spacing.m),
@@ -416,7 +419,7 @@ private fun InterestSection(state: DebtFormUiState, viewModel: DebtFormViewModel
                         value = state.aprText,
                         onValueChange = { viewModel.onAprChange(it.filter(::isAmountChar)) },
                         modifier = Modifier.weight(1f).testTag("debts.add.apr")
-                            .semantics { contentDescription = "Interest rate, percent a year" },
+                            .semantics { contentDescription = Strings.get(R.string.debts_interest_rate_percent_a_year) },
                         singleLine = true,
                         keyboardOptions = doneKeyboardOptions(KeyboardType.Decimal),
                         keyboardActions = rememberKeyboardDoneActions(),
@@ -487,7 +490,7 @@ private fun PreviewCard(state: DebtFormUiState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(Modifier.size(16.dp), color = IosColors.spendOrange, strokeWidth = 2.dp)
-            Text("Working out your plan", style = IosText.subheadline, color = IosColors.textSecondary)
+            Text(stringResource(R.string.debts_working_out_your_plan), style = IosText.subheadline, color = IosColors.textSecondary)
         }
     }
 }
