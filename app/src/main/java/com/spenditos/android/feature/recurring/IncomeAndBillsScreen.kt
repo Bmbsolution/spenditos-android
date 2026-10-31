@@ -267,7 +267,7 @@ fun IncomeAndBillsScreen(
 
                 item("bills.header") {
                     Row(Modifier.fillMaxWidth().padding(end = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
-                        RecurringSectionHeader("Bills", Modifier.weight(1f).testTag("recurring.section.bills"))
+                        RecurringSectionHeader(stringResource(R.string.common_bills), Modifier.weight(1f).testTag("recurring.section.bills"))
                         TextButton(onClick = { addPresetIncome = false; templateToEditId = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text(stringResource(R.string.common_add_button)) }
                     }
                 }
@@ -280,7 +280,7 @@ fun IncomeAndBillsScreen(
 
                 debtsSection(debts, onOpen = onOpenDebt, onAdd = { showAddDebt = true }, onRetry = debtsViewModel::retry)
 
-                item("income.header") { RecurringSectionHeader("Income", Modifier.testTag("recurring.section.income")) }
+                item("income.header") { RecurringSectionHeader(stringResource(R.string.common_income), Modifier.testTag("recurring.section.income")) }
                 if (!state.isLoading && state.incomeTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
                     item("income.empty") { SectionEmptyMessage(stringResource(R.string.recurring_no_income_yet), Modifier.testTag("recurring.income.empty")) }
                 }
