@@ -27,7 +27,10 @@ class StringsParityTest {
         return strings to plurals
     }
 
-    private fun args(text: String): List<String> = Regex("%(\\d+)\\$[sd]").findAll(text).map { it.groupValues[1] }.toSortedSet().toList()
+    private val specifier = Regex("%%|%(?:\\d+\\$)?[-#+0,(]*\\d*(?:\\.\\d+)?[sdfxXcb]")
+
+    /** Every format specifier (`%1$s`, `%d`, ...) and every literal `%%` escape, as a sorted multiset. */
+    private fun specifiers(text: String): List<String> = specifier.findAll(text).map { it.value }.sorted().toList()
 
     @Test
     fun `french has every english string and plural with matching arguments`() {
@@ -37,7 +40,11 @@ class StringsParityTest {
         assertEquals("Missing in values-fr", emptySet<String>(), en.keys - fr.keys)
         assertEquals("Only in values-fr", emptySet<String>(), fr.keys - en.keys)
         assertEquals("Plurals missing in values-fr", emptySet<String>(), enPlurals.keys - frPlurals.keys)
-        for ((key, text) in en) assertEquals("Format arguments differ for $key", args(text), args(fr.getValue(key)))
+        for ((key, text) in en) {
+            val translated = fr.getValue(key)
+            assertEquals("Format specifiers differ for $key", specifiers(text), specifiers(translated))
+            assertEquals("Literal %% count differs for $key", text.split("%%").size, translated.split("%%").size)
+        }
         for ((key, quantities) in frPlurals) assertTrue("fr plural $key needs one and other", quantities.containsAll(setOf("one", "other")))
     }
 

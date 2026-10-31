@@ -552,7 +552,7 @@ private fun progressRingBitmap(context: Context, value: Double, color: Color, te
     canvas.drawArc(bounds, 0f, 360f, false, track)
     val sweep = 360f * value.coerceIn(0.0, 1.0).toFloat()
     if (sweep > 0f) canvas.drawArc(bounds, -90f, sweep, false, arc)
-    val label = "${(value.coerceIn(0.0, 1.0) * 100).toInt()}%"
+    val label = "${(value.coerceIn(0.0, 1.0) * 100).toInt()}${com.spenditos.android.core.i18n.AppLanguage.percentSuffix()}"
     val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = textColor.toArgb()
         textSize = 12f * density

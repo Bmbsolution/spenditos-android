@@ -137,7 +137,7 @@ private fun BillsOverflowMenu(endedCount: Int, isGenerating: Boolean, onGenerate
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }, modifier = Modifier.size(44.dp).testTag("bills.more")) {
-            Icon(SfSymbols.icon("ellipsis.circle"), contentDescription = "More", tint = IosColors.textPrimary, modifier = Modifier.size(22.dp))
+            Icon(SfSymbols.icon("ellipsis.circle"), contentDescription = stringResource(R.string.transactions_more), tint = IosColors.textPrimary, modifier = Modifier.size(22.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(

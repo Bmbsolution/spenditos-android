@@ -216,7 +216,7 @@ fun AddEditRecurringSheet(
                 RecurringTextField(
                     value = draft.description,
                     onValueChange = { draft = draft.copy(description = it.take(160)) },
-                    placeholder = "e.g., Netflix, Rent, Salary",
+                    placeholder = stringResource(R.string.recurring_description_placeholder),
                     tag = "recurring.form.description",
                     iconName = "text.alignleft",
                 )
@@ -364,7 +364,7 @@ fun AddEditRecurringSheet(
                             title = stringResource(R.string.recurring_repeat_every),
                             value = draft.repeatIntervalText,
                             placeholder = "1",
-                            suffix = draft.frequency.lowercase(),
+                            suffix = frequencyLabel(draft.frequency).lowercase(),
                             tag = "recurring.form.repeatInterval",
                             onValueChange = { draft = draft.copy(repeatIntervalText = it.filter(Char::isDigit)) },
                         )
@@ -437,9 +437,9 @@ fun AddEditRecurringSheet(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { draft = draft.copy(firstOccurrenceDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
                     showDatePicker = false
-                }, modifier = Modifier.testTag("recurring.form.date.confirm")) { Text("OK") }
+                }, modifier = Modifier.testTag("recurring.form.date.confirm")) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
 
@@ -727,9 +727,3 @@ private fun RecurringSavePill(text: String, onClick: () -> Unit, enabled: Boolea
     }
 }
 
-private fun frequencyLabel(value: String): String = when (value) {
-    "bi-weekly" -> "Bi-weekly"
-    "semi-monthly" -> "Semi-monthly"
-    "semi-annually" -> "Semi-annually"
-    else -> value.replaceFirstChar(Char::uppercase)
-}

@@ -135,7 +135,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Money") }
+            item { SectionHeader(stringResource(R.string.settings_money)) }
             item {
                 GroupedCard {
                     IosRow(stringResource(R.string.common_currency), icon = SfSymbols.icon("dollarsign.circle.fill"), iconTint = finance.income, value = state.currency.ifBlank { null }, chevron = false, onClick = onOpenProfile)
@@ -144,7 +144,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Notifications") }
+            item { SectionHeader(stringResource(R.string.settings_notifications)) }
             item {
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val permission = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -175,7 +175,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Preferences") }
+            item { SectionHeader(stringResource(R.string.settings_preferences)) }
             item {
                 GroupedCard {
                     IosRow(
@@ -220,7 +220,7 @@ fun SettingsScreen(
                 )
             }
 
-            item { SectionHeader("Your data") }
+            item { SectionHeader(stringResource(R.string.settings_your_data)) }
             item {
                 GroupedCard {
                     // Statements and CSVs come in through Scan; this is the way out.
@@ -253,7 +253,7 @@ fun SettingsScreen(
                 )
             }
 
-            item { SectionHeader("Subscription") }
+            item { SectionHeader(stringResource(R.string.settings_subscription)) }
             item {
                 GroupedCard {
                     when {
@@ -297,14 +297,14 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Account") }
+            item { SectionHeader(stringResource(R.string.settings_account)) }
             item {
                 GroupedCard {
                     IosRow(stringResource(R.string.settings_change_password), icon = SfSymbols.icon("lock.fill"), iconTint = IosColors.info, onClick = onOpenChangePassword, divider = false, modifier = Modifier.testTag("settings.changePassword"))
                 }
             }
 
-            item { SectionHeader("About") }
+            item { SectionHeader(stringResource(R.string.settings_about)) }
             item {
                 GroupedCard {
                     IosRow(
@@ -343,10 +343,10 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.settings_sign_out), style = IosText.headline) },
             text = { Text(viewModel.signOutMessage(), style = IosText.body) },
             confirmButton = {
-                TextButton(onClick = { confirmSignOut = false; viewModel.signOut() }, modifier = Modifier.testTag("settings.signOut.confirm")) { Text("Sign Out", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { confirmSignOut = false; viewModel.signOut() }, modifier = Modifier.testTag("settings.signOut.confirm")) { Text(stringResource(R.string.settings_sign_out), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmSignOut = false }, modifier = Modifier.testTag("settings.signOut.cancel")) { Text("Cancel") }
+                TextButton(onClick = { confirmSignOut = false }, modifier = Modifier.testTag("settings.signOut.cancel")) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -359,7 +359,7 @@ private fun biometricName(context: android.content.Context): String {
     return when {
         face && !finger -> Strings.get(R.string.settings_face)
         finger && !face -> Strings.get(R.string.settings_fingerprint)
-        else -> "biometrics"
+        else -> Strings.get(R.string.settings_biometrics)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.export
 
+import com.spenditos.android.core.network.unknownServerMessage
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import android.net.Uri
@@ -125,7 +126,7 @@ class FullCopyViewModel @Inject constructor(
         is SessionChangedException -> Strings.get(R.string.export_the_signed_in_account_changed_2)
         is ExportSaveFailedException -> Strings.get(R.string.export_couldn_t_save_the_file)
         // `{error: "ExportFailed", message: "Could not build your data file. Please try again."}`
-        is ApiError.Server -> error.serverMessage.takeIf { it.isNotBlank() && it != "Unknown error" }
+        is ApiError.Server -> error.serverMessage.takeIf { it.isNotBlank() && it != unknownServerMessage() }
             ?: Strings.get(R.string.export_couldn_t_download_your_data)
         else -> Strings.get(R.string.export_couldn_t_download_your_data)
     }

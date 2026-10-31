@@ -65,7 +65,7 @@ internal fun ReportsBackBar(title: String, onBack: () -> Unit) {
         title = { Text(title, style = IosText.headline, color = IosColors.textPrimary) },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("reports.back")) {
-                Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+                Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
             }
         },
     )
@@ -363,7 +363,7 @@ internal fun WeeklyComparisonChart(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
-                Text("W${week.week}", modifier = Modifier.width(36.dp), style = IosText.subheadline, color = IosColors.neutral)
+                Text(stringResource(R.string.reports_week_abbreviation, week.week), modifier = Modifier.width(36.dp), style = IosText.subheadline, color = IosColors.neutral)
                 BoxWithConstraints(Modifier.weight(1f).height(16.dp)) {
                     val previousWidth = (maxWidth * (week.previous.toDouble() / scale).toFloat()).coerceAtLeast(2.dp)
                     val currentWidth = (maxWidth * (week.current.toDouble() / scale).toFloat()).coerceAtLeast(2.dp)

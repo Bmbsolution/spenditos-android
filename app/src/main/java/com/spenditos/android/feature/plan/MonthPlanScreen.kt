@@ -253,7 +253,7 @@ private fun MonthPlanContent(
                     modifier = Modifier.testTag("monthPlan.confirmApply"),
                 ) { Text(stringResource(R.string.plan_apply)) }
             },
-            dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelApply")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelApply")) { Text(stringResource(R.string.common_cancel)) } },
         )
         ConfirmAction.DISCARD -> AlertDialog(
             onDismissRequest = { confirmAction = null },
@@ -265,7 +265,7 @@ private fun MonthPlanContent(
                     modifier = Modifier.testTag("monthPlan.confirmDiscard"),
                 ) { Text(stringResource(R.string.common_discard)) }
             },
-            dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelDiscard")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmAction = null }, modifier = Modifier.testTag("monthPlan.cancelDiscard")) { Text(stringResource(R.string.common_cancel)) } },
         )
         null -> Unit
     }
@@ -281,7 +281,7 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
                     .clickable(enabled = state.canGoToPreviousMonth && !state.isLoading && !state.isApplying) { viewModel.moveMonth(-1) }
                     .testTag("monthPlan.previousMonth"),
                 contentAlignment = Alignment.Center,
-            ) { Icon(SfSymbols.icon("chevron.left"), contentDescription = "Previous month", tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
+            ) { Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.reports_previous_month), tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -306,7 +306,7 @@ private fun MonthPicker(state: MonthPlanUiState, viewModel: MonthPlanViewModel) 
                     .clickable(enabled = state.canGoToNextMonth && !state.isLoading && !state.isApplying) { viewModel.moveMonth(1) }
                     .testTag("monthPlan.nextMonth"),
                 contentAlignment = Alignment.Center,
-            ) { Icon(SfSymbols.icon("chevron.right"), contentDescription = "Next month", tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
+            ) { Icon(SfSymbols.icon("chevron.right"), contentDescription = stringResource(R.string.reports_next_month), tint = IosColors.textPrimary, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -401,7 +401,7 @@ private fun SummaryCard(summary: MonthPlanSummary, currency: String, hasDraft: B
             HorizontalDivider(color = IosColors.separator)
             SummaryLine(stringResource(R.string.common_income), "+${Money.format(summary.draftIncome.toDouble(), currency)}", finance.income)
             SummaryLine(stringResource(R.string.common_bills), "−${Money.format(summary.draftBills.toDouble(), currency)}", finance.expense)
-            SummaryLine("One-time", "−${Money.format(summary.draftOneTime.toDouble(), currency)}", finance.expense)
+            SummaryLine(stringResource(R.string.plan_one_time), "−${Money.format(summary.draftOneTime.toDouble(), currency)}", finance.expense)
             Text(stringResource(R.string.plan_your_records_change_only_when), style = IosText.caption2, color = IosColors.textSecondary)
         }
     }
@@ -418,7 +418,8 @@ private fun SummaryLine(label: String, value: String, color: androidx.compose.ui
 @Composable
 private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel, onConfirm: (ConfirmAction) -> Unit) {
     val finance = LocalFinanceColors.current
-    val applyFailed = state.applyMessage?.contains("Try again") == true
+    val failureMessages = setOf(Strings.get(R.string.plan_couldn_t_finish_the_plan), Strings.get(R.string.plan_couldn_t_discard_the_draft))
+    val applyFailed = state.applyMessage in failureMessages
     PlanTintCard(Modifier.fillMaxWidth().testTag("monthPlan.draftActions"), IosColors.spendOrange.copy(alpha = 0.10f)) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             if (state.draftChangeCount > 0) {
@@ -460,7 +461,7 @@ private fun DraftActions(state: MonthPlanUiState, viewModel: MonthPlanViewModel,
                     }
                 }
             }
-            state.applyMessage?.let { Text(it, color = if (it.startsWith("Couldn't")) finance.expense else IosColors.textSecondary, style = IosText.caption) }
+            state.applyMessage?.let { Text(it, color = if (it in failureMessages) finance.expense else IosColors.textSecondary, style = IosText.caption) }
             state.draftMessage?.let { Text(it, color = IosColors.textSecondary, style = IosText.caption) }
             if (state.isSavingDraft) Text(stringResource(R.string.plan_saving_draft), style = IosText.caption, color = IosColors.textSecondary)
         }
@@ -713,7 +714,7 @@ private fun OneTimeSection(state: MonthPlanUiState, viewModel: MonthPlanViewMode
     val finance = LocalFinanceColors.current
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().testTag("monthPlan.oneTime")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PlanSectionTitle("One-time")
+            PlanSectionTitle(stringResource(R.string.plan_one_time))
             Spacer(Modifier.weight(1f))
             if (!state.isPast) {
                 Row(

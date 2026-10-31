@@ -186,7 +186,7 @@ fun ReportsHubScreen(
 private fun ReportsHeroCard() {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("REPORTING", style = IosText.subheadline, color = IosColors.textSecondary)
+            Text(stringResource(R.string.reports_reporting).uppercase(), style = IosText.subheadline, color = IosColors.textSecondary)
             Text(
                 stringResource(R.string.reports_insights_and_planning_tools_for),
                 style = IosText.title3.w(FontWeight.SemiBold),
@@ -407,7 +407,7 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                             Text(Money.format(slice.amount.toDouble(), currency), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
                             val percent = slice.amount.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).toInt()
                             Text(
-                                "$percent%",
+                                "$percent${com.spenditos.android.core.i18n.AppLanguage.percentSuffix()}",
                                 modifier = Modifier.widthIn(min = 36.dp),
                                 style = IosText.subheadline,
                                 color = IosColors.textSecondary,

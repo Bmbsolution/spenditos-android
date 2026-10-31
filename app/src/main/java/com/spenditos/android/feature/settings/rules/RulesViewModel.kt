@@ -143,7 +143,7 @@ class RulesViewModel @Inject constructor(
         /** "→ Dining", "→ Unknown category" or "Skip — not spending". */
         fun actionText(rule: MerchantMapping, categories: List<Category>): String = when (rule.ruleAction) {
             RuleAction.SKIP -> Strings.get(R.string.settings_skip_not_spending)
-            RuleAction.CATEGORIZE -> "→ ${categories.firstOrNull { it.id == rule.categoryId }?.name ?: "Unknown category"}"
+            RuleAction.CATEGORIZE -> "→ ${categories.firstOrNull { it.id == rule.categoryId }?.name ?: Strings.get(R.string.settings_unknown_category)}"
         }
     }
 }

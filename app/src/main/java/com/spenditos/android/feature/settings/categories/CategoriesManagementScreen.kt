@@ -121,7 +121,7 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                     GlassCard(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.s)) {
                         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             Text(message, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("categories.error"))
-                            TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("categories.retry")) { Text("Try again") }
+                            TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("categories.retry")) { Text(stringResource(R.string.common_try_again)) }
                         }
                     }
                 }
@@ -217,9 +217,9 @@ fun CategoriesManagementScreen(onBack: () -> Unit, viewModel: CategoriesManageme
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.deleteCategory(category.id) }, enabled = !state.isSaving, modifier = Modifier.testTag("categories.confirmDelete")) { Text("Delete") }
+                TextButton(onClick = { viewModel.deleteCategory(category.id) }, enabled = !state.isSaving, modifier = Modifier.testTag("categories.confirmDelete")) { Text(stringResource(R.string.common_delete)) }
             },
-            dismissButton = { TextButton(onClick = { categoryToDelete = null }, modifier = Modifier.testTag("categories.cancelDelete")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { categoryToDelete = null }, modifier = Modifier.testTag("categories.cancelDelete")) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
@@ -301,7 +301,7 @@ private fun ReassignCategoryDialog(
             ) { Text(selected?.let { stringResource(R.string.settings_move_to_and_delete, it.name) } ?: stringResource(R.string.settings_choose_a_category)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isSaving, modifier = Modifier.testTag("categories.reassign.cancel")) { Text("Cancel") }
+            TextButton(onClick = onDismiss, enabled = !isSaving, modifier = Modifier.testTag("categories.reassign.cancel")) { Text(stringResource(R.string.common_cancel)) }
         },
     )
 }
@@ -310,11 +310,11 @@ private fun ReassignCategoryDialog(
 private fun CategoriesHeader(onBack: () -> Unit, onAdd: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
         Text(stringResource(R.string.common_categories), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.CenterEnd).size(44.dp).testTag("categories.add")) {
-            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add category", tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
+            Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = stringResource(R.string.settings_add_category), tint = IosColors.spendOrange, modifier = Modifier.size(22.dp))
         }
     }
 }
@@ -347,7 +347,7 @@ private fun CategorySearchBar(value: String, onValueChange: (String) -> Unit) {
         )
         if (value.isNotEmpty()) {
             TextButton(onClick = { onValueChange("") }, modifier = Modifier.size(28.dp).testTag("categories.search.clear")) {
-                Icon(SfSymbols.icon("xmark.circle.fill"), contentDescription = "Clear category search", tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
+                Icon(SfSymbols.icon("xmark.circle.fill"), contentDescription = stringResource(R.string.settings_clear_category_search), tint = IosColors.textSecondary, modifier = Modifier.size(20.dp))
             }
         }
     }

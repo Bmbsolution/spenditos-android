@@ -82,7 +82,158 @@ private val categoryColors = listOf(
 
 private val categoryIcons = listOf("🍽️", "🛒", "🏠", "🚗", "🎁", "💼", "💰", "❤️", "📚", "✈️", "🐾", "🏷️")
 
-private data class IconLibraryItem(val value: String, val name: String, val group: String, val keywords: String = "")
+private data class IconLibraryItem(val value: String, val name: String, val group: String, val keywords: String = "") {
+    /** [name] is the stable English id; this is the name shown, spoken and searched in the app language. */
+    val label: String
+        get() = iconNameRes[name]?.let { Strings.get(it) }
+            ?: if (name.startsWith("Other ")) Strings.get(R.string.settings_other_group_icon, iconGroupName(group)) else name
+}
+
+private val iconNameRes: Map<String, Int> = mapOf(
+    "Tag" to R.string.icon_tag,
+    "Money" to R.string.icon_money,
+    "Card" to R.string.icon_card,
+    "Bank" to R.string.icon_bank,
+    "Cash" to R.string.icon_cash,
+    "Coins" to R.string.icon_coins,
+    "Planning" to R.string.icon_planning,
+    "Growth" to R.string.icon_growth,
+    "Downturn" to R.string.icon_downturn,
+    "Receipt" to R.string.icon_receipt,
+    "Gift" to R.string.icon_gift,
+    "Work" to R.string.icon_work,
+    "Developer" to R.string.icon_developer,
+    "Computer" to R.string.icon_computer,
+    "Desktop" to R.string.icon_desktop,
+    "Code" to R.string.icon_code,
+    "Network" to R.string.icon_network,
+    "Files" to R.string.icon_files,
+    "Burger" to R.string.icon_burger,
+    "Pizza" to R.string.icon_pizza,
+    "Sushi" to R.string.icon_sushi,
+    "Noodles" to R.string.icon_noodles,
+    "Meal" to R.string.icon_meal,
+    "Salad" to R.string.icon_salad,
+    "Fruit" to R.string.icon_fruit,
+    "Produce" to R.string.icon_produce,
+    "Groceries" to R.string.icon_groceries,
+    "Coffee" to R.string.icon_coffee,
+    "Snack" to R.string.icon_snack,
+    "Dessert" to R.string.icon_dessert,
+    "Home" to R.string.icon_home,
+    "Building" to R.string.icon_building,
+    "Key" to R.string.icon_key,
+    "Utilities" to R.string.icon_utilities,
+    "Furniture" to R.string.icon_furniture,
+    "Bedroom" to R.string.icon_bedroom,
+    "Cleaning" to R.string.icon_cleaning,
+    "Plants" to R.string.icon_plants,
+    "Car" to R.string.icon_car,
+    "Fuel" to R.string.icon_fuel,
+    "Bus" to R.string.icon_bus,
+    "Train" to R.string.icon_train,
+    "Taxi" to R.string.icon_taxi,
+    "Bike" to R.string.icon_bike,
+    "Flight" to R.string.icon_flight,
+    "Travel" to R.string.icon_travel,
+    "Shopping" to R.string.icon_shopping,
+    "Clothing" to R.string.icon_clothing,
+    "Shoes" to R.string.icon_shoes,
+    "Beauty" to R.string.icon_beauty,
+    "Jewelry" to R.string.icon_jewelry,
+    "Delivery" to R.string.icon_delivery,
+    "Phone" to R.string.icon_phone,
+    "Health" to R.string.icon_health,
+    "Medicine" to R.string.icon_medicine,
+    "Hospital" to R.string.icon_hospital,
+    "Doctor" to R.string.icon_doctor,
+    "Fitness" to R.string.icon_fitness,
+    "Wellness" to R.string.icon_wellness,
+    "Mental Health" to R.string.icon_mental_health,
+    "Games" to R.string.icon_games,
+    "Movies" to R.string.icon_movies,
+    "Music" to R.string.icon_music,
+    "Audio" to R.string.icon_audio,
+    "Art" to R.string.icon_art,
+    "Tickets" to R.string.icon_tickets,
+    "Books" to R.string.icon_books,
+    "Family" to R.string.icon_family,
+    "Childcare" to R.string.icon_childcare,
+    "School" to R.string.icon_school,
+    "Pets" to R.string.icon_pets,
+    "Dog" to R.string.icon_dog,
+    "Cat" to R.string.icon_cat,
+    "Nature" to R.string.icon_nature,
+    "Flowers" to R.string.icon_flowers,
+    "Water" to R.string.icon_water,
+    "Favorite" to R.string.icon_favorite,
+    "Sparkles" to R.string.icon_sparkles,
+    "Streak" to R.string.icon_streak,
+    "Energy" to R.string.icon_energy,
+    "Insurance" to R.string.icon_insurance,
+    "Security" to R.string.icon_security,
+    "ATM" to R.string.icon_atm,
+    "Luxury" to R.string.icon_luxury,
+    "Internet" to R.string.icon_internet,
+    "Wi-Fi" to R.string.icon_wi_fi,
+    "Printer" to R.string.icon_printer,
+    "Tools" to R.string.icon_tools,
+    "Basket" to R.string.icon_basket,
+    "Bubble Tea" to R.string.icon_bubble_tea,
+    "Drinks" to R.string.icon_drinks,
+    "Takeaway Drink" to R.string.icon_takeaway_drink,
+    "Electricity" to R.string.icon_electricity,
+    "Shower" to R.string.icon_shower,
+    "Household" to R.string.icon_household,
+    "Bath" to R.string.icon_bath,
+    "Repairs" to R.string.icon_repairs,
+    "Television" to R.string.icon_television,
+    "Toys" to R.string.icon_toys,
+    "Car Maintenance" to R.string.icon_car_maintenance,
+    "Subway" to R.string.icon_subway,
+    "Scooter" to R.string.icon_scooter,
+    "Boat" to R.string.icon_boat,
+    "Parking" to R.string.icon_parking,
+    "Camping" to R.string.icon_camping,
+    "Fashion" to R.string.icon_fashion,
+    "Bags" to R.string.icon_bags,
+    "Electronics" to R.string.icon_electronics,
+    "Home Goods" to R.string.icon_home_goods,
+    "First Aid" to R.string.icon_first_aid,
+    "Dental" to R.string.icon_dental,
+    "Vision" to R.string.icon_vision,
+    "Running" to R.string.icon_running,
+    "Strength" to R.string.icon_strength,
+    "Emergency" to R.string.icon_emergency,
+    "Personal Care" to R.string.icon_personal_care,
+    "Concert" to R.string.icon_concert,
+    "Theatre" to R.string.icon_theatre,
+    "Board Games" to R.string.icon_board_games,
+    "Hobbies" to R.string.icon_hobbies,
+    "Bowling" to R.string.icon_bowling,
+    "Photography" to R.string.icon_photography,
+    "People" to R.string.icon_people,
+    "Community" to R.string.icon_community,
+    "Education" to R.string.icon_education,
+    "Supplies" to R.string.icon_supplies,
+    "Communication" to R.string.icon_communication,
+    "Baby" to R.string.icon_baby,
+    "Friends" to R.string.icon_friends,
+    "Giving" to R.string.icon_giving,
+    "Bird" to R.string.icon_bird,
+    "Fish" to R.string.icon_fish,
+    "Outdoors" to R.string.icon_outdoors,
+    "Beach" to R.string.icon_beach,
+    "Hiking" to R.string.icon_hiking,
+    "Sun" to R.string.icon_sun,
+    "Garden" to R.string.icon_garden,
+    "Star" to R.string.icon_star,
+    "Celebration" to R.string.icon_celebration,
+    "Party" to R.string.icon_party,
+    "Protection" to R.string.icon_protection,
+    "Covered" to R.string.icon_covered,
+    "Other" to R.string.icon_other,
+)
 
 private fun legacyIcons(group: String, values: List<String>) =
     values.map { IconLibraryItem(it, "Other $group icon", group, group) }
@@ -196,7 +347,7 @@ fun AddEditCategorySheet(
     val quickIcons = remember(name, icon) {
         val tokens = name.lowercase().split(Regex("\\s+")).filter { it.length > 1 }
         val matched = iconLibrary.filter { item ->
-            tokens.any { token -> item.name.contains(token, ignoreCase = true) || item.keywords.contains(token, ignoreCase = true) }
+            tokens.any { token -> item.label.contains(token, ignoreCase = true) || item.name.contains(token, ignoreCase = true) || item.keywords.contains(token, ignoreCase = true) }
         }.map { it.value }
         (listOfNotNull(icon) + matched + categoryIcons).distinct().take(10)
     }
@@ -215,7 +366,7 @@ fun AddEditCategorySheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onDismiss, modifier = Modifier.testTag("categories.editor.cancel")) { Text("Cancel", style = IosText.body, color = IosColors.textSecondary) }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("categories.editor.cancel")) { Text(stringResource(R.string.common_cancel), style = IosText.body, color = IosColors.textSecondary) }
                 Text(
                     if (category == null) stringResource(R.string.settings_new_category) else stringResource(R.string.settings_edit_category),
                     style = IosText.headline,
@@ -373,7 +524,7 @@ private fun SavingPill(text: String, modifier: Modifier = Modifier) {
 /** Human name for an icon option, used as its accessibility description. */
 internal fun iconOptionDescription(value: String): String =
     if (value == "None") Strings.get(R.string.settings_no_icon)
-    else iconLibrary.firstOrNull { it.value == value }?.name ?: value
+    else iconLibrary.firstOrNull { it.value == value }?.label ?: value
 
 /** Spoken label for a color swatch option. */
 internal fun colorOptionDescription(hex: String): String = Strings.get(R.string.settings_color_2, hex.removePrefix("#"))
@@ -417,7 +568,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
                 contentAlignment = Alignment.Center,
             ) {
                 if (value == "None") Text(stringResource(R.string.settings_none), style = IosText.caption2, color = IosColors.textSecondary)
-                else CategoryIcon(value, iconLibrary.firstOrNull { it.value == value }?.name, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                else CategoryIcon(value, iconLibrary.firstOrNull { it.value == value }?.label, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
             }
             if (selected) {
                 Box(Modifier.align(Alignment.TopEnd).size(18.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer)) {
@@ -427,7 +578,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
         }
         if (showsLabel && value != "None") {
             Text(
-                iconLibrary.firstOrNull { it.value == value }?.name ?: stringResource(R.string.settings_current_icon),
+                iconLibrary.firstOrNull { it.value == value }?.label ?: stringResource(R.string.settings_current_icon),
                 style = IosText.caption2,
                 color = IosColors.textSecondary,
                 maxLines = 1,
@@ -447,11 +598,11 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
     val query = searchText.trim()
     val icons = iconLibrary.filter { item ->
         (selectedGroup == null || item.group == selectedGroup) &&
-            (query.isEmpty() || listOf(item.name, item.group, item.keywords).any { it.contains(query, ignoreCase = true) } || query.split(' ').all { token -> listOf(item.name, item.group, item.keywords).any { it.contains(token, ignoreCase = true) } })
+            (query.isEmpty() || listOf(item.label, item.name, item.group, iconGroupName(item.group), item.keywords).any { it.contains(query, ignoreCase = true) } || query.split(' ').all { token -> listOf(item.label, item.name, item.group, iconGroupName(item.group), item.keywords).any { it.contains(token, ignoreCase = true) } })
     }
     val suggested = remember(categoryName, selectedIcon) {
         (listOfNotNull(selectedIcon) + iconLibrary.filter { item ->
-            categoryName.isNotBlank() && (item.name.contains(categoryName, ignoreCase = true) || item.keywords.contains(categoryName, ignoreCase = true))
+            categoryName.isNotBlank() && (item.label.contains(categoryName, ignoreCase = true) || item.name.contains(categoryName, ignoreCase = true) || item.keywords.contains(categoryName, ignoreCase = true))
         }.map { it.value } + listOf("🏷️", "🍔", "🏠", "🚗", "🛍️", "❤️", "🎮", "📚", "🐾", "⭐", "💰", "☕")).distinct().take(12)
     }
 
@@ -562,6 +713,22 @@ private fun SheetSectionLabel(text: String) {
 }
 
 private fun categorySwatch(hex: String): Color = Color(runCatching { android.graphics.Color.parseColor(hex) }.getOrDefault(android.graphics.Color.GRAY))
+
+/** [iconGroupLabel] for code that is not Compose. */
+private fun iconGroupName(group: String): String = when (group) {
+    "All" -> Strings.get(R.string.common_all)
+    "Money" -> Strings.get(R.string.settings_money)
+    "Work & Tech" -> Strings.get(R.string.settings_work_tech)
+    "Food & Drink" -> Strings.get(R.string.settings_food_drink)
+    "Home & Life" -> Strings.get(R.string.settings_home_life)
+    "Transport" -> Strings.get(R.string.settings_transport)
+    "Shopping" -> Strings.get(R.string.settings_shopping)
+    "Health & Care" -> Strings.get(R.string.settings_health_care)
+    "Entertainment" -> Strings.get(R.string.settings_entertainment)
+    "People & Learning" -> Strings.get(R.string.settings_people_learning)
+    "Nature & Pets" -> Strings.get(R.string.settings_nature_pets)
+    else -> Strings.get(R.string.settings_symbols)
+}
 
 /** Localized name of an icon group; the English [group] id is what the icon library is keyed by. */
 @androidx.compose.runtime.Composable

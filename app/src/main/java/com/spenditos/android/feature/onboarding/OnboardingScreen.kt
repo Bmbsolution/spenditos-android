@@ -449,7 +449,7 @@ private fun CurrencyChoiceCard(option: CurrencyOption, selected: Boolean, onClic
         }
         if (selected) {
             Box(Modifier.matchParentSize(), contentAlignment = Alignment.TopEnd) {
-                Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = "Selected", tint = Color.White, modifier = Modifier.padding(8.dp).size(20.dp))
+                Icon(SfSymbols.icon("checkmark.circle.fill"), contentDescription = stringResource(R.string.settings_selected), tint = Color.White, modifier = Modifier.padding(8.dp).size(20.dp))
             }
         }
     }

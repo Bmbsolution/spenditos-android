@@ -226,7 +226,7 @@ fun DownloadDataScreen(
             onDismissRequest = { fullCopyViewModel.dismissError(); viewModel.dismissError() },
             title = { Text(stringResource(R.string.export_download_failed)) },
             text = { Text(message, modifier = Modifier.testTag("download.error")) },
-            confirmButton = { TextButton(onClick = { fullCopyViewModel.dismissError(); viewModel.dismissError() }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { fullCopyViewModel.dismissError(); viewModel.dismissError() }) { Text(stringResource(R.string.common_ok)) } },
         )
     }
 
@@ -242,7 +242,7 @@ fun DownloadDataScreen(
                         if (target == DateTarget.START) viewModel.setStart(date) else viewModel.setEnd(date)
                     }
                     picking = null
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
             dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
@@ -253,7 +253,7 @@ fun DownloadDataScreen(
 private fun DownloadHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("export.back")) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(stringResource(R.string.common_download_my_data), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

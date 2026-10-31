@@ -683,7 +683,7 @@ internal fun CaptureReviewFooter(
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("$count ${if (count == 1) "transaction" else "transactions"}", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(Strings.plural(R.plurals.count_transaction, count), style = IosText.subheadline, color = IosColors.textSecondary)
                 Text(
                     formatCurrency(kotlin.math.abs(net), currency),
                     style = IosText.rounded(20, FontWeight.SemiBold),

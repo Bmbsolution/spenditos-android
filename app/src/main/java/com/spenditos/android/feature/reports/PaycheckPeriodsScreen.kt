@@ -152,7 +152,7 @@ private fun PaycheckSummaryCard(summary: PaycheckPeriodsSummary, currency: Strin
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.reports_avg_coverage), style = IosText.subheadline, color = IosColors.neutral)
                     Text(
-                        "${summary.averageCoverage?.setScale(0, RoundingMode.HALF_UP) ?: BigDecimal.ZERO}%",
+                        "${summary.averageCoverage?.setScale(0, RoundingMode.HALF_UP) ?: BigDecimal.ZERO}${com.spenditos.android.core.i18n.AppLanguage.percentSuffix()}",
                         style = IosText.rounded(17, FontWeight.Medium),
                         color = IosColors.textPrimary,
                     )
