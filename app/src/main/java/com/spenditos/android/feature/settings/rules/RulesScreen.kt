@@ -128,7 +128,7 @@ private fun RulesListPage(state: RulesUiState, viewModel: RulesViewModel, onBack
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             RulesTopBar(title = stringResource(R.string.settings_rules), onBack = onBack, backTag = "rules.back") {
                 IconButton(onClick = { showAdd = true }, modifier = Modifier.size(44.dp).testTag("rules.add")) {
-                    Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = "Add rule", tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
+                    Icon(SfSymbols.icon("plus.circle.fill"), contentDescription = stringResource(R.string.settings_add_rule), tint = IosColors.spendOrange, modifier = Modifier.size(26.dp))
                 }
             }
             Column(Modifier.fillMaxSize().padding(top = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
@@ -186,7 +186,7 @@ private fun RulesListPage(state: RulesUiState, viewModel: RulesViewModel, onBack
 private fun RulesTopBar(title: String, onBack: () -> Unit, backTag: String, trailing: @Composable () -> Unit = {}) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag(backTag)) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(title, style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         Box(Modifier.align(Alignment.CenterEnd)) { trailing() }

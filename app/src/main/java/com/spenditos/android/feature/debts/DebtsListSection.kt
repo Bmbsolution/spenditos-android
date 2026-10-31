@@ -51,7 +51,7 @@ internal fun LazyListScope.debtsSection(
         ) {
             Text(
                 Strings.get(R.string.debts_debts),
-                Modifier.weight(1f).testTag("debts.section").semantics { contentDescription = "Debts" },
+                Modifier.weight(1f).testTag("debts.section").semantics { contentDescription = Strings.get(R.string.debts_debts) },
                 style = IosText.headline,
                 color = IosColors.textSecondary,
             )

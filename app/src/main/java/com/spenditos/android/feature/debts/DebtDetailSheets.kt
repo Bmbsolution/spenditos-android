@@ -213,7 +213,7 @@ private fun DebtDateField(epochDay: Long, onChange: (Long) -> Unit, tag: String)
                         onChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay())
                     }
                     showPicker = false
-                }) { Text("OK", color = IosColors.spendOrange) }
+                }) { Text(stringResource(R.string.common_ok), color = IosColors.spendOrange) }
             },
             dismissButton = { TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) {

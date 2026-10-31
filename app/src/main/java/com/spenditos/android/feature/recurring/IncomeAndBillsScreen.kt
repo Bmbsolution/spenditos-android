@@ -193,7 +193,7 @@ fun IncomeAndBillsScreen(
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             CircularProgressIndicator(Modifier.size(30.dp).testTag("recurring.loading"), color = MaterialTheme.colorScheme.primary)
-                            TextButton(onClick = { templateToEditId = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text("Add") }
+                            TextButton(onClick = { templateToEditId = null; showEditor = true }, modifier = Modifier.testTag("recurring.add")) { Text(stringResource(R.string.common_add_button)) }
                         }
                     }
                 }
@@ -216,7 +216,7 @@ fun IncomeAndBillsScreen(
                         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                             Text(error, color = MaterialTheme.colorScheme.error)
                             if (state.isOffline) Text(if (state.templates.isEmpty()) stringResource(R.string.recurring_no_saved_list_yet) else stringResource(R.string.recurring_showing_saved_data), modifier = Modifier.testTag("recurring.offline"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("recurring.retry")) { Text("Try again") }
+                            TextButton(onClick = viewModel::refresh, modifier = Modifier.testTag("recurring.retry")) { Text(stringResource(R.string.common_try_again)) }
                         }
                     }
                 }
@@ -267,8 +267,8 @@ fun IncomeAndBillsScreen(
 
                 item("bills.header") {
                     Row(Modifier.fillMaxWidth().padding(end = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
-                        RecurringSectionHeader("Bills", Modifier.weight(1f).testTag("recurring.section.bills"))
-                        TextButton(onClick = { addPresetIncome = false; templateToEditId = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text("Add") }
+                        RecurringSectionHeader(stringResource(R.string.common_bills), Modifier.weight(1f).testTag("recurring.section.bills"))
+                        TextButton(onClick = { addPresetIncome = false; templateToEditId = null; showEditor = true }, modifier = Modifier.padding(end = Spacing.screen).testTag("recurring.add")) { Text(stringResource(R.string.common_add_button)) }
                     }
                 }
                 if (!state.isLoading && state.billTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
@@ -280,7 +280,7 @@ fun IncomeAndBillsScreen(
 
                 debtsSection(debts, onOpen = onOpenDebt, onAdd = { showAddDebt = true }, onRetry = debtsViewModel::retry)
 
-                item("income.header") { RecurringSectionHeader("Income", Modifier.testTag("recurring.section.income")) }
+                item("income.header") { RecurringSectionHeader(stringResource(R.string.common_income), Modifier.testTag("recurring.section.income")) }
                 if (!state.isLoading && state.incomeTemplates.isEmpty() && (state.templates.isNotEmpty() || debts.hasDebts)) {
                     item("income.empty") { SectionEmptyMessage(stringResource(R.string.recurring_no_income_yet), Modifier.testTag("recurring.income.empty")) }
                 }
@@ -322,7 +322,7 @@ fun IncomeAndBillsScreen(
                             .testTag("recurring.fab"),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(SfSymbols.icon("plus"), contentDescription = "Add income, bill or debt", tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
+                        Icon(SfSymbols.icon("plus"), contentDescription = stringResource(R.string.recurring_add_income_bill_or_debt), tint = IosColors.textPrimary, modifier = Modifier.size(24.dp))
                     }
                     DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }, offset = DpOffset(0.dp, (-8).dp)) {
                         DropdownMenuItem(
@@ -383,9 +383,9 @@ fun IncomeAndBillsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.delete(template.id) }, enabled = !state.isWriting, modifier = Modifier.testTag("recurring.delete.confirm")) { Text("Delete") }
+                TextButton(onClick = { viewModel.delete(template.id) }, enabled = !state.isWriting, modifier = Modifier.testTag("recurring.delete.confirm")) { Text(stringResource(R.string.common_delete)) }
             },
-            dismissButton = { TextButton(onClick = { templateToDeleteId = null }, modifier = Modifier.testTag("recurring.delete.cancel")) { Text("Cancel") }
+            dismissButton = { TextButton(onClick = { templateToDeleteId = null }, modifier = Modifier.testTag("recurring.delete.cancel")) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -498,7 +498,7 @@ private fun EndBillDialog(template: RecurringTemplate, onEnd: (oneMore: Boolean)
                         Text(stringResource(R.string.recurring_yes_one_more_on, BillText.monthDay(next, locale)))
                     }
                 }
-                TextButton(onClick = onDismiss, modifier = Modifier.testTag("recurring.end.cancel")) { Text("Cancel") }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("recurring.end.cancel")) { Text(stringResource(R.string.common_cancel)) }
             }
         },
     )
@@ -734,14 +734,7 @@ private fun IncomeBillRow(
     }
 }
 
-private fun frequencyText(template: RecurringTemplate): String {
-    return when (template.frequency) {
-        "bi-weekly" -> "Bi-weekly"
-        "semi-monthly" -> "Semi-monthly"
-        "semi-annually" -> "Semi-annually"
-        else -> template.frequency.replaceFirstChar(Char::uppercase)
-    }
-}
+private fun frequencyText(template: RecurringTemplate): String = frequencyLabel(template.frequency)
 
 private fun RecurringDraft.toCreateRequest() = CreateRecurringTemplateRequest(
     categoryId = requireNotNull(categoryId),

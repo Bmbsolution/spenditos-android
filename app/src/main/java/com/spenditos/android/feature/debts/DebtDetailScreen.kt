@@ -153,7 +153,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 ) { Text(stringResource(R.string.debts_delete_this_debt_2), color = IosColors.expense) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }, modifier = Modifier.testTag("debt.delete.cancel")) { Text("Keep it") }
+                TextButton(onClick = { showDeleteConfirmation = false }, modifier = Modifier.testTag("debt.delete.cancel")) { Text(stringResource(R.string.debts_keep_it)) }
             },
         )
     }
@@ -164,7 +164,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 private fun DebtTopBar(title: String, onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("debt.back")) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(
             title,

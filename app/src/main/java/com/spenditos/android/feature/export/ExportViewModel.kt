@@ -1,5 +1,6 @@
 package com.spenditos.android.feature.export
 
+import com.spenditos.android.core.network.unknownServerMessage
 import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
@@ -125,7 +126,7 @@ class ExportViewModel @Inject constructor(
         is ApiError.Unauthorized -> Strings.get(R.string.export_your_session_expired_sign_in)
         is SessionChangedException -> Strings.get(R.string.export_the_signed_in_account_changed)
         is ApiError.Server -> when {
-            error.status == 400 && error.serverMessage.isNotBlank() && error.serverMessage != "Unknown error" -> error.serverMessage
+            error.status == 400 && error.serverMessage.isNotBlank() && error.serverMessage != unknownServerMessage() -> error.serverMessage
             error.status >= 500 -> Strings.get(R.string.export_downloads_are_temporarily_unavailable_try)
             else -> Strings.get(R.string.export_couldn_t_download_your_transactions)
         }

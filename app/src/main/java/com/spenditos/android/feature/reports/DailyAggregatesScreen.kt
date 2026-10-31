@@ -160,7 +160,7 @@ private fun DailySummaryCard(state: DailyAggregatesUiState, locale: Locale) {
                 SummaryValue(stringResource(R.string.common_expenses), Money.format(summary.totalExpenses.toDouble(), state.currency), finance.expense, Modifier.weight(1f))
             }
             Row(Modifier.testTag("reports.daily.summary.highLow")) {
-                SummaryValue("Avg/Day", Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), IosColors.spendOrange, Modifier.weight(1f))
+                SummaryValue(stringResource(R.string.reports_avg_per_day), Money.format((summary.averageDailyExpense ?: BigDecimal.ZERO).toDouble(), state.currency), IosColors.spendOrange, Modifier.weight(1f))
                 SummaryValue(
                     stringResource(R.string.reports_highest_day),
                     summary.highestSpendingDay?.format(LocalizedDate.formatter("MMM d", locale)) ?: "—",

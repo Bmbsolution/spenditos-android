@@ -172,7 +172,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                         )
                     }
                 }
-                item { SectionHeader("Personal", Modifier.padding(top = Spacing.s)) }
+                item { SectionHeader(stringResource(R.string.settings_personal), Modifier.padding(top = Spacing.s)) }
                 item {
                     GroupedCard {
                         IosRow(
@@ -211,7 +211,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                         )
                     }
                 }
-                item { SectionHeader("Security") }
+                item { SectionHeader(stringResource(R.string.settings_security)) }
                 item {
                     GroupedCard {
                         IosRow(
@@ -224,7 +224,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                         )
                     }
                 }
-                item { SectionHeader("Account") }
+                item { SectionHeader(stringResource(R.string.settings_account)) }
                 item {
                     GroupedCard {
                         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -232,7 +232,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                                 Text(stringResource(R.string.settings_profile_saved), style = IosText.footnote, color = finance.income, modifier = Modifier.testTag("profile.success"))
                             }
                             if (state.error != null) {
-                                TextButton(onClick = viewModel::load, modifier = Modifier.testTag("profile.retry")) { Text("Try again") }
+                                TextButton(onClick = viewModel::load, modifier = Modifier.testTag("profile.retry")) { Text(stringResource(R.string.common_try_again)) }
                             }
                             Box(Modifier.fillMaxWidth()) {
                                 PillButton(
@@ -307,7 +307,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
             onDismissRequest = viewModel::dismissDeleteError,
             title = { Text(stringResource(R.string.settings_delete_account)) },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = viewModel::dismissDeleteError) { Text("OK") } },
+            confirmButton = { TextButton(onClick = viewModel::dismissDeleteError) { Text(stringResource(R.string.common_ok)) } },
         )
     }
 
@@ -348,14 +348,14 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                 }
                 LazyColumn(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
                     if (query.isEmpty()) {
-                        item { SectionHeader("Popular", Modifier.padding(start = 0.dp, top = Spacing.s)) }
+                        item { SectionHeader(stringResource(R.string.common_popular), Modifier.padding(start = 0.dp, top = Spacing.s)) }
                         items(popularCurrencyCodes.mapNotNull { code -> currencyOptions.firstOrNull { it.code == code } }) { option ->
                             currencyRow(option, state.currency) {
                                 viewModel.onCurrencyChange(option.code)
                                 showCurrencyPicker = false
                             }
                         }
-                        item { SectionHeader("All Currencies", Modifier.padding(start = 0.dp, top = Spacing.s)) }
+                        item { SectionHeader(stringResource(R.string.onboarding_all_currencies), Modifier.padding(start = 0.dp, top = Spacing.s)) }
                         items(currencyOptions.filterNot { it.code in popularCurrencyCodes }) { option ->
                             currencyRow(option, state.currency) {
                                 viewModel.onCurrencyChange(option.code)
@@ -396,7 +396,7 @@ private fun currencyRow(option: CurrencyOption, selectedCode: String, onClick: (
 private fun ProfileHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(stringResource(R.string.settings_profile), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

@@ -270,9 +270,9 @@ fun AddOneTimeEntrySheet(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { date = LocalDate.ofEpochDay(it / MILLIS_PER_DAY) }
                     showDatePicker = false
-                }, modifier = Modifier.testTag("monthPlan.oneTime.dateConfirm")) { Text("OK") }
+                }, modifier = Modifier.testTag("monthPlan.oneTime.dateConfirm")) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("monthPlan.oneTime.dateCancel")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("monthPlan.oneTime.dateCancel")) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
 }

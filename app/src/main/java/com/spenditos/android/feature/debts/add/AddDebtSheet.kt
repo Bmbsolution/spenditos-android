@@ -169,7 +169,7 @@ private fun AddDebtSheetContent(
             }
             NameSection(state, viewModel, onNext = { focusManager.moveFocus(FocusDirection.Down) })
             DebtAmountField(
-                title = "I owe",
+                title = stringResource(R.string.debts_i_owe),
                 placeholder = "0",
                 value = state.owedText,
                 onValueChange = viewModel::onOwedChange,
@@ -218,7 +218,7 @@ private fun AddDebtSheetContent(
                         showDatePicker = false
                     },
                     modifier = Modifier.testTag("debts.add.date.confirm"),
-                ) { Text("OK", color = IosColors.spendOrange) }
+                ) { Text(stringResource(R.string.common_ok), color = IosColors.spendOrange) }
             },
             dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.common_cancel)) } },
         ) {
@@ -264,7 +264,7 @@ private fun NameSection(state: DebtFormUiState, viewModel: DebtFormViewModel, on
             BasicTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                modifier = Modifier.weight(1f).testTag("debts.add.name").semantics { contentDescription = "Name" },
+                modifier = Modifier.weight(1f).testTag("debts.add.name").semantics { contentDescription = Strings.get(R.string.common_name) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { onNext() }),
@@ -427,7 +427,7 @@ private fun InterestSection(state: DebtFormUiState, viewModel: DebtFormViewModel
                         cursorBrush = SolidColor(IosColors.spendOrange),
                         decorationBox = { inner ->
                             Box {
-                                if (state.aprText.isEmpty()) Text("e.g., 7.5", style = AMOUNT_STYLE, color = IosColors.textTertiary)
+                                if (state.aprText.isEmpty()) Text(stringResource(R.string.debts_apr_placeholder), style = AMOUNT_STYLE, color = IosColors.textTertiary)
                                 inner()
                             }
                         },
@@ -455,7 +455,7 @@ private fun PreviewCard(state: DebtFormUiState) {
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(IosColors.spendOrange.copy(alpha = 0.08f))
                     .padding(Spacing.m)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = "Plan: " + listOfNotNull(headline, detail).joinToString(". ")
+                        contentDescription = Strings.get(R.string.debts_plan_a11y, listOfNotNull(headline, detail).joinToString(". "))
                     }
                     .testTag("debts.add.preview"),
                 verticalArrangement = Arrangement.spacedBy(4.dp),

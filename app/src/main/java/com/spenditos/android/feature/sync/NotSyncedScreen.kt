@@ -60,7 +60,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             item {
                 Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.xs)) {
                     IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
-                        Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+                        Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
                     }
                     Text(stringResource(R.string.sync_offline_changes), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
                     TextButton(
@@ -72,7 +72,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             }
 
             if (pending.isNotEmpty()) {
-                item { SectionHeader("Waiting to sync") }
+                item { SectionHeader(stringResource(R.string.transactions_waiting_to_sync)) }
                 item {
                     GlassCard(Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
                         pending.forEachIndexed { index, item ->
@@ -97,7 +97,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             }
 
             if (failed.isNotEmpty()) {
-                item { SectionHeader("Needs attention") }
+                item { SectionHeader(stringResource(R.string.home_needs_attention_2)) }
                 item {
                     GlassCard(Modifier.padding(horizontal = Spacing.screen), shape = RoundedCornerShape(Radius.l)) {
                         failed.forEachIndexed { index, item ->
@@ -161,7 +161,7 @@ fun NotSyncedScreen(onBack: () -> Unit, viewModel: NotSyncedViewModel = hiltView
             text = { Text(message, style = IosText.body) },
             confirmButton = {
                 TextButton(onClick = viewModel::dismissNotice, modifier = Modifier.testTag("notSynced.notice.ok")) {
-                    Text("OK", color = IosColors.spendOrange)
+                    Text(stringResource(R.string.common_ok), color = IosColors.spendOrange)
                 }
             },
         )

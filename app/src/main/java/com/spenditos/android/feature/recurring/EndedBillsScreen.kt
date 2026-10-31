@@ -142,7 +142,7 @@ fun EndedBillsScreen(onBack: () -> Unit, viewModel: IncomeAndBillsViewModel = hi
                 Box {
                     LargeTitle(stringResource(R.string.common_ended))
                     IconButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp, start = Spacing.s).size(44.dp).testTag("ended.back")) {
-                        Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+                        Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
                     }
                 }
                 if (ended.isEmpty()) {
@@ -404,7 +404,7 @@ private fun EndedBillDetailSheet(
                     Text(stringResource(R.string.common_delete), color = IosColors.expense)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }, modifier = Modifier.testTag("ended.delete.cancel")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }, modifier = Modifier.testTag("ended.delete.cancel")) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -429,9 +429,3 @@ private fun DetailAction(
     }
 }
 
-private fun frequencyLabel(frequency: String): String = when (frequency) {
-    "bi-weekly" -> "Bi-Weekly"
-    "semi-monthly" -> "Semi-Monthly"
-    "semi-annually" -> "Semi-Annually"
-    else -> frequency.replaceFirstChar(Char::uppercase)
-}

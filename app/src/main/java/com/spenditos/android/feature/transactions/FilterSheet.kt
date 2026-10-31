@@ -706,7 +706,7 @@ private fun LocalDateDialog(initial: LocalDate, onDismiss: () -> Unit, onConfirm
             TextButton(onClick = {
                 val millis = pickerState.selectedDateMillis
                 if (millis != null) onConfirm(LocalDate.ofEpochDay(millis / MILLIS_PER_DAY)) else onDismiss()
-            }) { Text("OK") }
+            }) { Text(stringResource(R.string.common_ok)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     ) { DatePicker(state = pickerState) }

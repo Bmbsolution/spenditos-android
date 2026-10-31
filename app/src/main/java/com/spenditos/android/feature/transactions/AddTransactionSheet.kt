@@ -524,7 +524,7 @@ fun AddTransactionSheet(
                         viewModel.onNextDueChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
                     }
                     showNextDuePicker = false
-                }) { Text("OK", color = IosColors.spendOrange) }
+                }) { Text(stringResource(R.string.common_ok), color = IosColors.spendOrange) }
             },
             dismissButton = {
                 TextButton(onClick = { showNextDuePicker = false }) { Text(stringResource(R.string.common_cancel)) }
@@ -1086,7 +1086,7 @@ private fun CompactMoodPicker(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.transactions_how_did_it_feel), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
             Spacer(Modifier.weight(1f))
-            Text("OPTIONAL", style = IosText.caption2.w(FontWeight.Bold), color = IosColors.textTertiary)
+            Text(stringResource(R.string.common_optional).uppercase(), style = IosText.caption2.w(FontWeight.Bold), color = IosColors.textTertiary)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             TransactionMood.entries.forEach { option ->

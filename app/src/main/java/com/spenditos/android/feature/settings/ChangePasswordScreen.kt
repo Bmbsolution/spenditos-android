@@ -185,7 +185,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
             onDismissRequest = onBack,
             title = { Text(stringResource(R.string.settings_password_updated), style = IosText.headline) },
             text = { Text(stringResource(R.string.settings_your_password_has_been_changed), style = IosText.body, modifier = Modifier.testTag("changePassword.success")) },
-            confirmButton = { TextButton(onClick = onBack) { Text("OK", color = IosColors.spendOrange) } },
+            confirmButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.common_ok), color = IosColors.spendOrange) } },
         )
     }
 }
@@ -237,7 +237,7 @@ private fun PasswordField(value: String, onValueChange: (String) -> Unit, placeh
 private fun PasswordHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(stringResource(R.string.settings_change_password), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }

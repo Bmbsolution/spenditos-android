@@ -20,6 +20,9 @@ object AppLanguage {
         return Locale.getDefault()
     }
 
+    /** `"%"`, with the non-breaking space French typography puts before it (`42 %`). */
+    fun percentSuffix(locale: Locale = Locale.getDefault()): String = if (locale.language == "fr") "\u00A0%" else "%"
+
     /** `"fr"` for any French locale, `"en"` otherwise. */
     fun resolved(locale: Locale = Locale.getDefault()): String = if (locale.language == "fr") "fr" else "en"
 

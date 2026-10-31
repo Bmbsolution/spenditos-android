@@ -71,7 +71,7 @@ fun StreakChip(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(stringResource(R.string.progress_d, days), style = IosText.caption)
-            Text("streak", style = IosText.caption2)
+            Text(stringResource(R.string.progress_streak).lowercase(), style = IosText.caption2)
         }
     }
 }

@@ -26,12 +26,15 @@ class SpenditosApplication : Application(), Configuration.Provider {
         // A per-app language change arrives here (the process is not restarted): keep the default locale
         // that formatters read in step with it.
         java.util.Locale.setDefault(com.spenditos.android.core.i18n.AppLanguage.currentLocale(this))
+        // The notification channel name/description are stored by the system: re-register in the new language.
+        com.spenditos.android.data.push.PushNotificationChannel.register(this)
     }
 
     override fun onCreate() {
         super.onCreate()
         com.spenditos.android.core.i18n.Strings.install(this)
         java.util.Locale.setDefault(com.spenditos.android.core.i18n.AppLanguage.currentLocale(this))
+        com.spenditos.android.data.push.PushNotificationChannel.register(this)
         sessionLifecycle.start()
         // Foreground refresh (throttled) of server Premium: welcome expiry, admin grants.
         proAccess.start()
@@ -44,6 +47,7 @@ class SpenditosApplication : Application(), Configuration.Provider {
         // Leaving the foreground is when the cache is freshest: push it to the widget.
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
             override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                com.spenditos.android.data.push.PushNotificationChannel.register(this@SpenditosApplication)
                 // Mirror the app language (per-app locale may have changed) into the server settings.
                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { languageMirror.sync() }
             }

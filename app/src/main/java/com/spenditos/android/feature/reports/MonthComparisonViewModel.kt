@@ -139,14 +139,15 @@ class MonthComparisonViewModel @Inject constructor(
      * "better" colour), so the change is measured against the baseline's size.
      */
     fun percentageChange(current: BigDecimal, previous: BigDecimal): String {
+        val percent = com.spenditos.android.core.i18n.AppLanguage.percentSuffix()
         if (previous.signum() == 0) return when (current.signum()) {
-            1 -> "+100%"
-            -1 -> "-100%"
-            else -> "0%"
+            1 -> "+100$percent"
+            -1 -> "-100$percent"
+            else -> "0$percent"
         }
         val change = current.subtract(previous).multiply(BigDecimal.valueOf(100))
             .divide(previous.abs(), 0, RoundingMode.HALF_UP).toInt()
-        return if (change >= 0) "+${change}%" else "${change}%"
+        return if (change >= 0) "+$change$percent" else "$change$percent"
     }
 
     fun changeIsPositive(current: BigDecimal, previous: BigDecimal, isExpense: Boolean): Boolean =

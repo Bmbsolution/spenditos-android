@@ -192,7 +192,7 @@ fun TransactionListScreen(
             onDismissRequest = viewModel::dismissActionError,
             title = { Text(stringResource(R.string.transactions_couldn_t_delete)) },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = viewModel::dismissActionError) { Text("OK") } },
+            confirmButton = { TextButton(onClick = viewModel::dismissActionError) { Text(stringResource(R.string.common_ok)) } },
         )
     }
     val locale = LocalConfiguration.current.locales[0]
@@ -685,7 +685,7 @@ private fun TransactionSectionHeader(
         Text(title, style = IosText.headline, color = color)
         Spacer(Modifier.weight(1f))
         Text(
-            "$count ${if (count == 1) "transaction" else "transactions"}",
+            Strings.plural(R.plurals.count_transaction, count),
             style = IosText.caption,
             color = IosColors.textTertiary,
             modifier = Modifier
@@ -743,10 +743,10 @@ private fun TransactionDaysCard(
 @Composable
 private fun SyncBanner(state: TransactionListUiState, onOpenNotSynced: () -> Unit, modifier: Modifier = Modifier) {
     val (icon, message, tint) = when {
-        state.failedCount > 0 -> Triple(SfSymbols.icon("exclamationmark.circle"), "${state.failedCount} not synced. Tap to review.", IosColors.expense)
-        !state.isOnline && state.waitingCount > 0 -> Triple(SfSymbols.icon("icloud.slash"), "Offline. ${state.waitingCount} waiting to sync.", IosColors.spendOrange)
-        !state.isOnline -> Triple(SfSymbols.icon("icloud.slash"), "Offline. Showing what's saved on this device.", IosColors.spendOrange)
-        state.waitingCount > 0 -> Triple(SfSymbols.icon("clock"), "${state.waitingCount} waiting to sync.", IosColors.spendOrange)
+        state.failedCount > 0 -> Triple(SfSymbols.icon("exclamationmark.circle"), Strings.plural(R.plurals.transactions_n_not_synced_tap_to_review, state.failedCount), IosColors.expense)
+        !state.isOnline && state.waitingCount > 0 -> Triple(SfSymbols.icon("icloud.slash"), Strings.plural(R.plurals.transactions_offline_n_waiting_to_sync, state.waitingCount), IosColors.spendOrange)
+        !state.isOnline -> Triple(SfSymbols.icon("icloud.slash"), stringResource(R.string.transactions_offline_showing_saved), IosColors.spendOrange)
+        state.waitingCount > 0 -> Triple(SfSymbols.icon("clock"), Strings.plural(R.plurals.transactions_n_waiting_to_sync, state.waitingCount), IosColors.spendOrange)
         else -> Triple(SfSymbols.icon("icloud.slash"), state.loadError.orEmpty(), IosColors.expense)
     }
     GlassCard(
