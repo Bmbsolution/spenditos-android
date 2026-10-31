@@ -405,7 +405,7 @@ class CaptureViewModel @Inject constructor(
                 if (remaining.none { it.include }) {
                     _state.value = current.copy(step = CaptureStep.Done, items = emptyList(), savedCount = savedTotal, error = null, offline = false)
                     persist()
-                    _events.send(CaptureEvent.Saved(Strings.get(R.string.capture_saved_transactions, savedTotal)))
+                    _events.send(CaptureEvent.Saved(Strings.plural(R.plurals.capture_saved_transactions_n, savedTotal)))
                 } else {
                     _state.value = current.copy(step = CaptureStep.Review, items = remaining, savedCount = savedTotal, error = null, offline = false)
                     persist()

@@ -121,7 +121,7 @@ internal fun ProgressStreakSection(state: ProgressUiState, locale: java.util.Loc
                             style = IosText.title2.w(FontWeight.Bold),
                             color = streakColor(streak.currentStreak),
                         )
-                        Text(stringResource(R.string.progress_longest_days, streak.longestStreak), style = IosText.subheadline, color = IosColors.textSecondary)
+                        Text(Strings.plural(R.plurals.progress_longest_days_n, streak.longestStreak), style = IosText.subheadline, color = IosColors.textSecondary)
                     }
                     FreezeBadge(streak.streakFreezes, Modifier.align(Alignment.CenterVertically))
                 }

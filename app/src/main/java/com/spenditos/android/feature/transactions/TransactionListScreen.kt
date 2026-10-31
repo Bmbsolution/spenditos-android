@@ -159,7 +159,7 @@ fun TransactionListScreen(
         val selectedCount = selectedIds.size
         AlertDialog(
             onDismissRequest = { showBulkDeleteAlert = false },
-            title = { Text(stringResource(R.string.transactions_delete_transactions, selectedCount)) },
+            title = { Text(Strings.plural(R.plurals.transactions_delete_transactions_n, selectedCount)) },
             text = {
                 Text(
                     if (selectedCount == 1) {

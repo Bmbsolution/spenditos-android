@@ -1,6 +1,9 @@
 package com.spenditos.android.core.i18n
 
 import android.content.Context
+import android.content.res.Configuration
+import android.content.res.Resources
+import android.os.LocaleList
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import java.util.ServiceLoader
@@ -11,13 +14,31 @@ interface StringResolver {
     fun plural(@PluralsRes id: Int, quantity: Int, args: Array<out Any?>): String
 }
 
-/** Production resolver: the application context's resources follow the (per-app) locale. */
+/**
+ * Production resolver. The resources are rebuilt whenever the app locale changes (per-app language,
+ * `adb shell cmd locale set-app-locales`), so nothing is cached in the language it was first read in.
+ */
 private class ContextStringResolver(private val context: Context) : StringResolver {
-    override fun string(id: Int, args: Array<out Any?>): String =
-        if (args.isEmpty()) context.resources.getString(id) else context.resources.getString(id, *args)
+    private var cached: Pair<String, Resources>? = null
 
+    private fun resources(): Resources {
+        val locale = AppLanguage.currentLocale(context)
+        val tag = locale.toLanguageTag()
+        cached?.takeIf { it.first == tag }?.let { return it.second }
+        val config = Configuration(context.resources.configuration)
+        config.setLocales(LocaleList(locale))
+        return context.createConfigurationContext(config).resources.also { cached = tag to it }
+    }
+
+    @Synchronized
+    override fun string(id: Int, args: Array<out Any?>): String {
+        val res = resources()
+        return if (args.isEmpty()) res.getString(id) else res.getString(id, *args)
+    }
+
+    @Synchronized
     override fun plural(id: Int, quantity: Int, args: Array<out Any?>): String =
-        context.resources.getQuantityString(id, quantity, *args)
+        resources().getQuantityString(id, quantity, *args)
 }
 
 /**

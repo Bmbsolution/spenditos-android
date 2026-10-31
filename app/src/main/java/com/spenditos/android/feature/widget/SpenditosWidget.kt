@@ -1,7 +1,6 @@
 package com.spenditos.android.feature.widget
 
 import com.spenditos.android.core.i18n.Strings
-import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import android.content.ComponentName
 import android.content.Context
@@ -143,7 +142,7 @@ private fun WidgetContent(snapshot: WidgetSnapshot) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                stringResource(R.string.widget_open_spenditos),
+                Strings.get(R.string.widget_open_spenditos),
                 style = TextStyle(
                     color = if (snapshot.isStormMode) StormPrimary else NormalPrimary,
                     fontSize = 17.sp,
@@ -203,7 +202,7 @@ private fun SmallWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                 WidgetIcon("storm", WidgetRed, 16.dp)
                 Spacer(GlanceModifier.width(4.dp))
                 Text(
-                    stringResource(R.string.widget_storm),
+                    Strings.get(R.string.widget_storm),
                     style = TextStyle(color = androidx.glance.unit.ColorProvider(WidgetRed), fontSize = 12.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
@@ -223,7 +222,7 @@ private fun SmallWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
         Spacer(GlanceModifier.height(8.dp))
         Column {
             Text(
-                if (snapshot.isStormMode) stringResource(R.string.widget_deficit) else stringResource(R.string.common_remaining),
+                if (snapshot.isStormMode) Strings.get(R.string.widget_deficit) else Strings.get(R.string.common_remaining),
                 style = TextStyle(color = secondary, fontSize = 12.sp),
                 maxLines = 1,
             )
@@ -241,7 +240,7 @@ private fun SmallWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
         Spacer(GlanceModifier.defaultWeight())
         if (snapshot.isStormMode) {
             Text(
-                stringResource(R.string.widget_d_to_break_even, snapshot.daysLeft ?: 0),
+                Strings.get(R.string.widget_d_to_break_even, snapshot.daysLeft ?: 0),
                 style = TextStyle(color = secondary, fontSize = 11.sp),
                 maxLines = 1,
             )
@@ -280,7 +279,7 @@ private fun MediumWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                 WidgetIcon(if (snapshot.isStormMode) "storm" else "flame", if (snapshot.isStormMode) WidgetRed else WidgetOrange, 16.dp)
                 Spacer(GlanceModifier.width(4.dp))
                 Text(
-                    if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
+                    if (snapshot.isStormMode) Strings.get(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
                     style = TextStyle(color = primary, fontSize = 15.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
@@ -300,18 +299,18 @@ private fun MediumWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
             }
             Spacer(GlanceModifier.height(6.dp))
             Column {
-                Text(stringResource(R.string.widget_spent_today), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
+                Text(Strings.get(R.string.widget_spent_today), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
                 Spacer(GlanceModifier.height(2.dp))
                 Text(amount(snapshot.spentToday, snapshot), style = TextStyle(color = primary, fontSize = 22.sp, fontWeight = FontWeight.Bold), maxLines = 1)
             }
             Spacer(GlanceModifier.height(6.dp))
             Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                MonthFigure(stringResource(R.string.common_income), amount(snapshot.monthIncome, snapshot), WidgetGreen, secondary)
+                MonthFigure(Strings.get(R.string.common_income), amount(snapshot.monthIncome, snapshot), WidgetGreen, secondary)
                 Spacer(GlanceModifier.width(12.dp))
-                MonthFigure(stringResource(R.string.common_expenses), amount(snapshot.monthExpenses, snapshot), WidgetRed, secondary)
+                MonthFigure(Strings.get(R.string.common_expenses), amount(snapshot.monthExpenses, snapshot), WidgetRed, secondary)
                 if (snapshot.isStormMode) {
                     Spacer(GlanceModifier.width(12.dp))
-                    MonthFigure(stringResource(R.string.widget_deficit), amount(abs(snapshot.net), snapshot), WidgetRed, secondary)
+                    MonthFigure(Strings.get(R.string.widget_deficit), amount(abs(snapshot.net), snapshot), WidgetRed, secondary)
                 }
             }
         }
@@ -339,7 +338,7 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
             WidgetIcon(if (snapshot.isStormMode) "storm" else "flame", if (snapshot.isStormMode) WidgetRed else WidgetOrange, 20.dp)
             Spacer(GlanceModifier.width(6.dp))
             Text(
-                if (snapshot.isStormMode) stringResource(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
+                if (snapshot.isStormMode) Strings.get(R.string.widget_storm_mode) else Strings.plural(R.plurals.widget_day_streak, snapshot.streakDays),
                 style = TextStyle(
                     color = androidx.glance.unit.ColorProvider(if (snapshot.isStormMode) WidgetRed else WidgetOrange),
                     fontSize = 17.sp,
@@ -358,12 +357,12 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
 
         Spacer(GlanceModifier.height(12.dp))
         Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-            BudgetCard(stringResource(R.string.common_spent), amount(snapshot.spentToday, snapshot), WidgetBlue, "card", secondary)
+            BudgetCard(Strings.get(R.string.common_spent), amount(snapshot.spentToday, snapshot), WidgetBlue, "card", secondary)
             Spacer(GlanceModifier.width(12.dp))
             val remaining = remainingBudget(snapshot)
-            BudgetCard(stringResource(R.string.widget_left_today), amount(remaining, snapshot), if (remaining > 0.0) WidgetGreen else WidgetRed, "dollar", secondary)
+            BudgetCard(Strings.get(R.string.widget_left_today), amount(remaining, snapshot), if (remaining > 0.0) WidgetGreen else WidgetRed, "dollar", secondary)
             Spacer(GlanceModifier.width(12.dp))
-            BudgetCard(stringResource(R.string.widget_daily_pace), amount(snapshot.dailyPace, snapshot), WidgetGray, "target", secondary)
+            BudgetCard(Strings.get(R.string.widget_daily_pace), amount(snapshot.dailyPace, snapshot), WidgetGray, "target", secondary)
         }
 
         Spacer(GlanceModifier.height(12.dp))
@@ -371,13 +370,13 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
                     Column {
-                        Text(stringResource(R.string.common_income), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
+                        Text(Strings.get(R.string.common_income), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
                         Spacer(GlanceModifier.height(2.dp))
                         Text(amount(snapshot.monthIncome, snapshot), style = TextStyle(color = androidx.glance.unit.ColorProvider(WidgetGreen), fontSize = 15.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                     }
                     Spacer(GlanceModifier.defaultWeight())
                     Column(horizontalAlignment = Alignment.Horizontal.End) {
-                        Text(stringResource(R.string.common_expenses), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
+                        Text(Strings.get(R.string.common_expenses), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
                         Spacer(GlanceModifier.height(2.dp))
                         Text(amount(snapshot.monthExpenses, snapshot), style = TextStyle(color = androidx.glance.unit.ColorProvider(WidgetRed), fontSize = 15.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                     }
@@ -386,12 +385,12 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                     Spacer(GlanceModifier.height(8.dp))
                     Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
                         Text(
-                            stringResource(R.string.widget_deficit_2, amount(abs(snapshot.net), snapshot)),
+                            Strings.get(R.string.widget_deficit_2, amount(abs(snapshot.net), snapshot)),
                             style = TextStyle(color = androidx.glance.unit.ColorProvider(WidgetRed), fontSize = 12.sp, fontWeight = FontWeight.Bold),
                             maxLines = 1,
                         )
                         Spacer(GlanceModifier.defaultWeight())
-                        Text(stringResource(R.string.widget_d_to_break_even, snapshot.daysLeft ?: 0), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
+                        Text(Strings.get(R.string.widget_d_to_break_even, snapshot.daysLeft ?: 0), style = TextStyle(color = secondary, fontSize = 11.sp), maxLines = 1)
                     }
                 }
             }
@@ -399,7 +398,7 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
                 Spacer(GlanceModifier.width(12.dp))
                 Image(
                     provider = ImageProvider(sparklineBitmap(context, snapshot.last7Days, if (snapshot.isStormMode) WidgetRed else WidgetBlue)),
-                    contentDescription = stringResource(R.string.widget_last_7_days_spending),
+                    contentDescription = Strings.get(R.string.widget_last_7_days_spending),
                     modifier = GlanceModifier.size(120.dp, 50.dp),
                 )
             }
@@ -408,7 +407,7 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
         if (snapshot.topCategories.isNotEmpty()) {
             Spacer(GlanceModifier.height(12.dp))
             Column {
-                Text(stringResource(R.string.widget_top_categories), style = TextStyle(color = secondary, fontSize = 12.sp), maxLines = 1)
+                Text(Strings.get(R.string.widget_top_categories), style = TextStyle(color = secondary, fontSize = 12.sp), maxLines = 1)
                 Spacer(GlanceModifier.height(6.dp))
                 Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
                     snapshot.topCategories.take(3).forEachIndexed { index, category ->
@@ -423,9 +422,9 @@ private fun LargeWidgetView(snapshot: WidgetSnapshot, root: GlanceModifier) {
         Spacer(GlanceModifier.height(12.dp))
         Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
             // iOS widget Links: spenditos://add-expense and spenditos://scan-receipt.
-            ActionPill("plus", stringResource(R.string.widget_add_expense), WidgetBlue, actionStartActivity(deepLinkIntent(context, "add-expense")))
+            ActionPill("plus", Strings.get(R.string.widget_add_expense), WidgetBlue, actionStartActivity(deepLinkIntent(context, "add-expense")))
             Spacer(GlanceModifier.width(12.dp))
-            ActionPill("camera", stringResource(R.string.common_scan), WidgetGreen, actionStartActivity(deepLinkIntent(context, "scan-receipt")))
+            ActionPill("camera", Strings.get(R.string.common_scan), WidgetGreen, actionStartActivity(deepLinkIntent(context, "scan-receipt")))
         }
     }
 }

@@ -21,9 +21,17 @@ class SpenditosApplication : Application(), Configuration.Provider {
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // A per-app language change arrives here (the process is not restarted): keep the default locale
+        // that formatters read in step with it.
+        java.util.Locale.setDefault(com.spenditos.android.core.i18n.AppLanguage.currentLocale(this))
+    }
+
     override fun onCreate() {
         super.onCreate()
         com.spenditos.android.core.i18n.Strings.install(this)
+        java.util.Locale.setDefault(com.spenditos.android.core.i18n.AppLanguage.currentLocale(this))
         sessionLifecycle.start()
         // Foreground refresh (throttled) of server Premium: welcome expiry, admin grants.
         proAccess.start()

@@ -92,7 +92,6 @@
     <string name="capture_received_500_salary_deposit">J’ai reçu un dépôt de salaire de 500&#160;$</string>
     <string name="capture_recording_stops_automatically_when_you">L’enregistrement s’arrête automatiquement quand vous faites une pause</string>
     <string name="capture_retry_to_confirm_this_save">Réessayez pour confirmer cet enregistrement avant de modifier.</string>
-    <string name="capture_saved_transactions">%1$s transactions enregistrées</string>
     <string name="capture_saving_transactions">Enregistrement des transactions…</string>
     <string name="capture_select_category">Choisir une catégorie</string>
     <string name="capture_skipped_by_your_rule">Ignorée par votre règle</string>
@@ -436,7 +435,6 @@
     <string name="home_coming_up_list">À venir&#160;: %1$s.</string>
     <string name="home_couldn_t_refresh_home_pull">Impossible d’actualiser l’accueil. Tirez vers le bas pour réessayer.</string>
     <string name="home_critical">Critique</string>
-    <string name="home_d_left">%1$s&#160;j restants</string>
     <string name="home_days_and_date">jours · %1$s</string>
     <string name="home_due_today">aujourd’hui</string>
     <string name="home_due_tomorrow">demain</string>
@@ -739,7 +737,6 @@
     <string name="progress_loading">Chargement…</string>
     <string name="progress_loading_history">Chargement de l’historique…</string>
     <string name="progress_loading_progress">Chargement de la progression…</string>
-    <string name="progress_longest_days">Plus longue&#160;: %1$s jours</string>
     <string name="progress_m_remaining">%1$s&#160;min restantes</string>
     <string name="progress_next_level">Suivant&#160;: niveau %1$s</string>
     <string name="progress_no_achievements_yet">Aucun succès pour l’instant</string>
@@ -827,8 +824,6 @@
     <string name="recurring_is_there_one_more_payment">Reste-t-il un paiement&#160;? Il passe dans Terminées. Les paiements passés restent dans vos transactions.</string>
     <string name="recurring_last_month">Mois dernier, %1$s</string>
     <string name="recurring_last_payment">Dernier paiement le %1$s</string>
-    <string name="recurring_logged_1_entry">1 entrée saisie.</string>
-    <string name="recurring_logged_entries">%1$s entrées saisies.</string>
     <string name="recurring_logging_each_purchase_yourself_skip">Vous saisissez chaque achat vous-même&#160;? Ignorez cette facture. Ce que vous saisissez apparaît dans Transactions et Rapports.</string>
     <string name="recurring_main_income">Revenu principal</string>
     <string name="recurring_main_income_2">Revenu principal</string>
@@ -1181,7 +1176,6 @@
     <string name="transactions_delete_transaction">Supprimer la transaction&#160;?</string>
     <string name="transactions_delete_transaction_2">Supprimer la transaction</string>
     <string name="transactions_delete_transaction_3">Supprimer la transaction</string>
-    <string name="transactions_delete_transactions">Supprimer %1$s transactions</string>
     <string name="transactions_discard_this_transaction">Abandonner cette transaction&#160;?</string>
     <string name="transactions_discard_your_changes">Abandonner vos modifications&#160;?</string>
     <string name="transactions_duplicate">Doublon</string>
@@ -1282,6 +1276,11 @@
     <string name="widget_storm">Tempête</string>
     <string name="widget_storm_mode">Mode tempête</string>
     <string name="widget_top_categories">Principales catégories</string>
+    <plurals name="capture_saved_transactions_n">
+        <item quantity="one">%1$s transaction enregistrée</item>
+        <item quantity="many">%1$s transactions enregistrées</item>
+        <item quantity="other">%1$s transactions enregistrées</item>
+    </plurals>
     <plurals name="capture_select_category_before_saving">
         <item quantity="one">Choisissez une catégorie pour %1$s élément avant d’enregistrer</item>
         <item quantity="many">Choisissez une catégorie pour %1$s éléments avant d’enregistrer</item>
@@ -1337,6 +1336,11 @@
         <item quantity="many">%1$s jours</item>
         <item quantity="other">%1$s jours</item>
     </plurals>
+    <plurals name="home_days_left_n">
+        <item quantity="one">%1$s&#160;j restant</item>
+        <item quantity="many">%1$s&#160;j restants</item>
+        <item quantity="other">%1$s&#160;j restants</item>
+    </plurals>
     <plurals name="home_due_in_days">
         <item quantity="one">dans %1$s jour</item>
         <item quantity="many">dans %1$s jours</item>
@@ -1372,6 +1376,11 @@
         <item quantity="many">%1$s jours restants</item>
         <item quantity="other">%1$s jours restants</item>
     </plurals>
+    <plurals name="progress_longest_days_n">
+        <item quantity="one">Plus longue&#160;: %1$s jour</item>
+        <item quantity="many">Plus longue&#160;: %1$s jours</item>
+        <item quantity="other">Plus longue&#160;: %1$s jours</item>
+    </plurals>
     <plurals name="quota_smart_entries_left">
         <item quantity="one">%1$s saisie intelligente restante ce mois-ci</item>
         <item quantity="many">%1$s saisies intelligentes restantes ce mois-ci</item>
@@ -1391,6 +1400,11 @@
         <item quantity="one">Saisir %1$s entrée</item>
         <item quantity="many">Saisir %1$s entrées</item>
         <item quantity="other">Saisir %1$s entrées</item>
+    </plurals>
+    <plurals name="recurring_logged_entries_n">
+        <item quantity="one">%1$s entrée saisie.</item>
+        <item quantity="many">%1$s entrées saisies.</item>
+        <item quantity="other">%1$s entrées saisies.</item>
     </plurals>
     <plurals name="recurring_paused_months">
         <item quantity="one">En pause depuis %1$s mois</item>
@@ -1476,6 +1490,11 @@
         <item quantity="one">%1$s transaction n’a pas pu être supprimée. Réessayez.</item>
         <item quantity="many">%1$s transactions n’ont pas pu être supprimées. Réessayez.</item>
         <item quantity="other">%1$s transactions n’ont pas pu être supprimées. Réessayez.</item>
+    </plurals>
+    <plurals name="transactions_delete_transactions_n">
+        <item quantity="one">Supprimer %1$s transaction</item>
+        <item quantity="many">Supprimer %1$s transactions</item>
+        <item quantity="other">Supprimer %1$s transactions</item>
     </plurals>
     <plurals name="widget_day_streak">
         <item quantity="one">Série de %1$s jour</item>

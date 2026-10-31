@@ -85,7 +85,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-private val EndedFilters = listOf(Strings.get(R.string.common_all), Strings.get(R.string.common_income), Strings.get(R.string.common_bills))
+private val EndedFilters: List<String> get() = listOf(Strings.get(R.string.common_all), Strings.get(R.string.common_income), Strings.get(R.string.common_bills))
 
 /**
  * iOS `EndedBillsView` (#403): income and bills that stopped for good, grouped by the year they

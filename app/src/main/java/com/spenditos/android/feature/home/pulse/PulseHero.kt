@@ -144,7 +144,7 @@ fun PulseHero(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(SfSymbols.icon("hourglass"), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.4.dp))
-                Text(stringResource(R.string.home_d_left, status.daysRemaining), style = IosText.caption.w(FontWeight.Bold), color = Color.White)
+                Text(Strings.plural(R.plurals.home_days_left_n, status.daysRemaining, status.daysRemaining), style = IosText.caption.w(FontWeight.Bold), color = Color.White)
             }
         }
 

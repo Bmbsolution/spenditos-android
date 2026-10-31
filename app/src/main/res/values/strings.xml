@@ -92,7 +92,6 @@
     <string name="capture_received_500_salary_deposit">Received $500 salary deposit</string>
     <string name="capture_recording_stops_automatically_when_you">Recording stops automatically when you pause</string>
     <string name="capture_retry_to_confirm_this_save">Retry to confirm this save before editing.</string>
-    <string name="capture_saved_transactions">Saved %1$s transactions</string>
     <string name="capture_saving_transactions">Saving transactions…</string>
     <string name="capture_select_category">Select category</string>
     <string name="capture_skipped_by_your_rule">Skipped by your rule</string>
@@ -436,7 +435,6 @@
     <string name="home_coming_up_list">Coming up: %1$s.</string>
     <string name="home_couldn_t_refresh_home_pull">Couldn\'t refresh Home. Pull down to try again.</string>
     <string name="home_critical">Critical</string>
-    <string name="home_d_left">%1$sd left</string>
     <string name="home_days_and_date">days · %1$s</string>
     <string name="home_due_today">today</string>
     <string name="home_due_tomorrow">tomorrow</string>
@@ -739,7 +737,6 @@
     <string name="progress_loading">Loading…</string>
     <string name="progress_loading_history">Loading history…</string>
     <string name="progress_loading_progress">Loading progress…</string>
-    <string name="progress_longest_days">Longest: %1$s days</string>
     <string name="progress_m_remaining">%1$sm remaining</string>
     <string name="progress_next_level">Next: Level %1$s</string>
     <string name="progress_no_achievements_yet">No achievements yet</string>
@@ -827,8 +824,6 @@
     <string name="recurring_is_there_one_more_payment">Is there one more payment? It moves to Ended. Past payments stay in your transactions.</string>
     <string name="recurring_last_month">Last month, %1$s</string>
     <string name="recurring_last_payment">Last payment %1$s</string>
-    <string name="recurring_logged_1_entry">Logged 1 entry.</string>
-    <string name="recurring_logged_entries">Logged %1$s entries.</string>
     <string name="recurring_logging_each_purchase_yourself_skip">Logging each purchase yourself? Skip this bill. What you log shows up in Transactions and Reports.</string>
     <string name="recurring_main_income">Main Income</string>
     <string name="recurring_main_income_2">Main income</string>
@@ -1181,7 +1176,6 @@
     <string name="transactions_delete_transaction">Delete Transaction?</string>
     <string name="transactions_delete_transaction_2">Delete transaction</string>
     <string name="transactions_delete_transaction_3">Delete Transaction</string>
-    <string name="transactions_delete_transactions">Delete %1$s Transactions</string>
     <string name="transactions_discard_this_transaction">Discard this transaction?</string>
     <string name="transactions_discard_your_changes">Discard your changes?</string>
     <string name="transactions_duplicate">Duplicate</string>
@@ -1282,6 +1276,10 @@
     <string name="widget_storm">Storm</string>
     <string name="widget_storm_mode">Storm Mode</string>
     <string name="widget_top_categories">Top Categories</string>
+    <plurals name="capture_saved_transactions_n">
+        <item quantity="one">Saved %1$s transaction</item>
+        <item quantity="other">Saved %1$s transactions</item>
+    </plurals>
     <plurals name="capture_select_category_before_saving">
         <item quantity="one">Select a category for %1$s item before saving</item>
         <item quantity="other">Select a category for %1$s items before saving</item>
@@ -1326,6 +1324,10 @@
         <item quantity="one">%1$s day</item>
         <item quantity="other">%1$s days</item>
     </plurals>
+    <plurals name="home_days_left_n">
+        <item quantity="one">%1$sd left</item>
+        <item quantity="other">%1$sd left</item>
+    </plurals>
     <plurals name="home_due_in_days">
         <item quantity="one">in %1$s day</item>
         <item quantity="other">in %1$s days</item>
@@ -1354,6 +1356,10 @@
         <item quantity="one">%1$s day remaining</item>
         <item quantity="other">%1$s days remaining</item>
     </plurals>
+    <plurals name="progress_longest_days_n">
+        <item quantity="one">Longest: %1$s day</item>
+        <item quantity="other">Longest: %1$s days</item>
+    </plurals>
     <plurals name="quota_smart_entries_left">
         <item quantity="one">%1$s smart entry left this month</item>
         <item quantity="other">%1$s smart entries left this month</item>
@@ -1369,6 +1375,10 @@
     <plurals name="recurring_log_entries">
         <item quantity="one">Log %1$s entry</item>
         <item quantity="other">Log %1$s entries</item>
+    </plurals>
+    <plurals name="recurring_logged_entries_n">
+        <item quantity="one">Logged %1$s entry.</item>
+        <item quantity="other">Logged %1$s entries.</item>
     </plurals>
     <plurals name="recurring_paused_months">
         <item quantity="one">Paused %1$s month</item>
@@ -1437,6 +1447,10 @@
     <plurals name="transactions_delete_failed">
         <item quantity="one">%1$s transaction couldn\'t be deleted. Try again.</item>
         <item quantity="other">%1$s transactions couldn\'t be deleted. Try again.</item>
+    </plurals>
+    <plurals name="transactions_delete_transactions_n">
+        <item quantity="one">Delete %1$s Transaction</item>
+        <item quantity="other">Delete %1$s Transactions</item>
     </plurals>
     <plurals name="widget_day_streak">
         <item quantity="one">%1$s day streak</item>
