@@ -140,15 +140,15 @@ internal object DebtFormat {
  * puts a short code in `error` ([ApiError.Server.serverMessage]); nothing here shows the code itself.
  */
 internal object DebtErrorMessage {
-    const val OFFLINE = "You're offline. Connect to the internet to change your debts."
-    const val NOT_FOUND = "This debt couldn't be found. It may have been deleted."
-    const val TARGET_TOO_SOON = "That month is too soon. Pick a later month, or a payment you can make."
-    const val FUTURE_DATE = "The date can't be in the future."
-    const val PAYMENT_INCOMPLETE = "Add how much you pay, how often, and the date of the next payment."
-    const val INVALID_INPUT = "Check the amounts and dates and try again."
-    const val CANT_REACH = "Can't reach Spenditos right now. Check your connection and try again."
-    const val GENERIC = "Something went wrong. Please try again."
-    const val CATEGORY_UNAVAILABLE = "The category for this debt isn't available anymore. Pick another one and try again."
+    val OFFLINE: String get() = Strings.get(R.string.debts_you_re_offline_connect_to)
+    val NOT_FOUND: String get() = Strings.get(R.string.debts_this_debt_couldn_t_be)
+    val TARGET_TOO_SOON: String get() = Strings.get(R.string.debts_that_month_is_too_soon)
+    val FUTURE_DATE: String get() = Strings.get(R.string.debts_the_date_can_t_be)
+    val PAYMENT_INCOMPLETE: String get() = Strings.get(R.string.debts_add_how_much_you_pay)
+    val INVALID_INPUT: String get() = Strings.get(R.string.debts_check_the_amounts_and_dates)
+    val CANT_REACH: String get() = Strings.get(R.string.debts_can_t_reach_spenditos_right)
+    val GENERIC: String get() = Strings.get(R.string.auth_something_went_wrong_please_try)
+    val CATEGORY_UNAVAILABLE: String get() = Strings.get(R.string.debts_the_category_for_this_debt)
 
     /**
      * [offline] is true when a write was refused because the device has no connection (nothing was

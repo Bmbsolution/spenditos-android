@@ -153,8 +153,8 @@ class RevenueCatPurchasesService @Inject constructor(
     )
 
     companion object {
-        const val UNAVAILABLE = "Subscriptions aren't available in this build."
-        const val GENERIC = "The purchase didn't go through. You haven't been charged. Try again."
+        val UNAVAILABLE: String get() = Strings.get(R.string.pro_subscriptions_aren_t_available_in)
+        val GENERIC: String get() = Strings.get(R.string.data_purchases_the_purchase_didn_t_go)
 
         /** Only builds with a RevenueCat key, outside the test flavors, can sell anything. */
         internal fun isConfigurable(apiKey: String, isHarness: Boolean, stage: String): Boolean =

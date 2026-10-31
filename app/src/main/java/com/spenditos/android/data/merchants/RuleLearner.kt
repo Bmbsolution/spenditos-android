@@ -52,8 +52,8 @@ class RuleLearner @Inject constructor(private val mappings: MerchantMappingActio
     }
 
     companion object {
-        const val FAILURE_MESSAGE = "Couldn't save the rule. Your transactions will still be saved."
-        private const val CHANGE_ANYTIME = "Change it anytime in Settings › Rules."
+        val FAILURE_MESSAGE: String get() = Strings.get(R.string.data_merchants_couldn_t_save_the_rule)
+        private val CHANGE_ANYTIME: String get() = Strings.get(R.string.data_merchants_change_it_anytime_in_settings)
 
         /** "Rule saved: Tim Hortons → Dining. 7 past transactions updated. Change it anytime in Settings › Rules." */
         fun savedMessage(merchant: String, categoryName: String, pastUpdated: Int?): String {

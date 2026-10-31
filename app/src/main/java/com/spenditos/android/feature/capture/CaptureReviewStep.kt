@@ -705,8 +705,8 @@ internal fun reviewFlagLabels(item: CaptureReviewItem, currency: String, locale:
     return labels
 }
 
-internal const val SKIPPED_BY_RULE_LABEL = "Skipped by your rule"
-internal const val YOUR_RULE_LABEL = "✓ Your rule"
+internal val SKIPPED_BY_RULE_LABEL: String get() = Strings.get(R.string.capture_skipped_by_your_rule)
+internal val YOUR_RULE_LABEL: String get() = Strings.get(R.string.capture_your_rule)
 
 /** "Oct 8" for "2026-10-08" (iOS `.dateTime.month(.abbreviated).day()`); null when it does not parse. */
 private fun shortDate(iso: String, locale: java.util.Locale): String? =

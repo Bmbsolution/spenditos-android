@@ -794,10 +794,10 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     companion object {
-        const val RULE_SOURCE = "From your rule"
-        const val LAST_USED_SOURCE = "Last used category"
-        const val OFFLINE_REPEAT = "You're offline. Turn off Make it recurring to save this now, or try again when you're back online."
-        const val REPEAT_FAILED = "Your payment is saved, but the repeat couldn't be set up. Tap Save to try again."
+        val RULE_SOURCE: String get() = Strings.get(R.string.transactions_from_your_rule)
+        val LAST_USED_SOURCE: String get() = Strings.get(R.string.transactions_last_used_category)
+        val OFFLINE_REPEAT: String get() = Strings.get(R.string.transactions_you_re_offline_turn_off)
+        val REPEAT_FAILED: String get() = Strings.get(R.string.transactions_your_payment_is_saved_but)
         private const val UNDO_WINDOW_MS = 6_000L
     }
 }

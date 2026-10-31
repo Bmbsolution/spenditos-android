@@ -70,8 +70,8 @@ object MonthBalanceCopy {
         return DebtPrefill(name = "${monthName(data.previousMonth)} shortfall", owed = abs(data.balance), shortfallMonth = data.previousMonth)
     }
 
-    const val REMOVE = "Remove"
-    const val REMOVE_DESCRIPTION = "Remove carried-in amount"
+    val REMOVE: String get() = Strings.get(R.string.plan_remove)
+    val REMOVE_DESCRIPTION: String get() = Strings.get(R.string.home_remove_carried_in_amount)
 
-    const val OFFLINE = "You're offline. Connect to the internet to answer this."
+    val OFFLINE: String get() = Strings.get(R.string.home_you_re_offline_connect_to)
 }

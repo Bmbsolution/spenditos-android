@@ -424,10 +424,10 @@ class ReceiptScanViewModel @Inject constructor(
 
         /** More documents than this and the reading screen offers to leave (iOS `total > 3`). */
         const val BACKGROUND_OFFER_AFTER = 3
-        const val QUOTA_MESSAGE = "You've used all your free scan credits for this month."
-        const val RATE_LIMIT_MESSAGE = "Too many attempts in a short time — wait a few seconds and try again."
-        const val NO_CLIPBOARD_IMAGE = "There's no image on the clipboard."
-        const val MANUAL_FALLBACK ="Couldn't read your scan. You can enter it yourself."
+        val QUOTA_MESSAGE: String get() = Strings.get(R.string.receipt_you_ve_used_all_your)
+        val RATE_LIMIT_MESSAGE: String get() = Strings.get(R.string.receipt_too_many_attempts_in_a)
+        val NO_CLIPBOARD_IMAGE: String get() = Strings.get(R.string.receipt_there_s_no_image_on)
+        val MANUAL_FALLBACK: String get() = Strings.get(R.string.receipt_couldn_t_read_your_scan_2)
 
         /** What the failure screen says for [error]. A 403 `QuotaExhausted` is the friendly limit screen, never the raw code. */
         fun failureState(error: Throwable): ReceiptScanUiState = when {

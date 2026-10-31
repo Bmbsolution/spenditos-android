@@ -301,6 +301,6 @@ class CaptureRepository @Inject constructor(
         const val POLL_INTERVAL_MILLIS = 1_000L
         const val POLL_COUNT = 60
         val POLL_WINDOW = 120.seconds
-        const val GENERIC_ANALYSIS_ERROR = "We couldn't finish that capture. Try again."
+        val GENERIC_ANALYSIS_ERROR: String get() = Strings.get(R.string.data_capture_we_couldn_t_finish_that)
     }
 }

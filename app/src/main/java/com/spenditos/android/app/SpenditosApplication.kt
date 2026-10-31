@@ -22,6 +22,7 @@ class SpenditosApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        com.spenditos.android.core.i18n.Strings.install(this)
         sessionLifecycle.start()
         // Foreground refresh (throttled) of server Premium: welcome expiry, admin grants.
         proAccess.start()
