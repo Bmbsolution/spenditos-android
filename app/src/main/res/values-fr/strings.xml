@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="a11y_collapse">réduire</string>
     <string name="a11y_collapsed">réduit</string>
     <string name="a11y_expand">développer</string>
@@ -1467,7 +1467,7 @@
         <item quantity="many">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s transactions non synchronisées resteront en attente sur cet appareil et seront synchronisées à votre prochaine connexion à ce compte.</item>
         <item quantity="other">Voulez-vous vraiment vous déconnecter&#160;?\n\n%1$s transactions non synchronisées resteront en attente sur cet appareil et seront synchronisées à votre prochaine connexion à ce compte.</item>
     </plurals>
-    <plurals name="streak_unit_days">
+    <plurals name="streak_unit_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">jour</item>
         <item quantity="many">jours</item>
         <item quantity="other">jours</item>

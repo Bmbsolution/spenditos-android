@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="a11y_collapse">collapse</string>
     <string name="a11y_collapsed">collapsed</string>
     <string name="a11y_expand">expand</string>
@@ -191,7 +191,7 @@
     <string name="common_saving">Saving</string>
     <string name="common_saving_2">Saving…</string>
     <string name="common_scan">Scan</string>
-    <string name="common_search_categories">Search categories...</string>
+    <string name="common_search_categories">Search categories…</string>
     <string name="common_see_spenditos_pro">See Spenditos Pro</string>
     <string name="common_select_category">Select Category</string>
     <string name="common_sentence">Sentence</string>
@@ -737,8 +737,8 @@
     <string name="progress_level">Level %1$s</string>
     <string name="progress_level_benefits">Level Benefits</string>
     <string name="progress_loading">Loading…</string>
-    <string name="progress_loading_history">Loading history...</string>
-    <string name="progress_loading_progress">Loading progress...</string>
+    <string name="progress_loading_history">Loading history…</string>
+    <string name="progress_loading_progress">Loading progress…</string>
     <string name="progress_longest_days">Longest: %1$s days</string>
     <string name="progress_m_remaining">%1$sm remaining</string>
     <string name="progress_next_level">Next: Level %1$s</string>
@@ -900,9 +900,9 @@
     <string name="reports_gap">Gap</string>
     <string name="reports_highest_day">Highest Day</string>
     <string name="reports_insights_and_planning_tools_for">Insights and planning tools for your month</string>
-    <string name="reports_loading_comparison_data">Loading comparison data...</string>
-    <string name="reports_loading_pay_periods">Loading pay periods...</string>
-    <string name="reports_loading_spending_data">Loading spending data...</string>
+    <string name="reports_loading_comparison_data">Loading comparison data…</string>
+    <string name="reports_loading_pay_periods">Loading pay periods…</string>
+    <string name="reports_loading_spending_data">Loading spending data…</string>
     <string name="reports_log_a_transaction">Log a transaction</string>
     <string name="reports_log_a_transaction_to_see">Log a transaction to see spending and recurring obligations together.</string>
     <string name="reports_log_activity_to_make_this">Log activity to make this takeaway useful.</string>
@@ -1235,7 +1235,7 @@
     <string name="transactions_saved_summary">Saved %1$s · %2$s · %3$s added</string>
     <string name="transactions_scroll_to_top">Scroll to top</string>
     <string name="transactions_search_transactions">Search transactions</string>
-    <string name="transactions_search_transactions_2">Search transactions...</string>
+    <string name="transactions_search_transactions_2">Search transactions…</string>
     <string name="transactions_see_pro">See Pro</string>
     <string name="transactions_select_transaction">Select transaction</string>
     <string name="transactions_sign_in_again_to_delete">Sign in again to delete.</string>
@@ -1430,7 +1430,7 @@
         <item quantity="one">Are you sure you want to sign out?\n\n%1$s unsynced transaction will stay queued on this device and sync the next time you sign in to this account.</item>
         <item quantity="other">Are you sure you want to sign out?\n\n%1$s unsynced transactions will stay queued on this device and sync the next time you sign in to this account.</item>
     </plurals>
-    <plurals name="streak_unit_days">
+    <plurals name="streak_unit_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">day</item>
         <item quantity="other">days</item>
     </plurals>
