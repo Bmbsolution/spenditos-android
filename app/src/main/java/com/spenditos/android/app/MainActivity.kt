@@ -1,7 +1,7 @@
 package com.spenditos.android.app
 
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -15,11 +15,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
+    private companion object {
+        /** The locale the process last drew the UI in; a change means view-model text is stale. */
+        @Volatile var lastLocaleTag: String? = null
+    }
+
     @javax.inject.Inject lateinit var deepLinks: com.spenditos.android.data.push.DeepLinkHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // View models survive the recreation a language change causes and hold text built in the old
+        // language, so drop them (state in SavedStateHandle / rememberSaveable is kept) and let every
+        // screen rebuild its view model in the new language.
+        val locale = com.spenditos.android.core.i18n.AppLanguage.currentLocale(this)
+        java.util.Locale.setDefault(locale)
+        val tag = locale.toLanguageTag()
+        if (lastLocaleTag != null && lastLocaleTag != tag) viewModelStore.clear()
+        lastLocaleTag = tag
         // A recreation (rotation, process death) still delivers the original intent; offering it
         // again would re-fire the add sheet / camera. Later intents arrive through onNewIntent.
         if (savedInstanceState == null) {

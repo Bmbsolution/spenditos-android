@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.network.ApiError
@@ -32,9 +34,9 @@ internal fun reportLoadStatus(error: Throwable): ReportLoadStatus = when (error)
 }
 
 internal fun reportStatusMessage(status: ReportLoadStatus): String = when (status) {
-    ReportLoadStatus.OFFLINE -> "Offline. Connect to load reports."
-    ReportLoadStatus.ERROR -> "Reports couldn't load. Try again."
-    ReportLoadStatus.PRO_REQUIRED -> "Paycheck periods are a Pro feature."
+    ReportLoadStatus.OFFLINE -> Strings.get(R.string.reports_offline_connect_to_load_reports)
+    ReportLoadStatus.ERROR -> Strings.get(R.string.reports_reports_couldn_t_load_try)
+    ReportLoadStatus.PRO_REQUIRED -> Strings.get(R.string.reports_pay_periods_are_a_pro)
 }
 
 data class ReportsHubUiState(
@@ -63,7 +65,7 @@ internal fun categorySlices(categories: List<CategorySummary>): List<ReportCateg
     val rest = expenses.drop(3).fold(BigDecimal.ZERO) { sum, category ->
         sum.add(BigDecimal.valueOf(category.totalAmount))
     }
-    return if (rest.signum() > 0) top + ReportCategorySlice("everything-else", "Everything else", rest, true) else top
+    return if (rest.signum() > 0) top + ReportCategorySlice("everything-else", Strings.get(R.string.reports_everything_else), rest, true) else top
 }
 
 internal fun activeRecurringCount(templates: List<RecurringTemplate>): Int =

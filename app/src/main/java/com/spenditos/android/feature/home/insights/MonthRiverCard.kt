@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.home.insights
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -74,9 +78,9 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Your month", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.home_your_month), style = IosText.headline, color = IosColors.textPrimary)
                     Text(
-                        "Money coming in and going out, with bills and income ahead",
+                        stringResource(R.string.home_money_coming_in_and_going),
                         style = IosText.caption,
                         color = IosColors.textSecondary,
                     )
@@ -87,7 +91,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                         style = IosText.rounded(17, FontWeight.Bold),
                         color = if (insights.monthEndGap.signum() >= 0) inColor else IosColors.expense,
                     )
-                    Text("left at month end", style = IosText.caption2, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_left_at_month_end), style = IosText.caption2, color = IosColors.textSecondary)
                 }
             }
 
@@ -205,7 +209,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             var pillWidth by remember { mutableIntStateOf(0) }
             val density = LocalDensity.current
             Text(
-                "Today",
+                stringResource(R.string.common_today),
                 style = IosText.caption2.w(FontWeight.Bold),
                 color = Color.White,
                 modifier = Modifier
@@ -234,8 +238,8 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m), verticalAlignment = Alignment.CenterVertically) {
-                RiverLegend("In", insights.monthIn, inColor, currency, locale)
-                RiverLegend("Out", insights.monthOut, OutColor, currency, locale)
+                RiverLegend(stringResource(R.string.home_in), insights.monthIn, inColor, currency, locale)
+                RiverLegend(stringResource(R.string.home_out), insights.monthOut, OutColor, currency, locale)
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val scheduled = IosColors.textTertiary
@@ -249,12 +253,12 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                             cap = StrokeCap.Round,
                         )
                     }
-                    Text("scheduled", style = IosText.caption2, color = IosColors.textTertiary)
+                    Text(stringResource(R.string.home_scheduled), style = IosText.caption2, color = IosColors.textTertiary)
                 }
             }
 
             if (shortfall != null) {
-                val until = if (shortfall.end == insights.monthEnd) "through month end" else "until ${shortfall.end.plusDays(1).format(dayFormatter(locale))}"
+                val until = if (shortfall.end == insights.monthEnd) Strings.get(R.string.home_through_month_end) else Strings.get(R.string.home_until_date, shortfall.end.plusDays(1).format(dayFormatter(locale)))
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(OutColor.copy(alpha = 0.08f)).padding(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -262,7 +266,7 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
                 ) {
                     IconChip(SfSymbols.icon("exclamationmark.triangle.fill"), OutColor, size = 32.dp)
                     Text(
-                        "Out is ahead of in $until, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}. That part comes from savings or what’s already in your account.",
+                        stringResource(R.string.home_out_is_ahead_of_in, until, Money.format(shortfall.amount.toDouble(), currency, locale)),
                         style = IosText.caption,
                         color = IosColors.textPrimary,
                     )
@@ -272,9 +276,9 @@ fun MonthRiverCard(insights: HomeInsights, tint: Color, currency: String, locale
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (upcoming.isEmpty()) {
                     Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.4.dp))
-                    Text("No more bills or income this month", style = IosText.caption, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_no_more_bills_or_income), style = IosText.caption, color = IosColors.textSecondary)
                 } else {
-                    Text("Coming up", style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                    Text(stringResource(R.string.home_coming_up), style = IosText.caption.w(FontWeight.SemiBold), color = IosColors.textSecondary)
                     upcoming.forEach { pin ->
                         Row(
                             Modifier.testTag("home.river.pin.${pin.id}").clip(CircleShape).background(IosColors.textTertiary.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 3.dp),
@@ -316,14 +320,14 @@ private fun RiverLegend(label: String, amount: BigDecimal, color: Color, currenc
 
 private fun riverDescription(insights: HomeInsights, currency: String, locale: Locale): String {
     val parts = mutableListOf(
-        "Your month. In ${Money.format(insights.monthIn.toDouble(), currency, locale)}, out ${Money.format(insights.monthOut.toDouble(), currency, locale)}, ${signedAmount(insights.monthEndGap, currency, locale)} left at month end.",
+        Strings.get(R.string.home_your_month_in_out_left, Money.format(insights.monthIn.toDouble(), currency, locale), Money.format(insights.monthOut.toDouble(), currency, locale), signedAmount(insights.monthEndGap, currency, locale)),
     )
     insights.shortfall?.let { shortfall ->
-        parts += "Out is ahead of in from ${shortfall.start.format(dayFormatter(locale))} through ${shortfall.end.format(dayFormatter(locale))}, by up to ${Money.format(shortfall.amount.toDouble(), currency, locale)}."
+        parts += Strings.get(R.string.home_out_is_ahead_of_in_2, shortfall.start.format(dayFormatter(locale)), shortfall.end.format(dayFormatter(locale)), Money.format(shortfall.amount.toDouble(), currency, locale))
     }
     val upcoming = insights.pins.filterNot { it.isPast }
     if (upcoming.isNotEmpty()) {
-        parts += "Coming up: ${upcoming.joinToString { "${it.name}, ${Money.format(it.amount.toDouble(), currency, locale)} on ${it.date.format(dayFormatter(locale))}" }}."
+        parts += Strings.get(R.string.home_coming_up_list, upcoming.joinToString { Strings.get(R.string.home_coming_up_item, it.name, Money.format(it.amount.toDouble(), currency, locale), it.date.format(dayFormatter(locale))) })
     }
     return parts.joinToString(" ")
 }
@@ -338,4 +342,4 @@ private fun compactCurrency(amount: Double, currency: String, locale: Locale): S
 private fun signedAmount(amount: BigDecimal, currency: String, locale: Locale): String =
     if (amount.signum() < 0) "−${Money.format(amount.abs().toDouble(), currency, locale)}" else Money.format(amount.toDouble(), currency, locale)
 
-private fun dayFormatter(locale: Locale): DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d", locale)
+private fun dayFormatter(locale: Locale): DateTimeFormatter = LocalizedDate.formatter("MMM d", locale)

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.recurring
 
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -194,9 +196,9 @@ fun AddEditRecurringSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_cancel), Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text(if (template == null) "New income or bill" else "Edit income or bill", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(if (template == null) stringResource(R.string.recurring_new_income_or_bill) else stringResource(R.string.recurring_edit_income_or_bill), style = IosText.headline, color = IosColors.textPrimary)
                 }
                 Spacer(Modifier.width(48.dp))
             }
@@ -210,17 +212,17 @@ fun AddEditRecurringSheet(
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("Description")
+                FormLabel(stringResource(R.string.common_description))
                 RecurringTextField(
                     value = draft.description,
                     onValueChange = { draft = draft.copy(description = it.take(160)) },
-                    placeholder = "e.g., Netflix, Rent, Salary",
+                    placeholder = stringResource(R.string.recurring_description_placeholder),
                     tag = "recurring.form.description",
                     iconName = "text.alignleft",
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("Amount")
+                FormLabel(stringResource(R.string.common_amount))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                         .padding(Spacing.m),
@@ -247,8 +249,8 @@ fun AddEditRecurringSheet(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("The amount changes each time", style = IosText.subheadline, color = IosColors.textPrimary)
-                        Text("Shown as ≈. You confirm the real amount when it's logged.", style = IosText.caption, color = IosColors.textTertiary)
+                        Text(stringResource(R.string.recurring_the_amount_changes_each_time), style = IosText.subheadline, color = IosColors.textPrimary)
+                        Text(stringResource(R.string.recurring_shown_as_you_confirm_the), style = IosText.caption, color = IosColors.textTertiary)
                     }
                     com.spenditos.android.ui.components.IosSwitch(
                         checked = draft.amountVaries,
@@ -267,7 +269,7 @@ fun AddEditRecurringSheet(
                     ) {
                         Icon(SfSymbols.icon("lightbulb"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
                         Text(
-                            "Logging each purchase yourself? Skip this bill. What you log shows up in Transactions and Reports.",
+                            stringResource(R.string.recurring_logging_each_purchase_yourself_skip),
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                         )
@@ -275,7 +277,7 @@ fun AddEditRecurringSheet(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("Frequency")
+                FormLabel(stringResource(R.string.recurring_frequency))
                 Column(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m))).padding(Spacing.s),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -306,7 +308,7 @@ fun AddEditRecurringSheet(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("Category")
+                FormLabel(stringResource(R.string.common_category))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                         .clickable(role = Role.Button) { showCategoryPicker = true }
@@ -321,7 +323,7 @@ fun AddEditRecurringSheet(
                         Text(selectedCategory.name, style = IosText.body, color = IosColors.textPrimary)
                     } else {
                         Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textSecondary)
-                        Text("Select a category", style = IosText.body, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.recurring_select_a_category), style = IosText.body, color = IosColors.textSecondary)
                     }
                     Spacer(Modifier.weight(1f))
                     Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp))
@@ -329,7 +331,7 @@ fun AddEditRecurringSheet(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("First Occurrence")
+                FormLabel(stringResource(R.string.recurring_first_occurrence))
                 Row(
                     Modifier.fillMaxWidth().then(subtleGlassModifier(RoundedCornerShape(Radius.m)))
                         .clickable(role = Role.Button) { showDatePicker = true }
@@ -344,7 +346,7 @@ fun AddEditRecurringSheet(
             GlassCard {
                 Row(Modifier.fillMaxWidth().padding(Spacing.m), horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                     Icon(SfSymbols.icon("power"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(24.dp))
-                    Text("Active", Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_active), Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
                     com.spenditos.android.ui.components.IosSwitch(
                         checked = draft.isActive,
                         onCheckedChange = { draft = draft.copy(isActive = it) },
@@ -354,24 +356,24 @@ fun AddEditRecurringSheet(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FormLabel("Advanced")
+                FormLabel(stringResource(R.string.recurring_advanced))
                 GlassCard {
                     Column {
                         AdvancedNumberRow(
                             icon = "repeat",
-                            title = "Repeat Every",
+                            title = stringResource(R.string.recurring_repeat_every),
                             value = draft.repeatIntervalText,
                             placeholder = "1",
-                            suffix = draft.frequency.lowercase(),
+                            suffix = frequencyLabel(draft.frequency).lowercase(),
                             tag = "recurring.form.repeatInterval",
                             onValueChange = { draft = draft.copy(repeatIntervalText = it.filter(Char::isDigit)) },
                         )
                         HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = Color.Black.copy(alpha = 0.06f))
                         AdvancedNumberRow(
                             icon = "number",
-                            title = "End After",
+                            title = stringResource(R.string.recurring_end_after),
                             value = draft.occurrencesRemainingText,
-                            placeholder = "Never",
+                            placeholder = stringResource(R.string.recurring_never),
                             suffix = "times",
                             tag = "recurring.form.occurrencesRemaining",
                             onValueChange = { draft = draft.copy(occurrencesRemainingText = it.filter(Char::isDigit)) },
@@ -381,8 +383,8 @@ fun AddEditRecurringSheet(
                             Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(SfSymbols.icon("calendar.badge.plus"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(24.dp))
-                                    Text("2nd Day of Month", Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
-                                    Text("Required", Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
+                                    Text(stringResource(R.string.recurring_second_day_of_month), Modifier.padding(start = Spacing.s), style = IosText.body, color = IosColors.textPrimary)
+                                    Text(stringResource(R.string.recurring_required), Modifier.padding(start = Spacing.xs), style = IosText.caption.w(FontWeight.SemiBold), color = Color(0xFFFF9500))
                                 }
                                 val day = draft.secondOccurrenceDay
                                 val dayShape = RoundedCornerShape(Radius.s)
@@ -398,7 +400,7 @@ fun AddEditRecurringSheet(
                                 ) {
                                     Icon(SfSymbols.icon("calendar"), contentDescription = null, tint = IosColors.spendOrange)
                                     Text(
-                                        if (day == null) "Select a day" else "Day $day",
+                                        if (day == null) stringResource(R.string.recurring_select_a_day) else stringResource(R.string.recurring_day, day),
                                         Modifier.weight(1f),
                                         style = IosText.callout.w(FontWeight.SemiBold),
                                         color = if (day == null) IosColors.textSecondary else IosColors.textPrimary,
@@ -407,7 +409,7 @@ fun AddEditRecurringSheet(
                                 }
                             }
                             Text(
-                                "Choose the other day this transaction occurs each month.",
+                                stringResource(R.string.recurring_choose_the_other_day_this),
                                 Modifier.padding(horizontal = Spacing.m).padding(bottom = Spacing.s),
                                 style = IosText.caption,
                                 color = IosColors.textSecondary,
@@ -418,7 +420,7 @@ fun AddEditRecurringSheet(
             }
             Spacer(Modifier.height(Spacing.m))
             RecurringSavePill(
-                text = if (template == null) "Save" else "Save changes",
+                text = if (template == null) stringResource(R.string.common_save) else stringResource(R.string.recurring_save_changes),
                 onClick = { onSave(draft) },
                 enabled = draft.canSave && !isSaving,
                 isLoading = isSaving,
@@ -435,9 +437,9 @@ fun AddEditRecurringSheet(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { draft = draft.copy(firstOccurrenceDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
                     showDatePicker = false
-                }, modifier = Modifier.testTag("recurring.form.date.confirm")) { Text("OK") }
+                }, modifier = Modifier.testTag("recurring.form.date.confirm")) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("recurring.form.date.cancel")) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
 
@@ -488,9 +490,9 @@ private fun RecurringCategoryPickerSheet(
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.width(48.dp))
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Select Category", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_select_category), style = IosText.headline, color = IosColors.textPrimary)
                 }
-                Text("Done", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_done), Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
             }
             Box(Modifier.padding(horizontal = Spacing.screen).padding(top = Spacing.m)) {
                 Row(
@@ -501,17 +503,17 @@ private fun RecurringCategoryPickerSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
                     Icon(SfSymbols.icon(if (isIncome) "arrow.down" else "arrow.up"), contentDescription = null, tint = IosColors.textSecondary)
-                    Text(if (isIncome) "Income Categories" else "Expense Categories", Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
+                    Text(if (isIncome) stringResource(R.string.recurring_income_categories) else stringResource(R.string.recurring_expense_categories), Modifier.weight(1f), style = IosText.body, color = IosColors.textPrimary)
                     Icon(SfSymbols.icon("chevron.down"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
                 }
                 DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
                     DropdownMenuItem(
-                        text = { Text("Expense") },
+                        text = { Text(stringResource(R.string.common_expense)) },
                         onClick = { typeMenu = false; onTypeChange(false) },
                         modifier = Modifier.testTag("recurring.form.type.bill"),
                     )
                     DropdownMenuItem(
-                        text = { Text("Income") },
+                        text = { Text(stringResource(R.string.common_income)) },
                         onClick = { typeMenu = false; onTypeChange(true) },
                         modifier = Modifier.testTag("recurring.form.type.income"),
                     )
@@ -535,7 +537,7 @@ private fun RecurringCategoryPickerSheet(
                     cursorBrush = SolidColor(IosColors.spendOrange),
                     decorationBox = { inner ->
                         Box {
-                            if (search.isEmpty()) Text("Search categories...", style = IosText.callout, color = IosColors.textTertiary)
+                            if (search.isEmpty()) Text(stringResource(R.string.common_search_categories), style = IosText.callout, color = IosColors.textTertiary)
                             inner()
                         }
                     },
@@ -548,7 +550,7 @@ private fun RecurringCategoryPickerSheet(
                     verticalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
                     Icon(SfSymbols.icon("square.grid.2x2"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(40.dp))
-                    Text("No categories found", Modifier.testTag("recurring.form.categories.empty"), style = IosText.body, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.common_no_categories_found), Modifier.testTag("recurring.form.categories.empty"), style = IosText.body, color = IosColors.textSecondary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -603,21 +605,21 @@ private fun SecondDayPickerSheet(initialDay: Int, onDismiss: () -> Unit, onDone:
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = Spacing.screen), verticalAlignment = Alignment.CenterVertically) {
-                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_cancel), Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Choose second day", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.recurring_choose_second_day), style = IosText.headline, color = IosColors.textPrimary)
                 }
-                Text("Done", Modifier.clickable(role = Role.Button) { onDone(day) }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_done), Modifier.clickable(role = Role.Button) { onDone(day) }, style = IosText.body.w(FontWeight.SemiBold), color = IosColors.spendOrange)
             }
             Text(
-                "Choose the other day this transaction occurs each month.",
+                stringResource(R.string.recurring_choose_the_other_day_this),
                 Modifier.padding(horizontal = Spacing.screen),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
             )
             WheelPicker(
-                labels = (1..31).map { "Day $it" },
+                labels = (1..31).map { stringResource(R.string.recurring_day, it) },
                 selectedIndex = day - 1,
                 onSelect = { day = it + 1 },
                 modifier = Modifier.fillMaxWidth().height(180.dp),
@@ -725,9 +727,3 @@ private fun RecurringSavePill(text: String, onClick: () -> Unit, enabled: Boolea
     }
 }
 
-private fun frequencyLabel(value: String): String = when (value) {
-    "bi-weekly" -> "Bi-weekly"
-    "semi-monthly" -> "Semi-monthly"
-    "semi-annually" -> "Semi-annually"
-    else -> value.replaceFirstChar(Char::uppercase)
-}

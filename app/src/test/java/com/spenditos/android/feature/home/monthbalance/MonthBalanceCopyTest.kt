@@ -14,7 +14,7 @@ class MonthBalanceCopyTest {
         val shortfall = FakeMonthBalanceActions.shortfall
         val surplus = FakeMonthBalanceActions.surplus
         assertEquals("September ended \$200 short.", MonthBalanceCopy.headline(shortfall, money))
-        assertEquals("Track it as a debt?", MonthBalanceCopy.question(shortfall))
+        assertEquals("How do you want to handle it?", MonthBalanceCopy.question(shortfall))
         assertEquals("September ended \$150 ahead.", MonthBalanceCopy.headline(surplus, money))
         assertEquals("Include it in October?", MonthBalanceCopy.question(surplus))
     }
@@ -67,5 +67,34 @@ class MonthBalanceCopyTest {
         assertEquals(200.0, prefill.owed, 0.0)
         assertEquals("2026-09", prefill.shortfallMonth)
         assertNull(MonthBalanceCopy.shortfallPrefill(FakeMonthBalanceActions.surplus))
+    }
+
+    @Test
+    fun `pay it in names the month the card is shown in`() {
+        assertEquals("Pay it in October", MonthBalanceCopy.payIn(FakeMonthBalanceActions.shortfall))
+    }
+
+    @Test
+    fun `warns only when paying back this month does not fit`() {
+        val money = { value: Double -> "\$" + value.toInt() }
+        val shortfall = FakeMonthBalanceActions.shortfall
+        assertNull(MonthBalanceCopy.doesNotFit(shortfall, 1040.0, money))
+        assertNull(MonthBalanceCopy.doesNotFit(shortfall, 200.0, money))
+        assertNull(MonthBalanceCopy.doesNotFit(shortfall, null, money))
+        assertEquals(
+            "That leaves you \$150 short in October. Spreading it out may fit better.",
+            MonthBalanceCopy.doesNotFit(shortfall, 50.0, money),
+        )
+        assertNull(MonthBalanceCopy.doesNotFit(FakeMonthBalanceActions.surplus, 0.0, money))
+    }
+
+    @Test
+    fun `the payment day is the next income this month, else the last day`() {
+        val today = java.time.LocalDate.of(2026, 11, 3)
+        val nov = { day: Int -> java.time.LocalDate.of(2026, 11, day) }
+        assertEquals(nov(14), MonthBalanceCopy.paymentDate(listOf(nov(28), nov(14), java.time.LocalDate.of(2026, 12, 1)), today))
+        assertEquals(nov(3), MonthBalanceCopy.paymentDate(listOf(nov(3)), today))
+        assertEquals(nov(30), MonthBalanceCopy.paymentDate(listOf(nov(1)), today))
+        assertEquals(nov(30), MonthBalanceCopy.paymentDate(emptyList(), today))
     }
 }

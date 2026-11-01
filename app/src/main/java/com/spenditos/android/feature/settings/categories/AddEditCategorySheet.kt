@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.settings.categories
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -79,7 +82,158 @@ private val categoryColors = listOf(
 
 private val categoryIcons = listOf("🍽️", "🛒", "🏠", "🚗", "🎁", "💼", "💰", "❤️", "📚", "✈️", "🐾", "🏷️")
 
-private data class IconLibraryItem(val value: String, val name: String, val group: String, val keywords: String = "")
+private data class IconLibraryItem(val value: String, val name: String, val group: String, val keywords: String = "") {
+    /** [name] is the stable English id; this is the name shown, spoken and searched in the app language. */
+    val label: String
+        get() = iconNameRes[name]?.let { Strings.get(it) }
+            ?: if (name.startsWith("Other ")) Strings.get(R.string.settings_other_group_icon, iconGroupName(group)) else name
+}
+
+private val iconNameRes: Map<String, Int> = mapOf(
+    "Tag" to R.string.icon_tag,
+    "Money" to R.string.icon_money,
+    "Card" to R.string.icon_card,
+    "Bank" to R.string.icon_bank,
+    "Cash" to R.string.icon_cash,
+    "Coins" to R.string.icon_coins,
+    "Planning" to R.string.icon_planning,
+    "Growth" to R.string.icon_growth,
+    "Downturn" to R.string.icon_downturn,
+    "Receipt" to R.string.icon_receipt,
+    "Gift" to R.string.icon_gift,
+    "Work" to R.string.icon_work,
+    "Developer" to R.string.icon_developer,
+    "Computer" to R.string.icon_computer,
+    "Desktop" to R.string.icon_desktop,
+    "Code" to R.string.icon_code,
+    "Network" to R.string.icon_network,
+    "Files" to R.string.icon_files,
+    "Burger" to R.string.icon_burger,
+    "Pizza" to R.string.icon_pizza,
+    "Sushi" to R.string.icon_sushi,
+    "Noodles" to R.string.icon_noodles,
+    "Meal" to R.string.icon_meal,
+    "Salad" to R.string.icon_salad,
+    "Fruit" to R.string.icon_fruit,
+    "Produce" to R.string.icon_produce,
+    "Groceries" to R.string.icon_groceries,
+    "Coffee" to R.string.icon_coffee,
+    "Snack" to R.string.icon_snack,
+    "Dessert" to R.string.icon_dessert,
+    "Home" to R.string.icon_home,
+    "Building" to R.string.icon_building,
+    "Key" to R.string.icon_key,
+    "Utilities" to R.string.icon_utilities,
+    "Furniture" to R.string.icon_furniture,
+    "Bedroom" to R.string.icon_bedroom,
+    "Cleaning" to R.string.icon_cleaning,
+    "Plants" to R.string.icon_plants,
+    "Car" to R.string.icon_car,
+    "Fuel" to R.string.icon_fuel,
+    "Bus" to R.string.icon_bus,
+    "Train" to R.string.icon_train,
+    "Taxi" to R.string.icon_taxi,
+    "Bike" to R.string.icon_bike,
+    "Flight" to R.string.icon_flight,
+    "Travel" to R.string.icon_travel,
+    "Shopping" to R.string.icon_shopping,
+    "Clothing" to R.string.icon_clothing,
+    "Shoes" to R.string.icon_shoes,
+    "Beauty" to R.string.icon_beauty,
+    "Jewelry" to R.string.icon_jewelry,
+    "Delivery" to R.string.icon_delivery,
+    "Phone" to R.string.icon_phone,
+    "Health" to R.string.icon_health,
+    "Medicine" to R.string.icon_medicine,
+    "Hospital" to R.string.icon_hospital,
+    "Doctor" to R.string.icon_doctor,
+    "Fitness" to R.string.icon_fitness,
+    "Wellness" to R.string.icon_wellness,
+    "Mental Health" to R.string.icon_mental_health,
+    "Games" to R.string.icon_games,
+    "Movies" to R.string.icon_movies,
+    "Music" to R.string.icon_music,
+    "Audio" to R.string.icon_audio,
+    "Art" to R.string.icon_art,
+    "Tickets" to R.string.icon_tickets,
+    "Books" to R.string.icon_books,
+    "Family" to R.string.icon_family,
+    "Childcare" to R.string.icon_childcare,
+    "School" to R.string.icon_school,
+    "Pets" to R.string.icon_pets,
+    "Dog" to R.string.icon_dog,
+    "Cat" to R.string.icon_cat,
+    "Nature" to R.string.icon_nature,
+    "Flowers" to R.string.icon_flowers,
+    "Water" to R.string.icon_water,
+    "Favorite" to R.string.icon_favorite,
+    "Sparkles" to R.string.icon_sparkles,
+    "Streak" to R.string.icon_streak,
+    "Energy" to R.string.icon_energy,
+    "Insurance" to R.string.icon_insurance,
+    "Security" to R.string.icon_security,
+    "ATM" to R.string.icon_atm,
+    "Luxury" to R.string.icon_luxury,
+    "Internet" to R.string.icon_internet,
+    "Wi-Fi" to R.string.icon_wi_fi,
+    "Printer" to R.string.icon_printer,
+    "Tools" to R.string.icon_tools,
+    "Basket" to R.string.icon_basket,
+    "Bubble Tea" to R.string.icon_bubble_tea,
+    "Drinks" to R.string.icon_drinks,
+    "Takeaway Drink" to R.string.icon_takeaway_drink,
+    "Electricity" to R.string.icon_electricity,
+    "Shower" to R.string.icon_shower,
+    "Household" to R.string.icon_household,
+    "Bath" to R.string.icon_bath,
+    "Repairs" to R.string.icon_repairs,
+    "Television" to R.string.icon_television,
+    "Toys" to R.string.icon_toys,
+    "Car Maintenance" to R.string.icon_car_maintenance,
+    "Subway" to R.string.icon_subway,
+    "Scooter" to R.string.icon_scooter,
+    "Boat" to R.string.icon_boat,
+    "Parking" to R.string.icon_parking,
+    "Camping" to R.string.icon_camping,
+    "Fashion" to R.string.icon_fashion,
+    "Bags" to R.string.icon_bags,
+    "Electronics" to R.string.icon_electronics,
+    "Home Goods" to R.string.icon_home_goods,
+    "First Aid" to R.string.icon_first_aid,
+    "Dental" to R.string.icon_dental,
+    "Vision" to R.string.icon_vision,
+    "Running" to R.string.icon_running,
+    "Strength" to R.string.icon_strength,
+    "Emergency" to R.string.icon_emergency,
+    "Personal Care" to R.string.icon_personal_care,
+    "Concert" to R.string.icon_concert,
+    "Theatre" to R.string.icon_theatre,
+    "Board Games" to R.string.icon_board_games,
+    "Hobbies" to R.string.icon_hobbies,
+    "Bowling" to R.string.icon_bowling,
+    "Photography" to R.string.icon_photography,
+    "People" to R.string.icon_people,
+    "Community" to R.string.icon_community,
+    "Education" to R.string.icon_education,
+    "Supplies" to R.string.icon_supplies,
+    "Communication" to R.string.icon_communication,
+    "Baby" to R.string.icon_baby,
+    "Friends" to R.string.icon_friends,
+    "Giving" to R.string.icon_giving,
+    "Bird" to R.string.icon_bird,
+    "Fish" to R.string.icon_fish,
+    "Outdoors" to R.string.icon_outdoors,
+    "Beach" to R.string.icon_beach,
+    "Hiking" to R.string.icon_hiking,
+    "Sun" to R.string.icon_sun,
+    "Garden" to R.string.icon_garden,
+    "Star" to R.string.icon_star,
+    "Celebration" to R.string.icon_celebration,
+    "Party" to R.string.icon_party,
+    "Protection" to R.string.icon_protection,
+    "Covered" to R.string.icon_covered,
+    "Other" to R.string.icon_other,
+)
 
 private fun legacyIcons(group: String, values: List<String>) =
     values.map { IconLibraryItem(it, "Other $group icon", group, group) }
@@ -193,7 +347,7 @@ fun AddEditCategorySheet(
     val quickIcons = remember(name, icon) {
         val tokens = name.lowercase().split(Regex("\\s+")).filter { it.length > 1 }
         val matched = iconLibrary.filter { item ->
-            tokens.any { token -> item.name.contains(token, ignoreCase = true) || item.keywords.contains(token, ignoreCase = true) }
+            tokens.any { token -> item.label.contains(token, ignoreCase = true) || item.name.contains(token, ignoreCase = true) || item.keywords.contains(token, ignoreCase = true) }
         }.map { it.value }
         (listOfNotNull(icon) + matched + categoryIcons).distinct().take(10)
     }
@@ -212,9 +366,9 @@ fun AddEditCategorySheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onDismiss, modifier = Modifier.testTag("categories.editor.cancel")) { Text("Cancel", style = IosText.body, color = IosColors.textSecondary) }
+                TextButton(onClick = onDismiss, modifier = Modifier.testTag("categories.editor.cancel")) { Text(stringResource(R.string.common_cancel), style = IosText.body, color = IosColors.textSecondary) }
                 Text(
-                    if (category == null) "New Category" else "Edit Category",
+                    if (category == null) stringResource(R.string.settings_new_category) else stringResource(R.string.settings_edit_category),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
                     textAlign = TextAlign.Center,
@@ -226,7 +380,7 @@ fun AddEditCategorySheet(
             error?.let { ErrorBanner(it, Modifier.testTag("categories.editor.error")) }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                SheetSectionLabel("Name")
+                SheetSectionLabel(stringResource(R.string.common_name))
                 BasicTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -237,7 +391,7 @@ fun AddEditCategorySheet(
                     modifier = Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m).testTag("categories.editor.name"),
                     decorationBox = { inner ->
                         Box {
-                            if (name.isEmpty()) Text("Category name", style = IosText.body, color = IosColors.textTertiary)
+                            if (name.isEmpty()) Text(stringResource(R.string.settings_category_name), style = IosText.body, color = IosColors.textTertiary)
                             inner()
                         }
                     },
@@ -245,7 +399,7 @@ fun AddEditCategorySheet(
             }
 
             if (lockedType == null) Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                SheetSectionLabel("Type")
+                SheetSectionLabel(stringResource(R.string.common_type))
                 Box(Modifier.fillMaxWidth()) {
                     Row(
                         Modifier.fillMaxWidth().then(subtleGlassModifier()).clickable { typeMenu = true }
@@ -259,17 +413,17 @@ fun AddEditCategorySheet(
                             tint = IosColors.textSecondary,
                             modifier = Modifier.size(18.dp),
                         )
-                        Text(if (isIncome) "Income" else "Expense", style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
+                        Text(if (isIncome) stringResource(R.string.common_income) else stringResource(R.string.common_expense), style = IosText.body, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
                         Icon(SfSymbols.icon("chevron.down"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(14.dp))
                     }
                     DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Expense", style = IosText.body) },
+                            text = { Text(stringResource(R.string.common_expense), style = IosText.body) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.up"), contentDescription = null) },
                             onClick = { isIncome = false; typeMenu = false },
                         )
                         DropdownMenuItem(
-                            text = { Text("Income", style = IosText.body) },
+                            text = { Text(stringResource(R.string.common_income), style = IosText.body) },
                             leadingIcon = { Icon(SfSymbols.icon("arrow.down"), contentDescription = null) },
                             onClick = { isIncome = true; typeMenu = false },
                         )
@@ -278,7 +432,7 @@ fun AddEditCategorySheet(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                SheetSectionLabel("Color")
+                SheetSectionLabel(stringResource(R.string.settings_color))
                 Column(Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     categoryColors.chunked(5).forEach { row ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -292,23 +446,23 @@ fun AddEditCategorySheet(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                SheetSectionLabel("Icon")
+                SheetSectionLabel(stringResource(R.string.settings_icon))
                 Column(Modifier.fillMaxWidth().then(subtleGlassModifier()).padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                         quickIcons.forEach { option ->
                             IconChoice(option, selected = icon == option, modifier = Modifier.testTag("categories.editor.icon.$option")) { icon = option }
                         }
-                        IconChoice("None", selected = icon == null, modifier = Modifier.testTag("categories.editor.icon.none")) { icon = null }
+                        IconChoice(stringResource(R.string.settings_none), selected = icon == null, modifier = Modifier.testTag("categories.editor.icon.none")) { icon = null }
                     }
                 }
                 TextButton(onClick = { showIconLibrary = true }, modifier = Modifier.testTag("categories.editor.browseIcons")) {
                     Icon(SfSymbols.icon("square.grid.3x3"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(16.dp))
-                    Text("Browse all icons", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange, modifier = Modifier.padding(start = Spacing.s))
+                    Text(stringResource(R.string.settings_browse_all_icons), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.spendOrange, modifier = Modifier.padding(start = Spacing.s))
                 }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                SheetSectionLabel("Preview")
+                SheetSectionLabel(stringResource(R.string.settings_preview))
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainer)
@@ -317,12 +471,12 @@ fun AddEditCategorySheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
-                    CategorySymbolBadge(icon, name.ifEmpty { "Category" }, color, size = 40.dp)
-                    Text(name.ifEmpty { "Category Name" }, style = IosText.callout, color = IosColors.textPrimary)
+                    CategorySymbolBadge(icon, name.ifEmpty { stringResource(R.string.common_category) }, color, size = 40.dp)
+                    Text(name.ifEmpty { stringResource(R.string.settings_category_name_2) }, style = IosText.callout, color = IosColors.textPrimary)
                 }
             }
 
-            val saveLabel = if (category == null) "Create Category" else "Save Changes"
+            val saveLabel = if (category == null) stringResource(R.string.settings_create_category) else stringResource(R.string.settings_save_changes)
             if (isSaving) {
                 SavingPill(saveLabel, Modifier.fillMaxWidth().testTag("categories.editor.save"))
             } else {
@@ -339,7 +493,7 @@ fun AddEditCategorySheet(
                     enabled = !isSaving,
                     modifier = Modifier.fillMaxWidth().testTag("categories.editor.delete"),
                 ) {
-                    Text("Delete Category", style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.expense)
+                    Text(stringResource(R.string.settings_delete_category), style = IosText.callout.w(FontWeight.SemiBold), color = IosColors.expense)
                 }
             }
         }
@@ -369,11 +523,11 @@ private fun SavingPill(text: String, modifier: Modifier = Modifier) {
 
 /** Human name for an icon option, used as its accessibility description. */
 internal fun iconOptionDescription(value: String): String =
-    if (value == "None") "No icon"
-    else iconLibrary.firstOrNull { it.value == value }?.name ?: value
+    if (value == "None") Strings.get(R.string.settings_no_icon)
+    else iconLibrary.firstOrNull { it.value == value }?.label ?: value
 
 /** Spoken label for a color swatch option. */
-internal fun colorOptionDescription(hex: String): String = "Color ${hex.removePrefix("#")}"
+internal fun colorOptionDescription(hex: String): String = Strings.get(R.string.settings_color_2, hex.removePrefix("#"))
 
 @Composable
 private fun ColorChoice(hex: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -413,8 +567,8 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (value == "None") Text("None", style = IosText.caption2, color = IosColors.textSecondary)
-                else CategoryIcon(value, iconLibrary.firstOrNull { it.value == value }?.name, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
+                if (value == "None") Text(stringResource(R.string.settings_none), style = IosText.caption2, color = IosColors.textSecondary)
+                else CategoryIcon(value, iconLibrary.firstOrNull { it.value == value }?.label, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
             }
             if (selected) {
                 Box(Modifier.align(Alignment.TopEnd).size(18.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer)) {
@@ -424,7 +578,7 @@ private fun IconChoice(value: String, selected: Boolean, modifier: Modifier = Mo
         }
         if (showsLabel && value != "None") {
             Text(
-                iconLibrary.firstOrNull { it.value == value }?.name ?: "Current icon",
+                iconLibrary.firstOrNull { it.value == value }?.label ?: stringResource(R.string.settings_current_icon),
                 style = IosText.caption2,
                 color = IosColors.textSecondary,
                 maxLines = 1,
@@ -444,11 +598,11 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
     val query = searchText.trim()
     val icons = iconLibrary.filter { item ->
         (selectedGroup == null || item.group == selectedGroup) &&
-            (query.isEmpty() || listOf(item.name, item.group, item.keywords).any { it.contains(query, ignoreCase = true) } || query.split(' ').all { token -> listOf(item.name, item.group, item.keywords).any { it.contains(token, ignoreCase = true) } })
+            (query.isEmpty() || listOf(item.label, item.name, item.group, iconGroupName(item.group), item.keywords).any { it.contains(query, ignoreCase = true) } || query.split(' ').all { token -> listOf(item.label, item.name, item.group, iconGroupName(item.group), item.keywords).any { it.contains(token, ignoreCase = true) } })
     }
     val suggested = remember(categoryName, selectedIcon) {
         (listOfNotNull(selectedIcon) + iconLibrary.filter { item ->
-            categoryName.isNotBlank() && (item.name.contains(categoryName, ignoreCase = true) || item.keywords.contains(categoryName, ignoreCase = true))
+            categoryName.isNotBlank() && (item.label.contains(categoryName, ignoreCase = true) || item.name.contains(categoryName, ignoreCase = true) || item.keywords.contains(categoryName, ignoreCase = true))
         }.map { it.value } + listOf("🏷️", "🍔", "🏠", "🚗", "🛍️", "❤️", "🎮", "📚", "🐾", "⭐", "💰", "☕")).distinct().take(12)
     }
 
@@ -461,8 +615,8 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
         Column(Modifier.fillMaxWidth().dismissKeyboardOnTapOutside().dismissKeyboardOnScroll().padding(bottom = Spacing.l)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(64.dp))
-                Text("Choose Icon", style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                TextButton(onClick = onDismiss) { Text("Done", color = IosColors.spendOrange) }
+                Text(stringResource(R.string.settings_choose_icon), style = IosText.headline, color = IosColors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_done), color = IosColors.spendOrange) }
             }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Spacing.screen).then(subtleGlassModifier()).padding(Spacing.m),
@@ -478,7 +632,7 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                     keyboardActions = rememberKeyboardDoneActions(),
                     textStyle = IosText.callout.copy(color = IosColors.textPrimary),
                     modifier = Modifier.weight(1f).testTag("categories.iconSearch"),
-                    decorationBox = { inner -> Box { if (searchText.isEmpty()) Text("Search icons", style = IosText.callout, color = IosColors.textTertiary); inner() } },
+                    decorationBox = { inner -> Box { if (searchText.isEmpty()) Text(stringResource(R.string.settings_search_icons), style = IosText.callout, color = IosColors.textTertiary); inner() } },
                 )
             }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.screen, vertical = Spacing.m), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -507,24 +661,24 @@ private fun CategoryIconBrowser(categoryName: String, selectedIcon: String?, onS
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Icon(SfSymbols.icon(symbol), contentDescription = null, tint = if (selected) IosColors.spendOrange else IosColors.textSecondary, modifier = Modifier.size(14.dp))
-                        Text(group, style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
+                        Text(iconGroupLabel(group), style = IosText.caption.w(FontWeight.SemiBold), color = if (selected) IosColors.spendOrange else IosColors.textSecondary)
                     }
                 }
             }
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.l)) {
                 if (query.isEmpty() && selectedGroup == null) {
-                    IconBrowserSection(if (categoryName.isBlank()) "Popular" else "Suggested for “$categoryName”", suggested, selectedIcon, onSelect)
-                    IconBrowserSection("All icons", iconLibrary.map { it.value }.distinct(), selectedIcon, onSelect)
+                    IconBrowserSection(if (categoryName.isBlank()) stringResource(R.string.common_popular) else stringResource(R.string.settings_suggested_for, categoryName), suggested, selectedIcon, onSelect)
+                    IconBrowserSection(stringResource(R.string.settings_all_icons), iconLibrary.map { it.value }.distinct(), selectedIcon, onSelect)
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(selectedGroup ?: "Search results", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
+                        Text(selectedGroup?.let { iconGroupLabel(it) } ?: stringResource(R.string.settings_search_results), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary, modifier = Modifier.weight(1f))
                         Text(icons.map { it.value }.distinct().size.toString(), style = IosText.caption, color = IosColors.textTertiary)
                     }
                     if (icons.isEmpty()) {
                         Column(Modifier.fillMaxWidth().padding(vertical = Spacing.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                             Icon(SfSymbols.icon("magnifyingglass"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(28.dp))
-                            Text("No icons found", style = IosText.body, color = IosColors.textSecondary)
-                            Text("Try a broader word, like food, home, or travel.", style = IosText.caption, color = IosColors.textTertiary)
+                            Text(stringResource(R.string.settings_no_icons_found), style = IosText.body, color = IosColors.textSecondary)
+                            Text(stringResource(R.string.settings_try_a_broader_word_like), style = IosText.caption, color = IosColors.textTertiary)
                         }
                     } else IconBrowserGrid(icons.map { it.value }.distinct(), selectedIcon, onSelect)
                 }
@@ -559,3 +713,36 @@ private fun SheetSectionLabel(text: String) {
 }
 
 private fun categorySwatch(hex: String): Color = Color(runCatching { android.graphics.Color.parseColor(hex) }.getOrDefault(android.graphics.Color.GRAY))
+
+/** [iconGroupLabel] for code that is not Compose. */
+private fun iconGroupName(group: String): String = when (group) {
+    "All" -> Strings.get(R.string.common_all)
+    "Money" -> Strings.get(R.string.settings_money)
+    "Work & Tech" -> Strings.get(R.string.settings_work_tech)
+    "Food & Drink" -> Strings.get(R.string.settings_food_drink)
+    "Home & Life" -> Strings.get(R.string.settings_home_life)
+    "Transport" -> Strings.get(R.string.settings_transport)
+    "Shopping" -> Strings.get(R.string.settings_shopping)
+    "Health & Care" -> Strings.get(R.string.settings_health_care)
+    "Entertainment" -> Strings.get(R.string.settings_entertainment)
+    "People & Learning" -> Strings.get(R.string.settings_people_learning)
+    "Nature & Pets" -> Strings.get(R.string.settings_nature_pets)
+    else -> Strings.get(R.string.settings_symbols)
+}
+
+/** Localized name of an icon group; the English [group] id is what the icon library is keyed by. */
+@androidx.compose.runtime.Composable
+private fun iconGroupLabel(group: String): String = when (group) {
+    "All" -> stringResource(R.string.common_all)
+    "Money" -> stringResource(R.string.settings_money)
+    "Work & Tech" -> stringResource(R.string.settings_work_tech)
+    "Food & Drink" -> stringResource(R.string.settings_food_drink)
+    "Home & Life" -> stringResource(R.string.settings_home_life)
+    "Transport" -> stringResource(R.string.settings_transport)
+    "Shopping" -> stringResource(R.string.settings_shopping)
+    "Health & Care" -> stringResource(R.string.settings_health_care)
+    "Entertainment" -> stringResource(R.string.settings_entertainment)
+    "People & Learning" -> stringResource(R.string.settings_people_learning)
+    "Nature & Pets" -> stringResource(R.string.settings_nature_pets)
+    else -> stringResource(R.string.settings_symbols)
+}

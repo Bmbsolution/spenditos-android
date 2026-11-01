@@ -191,6 +191,9 @@ class TransactionListViewModelTest {
 
         viewModel.previousMonth() // browsing away from the default month pins it
         viewModel.state.first { it.month == YearMonth.of(2026, 9) }
+        // Observe rollover only after the explicit selection. The initial
+        // UiState uses the device month before the injected clock emits.
+        months.clear()
 
         clock.set(Instant.parse("2026-11-01T04:00:00Z"))
         testScheduler.advanceTimeBy(Duration.between(Instant.parse("2026-10-31T16:00:00Z"), Instant.parse("2026-11-01T04:00:00Z")).toMillis())

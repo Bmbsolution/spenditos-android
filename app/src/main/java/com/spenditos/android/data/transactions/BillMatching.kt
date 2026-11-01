@@ -1,5 +1,7 @@
 package com.spenditos.android.data.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.Transaction
@@ -92,7 +94,7 @@ object BillMatching {
 
             val evidence = (if (byName) 3.0 else 0.0) + (if (byCategory) 1.0 else 0.0)
             val closeness = (1.0 - diff) + (1.0 - days.toDouble() / (DATE_WINDOW_DAYS + 1))
-            out += BillCandidate(entry, name.ifEmpty { "Bill" }, evidence + closeness)
+            out += BillCandidate(entry, name.ifEmpty { Strings.get(R.string.common_bill) }, evidence + closeness)
         }
         return out.sortedByDescending { it.score }.take(MAX_CANDIDATES)
     }
@@ -130,13 +132,15 @@ object BillMatching {
 val RecurringTemplate.isLegacyEstimate: Boolean get() = type.equals("variable", ignoreCase = true)
 
 /** Repeat presets offered by "Make it recurring" in the add form. Port of iOS `RecurrencePreset`. */
-enum class RecurrencePreset(val label: String, val frequency: String) {
-    WEEKLY("Weekly", "weekly"),
-    BI_WEEKLY("Every 2 weeks", "bi-weekly"),
-    SEMI_MONTHLY("Twice a month", "semi-monthly"),
-    MONTHLY("Monthly", "monthly"),
-    YEARLY("Yearly", "yearly"),
+enum class RecurrencePreset(@androidx.annotation.StringRes val labelRes: Int, val frequency: String) {
+    WEEKLY(R.string.data_transactions_weekly, "weekly"),
+    BI_WEEKLY(R.string.common_every_2_weeks, "bi-weekly"),
+    SEMI_MONTHLY(R.string.common_twice_a_month, "semi-monthly"),
+    MONTHLY(R.string.data_transactions_monthly, "monthly"),
+    YEARLY(R.string.data_transactions_yearly, "yearly"),
     ;
+
+    val label: String get() = Strings.get(labelRes)
 
     /** The due date one period after [date]; month arithmetic clamps to the month's last day. */
     fun next(date: LocalDate): LocalDate = when (this) {

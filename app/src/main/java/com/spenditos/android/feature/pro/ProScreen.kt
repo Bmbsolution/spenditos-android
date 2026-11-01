@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.pro
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -82,8 +85,8 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = Color(0xFFFFCC00), modifier = Modifier.size(72.dp))
-                    Text("Upgrade to Pro", style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
-                    Text("Unlock the full power of AI expense tracking", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.common_upgrade_to_pro), style = IosText.largeTitle.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.pro_unlock_the_full_power_of), style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                 }
 
                 Column(
@@ -111,9 +114,9 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(Spacing.m),
                         ) {
-                            Text("You have Pro", style = IosText.headline, color = SystemBlue, modifier = Modifier.testTag("pro.active"))
+                            Text(stringResource(R.string.pro_you_have_pro), style = IosText.headline, color = SystemBlue, modifier = Modifier.testTag("pro.active"))
                             SystemButton(
-                                "Manage subscription",
+                                stringResource(R.string.pro_manage_subscription),
                                 null,
                                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))) },
                                 modifier = Modifier.fillMaxWidth().testTag("pro.manage"),
@@ -125,7 +128,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
-                            Text("Subscriptions aren't available in this build.", style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))
+                            Text(stringResource(R.string.pro_subscriptions_aren_t_available_in), style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))
                         }
                     }
                     state.packages.isEmpty() -> OfferingsUnavailable(onRetry = viewModel::load, hasError = state.error != null)
@@ -152,7 +155,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                                                 Text(pkg.title, style = IosText.headline, color = IosColors.textPrimary)
                                                 Text(pkg.price + (pkg.period?.let { " / $it" } ?: ""), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
-                                                if (pkg.isBestValue) Text("Best value", style = IosText.caption, color = SystemBlue)
+                                                if (pkg.isBestValue) Text(stringResource(R.string.pro_best_value), style = IosText.caption, color = SystemBlue)
                                             }
                                             Box(
                                                 Modifier.size(24.dp).clip(CircleShape)
@@ -167,7 +170,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                                 }
                             }
                             SystemButton(
-                                if (state.isBusy) "Working…" else "Subscribe",
+                                if (state.isBusy) stringResource(R.string.pro_working) else stringResource(R.string.pro_subscribe),
                                 null,
                                 enabled = state.selectedId != null && !state.isBusy,
                                 onClick = { context.findActivity()?.let(viewModel::buy) },
@@ -179,7 +182,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
 
                 if (!state.isPro && state.isAvailable) {
                     TextButton(onClick = viewModel::restore, enabled = !state.isLoading && !state.isBusy, modifier = Modifier.fillMaxWidth().testTag("pro.restore")) {
-                        Text("Restore Purchases", style = IosText.subheadline, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.common_restore_purchases), style = IosText.subheadline, color = IosColors.textSecondary)
                     }
                 }
 
@@ -189,13 +192,13 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                         verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("Payment will be charged to your Google Play account at the confirmation of purchase.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
-                        Text("Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
-                        Text("Your account will be charged for renewal within 24 hours prior to the end of the current period.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
-                        Text("Payment is charged to your Google Play account and the subscription renews automatically each period until you cancel. Cancel anytime in Google Play > Payments & subscriptions.", style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pro_payment_will_be_charged_to), style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pro_subscription_automatically_renews_unless_c), style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pro_your_account_will_be_charged), style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pro_payment_is_charged_to_your), style = IosText.caption, color = IosColors.textSecondary, textAlign = TextAlign.Center)
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            LegalLink("Privacy Policy", "https://spenditos.com/privacy", context)
-                            LegalLink("Terms of Use", "https://spenditos.com/terms", context)
+                            LegalLink(stringResource(R.string.common_privacy_policy), "https://spenditos.com/privacy", context)
+                            LegalLink(stringResource(R.string.pro_terms_of_use), "https://spenditos.com/terms", context)
                         }
                     }
                 }
@@ -210,10 +213,10 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
 internal data class ProFeatureSpec(val symbol: String, val title: String, val description: String)
 
 internal val PRO_FEATURES = listOf(
-    ProFeatureSpec("doc.viewfinder", "Unlimited AI Receipt Scanning", "Snap photos of receipts and let AI extract all details"),
-    ProFeatureSpec("waveform", "Smart Voice Entry", "Just speak to add transactions — AI extracts amount, merchant, and category"),
-    ProFeatureSpec("chart.line.uptrend.xyaxis", "Advanced Analytics", "Daily trends, income analysis, and detailed reports"),
-    ProFeatureSpec("arrow.triangle.2.circlepath", "Unlimited income items and bills", "Add as many income items and bills as you need"),
+    ProFeatureSpec("doc.viewfinder", Strings.get(R.string.pro_unlimited_ai_receipt_scanning), Strings.get(R.string.pro_snap_photos_of_receipts_and)),
+    ProFeatureSpec("waveform", Strings.get(R.string.pro_smart_voice_entry), Strings.get(R.string.pro_just_speak_to_add_transactions)),
+    ProFeatureSpec("chart.line.uptrend.xyaxis", Strings.get(R.string.pro_advanced_analytics), Strings.get(R.string.pro_daily_trends_income_analysis_and)),
+    ProFeatureSpec("arrow.triangle.2.circlepath", Strings.get(R.string.pro_unlimited_income_items_and_bills), Strings.get(R.string.pro_add_as_many_income_items)),
 )
 
 private data class Feature(val icon: ImageVector, val title: String, val description: String, val tint: Color)
@@ -242,10 +245,10 @@ private fun OfferingsUnavailable(onRetry: () -> Unit, hasError: Boolean) {
             Icon(SfSymbols.icon("cart"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.fillMaxSize())
             Icon(SfSymbols.icon("exclamationmark.circle.fill"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(18.dp).align(Alignment.BottomEnd))
         }
-        Text("Prices Unavailable", style = IosText.headline, color = IosColors.textPrimary)
-        Text("We couldn't load subscription options. Check your connection and try again.", style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.pro_prices_unavailable), style = IosText.headline, color = IosColors.textPrimary)
+        Text(stringResource(R.string.pro_we_couldn_t_load_subscription), style = IosText.subheadline, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         SystemButton(
-            "Retry",
+            stringResource(R.string.common_retry),
             SfSymbols.icon("arrow.clockwise"),
             onRetry,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp).then(if (hasError) Modifier else Modifier.testTag("pro.retry")),
@@ -286,13 +289,13 @@ private fun LegalLink(label: String, url: String, context: Context) {
 @Composable
 private fun ProHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(44.dp)) {
-        Text("Spenditos Pro", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(stringResource(R.string.common_spenditos_pro), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
         Text(
-            "Close",
+            stringResource(R.string.common_close),
             style = IosText.body,
             color = SystemBlue,
             modifier = Modifier.align(Alignment.CenterEnd).clickable(role = Role.Button, onClick = onBack)
-                .semantics { contentDescription = "Back" }
+                .semantics { contentDescription = Strings.get(R.string.common_back) }
                 .padding(horizontal = Spacing.m, vertical = Spacing.s).testTag("pro.back"),
         )
     }
@@ -303,10 +306,10 @@ private fun ProHeader(onBack: () -> Unit) {
 fun ProUpsellCard(message: String, onSeePro: () -> Unit, modifier: Modifier = Modifier) {
     GlassCard(modifier = modifier.testTag("pro.upsell")) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Pro feature", style = IosText.headline)
+            Text(stringResource(R.string.common_pro_feature), style = IosText.headline)
             Text(message, style = IosText.body, color = IosColors.textSecondary)
             androidx.compose.material3.TextButton(onClick = onSeePro, modifier = Modifier.testTag("pro.upsell.see")) {
-                Text("See Spenditos Pro", style = IosText.headline, color = SystemBlue)
+                Text(stringResource(R.string.common_see_spenditos_pro), style = IosText.headline, color = SystemBlue)
             }
         }
     }

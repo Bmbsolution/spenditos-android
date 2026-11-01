@@ -1,5 +1,7 @@
 package com.spenditos.android.data.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.net.Uri
 import com.spenditos.android.data.model.CreateScanDocument
 import com.spenditos.android.data.model.CreateScanRequest
@@ -67,22 +69,22 @@ data class ScanContext(
 
 /** Why a scan could not be read, with the copy iOS `ScanError` shows. */
 sealed class ScanFailure(val userMessage: String) : Exception(userMessage) {
-    data object NoDocuments : ScanFailure("Choose at least one photo or file.")
-    data class UnreadableImage(val name: String?) : ScanFailure("Couldn't read ${name ?: "one of the images"}.")
+    data object NoDocuments : ScanFailure(Strings.get(R.string.data_scan_choose_at_least_one_photo))
+    data class UnreadableImage(val name: String?) : ScanFailure(Strings.get(R.string.scan_cant_read_name, name ?: Strings.get(R.string.scan_one_of_the_images)))
     data class PdfLocked(val name: String?) :
-        ScanFailure("${name ?: "That PDF"} is password protected. Remove the password and try again.")
-    data class PdfEmpty(val name: String?) : ScanFailure("${name ?: "That PDF"} has no pages to read.")
-    data class FileTooLarge(val name: String?) : ScanFailure("${name ?: "That file"} is too large to upload (10 MB maximum).")
+        ScanFailure(Strings.get(R.string.scan_pdf_locked, name ?: Strings.get(R.string.scan_that_pdf)))
+    data class PdfEmpty(val name: String?) : ScanFailure(Strings.get(R.string.scan_pdf_empty, name ?: Strings.get(R.string.scan_that_pdf)))
+    data class FileTooLarge(val name: String?) : ScanFailure(Strings.get(R.string.scan_file_too_large, name ?: Strings.get(R.string.scan_that_file)))
     data class UnsupportedFile(val name: String?) :
-        ScanFailure("${name ?: "That file"} isn't a type Spenditos can read. Try a photo, PDF, CSV or Excel file.")
+        ScanFailure(Strings.get(R.string.scan_unsupported_file, name ?: Strings.get(R.string.scan_that_file)))
     data class Failed(val serverMessage: String?) :
-        ScanFailure(serverMessage?.takeIf { it.isNotBlank() } ?: "Couldn't read transactions from this scan.")
-    data object Timeout : ScanFailure("Reading is taking longer than expected. We'll keep going in the background.")
-    data object NoTransactionsFound : ScanFailure("No transactions were found in this scan.")
-    data object Cancelled : ScanFailure("This scan was cancelled.")
-    data object AlreadySaved : ScanFailure("Those transactions were already added.")
-    data object InvalidUploadUrl : ScanFailure("Couldn't upload that file. Try again.")
-    data class UploadFailed(val status: Int) : ScanFailure("Couldn't upload that file. Try again.")
+        ScanFailure(serverMessage?.takeIf { it.isNotBlank() } ?: Strings.get(R.string.data_scan_couldn_t_read_transactions_from))
+    data object Timeout : ScanFailure(Strings.get(R.string.data_scan_reading_is_taking_longer_than))
+    data object NoTransactionsFound : ScanFailure(Strings.get(R.string.data_scan_no_transactions_were_found_in))
+    data object Cancelled : ScanFailure(Strings.get(R.string.data_scan_this_scan_was_cancelled))
+    data object AlreadySaved : ScanFailure(Strings.get(R.string.data_scan_those_transactions_were_already_added))
+    data object InvalidUploadUrl : ScanFailure(Strings.get(R.string.data_scan_couldn_t_upload_that_file))
+    data class UploadFailed(val status: Int) : ScanFailure(Strings.get(R.string.data_scan_couldn_t_upload_that_file))
 }
 
 /** Where a ready scan leads (iOS `ScanResolution`). */
@@ -138,13 +140,13 @@ object ScanRules {
             val name = inputs[0].filename?.trim().orEmpty()
             if (name.isNotEmpty()) return name.take(MAX_SOURCE_LABEL_LENGTH)
             return when (inputs[0].origin) {
-                ScanInputOrigin.PHOTO_LIBRARY -> "1 screenshot"
-                ScanInputOrigin.CAMERA -> "1 photo"
-                ScanInputOrigin.FILES -> "1 file"
+                ScanInputOrigin.PHOTO_LIBRARY -> Strings.plural(R.plurals.scan_label_screenshots, 1)
+                ScanInputOrigin.CAMERA -> Strings.plural(R.plurals.scan_label_photos, 1)
+                ScanInputOrigin.FILES -> Strings.plural(R.plurals.scan_label_files, 1)
             }
         }
         val allPhotos = inputs.all { it.origin == ScanInputOrigin.PHOTO_LIBRARY }
-        return if (allPhotos) "${inputs.size} screenshots" else "${inputs.size} files"
+        return if (allPhotos) Strings.plural(R.plurals.scan_label_screenshots, inputs.size) else Strings.plural(R.plurals.scan_label_files, inputs.size)
     }
 
     /** Splits uploaded documents into scan-sized groups, preserving order. */
@@ -153,13 +155,13 @@ object ScanRules {
 
     /** "Statement.pdf (1 of 2)" when an upload is split; the label as is otherwise. */
     fun chunkLabel(label: String, index: Int, count: Int): String =
-        if (count > 1) "$label (${index + 1} of $count)" else label
+        if (count > 1) Strings.get(R.string.scan_chunk_label, label, index + 1, count) else label
 
     /** The reading screen's unit: pages for a PDF, images for photos, files otherwise. */
     fun readingUnit(inputs: List<ScanInput>): String = when {
-        inputs.any { it.kind == ScanInputKind.PDF } -> "Page"
-        inputs.all { it.kind == ScanInputKind.IMAGE } -> "Image"
-        else -> "File"
+        inputs.any { it.kind == ScanInputKind.PDF } -> Strings.get(R.string.data_scan_page)
+        inputs.all { it.kind == ScanInputKind.IMAGE } -> Strings.get(R.string.common_image)
+        else -> Strings.get(R.string.data_scan_file)
     }
 
     /** Body for `POST /scans`. A spreadsheet never carries a `pdfGroupId` (the server rejects it with 400). */
@@ -200,9 +202,9 @@ object ScanCredits {
     fun overLimitMessage(estimatedCredits: Int, remaining: Int?): String? {
         if (remaining == null || remaining <= 0 || estimatedCredits <= remaining) return null
         return if (remaining == 1) {
-            "You have 1 scan left — pick up to 1"
+            Strings.get(R.string.data_scan_you_have_1_scan_left)
         } else {
-            "You have $remaining scans left — pick up to $remaining"
+            Strings.get(R.string.data_scan_you_have_scans_left_pick, remaining, remaining)
         }
     }
 }

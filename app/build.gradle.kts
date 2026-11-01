@@ -120,6 +120,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    lint {
+        // Every English string must ship in French (values-fr), and nothing may exist only in French.
+        error += setOf("MissingTranslation", "ExtraTranslation")
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -158,6 +163,8 @@ room {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // Per-app language on Android 9-12 (AppCompatDelegate.setApplicationLocales backport).
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
     implementation(libs.androidx.biometric)

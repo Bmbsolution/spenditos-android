@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.pro
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -58,13 +60,13 @@ class ProViewModel @Inject constructor(
                         packages = list,
                         selectedId = it.selectedId?.takeIf { id -> list.any { p -> p.id == id } }
                             ?: (list.firstOrNull { p -> p.isBestValue } ?: list.firstOrNull())?.id,
-                        error = if (list.isEmpty() && pro != true) "No plans are available right now. Try again later." else null,
+                        error = if (list.isEmpty() && pro != true) Strings.get(R.string.pro_no_plans_are_available_right) else null,
                     )
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                _state.update { it.copy(isLoading = false, isPro = pro == true, error = "Couldn't load the plans. Check your connection and try again.") }
+                _state.update { it.copy(isLoading = false, isPro = pro == true, error = Strings.get(R.string.pro_couldn_t_load_the_plans)) }
             }
         }
     }
@@ -88,7 +90,7 @@ class ProViewModel @Inject constructor(
         when (result) {
             PurchaseResult.Success -> confirmEntitlement()
             PurchaseResult.Cancelled -> _state.update { it.copy(isBusy = false) }
-            PurchaseResult.Pending -> _state.update { it.copy(isBusy = false, notice = "Your purchase is pending. Pro will turn on when it clears.") }
+            PurchaseResult.Pending -> _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.common_your_purchase_is_pending_pro)) }
             is PurchaseResult.Failed -> _state.update { it.copy(isBusy = false, error = result.message) }
         }
     }
@@ -100,12 +102,12 @@ class ProViewModel @Inject constructor(
     private suspend fun confirmEntitlement() {
         repeat(POLLS) { attempt ->
             if (currentlyPro() == true) {
-                _state.update { it.copy(isBusy = false, isPro = true, notice = "You have Pro. Thank you!") }
+                _state.update { it.copy(isBusy = false, isPro = true, notice = Strings.get(R.string.pro_you_have_pro_thank_you)) }
                 return
             }
             if (attempt < POLLS - 1) delay(POLL_MILLIS)
         }
-        _state.update { it.copy(isBusy = false, notice = "Your purchase is processing. Pro will turn on shortly.") }
+        _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.pro_your_purchase_is_processing_pro)) }
     }
 
     /**

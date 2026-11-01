@@ -1,0 +1,65 @@
+package com.spenditos.android.core.i18n
+
+import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.w3c.dom.Element
+
+/** `values-fr` must carry every key of `values`, with the same format arguments. */
+class StringsParityTest {
+    private fun load(path: String): Pair<Map<String, String>, Map<String, Map<String, String>>> {
+        val file = listOf(path, "app/$path").map(::File).first { it.exists() }
+        val root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).documentElement
+        val strings = HashMap<String, String>()
+        val plurals = HashMap<String, Map<String, String>>()
+        for (i in 0 until root.childNodes.length) {
+            val el = root.childNodes.item(i) as? Element ?: continue
+            when (el.tagName) {
+                "string" -> strings[el.getAttribute("name")] = el.textContent
+                "plurals" -> {
+                    val items = el.getElementsByTagName("item")
+                    plurals[el.getAttribute("name")] = (0 until items.length).associate {
+                        val item = items.item(it) as Element
+                        item.getAttribute("quantity") to item.textContent
+                    }
+                }
+            }
+        }
+        return strings to plurals
+    }
+
+    private val specifier = Regex("%%|%(?:\\d+\\$)?[-#+0,(]*\\d*(?:\\.\\d+)?[sdfxXcb]")
+
+    /** Every format specifier (`%1$s`, `%d`, ...) and every literal `%%` escape, as a sorted multiset. */
+    private fun specifiers(text: String): List<String> = specifier.findAll(text).map { it.value }.sorted().toList()
+
+    @Test
+    fun `french has every english string and plural with matching arguments`() {
+        val (en, enPlurals) = load("src/main/res/values/strings.xml")
+        val (fr, frPlurals) = load("src/main/res/values-fr/strings.xml")
+        assertTrue("Add some strings", en.size > 1000)
+        assertEquals("Missing in values-fr", emptySet<String>(), en.keys - fr.keys)
+        assertEquals("Only in values-fr", emptySet<String>(), fr.keys - en.keys)
+        assertEquals("Plurals missing in values-fr", emptySet<String>(), enPlurals.keys - frPlurals.keys)
+        for ((key, text) in en) {
+            val translated = fr.getValue(key)
+            assertEquals("Format specifiers differ for $key", specifiers(text), specifiers(translated))
+            assertEquals("Literal %% count differs for $key", text.split("%%").size, translated.split("%%").size)
+        }
+        for ((key, quantities) in frPlurals) assertTrue("fr plural $key needs one and other", quantities.keys.containsAll(setOf("one", "other")))
+        // "other" is the form every count can reach; "one" may spell the number out ("Une transaction").
+        for ((key, quantities) in enPlurals) {
+            val english = quantities.getValue("other")
+            val french = frPlurals.getValue(key).getValue("other")
+            assertEquals("Plural format specifiers differ for $key", specifiers(english), specifiers(french))
+        }
+    }
+
+    @Test
+    fun `french copy has no leftover english placeholders`() {
+        val (fr, _) = load("src/main/res/values-fr/strings.xml")
+        assertTrue(fr.values.none { it.isBlank() })
+    }
+}

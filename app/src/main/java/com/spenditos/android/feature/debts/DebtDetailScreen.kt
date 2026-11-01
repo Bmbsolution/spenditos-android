@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.debts
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,9 +83,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                DebtDetailEvent.ExtraPaymentAdded -> { showExtraPayment = false; snackbar.showSnackbar("Extra payment added") }
-                DebtDetailEvent.BalanceCorrected -> { showCorrectBalance = false; snackbar.showSnackbar("Balance corrected") }
-                DebtDetailEvent.PaymentUpdated -> snackbar.showSnackbar("Payment updated")
+                DebtDetailEvent.ExtraPaymentAdded -> { showExtraPayment = false; snackbar.showSnackbar(Strings.get(R.string.debts_extra_payment_added)) }
+                DebtDetailEvent.BalanceCorrected -> { showCorrectBalance = false; snackbar.showSnackbar(Strings.get(R.string.debts_balance_corrected)) }
+                DebtDetailEvent.PaymentUpdated -> snackbar.showSnackbar(Strings.get(R.string.debts_payment_updated))
                 DebtDetailEvent.Deleted -> onBack()
             }
         }
@@ -91,7 +94,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     IosScreen {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
-                DebtTopBar(state.debt?.name ?: "Debt", onBack)
+                DebtTopBar(state.debt?.name ?: stringResource(R.string.common_debt), onBack)
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (state.plan == null) {
                         if (state.isLoading) {
@@ -141,16 +144,16 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete this debt?") },
-            text = { Text("Its payments are removed from your plan. Payments you already made stay in your transactions.") },
+            title = { Text(stringResource(R.string.debts_delete_this_debt)) },
+            text = { Text(stringResource(R.string.debts_its_payments_are_removed_from)) },
             confirmButton = {
                 TextButton(
                     onClick = { showDeleteConfirmation = false; viewModel.submitDelete() },
                     modifier = Modifier.testTag("debt.delete.confirm"),
-                ) { Text("Delete this debt", color = IosColors.expense) }
+                ) { Text(stringResource(R.string.debts_delete_this_debt_2), color = IosColors.expense) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }, modifier = Modifier.testTag("debt.delete.cancel")) { Text("Keep it") }
+                TextButton(onClick = { showDeleteConfirmation = false }, modifier = Modifier.testTag("debt.delete.cancel")) { Text(stringResource(R.string.debts_keep_it)) }
             },
         )
     }
@@ -161,7 +164,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 private fun DebtTopBar(title: String, onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("debt.back")) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
         Text(
             title,
@@ -194,7 +197,7 @@ private fun DebtContent(
         ActionsCard(state, onAddExtra, onCorrect)
         if (state.historyRows.isNotEmpty()) HistoryCard(state)
         Text(
-            "Delete this debt",
+            stringResource(R.string.debts_delete_this_debt_2),
             Modifier.fillMaxWidth().clickable(enabled = !state.isWorking, role = Role.Button, onClick = onDelete)
                 .padding(vertical = Spacing.m).testTag("debt.delete"),
             style = IosText.callout.w(FontWeight.SemiBold),
@@ -213,14 +216,14 @@ private fun HeroCard(state: DebtDetailUiState) {
             if (state.isPaidOff) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                     Icon(SfSymbols.icon("checkmark.seal.fill"), contentDescription = null, tint = IosColors.income, modifier = Modifier.size(24.dp))
-                    Text("Paid off", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.income)
+                    Text(stringResource(R.string.debts_paid_off), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.income)
                 }
                 state.paidOffOnText?.let { Text(it, style = IosText.callout, color = IosColors.textSecondary) }
             } else {
-                Text("Left to pay", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.debts_left_to_pay), style = IosText.subheadline, color = IosColors.textSecondary)
                 Text(
                     state.balanceText,
-                    Modifier.semantics { contentDescription = "${state.balanceText} left to pay" }.testTag("debt.balance"),
+                    Modifier.semantics { contentDescription = Strings.get(R.string.debts_balance_left_to_pay, state.balanceText) }.testTag("debt.balance"),
                     style = IosText.rounded(34, FontWeight.Bold),
                     color = IosColors.textPrimary,
                     maxLines = 1,
@@ -251,29 +254,29 @@ private fun PlanCard(state: DebtDetailUiState) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.xs)) {
             val payment = state.paymentText
             if (state.paymentsStopped) {
-                PlanNote("Payments are stopped. Nothing is scheduled for this debt.", PauseIcon)
+                PlanNote(stringResource(R.string.debts_payments_are_stopped_nothing_is), PauseIcon)
             } else if (payment != null) {
-                InfoRow("Payment", payment)
-                state.nextPaymentText?.let { DebtDivider(); InfoRow("Next payment", it) }
+                InfoRow(stringResource(R.string.debts_payment), payment)
+                state.nextPaymentText?.let { DebtDivider(); InfoRow(stringResource(R.string.debts_next_payment), it) }
                 if (state.neverPaysOff) {
                     DebtDivider()
-                    PlanNote("This payment is too low to finish the debt. Pay more each time.", SfSymbols.icon("exclamationmark.triangle"), IosColors.expense)
+                    PlanNote(stringResource(R.string.debts_this_payment_is_too_low), SfSymbols.icon("exclamationmark.triangle"), IosColors.expense)
                 } else {
-                    state.doneByText?.let { DebtDivider(); InfoRow("Done by", it) }
+                    state.doneByText?.let { DebtDivider(); InfoRow(stringResource(R.string.debts_done_by), it) }
                     state.paymentsLeftText?.let {
                         DebtDivider()
                         Text(it, Modifier.padding(vertical = Spacing.s), style = IosText.subheadline, color = IosColors.textSecondary)
                     }
                 }
             } else {
-                PlanNote("No regular payment. You pay when you can.", SfSymbols.icon("hand.raised"))
+                PlanNote(stringResource(R.string.debts_no_regular_payment_you_pay), SfSymbols.icon("hand.raised"))
             }
 
             if (state.showsInterest) {
                 DebtDivider()
-                state.aprText?.let { InfoRow("Interest rate", it); DebtDivider() }
-                state.interestSoFarText?.let { InfoRow("Interest so far", it) }
-                state.interestToComeText?.let { DebtDivider(); InfoRow("Interest still to come", it) }
+                state.aprText?.let { InfoRow(stringResource(R.string.debts_interest_rate), it); DebtDivider() }
+                state.interestSoFarText?.let { InfoRow(stringResource(R.string.debts_interest_so_far), it) }
+                state.interestToComeText?.let { DebtDivider(); InfoRow(stringResource(R.string.debts_interest_still_to_come), it) }
             }
         }
     }
@@ -317,7 +320,7 @@ private fun PlanNote(text: String, icon: ImageVector, tint: Color = IosColors.te
 private fun WhatIfCard(state: DebtDetailUiState, viewModel: DebtDetailViewModel) {
     GlassCard(Modifier.testTag("debt.whatif")) {
         Column(Modifier.fillMaxWidth().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("What if I pay more?", style = IosText.headline, color = IosColors.textPrimary)
+            Text(stringResource(R.string.debts_what_if_i_pay_more), style = IosText.headline, color = IosColors.textPrimary)
 
             val newPayment = state.newPayment
             val summary = state.summary
@@ -325,9 +328,9 @@ private fun WhatIfCard(state: DebtDetailUiState, viewModel: DebtDetailViewModel)
             if (newPayment != null && summary != null && frequency != null) {
                 Text(
                     if (state.extra > 0) {
-                        "${DebtFormat.paymentLine(newPayment, frequency, summary.repeatInterval, state.currency)} · ${DebtFormat.money(state.extra, state.currency)} extra"
+                        stringResource(R.string.debts_payment_with_extra, DebtFormat.paymentLine(newPayment, frequency, summary.repeatInterval, state.currency), DebtFormat.money(state.extra, state.currency))
                     } else {
-                        "Slide to add to each payment"
+                        stringResource(R.string.debts_slide_to_add_to_each)
                     },
                     style = IosText.callout,
                     color = IosColors.textSecondary,
@@ -342,8 +345,8 @@ private fun WhatIfCard(state: DebtDetailUiState, viewModel: DebtDetailViewModel)
                 steps = (max / DEBT_EXTRA_STEP.toFloat()).toInt().minus(1).coerceAtLeast(0),
                 colors = SliderDefaults.colors(thumbColor = IosColors.spendOrange, activeTrackColor = IosColors.spendOrange),
                 modifier = Modifier.fillMaxWidth().testTag("debt.whatif.slider").semantics {
-                    contentDescription = "Extra amount each payment"
-                    stateDescription = if (state.extra > 0) "${DebtFormat.money(state.extra, state.currency)} extra" else "No extra"
+                    contentDescription = Strings.get(R.string.debts_extra_amount_each_payment)
+                    stateDescription = if (state.extra > 0) Strings.get(R.string.debts_amount_extra, DebtFormat.money(state.extra, state.currency)) else Strings.get(R.string.debts_no_extra)
                 },
             )
 
@@ -361,12 +364,12 @@ private fun ColumnScope.WhatIfResultView(state: DebtDetailUiState, viewModel: De
     } else if (result != null) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             if (result.stillNeverPaysOff) {
-                Text("Still not enough to finish this debt.", style = IosText.subheadline, color = IosColors.expense)
+                Text(stringResource(R.string.debts_still_not_enough_to_finish), style = IosText.subheadline, color = IosColors.expense)
             } else {
-                result.doneBy?.let { InfoRow("New payoff date", it) }
-                if (result.paymentsSooner > 0) InfoRow("Payments sooner", "${result.paymentsSooner}")
+                result.doneBy?.let { InfoRow(stringResource(R.string.debts_new_payoff_date), it) }
+                if (result.paymentsSooner > 0) InfoRow(stringResource(R.string.debts_payments_sooner), "${result.paymentsSooner}")
                 if (state.showsInterest && result.interestSaved > 0) {
-                    InfoRow("Interest saved", DebtFormat.money(result.interestSaved, state.currency))
+                    InfoRow(stringResource(R.string.debts_interest_saved), DebtFormat.money(result.interestSaved, state.currency))
                 }
             }
             state.applyWhatIfTitle?.let { title ->
@@ -378,7 +381,7 @@ private fun ColumnScope.WhatIfResultView(state: DebtDetailUiState, viewModel: De
     } else if (state.isWhatIfLoading) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
-                Modifier.size(24.dp).semantics { contentDescription = "Working out the new plan" },
+                Modifier.size(24.dp).semantics { contentDescription = Strings.get(R.string.debts_working_out_the_new_plan) },
                 color = IosColors.spendOrange,
                 strokeWidth = 2.dp,
             )
@@ -395,10 +398,10 @@ private fun ActionsCard(state: DebtDetailUiState, onAddExtra: () -> Unit, onCorr
     GlassCard(Modifier.testTag("debt.actions")) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m)) {
             if (!state.isPaidOff) {
-                ActionRow("Add extra payment", "plus.circle", "debt.addExtraPayment", onAddExtra)
+                ActionRow(stringResource(R.string.debts_add_extra_payment), "plus.circle", "debt.addExtraPayment", onAddExtra)
                 DebtDivider()
             }
-            ActionRow("Correct balance", "slider.horizontal.3", "debt.correctBalance", onCorrect)
+            ActionRow(stringResource(R.string.debts_correct_balance), "slider.horizontal.3", "debt.correctBalance", onCorrect)
         }
     }
 }
@@ -420,7 +423,7 @@ private fun ActionRow(title: String, symbol: String, tag: String, onClick: () ->
 private fun HistoryCard(state: DebtDetailUiState) {
     GlassCard(Modifier.testTag("debt.history")) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.xs)) {
-            Text("History", Modifier.padding(vertical = Spacing.s), style = IosText.headline, color = IosColors.textPrimary)
+            Text(stringResource(R.string.common_history), Modifier.padding(vertical = Spacing.s), style = IosText.headline, color = IosColors.textPrimary)
             state.historyRows.forEachIndexed { index, row ->
                 if (index > 0) DebtDivider()
                 HistoryRowView(row)

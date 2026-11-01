@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,10 +65,10 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
     val requirements = state.requirements
     val score = requirements.count { it.isMet }
     val strength = when {
-        score <= 1 -> PasswordStrengthPresentation("Weak", 1, Color(0xFFFF3B30))
-        score == 2 -> PasswordStrengthPresentation("Fair", 2, Color(0xFFFF9500))
-        score <= 4 -> PasswordStrengthPresentation("Good", 3, Color(0xFFFFCC00))
-        else -> PasswordStrengthPresentation("Strong", 4, Color(0xFF34C759))
+        score <= 1 -> PasswordStrengthPresentation(stringResource(R.string.settings_weak), 1, Color(0xFFFF3B30))
+        score == 2 -> PasswordStrengthPresentation(stringResource(R.string.settings_fair), 2, Color(0xFFFF9500))
+        score <= 4 -> PasswordStrengthPresentation(stringResource(R.string.common_good), 3, Color(0xFFFFCC00))
+        else -> PasswordStrengthPresentation(stringResource(R.string.settings_strong), 4, Color(0xFF34C759))
     }
     val finance = LocalFinanceColors.current
 
@@ -87,21 +90,21 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        PasswordLabel("Current Password", modifier = if (state.currentPassword.isEmpty()) Modifier.testTag("changePassword.empty") else Modifier)
+                        PasswordLabel(stringResource(R.string.settings_current_password), modifier = if (state.currentPassword.isEmpty()) Modifier.testTag("changePassword.empty") else Modifier)
                         PasswordField(
                             value = state.currentPassword,
                             onValueChange = viewModel::onCurrentPasswordChange,
-                            placeholder = "Enter current password",
+                            placeholder = stringResource(R.string.settings_enter_current_password),
                             tag = "changePassword.current",
                         )
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        PasswordLabel("New Password")
+                        PasswordLabel(stringResource(R.string.settings_new_password))
                         PasswordField(
                             value = state.newPassword,
                             onValueChange = viewModel::onNewPasswordChange,
-                            placeholder = "Enter new password",
+                            placeholder = stringResource(R.string.settings_enter_new_password),
                             tag = "changePassword.new",
                         )
                         if (state.newPassword.isNotEmpty()) {
@@ -125,15 +128,15 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        PasswordLabel("Confirm New Password")
+                        PasswordLabel(stringResource(R.string.settings_confirm_new_password))
                         PasswordField(
                             value = state.confirmPassword,
                             onValueChange = viewModel::onConfirmPasswordChange,
-                            placeholder = "Re-enter new password",
+                            placeholder = stringResource(R.string.settings_re_enter_new_password),
                             tag = "changePassword.confirm",
                         )
                         if (state.confirmPassword.isNotEmpty() && state.confirmPassword != state.newPassword) {
-                            Text("Passwords do not match", style = IosText.subheadline, color = finance.expense, modifier = Modifier.testTag("changePassword.mismatch"))
+                            Text(stringResource(R.string.common_passwords_do_not_match), style = IosText.subheadline, color = finance.expense, modifier = Modifier.testTag("changePassword.mismatch"))
                         }
                     }
 
@@ -141,7 +144,7 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                         requirements.forEachIndexed { index, requirement ->
                             Row(
                                 Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-                                    stateDescription = if (requirement.isMet) "met" else "not met"
+                                    stateDescription = if (requirement.isMet) Strings.get(R.string.a11y_requirement_met) else Strings.get(R.string.a11y_requirement_not_met)
                                 },
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -162,12 +165,12 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
                         }
                     }
 
-                    if (state.isOffline) Text("Check your connection and try again.", style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("changePassword.offline"))
+                    if (state.isOffline) Text(stringResource(R.string.settings_check_your_connection_and_try), style = IosText.footnote, color = IosColors.textSecondary, modifier = Modifier.testTag("changePassword.offline"))
                     if (state.isSaving) {
-                        SavingPill("Update Password", Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("changePassword.save"))
+                        SavingPill(stringResource(R.string.settings_update_password), Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("changePassword.save"))
                     } else {
                         PillButton(
-                            text = "Update Password",
+                            text = stringResource(R.string.settings_update_password),
                             onClick = viewModel::changePassword,
                             enabled = state.canSave,
                             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("changePassword.save"),
@@ -180,9 +183,9 @@ fun ChangePasswordScreen(onBack: () -> Unit, viewModel: ChangePasswordViewModel 
     if (state.success) {
         AlertDialog(
             onDismissRequest = onBack,
-            title = { Text("Password Updated", style = IosText.headline) },
-            text = { Text("Your password has been changed successfully.", style = IosText.body, modifier = Modifier.testTag("changePassword.success")) },
-            confirmButton = { TextButton(onClick = onBack) { Text("OK", color = IosColors.spendOrange) } },
+            title = { Text(stringResource(R.string.settings_password_updated), style = IosText.headline) },
+            text = { Text(stringResource(R.string.settings_your_password_has_been_changed), style = IosText.body, modifier = Modifier.testTag("changePassword.success")) },
+            confirmButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.common_ok), color = IosColors.spendOrange) } },
         )
     }
 }
@@ -191,7 +194,7 @@ private data class PasswordStrengthPresentation(val label: String, val level: In
 
 /** One spoken label for the color-only strength bars. */
 internal fun passwordStrengthAnnouncement(label: String): String =
-    "Password strength: ${label.lowercase(java.util.Locale.ROOT)}"
+    Strings.get(R.string.settings_password_strength, label.lowercase(java.util.Locale.ROOT))
 
 @Composable
 private fun SavingPill(text: String, modifier: Modifier = Modifier) {
@@ -234,8 +237,8 @@ private fun PasswordField(value: String, onValueChange: (String) -> Unit, placeh
 private fun PasswordHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp)) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
-        Text("Change Password", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(stringResource(R.string.settings_change_password), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }
 }

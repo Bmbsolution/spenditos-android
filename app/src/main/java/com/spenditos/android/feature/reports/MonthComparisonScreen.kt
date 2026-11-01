@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,7 +68,7 @@ fun MonthComparisonScreen(
     val weekly = if (showIncome) viewModel.weeklyIncome() else viewModel.weeklyExpenses()
     val maxValue = viewModel.maxWeeklyValue(weekly)
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar("Month Comparison", onBack) }) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { ReportsBackBar(stringResource(R.string.reports_month_comparison), onBack) }) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -73,7 +76,7 @@ fun MonthComparisonScreen(
         ) {
             when {
                 state.isLoading -> ReportLoadingState(
-                    "Loading comparison data...",
+                    stringResource(R.string.reports_loading_comparison_data),
                     Color(0xFFAF52DE),
                     Modifier.fillMaxSize().testTag("reports.comparison.list"),
                 )
@@ -83,7 +86,7 @@ fun MonthComparisonScreen(
                         .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
                 ) {
                     ReportMonthSelector(
-                        title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                        title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                         subtitle = comparisonRangeLabel(state.month, locale),
                         tag = "reports.comparison.month",
                         onPrevious = viewModel::previousMonth,
@@ -91,8 +94,8 @@ fun MonthComparisonScreen(
                     )
                     ReportEmptyState(
                         icon = "calendar.badge.clock",
-                        title = "No Data",
-                        subtitle = "No daily aggregates found for comparison.",
+                        title = stringResource(R.string.reports_no_data),
+                        subtitle = stringResource(R.string.reports_no_daily_aggregates_found_for),
                         modifier = Modifier.fillMaxWidth().weight(1f).testTag("reports.empty"),
                     )
                 }
@@ -103,7 +106,7 @@ fun MonthComparisonScreen(
                 ) {
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = comparisonRangeLabel(state.month, locale),
                             tag = "reports.comparison.month",
                             onPrevious = viewModel::previousMonth,
@@ -122,7 +125,7 @@ fun MonthComparisonScreen(
                             GlassCard(modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
                                     Text(
-                                        "Weekly ${if (showIncome) "Income" else "Expenses"}",
+                                        if (showIncome) stringResource(R.string.reports_weekly_income) else stringResource(R.string.reports_weekly_expenses),
                                         style = IosText.headline,
                                         color = IosColors.textPrimary,
                                     )
@@ -132,8 +135,8 @@ fun MonthComparisonScreen(
                                         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                                     ) {
                                         val metricColor = if (showIncome) LocalFinanceColors.current.income else LocalFinanceColors.current.expense
-                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
-                                        ChartLegendDot(metricColor, state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)))
+                                        ChartLegendDot(metricColor.copy(alpha = 0.35f), previousMonth.format(LocalizedDate.formatter("MMMM yyyy", locale)))
+                                        ChartLegendDot(metricColor, state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)))
                                     }
                                 }
                             }
@@ -154,16 +157,16 @@ private fun ComparisonSummaryCards(state: MonthComparisonUiState, viewModel: Mon
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             ComparisonMetricCard(
-                "Total Spending", state.currentTotalExpenses, state.previousTotalExpenses, true,
+                stringResource(R.string.reports_total_spending), state.currentTotalExpenses, state.previousTotalExpenses, true,
                 state.currency, viewModel, Modifier.weight(1f).testTag("reports.comparison.metric.expenses"),
             )
             ComparisonMetricCard(
-                "Total Income", state.currentTotalIncome, state.previousTotalIncome, false,
+                stringResource(R.string.reports_total_income), state.currentTotalIncome, state.previousTotalIncome, false,
                 state.currency, viewModel, Modifier.weight(1f).testTag("reports.comparison.metric.income"),
             )
         }
         ComparisonMetricCard(
-            "Net Change", state.currentNet, state.previousNet, false,
+            stringResource(R.string.reports_net_change), state.currentNet, state.previousNet, false,
             state.currency, viewModel, Modifier.fillMaxWidth().testTag("reports.comparison.net"),
         )
     }
@@ -209,7 +212,7 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
             Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.06f)).padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            listOf("Expenses", "Income").forEachIndexed { index, label ->
+            listOf(stringResource(R.string.common_expenses), stringResource(R.string.common_income)).forEachIndexed { index, label ->
                 val selected = (index == 1) == showIncome
                 val tag = if (index == 0) "reports.comparison.picker.expenses" else "reports.comparison.picker.income"
                 Box(
@@ -233,7 +236,7 @@ private fun ComparisonMetricSelector(showIncome: Boolean, onSelectIncome: (Boole
 }
 
 private fun comparisonRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     val previous = month.minusMonths(1)
     return "${previous.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

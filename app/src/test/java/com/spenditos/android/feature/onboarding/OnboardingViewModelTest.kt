@@ -28,11 +28,12 @@ class OnboardingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `country detection applies country currency and preserves selected language`() = runTest(mainDispatcherRule.dispatcher) {
+    fun `country detection applies country currency and sends the resolved app language`() = runTest(mainDispatcherRule.dispatcher) {
         val actions = FakeOnboardingActions(country = "CA")
-        val viewModel = OnboardingViewModel(actions, SavedStateHandle())
+        val previous = java.util.Locale.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.CANADA_FRENCH)
+        val viewModel = try { OnboardingViewModel(actions, SavedStateHandle()) } finally { java.util.Locale.setDefault(previous) }
 
-        viewModel.onLanguageChange("fr")
         viewModel.initialize()
         advanceUntilIdle()
 
@@ -51,7 +52,6 @@ class OnboardingViewModelTest {
         viewModel.onContinue()
         viewModel.onCountryChange("FR")
         viewModel.onCurrencyChange("EUR")
-        viewModel.onLanguageChange("fr")
         viewModel.onContinue()
 
         val restored = OnboardingViewModel(FakeOnboardingActions(), savedState)
@@ -59,7 +59,6 @@ class OnboardingViewModelTest {
         assertEquals("Rae", restored.state.value.displayName)
         assertEquals("FR", restored.state.value.country)
         assertEquals("EUR", restored.state.value.currency)
-        assertEquals("fr", restored.state.value.language)
     }
 
     @Test
@@ -133,7 +132,6 @@ class OnboardingViewModelTest {
                 "onboarding.name" to "Rae",
                 "onboarding.country" to "CA",
                 "onboarding.currency" to "CAD",
-                "onboarding.language" to "en",
             ),
         ),
     )

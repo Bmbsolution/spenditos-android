@@ -36,6 +36,7 @@ class SessionLifecycle @Inject constructor(
     private val sync: SyncRequester,
     private val push: com.spenditos.android.data.push.PushRegistrar,
     private val purchases: com.spenditos.android.data.purchases.PurchasesService,
+    private val languageMirror: com.spenditos.android.data.user.LanguageMirror,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -47,7 +48,8 @@ class SessionLifecycle @Inject constructor(
                     val signedIn = state as SessionState.SignedIn
                     runCatching { transactions.requeueAuthFailures(signedIn.userId) }
                     sync.requestSync()
-                    runCatching { settings.refresh() }
+                    val fetched = runCatching { settings.refresh() }.getOrNull()
+                    languageMirror.sync(fetched)
                     runCatching { categories.refresh() }
                     runCatching { push.syncRegistration() }
                     runCatching { purchases.logIn(signedIn.userId) }

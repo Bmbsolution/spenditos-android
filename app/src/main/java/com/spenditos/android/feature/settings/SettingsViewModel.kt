@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.auth.SessionManager
@@ -46,7 +48,14 @@ class SettingsViewModel @Inject constructor(
     private val userSettings: com.spenditos.android.data.user.UserSettingsActions,
     private val purchases: com.spenditos.android.data.purchases.PurchasesService,
     private val proAccess: com.spenditos.android.data.entitlement.ProAccess,
+    private val languageMirror: com.spenditos.android.data.user.LanguageMirror,
 ) : ViewModel() {
+    /** Switches the app language now (UI recreates in it) and saves the account language right away. */
+    fun setLanguage(choice: com.spenditos.android.core.i18n.LanguageChoice) {
+        val account = com.spenditos.android.core.i18n.AppLanguage.apply(choice)
+        languageMirror.saveNow(account)
+    }
+
     /** Effective Pro (store OR server Premium) and the welcome-Premium row text. */
     val plan: StateFlow<SettingsPlan> = proAccess.state
         .map { SettingsPlanLabel.plan(it) }
@@ -62,12 +71,12 @@ class SettingsViewModel @Inject constructor(
     fun restorePurchases() {
         if (restoring) return
         restoring = true
-        _restoreMessage.value = "Restoring…"
+        _restoreMessage.value = Strings.get(R.string.settings_restoring)
         viewModelScope.launch {
             _restoreMessage.value = when (val result = purchases.restore()) {
-                com.spenditos.android.data.purchases.PurchaseResult.Success -> "Purchases restored. Pro turns on as soon as the store confirms it."
+                com.spenditos.android.data.purchases.PurchaseResult.Success -> Strings.get(R.string.settings_purchases_restored_pro_turns_on)
                 com.spenditos.android.data.purchases.PurchaseResult.Cancelled -> null
-                com.spenditos.android.data.purchases.PurchaseResult.Pending -> "Your purchase is pending. Pro will turn on when it clears."
+                com.spenditos.android.data.purchases.PurchaseResult.Pending -> Strings.get(R.string.common_your_purchase_is_pending_pro)
                 is com.spenditos.android.data.purchases.PurchaseResult.Failed -> result.message
             }
             restoring = false
@@ -98,10 +107,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             lockMessage.value = null
             if (!wanted) { lockSettings.setEnabled(false); return@launch }
-            when (val result = authenticator.authenticate(activity, "Turn on app lock", "Confirm it's you")) {
+            when (val result = authenticator.authenticate(activity, Strings.get(R.string.settings_turn_on_app_lock), Strings.get(R.string.settings_confirm_it_s_you))) {
                 LockAuthResult.Success -> lockSettings.setEnabled(true)
                 LockAuthResult.Cancelled -> Unit
-                is LockAuthResult.Failed -> lockMessage.value = "Couldn't turn on the lock. Try again."
+                is LockAuthResult.Failed -> lockMessage.value = Strings.get(R.string.settings_couldn_t_turn_on_the)
             }
         }
     }
@@ -109,9 +118,8 @@ class SettingsViewModel @Inject constructor(
     /** Plain sign-out keeps unsynced work queued for this account (iOS #227). */
     fun signOutMessage(): String {
         val count = state.value.unsyncedCount
-        if (count == 0) return "Are you sure you want to sign out?"
-        val noun = if (count == 1) "transaction" else "transactions"
-        return "Are you sure you want to sign out?\n\n$count unsynced $noun will stay queued on this device and sync the next time you sign in to this account."
+        if (count == 0) return Strings.get(R.string.settings_are_you_sure_you_want)
+        return Strings.plural(R.plurals.settings_sign_out_unsynced, count)
     }
 
     /** Entering Settings is a settings load: pick up Premium changes (throttled, best effort). */

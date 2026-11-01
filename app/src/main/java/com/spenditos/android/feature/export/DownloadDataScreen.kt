@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.export
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -103,7 +106,7 @@ fun DownloadDataScreen(
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(send, "Download spreadsheet").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        context.startActivity(Intent.createChooser(send, Strings.get(R.string.export_download_spreadsheet)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
         viewModel.shared()
     }
 
@@ -115,7 +118,7 @@ fun DownloadDataScreen(
             DownloadHeader(onBack = { viewModel.cancel(); fullCopyViewModel.cancel(); onBack() })
 
             Text(
-                "Your data is saved to your account and is always yours. Download a copy any time.",
+                stringResource(R.string.export_your_data_is_saved_to),
                 style = IosText.subheadline,
                 color = IosColors.textSecondary,
                 modifier = Modifier.padding(horizontal = Spacing.screen + Spacing.xs),
@@ -127,27 +130,27 @@ fun DownloadDataScreen(
                     CardHeader(
                         icon = SfSymbols.icon("doc.on.doc.fill"),
                         tint = IosColors.info,
-                        title = "Full copy",
-                        subtitle = "Your account, categories, income & bills, rules and every transaction in one file. Keep it as a backup or take it to another app.",
+                        title = stringResource(R.string.export_full_copy),
+                        subtitle = stringResource(R.string.export_your_account_categories_income_bills),
                     )
                     DownloadButton(
-                        title = "Download full copy",
+                        title = stringResource(R.string.export_download_full_copy),
                         icon = SfSymbols.icon("arrow.down.circle"),
-                        busyLabel = if (fullCopy.phase == FullCopyPhase.Saving) "Saving…" else "Preparing…",
+                        busyLabel = if (fullCopy.phase == FullCopyPhase.Saving) stringResource(R.string.common_saving_2) else stringResource(R.string.export_preparing),
                         busy = fullCopy.isBusy,
                         onClick = fullCopyViewModel::download,
                         modifier = Modifier.testTag("download.fullCopy.button"),
                     )
                     when (fullCopy.phase) {
                         FullCopyPhase.Saved -> Text(
-                            "Saved. Your file is where you chose to put it.",
+                            stringResource(R.string.export_saved_your_file_is_where),
                             style = IosText.caption,
                             color = IosColors.income,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth().testTag("download.fullCopy.saved"),
                         )
                         FullCopyPhase.Preparing -> Text(
-                            "Cancel",
+                            stringResource(R.string.common_cancel),
                             style = IosText.caption,
                             color = IosColors.textSecondary,
                             textAlign = TextAlign.Center,
@@ -171,13 +174,13 @@ fun DownloadDataScreen(
                     CardHeader(
                         icon = SfSymbols.icon("tablecells.fill"),
                         tint = IosColors.income,
-                        title = "Spreadsheet",
-                        subtitle = "Transactions for Excel, Numbers or your accountant.",
+                        title = stringResource(R.string.export_spreadsheet),
+                        subtitle = stringResource(R.string.export_transactions_for_excel_numbers_or),
                     )
                     PeriodPicker(selected = state.range, onSelect = viewModel::selectRange)
                     Column {
                         IosRow(
-                            title = "From",
+                            title = stringResource(R.string.common_from),
                             value = state.start.format(dateFormat),
                             icon = SfSymbols.icon("calendar"),
                             iconTint = IosColors.spendOrange,
@@ -185,7 +188,7 @@ fun DownloadDataScreen(
                             modifier = Modifier.testTag("export.start"),
                         )
                         IosRow(
-                            title = "To",
+                            title = stringResource(R.string.common_to),
                             value = state.end.format(dateFormat),
                             icon = SfSymbols.icon("calendar"),
                             iconTint = IosColors.spendOrange,
@@ -198,16 +201,16 @@ fun DownloadDataScreen(
                         Text(it, style = IosText.footnote, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("export.validation"))
                     }
                     DownloadButton(
-                        title = "Download spreadsheet",
+                        title = stringResource(R.string.export_download_spreadsheet),
                         icon = SfSymbols.icon("arrow.down.circle"),
-                        busyLabel = "Preparing…",
+                        busyLabel = stringResource(R.string.export_preparing),
                         busy = state.isExporting,
                         enabled = state.canExport,
                         onClick = viewModel::export,
                         modifier = Modifier.testTag("export.run"),
                     )
                     Text(
-                        "CSV file · up to 2 years at a time",
+                        stringResource(R.string.export_csv_file_up_to_2_years),
                         style = IosText.caption,
                         color = IosColors.textTertiary,
                         textAlign = TextAlign.Center,
@@ -221,9 +224,9 @@ fun DownloadDataScreen(
     (fullCopy.error ?: state.error)?.let { message ->
         AlertDialog(
             onDismissRequest = { fullCopyViewModel.dismissError(); viewModel.dismissError() },
-            title = { Text("Download failed") },
+            title = { Text(stringResource(R.string.export_download_failed)) },
             text = { Text(message, modifier = Modifier.testTag("download.error")) },
-            confirmButton = { TextButton(onClick = { fullCopyViewModel.dismissError(); viewModel.dismissError() }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { fullCopyViewModel.dismissError(); viewModel.dismissError() }) { Text(stringResource(R.string.common_ok)) } },
         )
     }
 
@@ -239,9 +242,9 @@ fun DownloadDataScreen(
                         if (target == DateTarget.START) viewModel.setStart(date) else viewModel.setEnd(date)
                     }
                     picking = null
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { picking = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
 }
@@ -250,9 +253,9 @@ fun DownloadDataScreen(
 private fun DownloadHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = Spacing.s)) {
         androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).size(44.dp).testTag("export.back")) {
-            Icon(SfSymbols.icon("chevron.left"), contentDescription = "Back", tint = IosColors.spendOrange)
+            Icon(SfSymbols.icon("chevron.left"), contentDescription = stringResource(R.string.common_back), tint = IosColors.spendOrange)
         }
-        Text("Download my data", style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
+        Text(stringResource(R.string.common_download_my_data), style = IosText.headline, color = IosColors.textPrimary, modifier = Modifier.align(Alignment.Center))
     }
 }
 

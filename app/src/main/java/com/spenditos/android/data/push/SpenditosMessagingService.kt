@@ -1,8 +1,6 @@
 package com.spenditos.android.data.push
 
 import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -40,13 +38,12 @@ class SpenditosMessagingService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Reminders and progress", NotificationManager.IMPORTANCE_DEFAULT))
+        PushNotificationChannel.register(this)
         val open = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(DeepLink.EXTRA_TYPE, type)
         val pending = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val notification = NotificationCompat.Builder(this, CHANNEL)
+        val notification = NotificationCompat.Builder(this, PushNotificationChannel.ID)
             .setSmallIcon(com.spenditos.android.R.drawable.ic_stat_spenditos)
             .setContentTitle(title)
             .setContentText(body)
@@ -54,9 +51,5 @@ class SpenditosMessagingService : FirebaseMessagingService() {
             .setContentIntent(pending)
             .build()
         NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
-    }
-
-    private companion object {
-        const val CHANNEL = "general"
     }
 }

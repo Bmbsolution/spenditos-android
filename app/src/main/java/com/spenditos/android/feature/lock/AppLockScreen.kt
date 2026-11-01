@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.lock
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import com.spenditos.android.ui.components.SfSymbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -70,7 +73,7 @@ fun AppLockScreen(
         busy = true
         message = null
         scope.launch {
-            when (val result = authenticator.authenticate(activity, "Unlock Spenditos", "Confirm it's you to continue")) {
+            when (val result = authenticator.authenticate(activity, Strings.get(R.string.lock_unlock_spenditos), Strings.get(R.string.lock_confirm_it_s_you_to))) {
                 LockAuthResult.Success -> onUnlocked()
                 LockAuthResult.Cancelled -> message = null
                 is LockAuthResult.Failed -> message = result.message
@@ -105,9 +108,9 @@ fun AppLockScreen(
                 Icon(SfSymbols.icon("touchid"), contentDescription = null, tint = IosColors.spendOrange, modifier = Modifier.size(77.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text("Locked", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_locked), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
                 Text(
-                    "Unlock Spenditos to continue",
+                    stringResource(R.string.lock_unlock_spenditos_to_continue),
                     style = IosText.callout,
                     color = IosColors.textSecondary,
                     textAlign = TextAlign.Center,
@@ -148,7 +151,7 @@ private fun RowContent(busy: Boolean) {
         } else {
             Icon(SfSymbols.icon("touchid"), contentDescription = null, tint = Color.Black, modifier = Modifier.size(23.dp))
         }
-        Text("Unlock with Biometrics", style = IosText.headline, color = Color.Black)
+        Text(stringResource(R.string.lock_unlock_with_biometrics), style = IosText.headline, color = Color.Black)
     }
 }
 

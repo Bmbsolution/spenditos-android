@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.TransactionEntity
@@ -16,6 +18,7 @@ import com.spenditos.android.core.network.ConnectivityStatus
 import com.spenditos.android.data.monthbalance.MonthBalanceActions
 import com.spenditos.android.data.monthbalance.MonthBalanceChoice
 import com.spenditos.android.data.user.UserSettingsActions
+import com.spenditos.android.feature.debts.add.DebtAddText
 import com.spenditos.android.feature.home.monthbalance.AnswerOutcome
 import com.spenditos.android.feature.home.monthbalance.MonthBalanceCard
 import com.spenditos.android.feature.home.monthbalance.MonthBalanceFollowUp
@@ -52,6 +55,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZonedDateTime
+import java.util.Locale
 import javax.inject.Inject
 
 data class HomeUiState(
@@ -216,6 +220,26 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
+     * "Pay it in <Month>": one expense entry for the whole shortfall on the next income still to come this month
+     * (else the last day). On success a toast confirms it and Home refreshes so it shows in bills left.
+     */
+    fun payShortfallThisMonth() {
+        val current = state.value
+        val data = current.monthBalance?.data ?: return
+        val name = MonthBalanceCopy.shortfallPrefill(data)?.name ?: return
+        val today = LocalDate.now(clock)
+        val date = MonthBalanceCopy.paymentDate(current.breakdown?.expected?.map { it.date }.orEmpty(), today)
+        viewModelScope.launch {
+            val outcome = monthBalance.pay(currentMonthKey(), date.toString(), name)
+            if (outcome is AnswerOutcome.Saved) {
+                val amount = DebtAddText.money(kotlin.math.abs(data.balance), current.currency, Locale.getDefault())
+                messageChannel.send(MonthBalanceCopy.paidToast(name, amount, date))
+                refresh()
+            }
+        }
+    }
+
+    /**
      * "Remove" on the Carried in line: saves `dismissed` for the month, applied on screen at once and rolled back with a
      * message if the save fails. Re-adding is [carryOverAgain].
      */
@@ -233,7 +257,7 @@ class HomeViewModel @Inject constructor(
 
     private val messageChannel = Channel<String>(Channel.BUFFERED)
 
-    /** One-shot plain-language messages for a snackbar (a failed Remove / re-add, which have no card to show them on). */
+    /** One-shot plain-language messages for a snackbar (a failed Remove / re-add, which have no card to show them on, and the "Pay it in <Month>" confirmation). */
     val messages: Flow<String> = messageChannel.receiveAsFlow()
 
     /** Refreshes the Room-backed current month; Room remains the source shown while offline. */
@@ -266,7 +290,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun refreshMessage(@Suppress("UNUSED_PARAMETER") error: Throwable): String =
-        "Couldn't refresh Home. Pull down to try again."
+        Strings.get(R.string.home_couldn_t_refresh_home_pull)
 
     private fun TransactionEntity.toModel() = Transaction(
         id = id,
@@ -288,7 +312,7 @@ internal fun recentActivity(transactions: List<Transaction>, categories: List<Ca
         .take(limit)
         .map { (tx, date) ->
             val category = byId[tx.categoryId]
-            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: "Transaction" }, category?.name ?: "Uncategorized", date, tx.amount, category?.isIncome == true, category?.color, category?.icon)
+            RecentActivity(tx.id, tx.description.ifBlank { category?.name ?: Strings.get(R.string.common_transaction) }, category?.name ?: Strings.get(R.string.common_uncategorized), date, tx.amount, category?.isIncome == true, category?.color, category?.icon)
         }
 }
 

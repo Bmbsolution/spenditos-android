@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -142,27 +145,27 @@ fun TransactionListScreen(
     deleteTarget?.let { row ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete Transaction") },
-            text = { Text("Are you sure you want to delete this transaction? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.transactions_delete_transaction_3)) },
+            text = { Text(stringResource(R.string.transactions_are_you_sure_you_want)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.delete(row.id); deleteTarget = null }, modifier = Modifier.testTag("transaction.delete.confirm")) {
-                    Text("Delete", color = IosColors.expense)
+                    Text(stringResource(R.string.common_delete), color = IosColors.expense)
                 }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
     if (showBulkDeleteAlert) {
         val selectedCount = selectedIds.size
         AlertDialog(
             onDismissRequest = { showBulkDeleteAlert = false },
-            title = { Text("Delete $selectedCount Transactions") },
+            title = { Text(Strings.plural(R.plurals.transactions_delete_transactions_n, selectedCount)) },
             text = {
                 Text(
                     if (selectedCount == 1) {
-                        "Are you sure you want to delete this transaction? This action cannot be undone."
+                        stringResource(R.string.transactions_are_you_sure_you_want)
                     } else {
-                        "Are you sure you want to delete these $selectedCount transactions? This action cannot be undone."
+                        stringResource(R.string.transactions_are_you_sure_you_want_2, selectedCount)
                     },
                 )
             },
@@ -176,20 +179,20 @@ fun TransactionListScreen(
                         }
                     },
                 ) {
-                    Text("Delete", color = IosColors.expense)
+                    Text(stringResource(R.string.common_delete), color = IosColors.expense)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBulkDeleteAlert = false }) { Text("Cancel") }
+                TextButton(onClick = { showBulkDeleteAlert = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
     state.actionError?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissActionError,
-            title = { Text("Couldn't delete") },
+            title = { Text(stringResource(R.string.transactions_couldn_t_delete)) },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = viewModel::dismissActionError) { Text("OK") } },
+            confirmButton = { TextButton(onClick = viewModel::dismissActionError) { Text(stringResource(R.string.common_ok)) } },
         )
     }
     val locale = LocalConfiguration.current.locales[0]
@@ -234,7 +237,7 @@ fun TransactionListScreen(
                 item(key = "title") {
                     Box {
                         LargeTitle(
-                            "Transactions",
+                            stringResource(R.string.common_transactions),
                             trailing = if (isEditMode) null else ({
                                 TransactionsToolbarCapsule(
                                     isSearchActive = isSearchActive,
@@ -263,12 +266,12 @@ fun TransactionListScreen(
                                     }
                                 }
                                 .testTag("transaction-edit")
-                                .semantics { contentDescription = if (isEditMode) "Cancel selection" else "Edit transactions" }
+                                .semantics { contentDescription = if (isEditMode) Strings.get(R.string.transactions_cancel_selection) else Strings.get(R.string.transactions_edit_transactions) }
                                 .padding(horizontal = Spacing.m),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                if (isEditMode) "Cancel" else "Edit",
+                                if (isEditMode) stringResource(R.string.common_cancel) else stringResource(R.string.common_edit),
                                 style = IosText.body.w(FontWeight.SemiBold),
                                 color = IosColors.spendOrange,
                             )
@@ -326,7 +329,7 @@ fun TransactionListScreen(
                     if (upcomingDays.isNotEmpty()) {
                         stickyHeader(key = "upcoming") {
                             TransactionSectionHeader(
-                                title = "Upcoming",
+                                title = stringResource(R.string.transactions_upcoming),
                                 icon = "calendar.badge.clock",
                                 color = IosColors.spendOrange,
                                 count = upcomingCount,
@@ -352,7 +355,7 @@ fun TransactionListScreen(
                     if (historyDays.isNotEmpty()) {
                         stickyHeader(key = "history") {
                             TransactionSectionHeader(
-                                title = "History",
+                                title = stringResource(R.string.common_history),
                                 icon = "clock.arrow.circlepath",
                                 color = IosColors.textSecondary,
                                 count = historyCount,
@@ -436,7 +439,7 @@ fun TransactionListScreen(
                     ) {
                         Icon(
                             SfSymbols.icon("arrow.up.circle"),
-                            contentDescription = "Scroll to top",
+                            contentDescription = stringResource(R.string.transactions_scroll_to_top),
                             tint = IosColors.textPrimary,
                             modifier = Modifier.size(20.4.dp),
                         )
@@ -505,7 +508,7 @@ private fun TransactionsToolbarCapsule(
             Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     SfSymbols.icon(if (isSearchActive) "xmark.circle.fill" else "magnifyingglass"),
-                    contentDescription = if (isSearchActive) "Close search" else "Search transactions",
+                    contentDescription = if (isSearchActive) stringResource(R.string.transactions_close_search) else stringResource(R.string.transactions_search_transactions),
                     tint = IosColors.textPrimary,
                     modifier = Modifier.size(20.4.dp),
                 )
@@ -520,13 +523,13 @@ private fun TransactionsToolbarCapsule(
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onOpenFilter)
                 .testTag("transaction-filter")
-                .semantics { if (filtersActive) stateDescription = "Filters active" },
+                .semantics { if (filtersActive) stateDescription = Strings.get(R.string.transactions_filters_active) },
             contentAlignment = Alignment.Center,
         ) {
             Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     SfSymbols.icon("line.3.horizontal.decrease.circle"),
-                    contentDescription = "Filter transactions",
+                    contentDescription = stringResource(R.string.transactions_filter_transactions),
                     tint = IosColors.textPrimary,
                     modifier = Modifier.size(20.4.dp),
                 )
@@ -574,7 +577,7 @@ private fun ActiveFilterPills(labels: List<String>, onRemove: (Int) -> Unit) {
                 ) {
                     Icon(
                         SfSymbols.icon("xmark.circle.fill"),
-                        contentDescription = "Remove filter",
+                        contentDescription = stringResource(R.string.transactions_remove_filter),
                         tint = IosColors.spendOrange.copy(alpha = 0.7f),
                         modifier = Modifier.size(14.4.dp),
                     )
@@ -616,7 +619,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
             decorationBox = { innerTextField ->
                 Box {
                     if (query.isEmpty()) {
-                        Text("Search transactions...", style = IosText.callout, color = IosColors.textSecondary)
+                        Text(stringResource(R.string.transactions_search_transactions_2), style = IosText.callout, color = IosColors.textSecondary)
                     }
                     innerTextField()
                 }
@@ -625,7 +628,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, onClear: (
         if (query.isNotEmpty()) {
             Icon(
                 SfSymbols.icon("xmark.circle.fill"),
-                contentDescription = "Clear search",
+                contentDescription = stringResource(R.string.common_clear_search),
                 tint = IosColors.textSecondary,
                 modifier = Modifier
                     .size(20.4.dp)
@@ -650,7 +653,7 @@ private fun BulkDeleteButton(selectedCount: Int, onClick: () -> Unit, modifier: 
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
         Icon(SfSymbols.icon("trash"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
-        Text("Delete ($selectedCount)", style = IosText.body.w(FontWeight.SemiBold), color = Color.White)
+        Text(stringResource(R.string.transactions_delete, selectedCount), style = IosText.body.w(FontWeight.SemiBold), color = Color.White)
     }
 }
 
@@ -682,7 +685,7 @@ private fun TransactionSectionHeader(
         Text(title, style = IosText.headline, color = color)
         Spacer(Modifier.weight(1f))
         Text(
-            "$count ${if (count == 1) "transaction" else "transactions"}",
+            Strings.plural(R.plurals.count_transaction, count),
             style = IosText.caption,
             color = IosColors.textTertiary,
             modifier = Modifier
@@ -740,10 +743,10 @@ private fun TransactionDaysCard(
 @Composable
 private fun SyncBanner(state: TransactionListUiState, onOpenNotSynced: () -> Unit, modifier: Modifier = Modifier) {
     val (icon, message, tint) = when {
-        state.failedCount > 0 -> Triple(SfSymbols.icon("exclamationmark.circle"), "${state.failedCount} not synced. Tap to review.", IosColors.expense)
-        !state.isOnline && state.waitingCount > 0 -> Triple(SfSymbols.icon("icloud.slash"), "Offline. ${state.waitingCount} waiting to sync.", IosColors.spendOrange)
-        !state.isOnline -> Triple(SfSymbols.icon("icloud.slash"), "Offline. Showing what's saved on this device.", IosColors.spendOrange)
-        state.waitingCount > 0 -> Triple(SfSymbols.icon("clock"), "${state.waitingCount} waiting to sync.", IosColors.spendOrange)
+        state.failedCount > 0 -> Triple(SfSymbols.icon("exclamationmark.circle"), Strings.plural(R.plurals.transactions_n_not_synced_tap_to_review, state.failedCount), IosColors.expense)
+        !state.isOnline && state.waitingCount > 0 -> Triple(SfSymbols.icon("icloud.slash"), Strings.plural(R.plurals.transactions_offline_n_waiting_to_sync, state.waitingCount), IosColors.spendOrange)
+        !state.isOnline -> Triple(SfSymbols.icon("icloud.slash"), stringResource(R.string.transactions_offline_showing_saved), IosColors.spendOrange)
+        state.waitingCount > 0 -> Triple(SfSymbols.icon("clock"), Strings.plural(R.plurals.transactions_n_waiting_to_sync, state.waitingCount), IosColors.spendOrange)
         else -> Triple(SfSymbols.icon("icloud.slash"), state.loadError.orEmpty(), IosColors.expense)
     }
     GlassCard(
@@ -768,8 +771,8 @@ private fun SyncBanner(state: TransactionListUiState, onOpenNotSynced: () -> Uni
 private fun DayHeader(day: LocalDate, count: Int, locale: java.util.Locale) {
     val today = LocalDate.now()
     val label = when (day) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
+        today -> stringResource(R.string.common_today)
+        today.minusDays(1) -> stringResource(R.string.common_yesterday)
         else -> day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
     }
     val dark = isSystemInDarkTheme()
@@ -806,18 +809,18 @@ private fun TransactionRow(
     var showMenu by remember { mutableStateOf(false) }
     val tint = categoryColor(row.categoryColor)
     val hasCategory = row.categoryName != "Uncategorized" || row.categoryColor != null
-    val displayTitle = if (row.title == "Transaction" && !hasCategory) "Untitled" else row.title
+    val displayTitle = if (row.title == "Transaction" && !hasCategory) stringResource(R.string.transactions_untitled) else row.title
     val dateLabel = when (row.date) {
-        LocalDate.now() -> "Today"
-        LocalDate.now().minusDays(1) -> "Yesterday"
+        LocalDate.now() -> stringResource(R.string.common_today)
+        LocalDate.now().minusDays(1) -> stringResource(R.string.common_yesterday)
         else -> row.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
     }
     val subtitle = buildList {
         if (hasCategory) add(row.categoryName)
         add(dateLabel)
         when (row.syncStatus) {
-            SyncStatus.PENDING -> add("Waiting to sync")
-            SyncStatus.FAILED -> add("Not synced")
+            SyncStatus.PENDING -> add(stringResource(R.string.transactions_waiting_to_sync))
+            SyncStatus.FAILED -> add(stringResource(R.string.transactions_not_synced))
             SyncStatus.SYNCED -> Unit
         }
     }.joinToString(" • ")
@@ -829,17 +832,17 @@ private fun TransactionRow(
         if (!isEditMode) {
             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                 DropdownMenuItem(
-                    text = { Text("Edit") },
+                    text = { Text(stringResource(R.string.common_edit)) },
                     leadingIcon = { Icon(SfSymbols.icon("pencil"), contentDescription = null) },
                     onClick = { showMenu = false; actions.onEdit(row) },
                 )
                 DropdownMenuItem(
-                    text = { Text("Duplicate") },
+                    text = { Text(stringResource(R.string.transactions_duplicate)) },
                     leadingIcon = { Icon(SfSymbols.icon("doc.on.doc"), contentDescription = null) },
                     onClick = { showMenu = false; actions.onDuplicate(row) },
                 )
                 DropdownMenuItem(
-                    text = { Text("Delete", color = IosColors.expense) },
+                    text = { Text(stringResource(R.string.common_delete), color = IosColors.expense) },
                     leadingIcon = { Icon(SfSymbols.icon("trash"), contentDescription = null, tint = IosColors.expense) },
                     onClick = { showMenu = false; actions.onDelete(row) },
                 )
@@ -849,8 +852,8 @@ private fun TransactionRow(
             Modifier.fillMaxWidth()
                 .combinedClickable(
                     role = Role.Button,
-                    onClickLabel = if (isEditMode) "Select transaction" else "Edit",
-                    onLongClickLabel = if (isEditMode) null else "More actions",
+                    onClickLabel = if (isEditMode) stringResource(R.string.transactions_select_transaction) else stringResource(R.string.common_edit),
+                    onLongClickLabel = if (isEditMode) null else stringResource(R.string.common_more_actions),
                     onClick = { if (isEditMode) onToggleSelection(row.id) else actions.onEdit(row) },
                     onLongClick = if (isEditMode) null else ({ showMenu = true }),
                 )
@@ -943,9 +946,9 @@ private fun EmptyState(onAdd: () -> Unit) {
             modifier = Modifier.size(56.dp),
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("No transactions yet", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
+            Text(stringResource(R.string.transactions_no_transactions_yet), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary)
             Text(
-                "Start tracking your spending by adding your first transaction.",
+                stringResource(R.string.transactions_start_tracking_your_spending_by),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -969,7 +972,7 @@ private fun EmptyState(onAdd: () -> Unit) {
                 modifier = Modifier.size(20.4.dp),
             )
             Text(
-                "Add your first transaction",
+                stringResource(R.string.transactions_add_your_first_transaction),
                 style = IosText.headline,
                 color = IosColors.textPrimary,
             )

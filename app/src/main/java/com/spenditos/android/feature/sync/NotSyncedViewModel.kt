@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.sync
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.MutationStatus
@@ -73,7 +75,7 @@ class NotSyncedViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            "Couldn't discard this change. Try again in a moment."
+            Strings.get(R.string.sync_couldn_t_discard_this_change)
         }
         if (notice != null) notices.value = notice
     }
@@ -83,6 +85,6 @@ class NotSyncedViewModel @Inject constructor(
     }
 
     private companion object {
-        val IN_FLIGHT_NOTICE = "This change is being sent right now, so it can't be discarded yet. Try again in a moment."
+        val IN_FLIGHT_NOTICE: String get() = Strings.get(R.string.sync_this_change_is_being_sent)
     }
 }

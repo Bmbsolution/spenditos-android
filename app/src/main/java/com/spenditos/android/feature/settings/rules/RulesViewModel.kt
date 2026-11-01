@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.settings.rules
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.merchants.MerchantCategories
@@ -140,8 +142,8 @@ class RulesViewModel @Inject constructor(
 
         /** "→ Dining", "→ Unknown category" or "Skip — not spending". */
         fun actionText(rule: MerchantMapping, categories: List<Category>): String = when (rule.ruleAction) {
-            RuleAction.SKIP -> "Skip — not spending"
-            RuleAction.CATEGORIZE -> "→ ${categories.firstOrNull { it.id == rule.categoryId }?.name ?: "Unknown category"}"
+            RuleAction.SKIP -> Strings.get(R.string.settings_skip_not_spending)
+            RuleAction.CATEGORIZE -> "→ ${categories.firstOrNull { it.id == rule.categoryId }?.name ?: Strings.get(R.string.settings_unknown_category)}"
         }
     }
 }

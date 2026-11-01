@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.merchants.normalizeMerchantKey
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.ScanItem
@@ -179,7 +181,7 @@ object ScanReviewGrouping {
 
     /** "September" in the current year, "September 2025" otherwise, "No date" without a month. */
     fun monthTitle(key: String, now: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): String {
-        if (key.isEmpty()) return "No date"
+        if (key.isEmpty()) return Strings.get(R.string.scan_no_date)
         val month = runCatching { YearMonth.parse(key) }.getOrNull() ?: return key
         val name = month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)
         return if (month.year == now.year) name else "$name ${month.year}"

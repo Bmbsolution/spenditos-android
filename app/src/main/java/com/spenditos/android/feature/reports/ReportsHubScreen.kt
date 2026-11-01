@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.reports
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import java.time.LocalDate
 import java.util.Locale
 import java.time.format.DateTimeFormatter
@@ -73,7 +77,7 @@ fun ReportsHubScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Reports", style = IosText.headline, color = IosColors.textPrimary) },
+                title = { Text(stringResource(R.string.common_reports), style = IosText.headline, color = IosColors.textPrimary) },
                 colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
@@ -92,12 +96,12 @@ fun ReportsHubScreen(
             ) {
                 item { ReportsHeroCard() }
                 if (state.isLoading) {
-                    item { ReportLoadingCard("Preparing your monthly review…") }
+                    item { ReportLoadingCard(stringResource(R.string.reports_preparing_your_monthly_review)) }
                 } else if (state.loadStatus != null && state.dashboard == null) {
                     val status = requireNotNull(state.loadStatus)
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.hub.month",
                             onPrevious = viewModel::previousMonth,
@@ -108,15 +112,15 @@ fun ReportsHubScreen(
                         ReportsStatusCard(
                             status,
                             viewModel::refresh,
-                            errorTitle = "Monthly review unavailable",
-                            errorMessage = "We could not refresh this review. Check your connection and try again.",
+                            errorTitle = stringResource(R.string.reports_monthly_review_unavailable),
+                            errorMessage = stringResource(R.string.reports_we_could_not_refresh_this),
                         )
                     }
                 } else if (state.isEmpty) {
                     // A month with no entries: iOS's "starts with one entry" card, with month navigation kept.
                     item {
                         ReportMonthSelector(
-                            title = state.month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
+                            title = state.month.format(LocalizedDate.formatter("MMMM yyyy", locale)),
                             subtitle = monthRangeLabel(state.month, locale),
                             tag = "reports.hub.month",
                             onPrevious = viewModel::previousMonth,
@@ -145,8 +149,8 @@ fun ReportsHubScreen(
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Daily Spending Trends",
-                        detail = "Track your daily spending patterns and identify high-spend days.",
+                        title = stringResource(R.string.reports_daily_spending_trends),
+                        detail = stringResource(R.string.reports_track_your_daily_spending_patterns),
                         symbol = "chart.bar.fill",
                         iconTint = IosColors.spendOrange,
                         tag = "reports.hub.daily",
@@ -155,8 +159,8 @@ fun ReportsHubScreen(
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Paycheck Periods",
-                        detail = "See how your income covers expenses across pay periods.",
+                        title = stringResource(R.string.reports_pay_periods),
+                        detail = stringResource(R.string.reports_see_how_your_income_covers),
                         symbol = "banknote.fill",
                         iconTint = IosColors.income,
                         tag = "reports.hub.paycheck",
@@ -165,8 +169,8 @@ fun ReportsHubScreen(
                 }
                 item {
                     ReportNavigationCard(
-                        title = "Month Comparison",
-                        detail = "Compare this month's spending to last month.",
+                        title = stringResource(R.string.reports_month_comparison),
+                        detail = stringResource(R.string.reports_compare_this_month_s_spending),
                         symbol = "calendar.badge.clock",
                         iconTint = Color(0xFFAF52DE),
                         tag = "reports.hub.comparison",
@@ -182,14 +186,14 @@ fun ReportsHubScreen(
 private fun ReportsHeroCard() {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("REPORTING", style = IosText.subheadline, color = IosColors.textSecondary)
+            Text(stringResource(R.string.reports_reporting).uppercase(), style = IosText.subheadline, color = IosColors.textSecondary)
             Text(
-                "Insights and planning tools for your month",
+                stringResource(R.string.reports_insights_and_planning_tools_for),
                 style = IosText.title3.w(FontWeight.SemiBold),
                 color = IosColors.textPrimary,
             )
             Text(
-                "Track day-to-day trends and income coverage from one place.",
+                stringResource(R.string.reports_track_day_to_day_trends),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
             )
@@ -203,15 +207,15 @@ private fun ReportsEmptyReviewCard(onLogTransaction: () -> Unit) {
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
                 Icon(SfSymbols.icon("chart.line.uptrend.xyaxis"), contentDescription = null, tint = IosColors.textPrimary, modifier = Modifier.size(20.dp))
-                Text("Your review starts with one entry", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.reports_your_review_starts_with_one), style = IosText.headline, color = IosColors.textPrimary)
             }
             Text(
-                "Log a transaction to see spending and recurring obligations together.",
+                stringResource(R.string.reports_log_a_transaction_to_see),
                 style = IosText.callout,
                 color = IosColors.textSecondary,
             )
             Text(
-                "Log a transaction",
+                stringResource(R.string.reports_log_a_transaction),
                 modifier = Modifier.clickable(role = Role.Button, onClick = onLogTransaction),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = IosColors.spendOrange,
@@ -236,27 +240,27 @@ private fun MonthlyReviewCard(
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text("Monthly review", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.reports_monthly_review), style = IosText.headline, color = IosColors.textPrimary)
                     Text(
-                        data.dateRange?.startDate?.toString() ?: "This month",
+                        data.dateRange?.startDate?.toString() ?: stringResource(R.string.common_this_month),
                         style = IosText.subheadline,
                         color = IosColors.textSecondary,
                     )
                 }
-                ReportScopeButton("chevron.left", "Previous month", "reports.hub.month.previous", onPreviousMonth)
-                ReportScopeButton("chevron.right", "Next month", "reports.hub.month.next", onNextMonth)
+                ReportScopeButton("chevron.left", stringResource(R.string.reports_previous_month), "reports.hub.month.previous", onPreviousMonth)
+                ReportScopeButton("chevron.right", stringResource(R.string.reports_next_month), "reports.hub.month.next", onNextMonth)
             }
             Column(
                 Modifier.fillMaxWidth().testTag("reports.hub.review.metrics"),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    ReviewMetric("Income", Money.format(summary.totalIncome, currency), finance.income, Modifier.weight(1f))
-                    ReviewMetric("Spending", Money.format(summary.totalExpenses, currency), finance.expense, Modifier.weight(1f))
+                    ReviewMetric(stringResource(R.string.common_income), Money.format(summary.totalIncome, currency), finance.income, Modifier.weight(1f))
+                    ReviewMetric(stringResource(R.string.reports_spending), Money.format(summary.totalExpenses, currency), finance.expense, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     ReviewMetric(
-                        "Net",
+                        stringResource(R.string.reports_net),
                         Money.format(summary.netAmount, currency),
                         if (summary.netAmount >= 0) finance.income else finance.expense,
                         Modifier.weight(1f),
@@ -265,20 +269,20 @@ private fun MonthlyReviewCard(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text("Takeaways", style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
+                Text(stringResource(R.string.reports_takeaways), style = IosText.subheadline.w(FontWeight.SemiBold), color = IosColors.textSecondary)
                 if (topCategory == null) {
                     ReportTakeawayRow(
                         symbol = "chart.bar.fill",
                         tint = finance.expense,
-                        title = "No spending pattern yet",
-                        detail = "Log activity to make this takeaway useful.",
+                        title = stringResource(R.string.reports_no_spending_pattern_yet),
+                        detail = stringResource(R.string.reports_log_activity_to_make_this),
                     )
                 } else {
                     ReportTakeawayRow(
                         symbol = "chart.bar.fill",
                         tint = finance.expense,
-                        title = "${topCategory.name} leads spending",
-                        detail = "Review the transaction log to confirm your largest category (${Money.format(topCategory.amount.toDouble(), currency)}).",
+                        title = stringResource(R.string.reports_top_category_leads, topCategory.name),
+                        detail = stringResource(R.string.reports_review_the_transaction_log_to, Money.format(topCategory.amount.toDouble(), currency)),
                         onClick = onReviewTransactions,
                     )
                 }
@@ -286,14 +290,14 @@ private fun MonthlyReviewCard(
                     symbol = "arrow.triangle.2.circlepath",
                     tint = IosColors.spendOrange,
                     title = if (activeRecurringCount == 0) {
-                        "Recurring obligations are not mapped"
+                        stringResource(R.string.reports_recurring_obligations_are_not_mapped)
                     } else {
-                        "$activeRecurringCount recurring obligation${if (activeRecurringCount == 1) "" else "s"} mapped"
+                        Strings.plural(R.plurals.reports_recurring_mapped, activeRecurringCount)
                     },
                     detail = if (activeRecurringCount == 0) {
-                        "Add regular bills or income to improve forecasts."
+                        stringResource(R.string.reports_add_regular_bills_or_income)
                     } else {
-                        "Review your bills and income to keep projected cash flow trustworthy."
+                        stringResource(R.string.reports_review_your_bills_and_income)
                     },
                 )
             }
@@ -307,7 +311,7 @@ private fun MonthlyReviewCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Review recent transactions",
+                    stringResource(R.string.reports_review_recent_transactions),
                     modifier = Modifier.weight(1f),
                     style = IosText.callout.w(FontWeight.SemiBold),
                     color = Color.White,
@@ -369,15 +373,15 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
         Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Where your money went",
+                    stringResource(R.string.reports_where_your_money_went),
                     modifier = Modifier.weight(1f),
                     style = IosText.headline,
                     color = IosColors.textPrimary,
                 )
-                Text("This month", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.common_this_month), style = IosText.subheadline, color = IosColors.textSecondary)
             }
             if (total.signum() <= 0) {
-                Text("No spending logged this month yet.", style = IosText.subheadline, color = IosColors.textSecondary)
+                Text(stringResource(R.string.reports_no_spending_logged_this_month), style = IosText.subheadline, color = IosColors.textSecondary)
             } else {
                 BoxWithConstraints(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape)) {
                     val barWidth = maxWidth - 2.dp * (slices.size - 1)
@@ -403,7 +407,7 @@ private fun WhereMoneyWentCard(categories: List<CategorySummary>, currency: Stri
                             Text(Money.format(slice.amount.toDouble(), currency), style = IosText.callout.w(FontWeight.Medium), color = IosColors.textPrimary)
                             val percent = slice.amount.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).toInt()
                             Text(
-                                "$percent%",
+                                "$percent${com.spenditos.android.core.i18n.AppLanguage.percentSuffix()}",
                                 modifier = Modifier.widthIn(min = 36.dp),
                                 style = IosText.subheadline,
                                 color = IosColors.textSecondary,
@@ -448,6 +452,6 @@ private fun ReportNavigationCard(
 }
 
 private fun monthRangeLabel(month: LocalDate, locale: Locale): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM d", locale)
+    val formatter = LocalizedDate.formatter("MMM d", locale)
     return "${month.format(formatter)} – ${month.withDayOfMonth(month.lengthOfMonth()).format(formatter)}"
 }

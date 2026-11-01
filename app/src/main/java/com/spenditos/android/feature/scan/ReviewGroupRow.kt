@@ -1,5 +1,9 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -92,11 +96,11 @@ private fun GroupHeader(
     val state = group.includeState
     val selected = group.sharedCategoryId?.let { id -> categories.firstOrNull { it.id == id } }
     val needsCategory = group.items.any { it.categoryId.isNullOrEmpty() }
-    val categoryTitle = selected?.name ?: if (group.hasMixedCategories) "Mixed categories" else "Choose category"
+    val categoryTitle = selected?.name ?: if (group.hasMixedCategories) stringResource(R.string.scan_mixed_categories) else stringResource(R.string.scan_choose_category)
     val badge = when {
         group.allSkippedByRule -> SKIPPED_BY_RULE_LABEL
         group.allRuleFiled -> YOUR_RULE_LABEL
-        group.flaggedCount > 0 -> "${group.flaggedCount} not included"
+        group.flaggedCount > 0 -> Strings.get(R.string.scan_not_included, group.flaggedCount)
         else -> null
     }
     Row(
@@ -107,7 +111,7 @@ private fun GroupHeader(
         Box(
             Modifier.size(48.dp)
                 .toggleable(value = state == ReviewGroup.IncludeState.ALL, role = Role.Checkbox, onValueChange = { onToggle() })
-                .semantics { contentDescription = if (state == ReviewGroup.IncludeState.ALL) "Exclude ${group.merchant}" else "Include ${group.merchant}" }
+                .semantics { contentDescription = if (state == ReviewGroup.IncludeState.ALL) Strings.get(R.string.scan_exclude, group.merchant) else Strings.get(R.string.scan_include, group.merchant) }
                 .testTag("review-group-toggle"),
             contentAlignment = Alignment.Center,
         ) {
@@ -144,7 +148,7 @@ private fun GroupHeader(
                 Row(
                     Modifier.clip(CircleShape).background(surfaceTertiary())
                         .clickable(role = Role.Button, onClick = onExpand)
-                        .semantics { contentDescription = "${group.count} transactions, ${if (isExpanded) "collapse" else "expand"}" }
+                        .semantics { contentDescription = Strings.plural(R.plurals.count_transaction, group.count) + ", " + (if (isExpanded) Strings.get(R.string.a11y_collapse) else Strings.get(R.string.a11y_expand)) }
                         .padding(horizontal = Spacing.s, vertical = 3.dp)
                         .testTag("review-group-expand"),
                     verticalAlignment = Alignment.CenterVertically,
@@ -173,7 +177,7 @@ private fun GroupHeader(
                         .background(if (needsCategory) IosColors.spendOrange.copy(alpha = 0.1f) else Color.Transparent)
                         .border(1.dp, if (needsCategory) IosColors.spendOrange.copy(alpha = 0.5f) else IosColors.separator, shape)
                         .clickable(role = Role.Button, onClick = onPickCategory)
-                        .semantics { contentDescription = "Category for ${group.merchant}: $categoryTitle" }
+                        .semantics { contentDescription = Strings.get(R.string.scan_category_for, group.merchant, categoryTitle) }
                         .padding(horizontal = Spacing.s + 2.dp, vertical = 4.dp)
                         .testTag("review-group-category"),
                 )
@@ -220,7 +224,7 @@ private fun GroupLines(
                     // 24 x 32 visual like iOS; the 48dp touch target overflows it without changing the layout.
                     Modifier.size(width = 24.dp, height = 32.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
                         .toggleable(value = item.include, enabled = !item.isFrozen, role = Role.Checkbox, onValueChange = { onToggleLine(item) })
-                        .semantics { contentDescription = if (item.include) "Exclude this one" else "Include this one" }
+                        .semantics { contentDescription = if (item.include) Strings.get(R.string.scan_exclude_this_one) else Strings.get(R.string.scan_include_this_one) }
                         .testTag("review-group-line-toggle"),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -276,6 +280,6 @@ internal fun lineAmountText(item: CaptureReviewItem, currency: String, locale: L
 
 /** "Oct 8" for "2026-10-08", "No date" for none, the text itself when it does not parse. */
 internal fun groupDateText(iso: String?, locale: Locale): String {
-    if (iso.isNullOrBlank()) return "No date"
-    return runCatching { LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d", locale)) }.getOrDefault(iso)
+    if (iso.isNullOrBlank()) return Strings.get(R.string.scan_no_date)
+    return runCatching { LocalDate.parse(iso).format(LocalizedDate.formatter("MMM d", locale)) }.getOrDefault(iso)
 }

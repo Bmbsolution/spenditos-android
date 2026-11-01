@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.transactions
 
+import com.spenditos.android.core.i18n.LocalizedDate
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.core.db.TransactionEntity
@@ -153,24 +156,23 @@ data class AddTransactionUiState(
     /** Subtitle under "Make it recurring". */
     val recurringSubtitle: String
         get() {
-            if (makeRecurring) return "${recurrencePreset.label}, next due ${shortDate(nextDue)}"
+            if (makeRecurring) return Strings.get(R.string.transactions_recurring_next_due, recurrencePreset.label, shortDate(nextDue))
             val name = selectedCategory?.name?.lowercase().orEmpty()
-            if (USUALLY_REPEATS.any { name.contains(it) }) return "${selectedCategory?.name ?: "This"} usually repeats. Turn on to track it."
-            return "Adds it to your bills and income"
+            if (USUALLY_REPEATS.any { name.contains(it) }) return Strings.get(R.string.transactions_usually_repeats, selectedCategory?.name ?: Strings.get(R.string.common_this))
+            return Strings.get(R.string.transactions_adds_it_to_your_bills)
         }
 
     val recurringHint: String
-        get() = "This payment is logged on ${shortDate(date)}. Then ${shortDate(nextDue)}, " +
-            "${shortDate(recurrencePreset.next(nextDue))}, and so on. Due on a different day than you paid? Change Next due."
+        get() = Strings.get(R.string.transactions_recurring_hint, shortDate(date), shortDate(nextDue), shortDate(recurrencePreset.next(nextDue)))
 
     private companion object {
-        val USUALLY_REPEATS = listOf("rent", "utilities", "subscriptions", "salary", "insurance", "phone", "internet")
+        val USUALLY_REPEATS = listOf("rent", "utilities", "subscriptions", "salary", "insurance", "phone", "internet", "loyer", "hypoth", "abonnement", "salaire", "assurance", "téléphone", "électricité", "hydro")
     }
 }
 
 /** "Oct 7": the iOS `.dateTime.month(.abbreviated).day()` format. */
 internal fun shortDate(date: LocalDate): String =
-    date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault()))
+    date.format(LocalizedDate.formatter("MMM d", java.util.Locale.getDefault()))
 
 /** Accepts "12.50" and "12,50"; at most two decimals; null when not a number. */
 internal fun parseAmount(text: String): BigDecimal? {
@@ -374,13 +376,13 @@ class AddTransactionViewModel @Inject constructor(
         val name = draft.name.trim()
         val isIncome = form.value.type == EntryType.INCOME
         val error = when {
-            name.isEmpty() -> "Enter a category name."
-            name.length > 100 -> "Name must be 100 characters or fewer."
+            name.isEmpty() -> Strings.get(R.string.common_enter_a_category_name)
+            name.length > 100 -> Strings.get(R.string.common_name_must_be_100_characters)
             else -> state.value.categories.firstOrNull {
                 it.isIncome == isIncome &&
                     com.spenditos.android.feature.settings.categories.normalizeCategoryName(it.name) ==
                     com.spenditos.android.feature.settings.categories.normalizeCategoryName(name)
-            }?.let { "\"${it.name}\" already exists." }
+            }?.let { Strings.get(R.string.common_category_already_exists, it.name) }
         }
         if (error != null) {
             form.update { it.copy(categoryError = error) }
@@ -405,7 +407,7 @@ class AddTransactionViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 form.update {
-                    it.copy(categoryError = if (e is ApiError.Network) "You're offline. Check your connection and try again." else "Couldn't save the category. Please try again.")
+                    it.copy(categoryError = if (e is ApiError.Network) Strings.get(R.string.common_you_re_offline_check_your) else Strings.get(R.string.transactions_couldn_t_save_the_category))
                 }
             } finally {
                 form.update { it.copy(isSavingCategory = false) }
@@ -527,7 +529,7 @@ class AddTransactionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 transactions.delete(target.id)
-                _events.send(AddTransactionEvent.Done("Transaction deleted"))
+                _events.send(AddTransactionEvent.Done(Strings.get(R.string.transactions_transaction_deleted)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -577,11 +579,11 @@ class AddTransactionViewModel @Inject constructor(
 
             if (current.editing != null) {
                 if (current.editing.id.startsWith("local-")) {
-                    showError("This one hasn't synced yet. Edit it once it's synced.", FailedAction.SAVE)
+                    showError(Strings.get(R.string.transactions_not_synced_yet_edit), FailedAction.SAVE)
                     return
                 }
                 transactions.update(current.editing.id, draft)
-                _events.send(AddTransactionEvent.Done("Transaction updated"))
+                _events.send(AddTransactionEvent.Done(Strings.get(R.string.transactions_transaction_updated)))
                 return
             }
 
@@ -638,7 +640,7 @@ class AddTransactionViewModel @Inject constructor(
     private suspend fun setUpRepeat(current: AddTransactionUiState): Boolean {
         val amount = current.amount?.toDouble() ?: return false
         val categoryId = current.categoryId ?: return false
-        val name = current.description.trim().ifEmpty { current.selectedCategory?.name ?: "Bill" }
+        val name = current.description.trim().ifEmpty { current.selectedCategory?.name ?: Strings.get(R.string.common_bill) }
         return try {
             recurring.create(
                 CreateRecurringTemplateRequest(
@@ -667,7 +669,7 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     private suspend fun finishSave(current: AddTransactionUiState, offline: Boolean, undoId: String? = null) {
-        val message = if (offline) "Saved on this device. It will sync when you're back online." else "Saved"
+        val message = if (offline) Strings.get(R.string.transactions_saved_on_this_device_it) else Strings.get(R.string.common_saved)
         if (!continueAfterSave) {
             _events.send(AddTransactionEvent.Done(message))
             return
@@ -779,23 +781,23 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     private fun saveErrorMessage(e: Exception): String = when (e) {
-        is ApiError.Unauthorized -> "Sign in again to save."
-        is ApiError.Network -> "You're offline. Check your connection and try again."
-        else -> "Couldn't save. Please try again."
+        is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_save)
+        is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+        else -> Strings.get(R.string.transactions_couldn_t_save_please_try)
     }
 
     private fun deleteErrorMessage(e: Exception): String = when (e) {
         is TransactionBusyException -> e.message.orEmpty()
-        is ApiError.Unauthorized -> "Sign in again to delete."
-        is ApiError.Network -> "You're offline. Check your connection and try again."
-        else -> "Couldn't delete. Please try again."
+        is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_delete)
+        is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
+        else -> Strings.get(R.string.transactions_couldn_t_delete_please_try)
     }
 
     companion object {
-        const val RULE_SOURCE = "From your rule"
-        const val LAST_USED_SOURCE = "Last used category"
-        const val OFFLINE_REPEAT = "You're offline. Turn off Make it recurring to save this now, or try again when you're back online."
-        const val REPEAT_FAILED = "Your payment is saved, but the repeat couldn't be set up. Tap Save to try again."
+        val RULE_SOURCE: String get() = Strings.get(R.string.transactions_from_your_rule)
+        val LAST_USED_SOURCE: String get() = Strings.get(R.string.transactions_last_used_category)
+        val OFFLINE_REPEAT: String get() = Strings.get(R.string.transactions_you_re_offline_turn_off)
+        val REPEAT_FAILED: String get() = Strings.get(R.string.transactions_your_payment_is_saved_but)
         private const val UNDO_WINDOW_MS = 6_000L
     }
 }

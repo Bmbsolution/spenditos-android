@@ -28,6 +28,7 @@ import com.spenditos.android.data.model.BulkCreateResult
 import com.spenditos.android.data.model.BulkTransactionItem
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.TransactionsPage
+import com.spenditos.android.data.model.TransactionsPagination
 import com.spenditos.android.data.model.UpdateTransactionRequest
 import com.spenditos.android.testing.FakeTokenStore
 import com.spenditos.android.testing.FakeTokenStore.Companion.NOW
@@ -234,6 +235,56 @@ class TransactionRepositoryTest {
         assertTrue("srv-9" in ids)
         assertTrue("old" !in ids)
         assertTrue(ids.any { it.startsWith("local-") })
+    }
+
+    private fun transactionPage(ids: List<String>, nextCursor: String? = null) = MockResponse(
+        code = 200,
+        body = SpenditosJson.encodeToString(
+            ApiEnvelope.serializer(TransactionsPage.serializer()),
+            ApiEnvelope(
+                data = TransactionsPage(
+                    transactions = ids.map { id ->
+                        Transaction(id, "user-1", "cat-food", amount = 12.5, date = "2026-10-05")
+                    },
+                    pagination = TransactionsPagination(nextCursor, nextCursor != null),
+                ),
+            ),
+        ),
+    )
+
+    @Test
+    fun `repeated refreshes include every page and keep queued rows`() = runTest {
+        online.value = false
+        repo.create(draft)
+        val firstPage = (1..200).map { "server-$it" }
+        repeat(2) {
+            server.enqueue(transactionPage(firstPage, "page-2"))
+            server.enqueue(transactionPage(listOf("nearer-entry")))
+
+            repo.refreshRange(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31))
+
+            val ids = rows().map { it.id }.toSet()
+            assertEquals(202, ids.size)
+            assertTrue("nearer-entry" in ids)
+            assertTrue(ids.any { id -> id.startsWith("local-") })
+            assertEquals("200", server.takeRequest().url.queryParameter("limit"))
+            assertEquals("page-2", server.takeRequest().url.queryParameter("cursor"))
+        }
+    }
+
+    @Test
+    fun `a failed later page keeps the entire previously cached range`() = runTest {
+        server.enqueue(transactionPage(listOf("existing")))
+        repo.refreshRange(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31))
+
+        server.enqueue(transactionPage(listOf("partial"), "page-2"))
+        server.enqueue(MockResponse(code = 503, body = "{}"))
+        val failure = runCatching {
+            repo.refreshRange(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31))
+        }.exceptionOrNull()
+
+        assertTrue(failure != null)
+        assertEquals(listOf("existing"), rows().map { it.id })
     }
 
     @Test

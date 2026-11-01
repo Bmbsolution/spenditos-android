@@ -16,6 +16,9 @@ enum class MonthBalanceChoice(val wire: String) {
     DISMISSED("dismissed"),
     CARRIED("carried"),
 
+    /** "Pay it in <Month>": the shortfall became one expense entry in the month the card is shown in. */
+    PAYING("paying"),
+
     /** An answer this client does not know yet; treated as unanswered (iOS decodes it as nil). */
     UNKNOWN("unknown"),
 }
@@ -73,3 +76,18 @@ data class SetMonthBalanceChoiceRequest(
     val month: String,
     val choice: MonthBalanceChoice,
 )
+
+/**
+ * Body of `PUT /month-balance` for "Pay it in <Month>" (`choice: paying`). The server sets the amount (the
+ * shortfall) and creates the one expense entry once per month.
+ */
+@Serializable
+data class PayMonthBalanceRequest(
+    val month: String,
+    val choice: MonthBalanceChoice,
+    val payment: Payment,
+) {
+    /** [date] is `YYYY-MM-DD` inside [month]; [description] is the entry's name. */
+    @Serializable
+    data class Payment(val date: String, val description: String)
+}

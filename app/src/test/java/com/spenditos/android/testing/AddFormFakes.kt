@@ -3,16 +3,20 @@ package com.spenditos.android.testing
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.data.merchants.AlwaysResult
 import com.spenditos.android.data.merchants.MerchantMappingActions
+import com.spenditos.android.data.model.BillHistorySummary
 import com.spenditos.android.data.model.CreateRecurringTemplateRequest
 import com.spenditos.android.data.model.GenerateTransactionsResult
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.model.RecurringTemplate
 import com.spenditos.android.data.model.RuleAction
+import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.UpdateRecurringTemplateRequest
 import com.spenditos.android.data.recurring.RecurringActions
 import com.spenditos.android.data.transactions.LastUsedCategories
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 
 /** Records repeat creates; [failCreate] makes the next creates throw. */
@@ -35,7 +39,14 @@ class FakeRecurring(templates: List<RecurringTemplate> = emptyList()) : Recurrin
     override suspend fun update(id: String, request: UpdateRecurringTemplateRequest): RecurringTemplate = error("unused")
     override suspend fun delete(id: String) = error("unused")
     override suspend fun setMainIncome(id: String?) = error("unused")
-    override suspend fun generate(month: YearMonth): GenerateTransactionsResult = error("unused")
+    override suspend fun generate(month: YearMonth, templateIds: List<String>?): GenerateTransactionsResult = error("unused")
+    override suspend fun pause(id: String, now: Instant): RecurringTemplate = error("unused")
+    override suspend fun resume(id: String): RecurringTemplate = error("unused")
+    override suspend fun end(id: String, keepUpcoming: Boolean, now: Instant): RecurringTemplate = error("unused")
+    override suspend fun endAfterNextPayment(id: String): RecurringTemplate = error("unused")
+    override suspend fun startAgain(id: String, nextDate: LocalDate): RecurringTemplate = error("unused")
+    override suspend fun history(ids: List<String>, includeEntries: Boolean): Map<String, BillHistorySummary> = error("unused")
+    override suspend fun monthEntries(month: YearMonth): List<Transaction> = error("unused")
 }
 
 /** In-memory Rules API: records every call, fails on demand (`failure`, `failUpsert`, `failApply`, ...). */

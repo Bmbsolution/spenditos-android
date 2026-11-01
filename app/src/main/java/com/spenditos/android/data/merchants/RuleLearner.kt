@@ -1,5 +1,7 @@
 package com.spenditos.android.data.merchants
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.MerchantMapping
 import com.spenditos.android.data.scan.counted
 import kotlinx.coroutines.CancellationException
@@ -42,7 +44,7 @@ class RuleLearner @Inject constructor(private val mappings: MerchantMappingActio
             return RuleLearnOutcome(rule = null, pastUpdated = null, message = FAILURE_MESSAGE)
         }
         val message = if (result.applyFailed) {
-            "Rule saved: $merchant → $categoryName. Past transactions couldn't be updated. $CHANGE_ANYTIME"
+            Strings.get(R.string.data_merchants_rule_saved_past_transactions_couldn, merchant, categoryName, CHANGE_ANYTIME)
         } else {
             savedMessage(merchant, categoryName, result.pastUpdated)
         }
@@ -50,13 +52,13 @@ class RuleLearner @Inject constructor(private val mappings: MerchantMappingActio
     }
 
     companion object {
-        const val FAILURE_MESSAGE = "Couldn't save the rule. Your transactions will still be saved."
-        private const val CHANGE_ANYTIME = "Change it anytime in Settings › Rules."
+        val FAILURE_MESSAGE: String get() = Strings.get(R.string.data_merchants_couldn_t_save_the_rule)
+        private val CHANGE_ANYTIME: String get() = Strings.get(R.string.data_merchants_change_it_anytime_in_settings)
 
         /** "Rule saved: Tim Hortons → Dining. 7 past transactions updated. Change it anytime in Settings › Rules." */
         fun savedMessage(merchant: String, categoryName: String, pastUpdated: Int?): String {
-            var text = "Rule saved: $merchant → $categoryName."
-            if (pastUpdated != null && pastUpdated > 0) text += " ${pastUpdated.counted("past transaction")} updated."
+            var text = Strings.get(R.string.data_merchants_rule_saved, merchant, categoryName)
+            if (pastUpdated != null && pastUpdated > 0) text += " " + Strings.plural(R.plurals.rule_past_updated, pastUpdated)
             return "$text $CHANGE_ANYTIME"
         }
     }

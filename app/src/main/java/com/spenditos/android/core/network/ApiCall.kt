@@ -1,5 +1,7 @@
 package com.spenditos.android.core.network
 
+import com.spenditos.android.R
+import com.spenditos.android.core.i18n.Strings
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
@@ -41,13 +43,16 @@ private suspend fun <R> mapErrors(block: suspend () -> R): R = try {
 }
 
 /** `error ?: message` from an error envelope, as iOS `APIClient.serverMessage`. */
+/** Shown when an error response carries no message; callers that treat it as "nothing useful to show" compare against this. */
+internal fun unknownServerMessage(): String = Strings.get(R.string.data_export_unknown_error)
+
 internal fun serverMessage(body: String?): String {
-    if (body.isNullOrBlank()) return "Unknown error"
+    if (body.isNullOrBlank()) return unknownServerMessage()
     return try {
         val envelope = SpenditosJson.decodeFromString(ApiEnvelope.serializer(kotlinx.serialization.json.JsonElement.serializer()), body)
-        envelope.error ?: envelope.message ?: "Unknown error"
+        envelope.error ?: envelope.message ?: unknownServerMessage()
     } catch (_: Exception) {
-        "Unknown error"
+        unknownServerMessage()
     }
 }
 

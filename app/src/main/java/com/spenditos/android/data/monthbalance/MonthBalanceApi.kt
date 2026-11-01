@@ -23,4 +23,10 @@ interface MonthBalanceApi {
         @Body body: SetMonthBalanceChoiceRequest,
         @Tag sessionBinding: SessionBinding? = null,
     ): ApiEnvelope<MonthBalanceData>
+
+    @PUT("month-balance")
+    suspend fun pay(
+        @Body body: PayMonthBalanceRequest,
+        @Tag sessionBinding: SessionBinding? = null,
+    ): ApiEnvelope<MonthBalanceData>
 }

@@ -1,5 +1,7 @@
 package com.spenditos.android.data.transactions
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.room.withTransaction
 import com.spenditos.android.core.auth.SessionChangedException
 import com.spenditos.android.core.auth.SessionManager
@@ -395,7 +397,7 @@ class TransactionRepository @Inject constructor(
             // as a local validation failure instead of throwing out of the worker.
             val failure = SendOutcome.Failed(
                 FailureCode.VALIDATION,
-                "This saved transaction could not be read. Review it and add it again.",
+                Strings.get(R.string.data_transactions_this_saved_transaction_could_not),
             )
             mutations.release(mutationId, MutationStatus.FAILED, failure.code, failure.message)
             transactions.setStatus(row.userId, row.localTransactionId, SyncStatus.FAILED)

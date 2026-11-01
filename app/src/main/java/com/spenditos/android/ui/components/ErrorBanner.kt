@@ -1,5 +1,8 @@
 package com.spenditos.android.ui.components
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,7 +48,7 @@ fun ErrorBanner(
             .background(expense.copy(alpha = 0.12f), shape)
             .border(1.dp, expense.copy(alpha = 0.45f), shape)
             .padding(Spacing.m)
-            .semantics { contentDescription = "Error: $message" },
+            .semantics { contentDescription = Strings.get(R.string.common_error, message) },
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.Top,
     ) {
@@ -53,7 +56,7 @@ fun ErrorBanner(
         Text(message, style = IosText.callout, color = IosColors.textPrimary, modifier = Modifier.weight(1f))
         if (onRetry != null) {
             Text(
-                "Retry",
+                stringResource(R.string.common_retry),
                 style = IosText.subheadline.w(FontWeight.SemiBold),
                 color = expense,
                 modifier = Modifier.clickable(role = Role.Button, onClick = onRetry),
@@ -64,7 +67,7 @@ fun ErrorBanner(
                 // 28dp visual like iOS; the 48dp touch target overflows it without changing the layout.
                 Modifier.size(28.dp).wrapContentSize(Alignment.Center, unbounded = true).requiredSize(48.dp)
                     .clickable(role = Role.Button, onClick = onDismiss)
-                    .semantics { contentDescription = "Dismiss error" },
+                    .semantics { contentDescription = Strings.get(R.string.common_dismiss_error) },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(SfSymbols.icon("xmark"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(16.dp))

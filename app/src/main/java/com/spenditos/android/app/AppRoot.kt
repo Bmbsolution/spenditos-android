@@ -1,5 +1,8 @@
 package com.spenditos.android.app
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Box
 import com.spenditos.android.feature.lock.AppLockScreen
 import com.spenditos.android.core.lock.LockState
@@ -102,7 +105,7 @@ fun AppRoot(viewModel: RootViewModel = hiltViewModel()) {
     val envName = viewModel.environment.displayName.takeIf { viewModel.environment.showBadge }
     val loginSnackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
-        viewModel.session.expired.collect { loginSnackbar.showSnackbar("Your session expired. Please sign in again.") }
+        viewModel.session.expired.collect { loginSnackbar.showSnackbar(Strings.get(R.string.app_your_session_expired_please_sign)) }
     }
     LaunchedEffect(Unit) {
         // A widget link tapped before signing out must not fire after the next sign-in.
@@ -202,11 +205,11 @@ private fun AuthStepContent(
         )
         is AuthStep.Verify -> VerifyEmailScreen(
             email = current.email,
-            onVerified = { backToLogin("Email confirmed. Sign in to continue.") },
+            onVerified = { backToLogin(Strings.get(R.string.app_email_confirmed_sign_in_to)) },
             onBack = { onStep(AuthStep.Login) },
         )
         AuthStep.Forgot -> ForgotPasswordScreen(
-            onDone = { backToLogin("Password updated. Sign in with your new password.") },
+            onDone = { backToLogin(Strings.get(R.string.app_password_updated_sign_in_with)) },
             onBack = { onStep(AuthStep.Login) },
         )
     }

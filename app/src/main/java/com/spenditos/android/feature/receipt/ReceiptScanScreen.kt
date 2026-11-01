@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.receipt
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -138,7 +141,7 @@ fun ReceiptScanScreen(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp).testTag("receipt.loading"), color = IosColors.spendOrange, strokeWidth = 3.dp)
                     Spacer(Modifier.height(Spacing.l))
-                    Text("Preparing photo…", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.receipt_preparing_photo), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
                 }
             }
             ReceiptScanStep.READING -> IosScreen {
@@ -204,21 +207,21 @@ private fun ScanUploadSection(
                     }
                     .padding(Spacing.m)
                     .heightIn(min = 44.dp)
-                    .semantics { contentDescription = "Upload. Choose from Photo Library or Files" }
+                    .semantics { contentDescription = Strings.get(R.string.receipt_upload_choose_from_photo_library) }
                     .testTag("scan.upload"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
                 IconChip(SfSymbols.icon("square.and.arrow.up"), IosColors.spendOrange, size = 44.dp)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Upload", style = IosText.headline, color = IosColors.textPrimary)
-                    Text("Screenshots, receipts, PDF, CSV, Excel", style = IosText.subheadline, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.receipt_upload), style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.receipt_screenshots_receipts_pdf_csv_excel), style = IosText.subheadline, color = IosColors.textSecondary)
                 }
                 Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(14.4.dp))
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Photo Library", style = IosText.body) },
+                    text = { Text(stringResource(R.string.receipt_photo_library), style = IosText.body) },
                     onClick = {
                         menuOpen = false
                         onPhotoLibrary()
@@ -226,7 +229,7 @@ private fun ScanUploadSection(
                     modifier = Modifier.testTag("scan.upload.photos"),
                 )
                 DropdownMenuItem(
-                    text = { Text("Files", style = IosText.body) },
+                    text = { Text(stringResource(R.string.receipt_files), style = IosText.body) },
                     onClick = {
                         menuOpen = false
                         onFiles()
@@ -235,7 +238,7 @@ private fun ScanUploadSection(
                 )
                 if (canPaste) {
                     DropdownMenuItem(
-                        text = { Text("Paste screenshot", style = IosText.body) },
+                        text = { Text(stringResource(R.string.receipt_paste_screenshot), style = IosText.body) },
                         onClick = {
                             menuOpen = false
                             onPaste()
@@ -246,7 +249,7 @@ private fun ScanUploadSection(
             }
         }
         Text(
-            "Any amount. Spenditos works out what's in it and shows you everything before saving.",
+            stringResource(R.string.receipt_any_amount_spenditos_works_out),
             style = IosText.caption,
             color = IosColors.textSecondary,
             textAlign = TextAlign.Center,
@@ -311,11 +314,11 @@ private fun ReadingContent(reading: ScanReadingState, onNotifyMe: () -> Unit, on
                         .testTag("scan.notifyMe"),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Notify me when it's ready", style = IosText.headline, color = Color.Black)
+                    Text(stringResource(R.string.receipt_notify_me_when_it_s), style = IosText.headline, color = Color.Black)
                 }
             }
             Text(
-                "Cancel",
+                stringResource(R.string.common_cancel),
                 style = IosText.body,
                 color = IosColors.neutral,
                 modifier = Modifier
@@ -336,19 +339,19 @@ private fun ReceiptFailure(offline: Boolean, message: String, onRetry: () -> Uni
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Icon(SfSymbols.icon("exclamationmark.triangle.fill"), contentDescription = null, tint = IosColors.expense, modifier = Modifier.size(48.dp))
-        Text("Couldn't read your scan", style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.receipt_couldn_t_read_your_scan), style = IosText.title3.w(FontWeight.SemiBold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
         if (offline) {
-            Text("You're offline. Check your connection and try again.", style = IosText.body, color = IosColors.warning, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.common_you_re_offline_check_your), style = IosText.body, color = IosColors.warning, textAlign = TextAlign.Center)
         }
         Text(message, modifier = Modifier.testTag("receipt.error"), style = IosText.body, color = IosColors.neutral, textAlign = TextAlign.Center)
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             ReceiptPrimaryAction(
-                "Try Again",
+                stringResource(R.string.common_try_again_2),
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth().testTag("receipt.retry"),
             )
             ReceiptSecondaryAction(
-                "Fill Manually",
+                stringResource(R.string.common_fill_manually),
                 onClick = onManual,
                 modifier = Modifier.fillMaxWidth().testTag("receipt.cancel"),
             )
@@ -375,9 +378,9 @@ private fun ReceiptQuotaExceeded(message: String, onUpgrade: () -> Unit, onManua
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            Text("Monthly Limit Reached", style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.common_monthly_limit_reached), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary, textAlign = TextAlign.Center)
             Text(message, style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = Spacing.xl).testTag("receipt.quota.message"))
-            Text("Upgrade to Pro to keep scanning.", style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.receipt_upgrade_to_pro_to_keep), style = IosText.callout, color = IosColors.textSecondary, textAlign = TextAlign.Center)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             Row(
@@ -391,7 +394,7 @@ private fun ReceiptQuotaExceeded(message: String, onUpgrade: () -> Unit, onManua
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(SfSymbols.icon("sparkles"), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.4.dp))
-                Text("Upgrade to Pro", style = IosText.headline, color = Color.White)
+                Text(stringResource(R.string.common_upgrade_to_pro), style = IosText.headline, color = Color.White)
             }
             Box(
                 Modifier
@@ -400,7 +403,7 @@ private fun ReceiptQuotaExceeded(message: String, onUpgrade: () -> Unit, onManua
                     .testTag("receipt.fillManually")
                     .padding(horizontal = Spacing.xl, vertical = Spacing.m),
             ) {
-                Text("Fill Manually", style = IosText.headline, color = IosColors.textPrimary)
+                Text(stringResource(R.string.common_fill_manually), style = IosText.headline, color = IosColors.textPrimary)
             }
         }
         Spacer(Modifier.weight(1f))

@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -101,9 +103,9 @@ data class ScanReviewUiState(
     /** "Add 12" / "Saving…" / "Saving 100 of 230…" (iOS `savingTitle`). */
     val saveButtonText: String
         get() {
-            if (phase != ScanReviewPhase.SAVING) return "Add ${includedItems.size}"
+            if (phase != ScanReviewPhase.SAVING) return Strings.get(R.string.common_add, includedItems.size)
             val progress = saveProgress
-            return if (progress != null && progress.second > ScanRepository.BULK_CHUNK_SIZE) "Saving ${progress.first} of ${progress.second}…" else "Saving…"
+            return if (progress != null && progress.second > ScanRepository.BULK_CHUNK_SIZE) Strings.get(R.string.scan_saving_of, progress.first, progress.second) else Strings.get(R.string.common_saving_2)
         }
 }
 
@@ -219,7 +221,7 @@ class ScanReviewViewModel @Inject constructor(
                             if (prepared == null || item.amountText != original[item.idempotencyKeyId]) item
                             else item.copy(amountText = prepared.amountText, convertedTo = prepared.convertedTo, reviewCurrency = prepared.reviewCurrency)
                         },
-                        preparationMessage = if (result.rateFailed) "Some foreign-currency amounts need review before they can be saved." else null,
+                        preparationMessage = if (result.rateFailed) Strings.get(R.string.scan_some_foreign_currency_amounts_need) else null,
                     )
                 }
             } finally {
@@ -491,17 +493,17 @@ class ScanReviewViewModel @Inject constructor(
 
         internal fun openErrorMessage(error: Throwable): String = when {
             error is ScanFailure -> error.userMessage
-            error is ApiError.Network -> "You're offline. Reconnect to open this scan."
-            error is ApiError.Server && error.status == 404 -> "This scan is no longer available."
-            else -> "Couldn't open this scan. Try again."
+            error is ApiError.Network -> Strings.get(R.string.scan_you_re_offline_reconnect_to)
+            error is ApiError.Server && error.status == 404 -> Strings.get(R.string.scan_this_scan_is_no_longer)
+            else -> Strings.get(R.string.scan_couldn_t_open_this_scan)
         }
 
         internal fun saveErrorMessage(error: Throwable): String = when {
             error is ApiError.Network && error.cause is SessionChangedException ->
-                "The signed-in account changed, so this scan wasn't saved."
-            error is ApiError.Network -> "You're offline. Your changes are kept — try again when you're connected."
-            error is ApiError.Server && error.status == 404 -> "This scan is no longer available."
-            else -> "Couldn't save these transactions. Try again."
+                Strings.get(R.string.scan_the_signed_in_account_changed)
+            error is ApiError.Network -> Strings.get(R.string.scan_you_re_offline_your_changes)
+            error is ApiError.Server && error.status == 404 -> Strings.get(R.string.scan_this_scan_is_no_longer)
+            else -> Strings.get(R.string.scan_couldn_t_save_these_transactions)
         }
     }
 }

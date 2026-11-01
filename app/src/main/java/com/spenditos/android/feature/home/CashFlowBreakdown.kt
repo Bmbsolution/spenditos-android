@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.home
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.data.model.Category
 import com.spenditos.android.data.model.Transaction
 import java.math.BigDecimal
@@ -37,7 +39,7 @@ data class CashFlowBreakdown(
                     monthStart = monthStart,
                     monthEnd = monthEnd,
                 ) ?: continue
-                val categoryName = category?.name ?: "Uncategorized"
+                val categoryName = category?.name ?: Strings.get(R.string.common_uncategorized)
                 groups.getValue(bucket) += Line(
                     id = transaction.id,
                     name = if (transaction.description.isEmpty()) categoryName else transaction.description,

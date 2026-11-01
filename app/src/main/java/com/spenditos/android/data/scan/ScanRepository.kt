@@ -1,5 +1,7 @@
 package com.spenditos.android.data.scan
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import com.spenditos.android.core.auth.SessionBinding
 import com.spenditos.android.core.network.ApiError
 import com.spenditos.android.core.network.apiCall
@@ -235,7 +237,7 @@ class ScanRepository @Inject constructor(
                 // Results are not index-aligned; failures carry the index of the row in this request.
                 val failed = response.failed.filter { it.index in chunk.indices }.associateBy { it.index }
                 val failures = failed.entries.associate { (index, failure) ->
-                    chunk[index].idempotencyKeyId to failure.reason.ifBlank { "Couldn't be saved" }
+                    chunk[index].idempotencyKeyId to failure.reason.ifBlank { Strings.get(R.string.data_scan_couldn_t_be_saved) }
                 }
                 outcome += ScanSaveOutcome(saved = chunk.size - failed.size, failed = failed.size, failures = failures)
                 handled += chunk.size

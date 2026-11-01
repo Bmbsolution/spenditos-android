@@ -1,5 +1,8 @@
 package com.spenditos.android.feature.plan
 
+import com.spenditos.android.core.i18n.Strings
+import androidx.compose.ui.res.stringResource
+import com.spenditos.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,11 +109,11 @@ fun AddOneTimeEntrySheet(
     val submit = {
         val parsed = amount
         if (parsed == null || categoryId !in availableCategories.map { it.id } || YearMonth.from(date) != month || description.isBlank()) {
-            error = "Enter a description, amount, category, and date in this month."
+            error = Strings.get(R.string.plan_enter_a_description_amount_category)
         } else if (onAdd(description, parsed, categoryId, date)) {
             onDismiss()
         } else {
-            error = "Enter a description, amount, category, and date in this month."
+            error = Strings.get(R.string.plan_enter_a_description_amount_category)
         }
     }
 
@@ -127,19 +130,19 @@ fun AddOneTimeEntrySheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Cancel", Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
+                Text(stringResource(R.string.common_cancel), Modifier.clickable(role = Role.Button, onClick = onDismiss), style = IosText.body, color = IosColors.spendOrange)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Add to plan", style = IosText.headline, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.plan_add_to_plan), style = IosText.headline, color = IosColors.textPrimary)
                 }
                 Text(
-                    "Add to draft",
+                    stringResource(R.string.plan_add_to_draft),
                     Modifier.testTag("monthPlan.oneTime.add").clickable(enabled = canSubmit, role = Role.Button, onClick = submit),
                     style = IosText.subheadline.w(FontWeight.SemiBold),
                     color = if (canSubmit) IosColors.spendOrange else IosColors.spendOrange.copy(alpha = 0.4f),
                 )
             }
             GroupedFormCard {
-                Text("Planned item", Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s), style = IosText.caption.w(FontWeight.Bold), color = IosColors.textSecondary)
+                Text(stringResource(R.string.plan_planned_item), Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s), style = IosText.caption.w(FontWeight.Bold), color = IosColors.textSecondary)
                 Box {
                     Row(
                         Modifier.fillMaxWidth().clickable(role = Role.Button) { showTypeMenu = true }
@@ -147,14 +150,14 @@ fun AddOneTimeEntrySheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                     ) {
-                        Text("Type", style = IosText.body, color = IosColors.textPrimary)
+                        Text(stringResource(R.string.common_type), style = IosText.body, color = IosColors.textPrimary)
                         Spacer(Modifier.weight(1f))
-                        Text(if (isIncome) "Income" else "Expense", style = IosText.body, color = IosColors.textSecondary)
+                        Text(if (isIncome) stringResource(R.string.common_income) else stringResource(R.string.common_expense), style = IosText.body, color = IosColors.textSecondary)
                         Icon(SfSymbols.icon("chevron.up.chevron.down"), contentDescription = null, tint = IosColors.textTertiary, modifier = Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded = showTypeMenu, onDismissRequest = { showTypeMenu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Expense") },
+                            text = { Text(stringResource(R.string.common_expense)) },
                             onClick = {
                                 showTypeMenu = false
                                 isIncome = false
@@ -163,7 +166,7 @@ fun AddOneTimeEntrySheet(
                             modifier = Modifier.testTag("monthPlan.oneTime.expense"),
                         )
                         DropdownMenuItem(
-                            text = { Text("Income") },
+                            text = { Text(stringResource(R.string.common_income)) },
                             onClick = {
                                 showTypeMenu = false
                                 isIncome = true
@@ -174,7 +177,7 @@ fun AddOneTimeEntrySheet(
                     }
                 }
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator)
-                BasicFormRow(label = "Description", tag = "monthPlan.oneTime.description") {
+                BasicFormRow(label = stringResource(R.string.common_description), tag = "monthPlan.oneTime.description") {
                     BasicTextField(
                         value = description,
                         onValueChange = { description = it.take(200); error = null },
@@ -184,11 +187,11 @@ fun AddOneTimeEntrySheet(
                         keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
-                        decorationBox = { inner -> Box { if (description.isEmpty()) Text("Description", style = IosText.body, color = IosColors.textTertiary); inner() } },
+                        decorationBox = { inner -> Box { if (description.isEmpty()) Text(stringResource(R.string.common_description), style = IosText.body, color = IosColors.textTertiary); inner() } },
                     )
                 }
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator)
-                BasicFormRow(label = "Amount", tag = "monthPlan.oneTime.amount") {
+                BasicFormRow(label = stringResource(R.string.common_amount), tag = "monthPlan.oneTime.amount") {
                     BasicTextField(
                         value = amountText,
                         onValueChange = { amountText = it.filter { c -> c.isDigit() || c == '.' || c == ',' }; error = null },
@@ -198,7 +201,7 @@ fun AddOneTimeEntrySheet(
                         keyboardActions = rememberKeyboardDoneActions(),
                         textStyle = IosText.body.copy(color = IosColors.textPrimary),
                         cursorBrush = SolidColor(IosColors.spendOrange),
-                        decorationBox = { inner -> Box { if (amountText.isEmpty()) Text("Amount", style = IosText.body, color = IosColors.textTertiary); inner() } },
+                        decorationBox = { inner -> Box { if (amountText.isEmpty()) Text(stringResource(R.string.common_amount), style = IosText.body, color = IosColors.textTertiary); inner() } },
                     )
                 }
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator)
@@ -209,14 +212,14 @@ fun AddOneTimeEntrySheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                     ) {
-                        Text("Category", style = IosText.body, color = IosColors.textPrimary)
+                        Text(stringResource(R.string.common_category), style = IosText.body, color = IosColors.textPrimary)
                         Spacer(Modifier.weight(1f))
                         val selectedCategory = availableCategories.firstOrNull { it.id == categoryId }
                         if (selectedCategory != null) {
                             CategorySymbolBadge(selectedCategory.icon, selectedCategory.name, selectedCategory.color, size = 28.dp)
                             Text(selectedCategory.name, style = IosText.body, color = IosColors.textPrimary)
                         } else {
-                            Text("Select", style = IosText.body, color = IosColors.textSecondary)
+                            Text(stringResource(R.string.plan_select), style = IosText.body, color = IosColors.textSecondary)
                         }
                         Icon(SfSymbols.icon("chevron.right"), contentDescription = null, tint = IosColors.textSecondary, modifier = Modifier.size(16.dp))
                     }
@@ -232,7 +235,7 @@ fun AddOneTimeEntrySheet(
                     }
                 }
                 if (availableCategories.isEmpty()) {
-                    Text("No categories available. Add one in Income & bills.", Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s), style = IosText.footnote, color = IosColors.textSecondary)
+                    Text(stringResource(R.string.plan_no_categories_available_add_one), Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s), style = IosText.footnote, color = IosColors.textSecondary)
                 }
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = Spacing.m), color = IosColors.separator)
                 Row(
@@ -240,13 +243,13 @@ fun AddOneTimeEntrySheet(
                         .testTag("monthPlan.oneTime.date").padding(horizontal = Spacing.m, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Date", style = IosText.body, color = IosColors.textPrimary)
+                    Text(stringResource(R.string.common_date), style = IosText.body, color = IosColors.textPrimary)
                     Spacer(Modifier.weight(1f))
                     Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)), style = IosText.body, color = IosColors.textSecondary)
                 }
             }
             Text(
-                "This goes into your draft as a one-time item. Nothing is final until you apply it.",
+                stringResource(R.string.plan_this_goes_into_your_draft),
                 Modifier.fillMaxWidth().padding(horizontal = Spacing.s),
                 style = IosText.footnote,
                 color = IosColors.textSecondary,
@@ -267,9 +270,9 @@ fun AddOneTimeEntrySheet(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { date = LocalDate.ofEpochDay(it / MILLIS_PER_DAY) }
                     showDatePicker = false
-                }, modifier = Modifier.testTag("monthPlan.oneTime.dateConfirm")) { Text("OK") }
+                }, modifier = Modifier.testTag("monthPlan.oneTime.dateConfirm")) { Text(stringResource(R.string.common_ok)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("monthPlan.oneTime.dateCancel")) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }, modifier = Modifier.testTag("monthPlan.oneTime.dateCancel")) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
 }

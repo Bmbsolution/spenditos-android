@@ -1,5 +1,7 @@
 package com.spenditos.android.feature.auth
 
+import com.spenditos.android.core.i18n.Strings
+import com.spenditos.android.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.auth.AccountOperations
@@ -52,7 +54,7 @@ class ForgotPasswordViewModel @Inject constructor(private val accounts: AccountO
             val result = runCatching { accounts.forgotPassword(current.email.trim()) }
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(step = ForgotPasswordStep.RESET, isLoading = false, notice = "If an account exists, a reset code is on its way.") }
+                    _state.update { it.copy(step = ForgotPasswordStep.RESET, isLoading = false, notice = Strings.get(R.string.auth_if_an_account_exists_a)) }
                 },
                 onFailure = { error -> _state.update { it.copy(isLoading = false, error = accountErrorMessage(error)) } },
             )
@@ -67,7 +69,7 @@ class ForgotPasswordViewModel @Inject constructor(private val accounts: AccountO
             val result = runCatching { accounts.confirmPassword(current.email.trim(), current.code, current.newPassword) }
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(code = "", newPassword = "", isLoading = false, isDone = true, notice = "Password reset. You can now sign in.") }
+                    _state.update { it.copy(code = "", newPassword = "", isLoading = false, isDone = true, notice = Strings.get(R.string.auth_password_reset_you_can_now_2)) }
                     _events.send(ForgotPasswordEvent.Done)
                 },
                 onFailure = { error -> _state.update { it.copy(isLoading = false, error = accountErrorMessage(error)) } },
