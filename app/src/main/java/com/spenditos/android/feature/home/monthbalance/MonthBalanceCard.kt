@@ -34,8 +34,9 @@ import java.util.Locale
 
 /**
  * The month-start card on Home (docs/features/month-balance.md; iOS `MonthBalanceCardView`): last month ended
- * short or ahead. A shortfall can open the Add debt sheet prefilled ([onAddDebt]); a surplus can be carried in as
- * a read-only line. Dismissible, once per month, and only ever on Home.
+ * short or ahead. A shortfall can be paid back this month in one tap ([onPayThisMonth], one expense entry) or
+ * spread out with the Add debt sheet prefilled ([onAddDebt]); a surplus can be carried in as a read-only line.
+ * Dismissible, once per month, and only ever on Home.
  */
 @Composable
 fun MonthBalanceCard(
@@ -45,6 +46,9 @@ fun MonthBalanceCard(
     onAddDebt: () -> Unit,
     onAnswer: (MonthBalanceChoice) -> Unit,
     modifier: Modifier = Modifier,
+    onPayThisMonth: () -> Unit = {},
+    /** This month's left after bills, when known: warns when paying the shortfall back this month won't fit. */
+    leftAfterBills: Double? = null,
 ) {
     val data = card.data
     val money = { value: Double -> DebtAddText.money(value, currency, locale) }
@@ -72,12 +76,27 @@ fun MonthBalanceCard(
         MonthBalanceCopy.note(data, money)?.let { note ->
             Text(note, style = IosText.caption, color = IosColors.textSecondary, modifier = Modifier.testTag("month-balance-note"))
         }
+        MonthBalanceCopy.doesNotFit(data, leftAfterBills, money)?.let { warning ->
+            Text(
+                warning,
+                style = IosText.caption,
+                color = IosColors.textPrimary,
+                modifier = Modifier
+                    .background(IosColors.spendOrange.copy(alpha = 0.14f), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .testTag("month-balance-does-not-fit"),
+            )
+        }
         card.error?.let { Text(it, style = IosText.caption, color = IosColors.expense, modifier = Modifier.testTag("month-balance-error")) }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            if (data.kind == MonthBalanceKind.SHORTFALL) {
-                Pill(stringResource(R.string.common_add_debt), primary = true, enabled = !card.isSaving, tag = "month-balance-add-debt", onClick = onAddDebt)
-                Pill(stringResource(R.string.home_not_needed), primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
-            } else {
+        if (data.kind == MonthBalanceKind.SHORTFALL) {
+            // Three actions: the main one on its own row, the other two below it (fits French too).
+            Pill(MonthBalanceCopy.payIn(data), primary = true, enabled = !card.isSaving, tag = "month-balance-pay-this-month", onClick = onPayThisMonth)
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Pill(stringResource(R.string.home_spread_it_out), primary = false, enabled = !card.isSaving, tag = "month-balance-add-debt", onClick = onAddDebt)
+                Pill(stringResource(R.string.home_not_needed), primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss", quiet = true) { onAnswer(MonthBalanceChoice.DISMISSED) }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Pill(stringResource(R.string.home_carry_over), primary = true, enabled = !card.isSaving, tag = "month-balance-carry") { onAnswer(MonthBalanceChoice.CARRIED) }
                 Pill(stringResource(R.string.home_no_thanks), primary = false, enabled = !card.isSaving, tag = "month-balance-dismiss") { onAnswer(MonthBalanceChoice.DISMISSED) }
             }
@@ -86,13 +105,24 @@ fun MonthBalanceCard(
 }
 
 @Composable
-private fun Pill(title: String, primary: Boolean, enabled: Boolean, tag: String, onClick: () -> Unit) {
+private fun Pill(title: String, primary: Boolean, enabled: Boolean, tag: String, quiet: Boolean = false, onClick: () -> Unit) {
     Text(
         title,
         style = IosText.subheadline.w(if (primary) FontWeight.Bold else FontWeight.SemiBold),
-        color = if (primary) Color.White else IosColors.textPrimary,
+        color = when {
+            primary -> Color.White
+            quiet -> IosColors.textSecondary
+            else -> IosColors.textPrimary
+        },
         modifier = Modifier
-            .background(if (primary) IosColors.spendOrange else IosColors.textSecondary.copy(alpha = 0.12f), CircleShape)
+            .background(
+                when {
+                    primary -> IosColors.spendOrange
+                    quiet -> Color.Transparent
+                    else -> IosColors.textSecondary.copy(alpha = 0.12f)
+                },
+                CircleShape,
+            )
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 9.dp)
             .testTag(tag),

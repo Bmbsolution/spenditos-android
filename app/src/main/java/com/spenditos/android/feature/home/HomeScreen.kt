@@ -100,7 +100,7 @@ fun HomeScreen(
     onOpenBillsLeft: (start: LocalDate, end: LocalDate) -> Unit = { _, _ -> },
     /** Next bill was tapped: open the logged transaction in the edit form. */
     onOpenTransaction: (com.spenditos.android.feature.transactions.EditTarget) -> Unit = {},
-    /** A plain-language message for the snackbar (a failed Remove / re-add of the month-start carry-over). */
+    /** A plain-language message for the snackbar (a failed Remove / re-add of the month-start carry-over, the "Pay it in <Month>" confirmation). */
     onMessage: (String) -> Unit = {},
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
@@ -154,6 +154,8 @@ fun HomeScreen(
                                 locale = locale,
                                 onAddDebt = { addDebtPrefill = MonthBalanceCopy.shortfallPrefill(card.data) },
                                 onAnswer = viewModel::answerMonthBalance,
+                                onPayThisMonth = viewModel::payShortfallThisMonth,
+                                leftAfterBills = state.status?.leftAfterBills?.toDouble(),
                             )
                         }
                         state.status?.let { status ->

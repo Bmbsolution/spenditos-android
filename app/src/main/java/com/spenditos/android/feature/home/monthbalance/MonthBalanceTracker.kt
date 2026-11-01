@@ -108,6 +108,26 @@ class MonthBalanceTracker(
         choice: MonthBalanceChoice,
         optimistic: Boolean = false,
         errorOnCard: Boolean = true,
+    ): AnswerOutcome = save(monthKey, choice, optimistic, errorOnCard) { month -> actions.set(month, choice) }
+
+    /**
+     * "Pay it in <Month>": one expense entry for the whole shortfall on [date] (`YYYY-MM-DD`), named [description].
+     * The card hides at once and comes back with the error if the save fails. Ignored unless the card for
+     * [monthKey] is a shortfall.
+     */
+    suspend fun pay(monthKey: String, date: String, description: String): AnswerOutcome {
+        if (mutableState.value.dataFor(monthKey)?.kind != MonthBalanceKind.SHORTFALL) return AnswerOutcome.Ignored
+        return save(monthKey, MonthBalanceChoice.PAYING, optimistic = true, errorOnCard = true) { month ->
+            actions.pay(month, date, description)
+        }
+    }
+
+    private suspend fun save(
+        monthKey: String,
+        choice: MonthBalanceChoice,
+        optimistic: Boolean,
+        errorOnCard: Boolean,
+        send: suspend (month: String) -> MonthBalanceData,
     ): AnswerOutcome {
         val current = mutableState.value
         if (current.isSaving) return AnswerOutcome.Ignored
@@ -123,7 +143,7 @@ class MonthBalanceTracker(
         val id = ++requestId
         var outcome: AnswerOutcome = AnswerOutcome.Saved
         try {
-            val result = actions.set(month, choice)
+            val result = send(month)
             if (id == requestId) {
                 mutableState.update { it.copy(loaded = result) }
             } else {

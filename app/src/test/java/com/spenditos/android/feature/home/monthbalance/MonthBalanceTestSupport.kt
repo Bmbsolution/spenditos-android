@@ -10,6 +10,7 @@ import com.spenditos.android.data.monthbalance.MonthBalanceKind
 class FakeMonthBalanceActions : MonthBalanceActions {
     var getResult: Result<MonthBalanceData> = Result.success(shortfall)
     var setResult: Result<MonthBalanceData>? = null
+    var payResult: Result<MonthBalanceData>? = null
 
     /** Runs inside [get] before it answers, to hold a request "in flight". */
     var getGate: (suspend () -> Unit)? = null
@@ -20,6 +21,7 @@ class FakeMonthBalanceActions : MonthBalanceActions {
 
     val getMonths = mutableListOf<String>()
     val setCalls = mutableListOf<Pair<String, MonthBalanceChoice>>()
+    val payCalls = mutableListOf<Triple<String, String, String>>()
 
     override suspend fun get(month: String): MonthBalanceData {
         getMonths += month
@@ -31,6 +33,14 @@ class FakeMonthBalanceActions : MonthBalanceActions {
         setCalls += month to choice
         setGate?.invoke()
         val result = (setResult ?: Result.failure(ApiError.NoData)).getOrThrow()
+        if (setUpdatesGet) getResult = Result.success(result)
+        return result
+    }
+
+    override suspend fun pay(month: String, date: String, description: String): MonthBalanceData {
+        payCalls += Triple(month, date, description)
+        setGate?.invoke()
+        val result = (payResult ?: Result.failure(ApiError.NoData)).getOrThrow()
         if (setUpdatesGet) getResult = Result.success(result)
         return result
     }

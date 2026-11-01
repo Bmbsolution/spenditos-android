@@ -332,4 +332,43 @@ class MonthBalanceTrackerTest {
     }
 
     // endregion
+
+    @Test
+    fun `pay it this month sends the day and name for the shown month and hides the card`() = runTest {
+        val paying = FakeMonthBalanceActions.shortfall.copy(choice = MonthBalanceChoice.PAYING, showPrompt = false)
+        service.payResult = Result.success(paying)
+        tracker.load(october)
+        val outcome = tracker.pay(october, "2026-10-15", "September shortfall")
+        assertEquals(AnswerOutcome.Saved, outcome)
+        assertEquals(listOf(Triple(october, "2026-10-15", "September shortfall")), service.payCalls)
+        assertTrue(service.setCalls.isEmpty())
+        assertNull(state.cardFor(october))
+        assertNull(state.followUpFor(october))
+        assertEquals(0.0, state.carriedInFor(october), 0.0)
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun `pay it this month hides the card at once and brings it back when the save fails`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        service.setGate = { gate.await() }
+        tracker.load(october)
+        val job = launch { tracker.pay(october, "2026-10-15", "September shortfall") }
+        runCurrent()
+        assertNull(state.cardFor(october))
+        assertTrue(state.isSaving)
+        gate.complete(Unit)
+        job.join()
+        assertNotNull(state.cardFor(october))
+        assertNotNull(state.error)
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun `pay it this month is ignored for a surplus`() = runTest {
+        service.getResult = Result.success(FakeMonthBalanceActions.surplus)
+        tracker.load(october)
+        assertEquals(AnswerOutcome.Ignored, tracker.pay(october, "2026-10-15", "x"))
+        assertTrue(service.payCalls.isEmpty())
+    }
 }
