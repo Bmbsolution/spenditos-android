@@ -514,7 +514,11 @@
     <string name="home_the_orb_is_the_share">L’orbe représente la part des revenus de ce mois-ci qui reste après les dépenses et les factures.</string>
     <string name="home_through_month_end">jusqu’à la fin du mois</string>
     <string name="home_tomorrow">Demain</string>
-    <string name="home_track_it_as_a_debt">Le suivre comme une dette&#160;?</string>
+    <string name="home_how_do_you_want_to_handle_it">Comment voulez-vous le gérer&#160;?</string>
+    <string name="home_pay_it_in">Payer en %1$s</string>
+    <string name="home_spread_it_out">Étaler</string>
+    <string name="home_that_leaves_you_short_in">Il vous manquera %1$s en %2$s. L’étaler sera peut-être plus simple.</string>
+    <string name="home_added_on">%1$s ajouté · %2$s le %3$s</string>
     <string name="home_trim_a_day">Réduire d’environ %1$s par jour</string>
     <string name="home_two_steps_to_see_what">Deux étapes pour voir ce qui reste après les factures.</string>
     <string name="home_until_date">jusqu’au %1$s</string>

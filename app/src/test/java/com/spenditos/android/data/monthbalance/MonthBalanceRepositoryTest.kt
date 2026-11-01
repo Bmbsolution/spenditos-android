@@ -86,6 +86,38 @@ class MonthBalanceRepositoryTest {
     }
 
     @Test
+    fun `pay puts the month, paying and the one payment, and returns the new state`() = runTest {
+        server.enqueue(
+            MockResponse(
+                body = fixture("shortfall")
+                    .replace("\"choice\":null", "\"choice\":\"paying\"")
+                    .replace("\"showPrompt\":true", "\"showPrompt\":false"),
+            ),
+        )
+        val data = repository.pay("2026-10", "2026-10-15", "September shortfall")
+        val request = server.takeRequest()
+        assertEquals("PUT", request.method)
+        assertEquals("/month-balance", request.url.encodedPath)
+        val body = Json.parseToJsonElement(request.body!!.utf8()).jsonObject
+        assertEquals(setOf("month", "choice", "payment"), body.keys)
+        assertEquals("\"paying\"", body.getValue("choice").toString())
+        val payment = body.getValue("payment").jsonObject
+        assertEquals("\"2026-10-15\"", payment.getValue("date").toString())
+        assertEquals("\"September shortfall\"", payment.getValue("description").toString())
+        assertEquals(setOf("date", "description"), payment.keys)
+        assertEquals(MonthBalanceChoice.PAYING, data.choice)
+        assertFalse(data.showPrompt)
+    }
+
+    @Test
+    fun `an offline pay fails before anything is sent`() = runTest {
+        online.value = false
+        val result = runCatching { repository.pay("2026-10", "2026-10-15", "September shortfall") }
+        assertTrue(result.exceptionOrNull() is ApiError.Network)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
     fun `an unknown kind from a newer server decodes as nothing to show`() = runTest {
         server.enqueue(MockResponse(body = """{"data":{"month":"2026-10","previousMonth":"2026-09","received":0,"spent":0,"balance":-5,"kind":"somethingNew","choice":"later","showPrompt":true}}"""))
         val data = repository.get("2026-10")

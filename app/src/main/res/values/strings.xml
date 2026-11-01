@@ -514,7 +514,11 @@
     <string name="home_the_orb_is_the_share">The orb is the share of this month’s income still left after spending and bills.</string>
     <string name="home_through_month_end">through month end</string>
     <string name="home_tomorrow">Tomorrow</string>
-    <string name="home_track_it_as_a_debt">Track it as a debt?</string>
+    <string name="home_how_do_you_want_to_handle_it">How do you want to handle it?</string>
+    <string name="home_pay_it_in">Pay it in %1$s</string>
+    <string name="home_spread_it_out">Spread it out</string>
+    <string name="home_that_leaves_you_short_in">That leaves you %1$s short in %2$s. Spreading it out may fit better.</string>
+    <string name="home_added_on">Added %1$s · %2$s on %3$s</string>
     <string name="home_trim_a_day">Trim ≈ %1$s a day</string>
     <string name="home_two_steps_to_see_what">Two steps to see what’s left after bills.</string>
     <string name="home_until_date">until %1$s</string>
