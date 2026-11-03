@@ -2,13 +2,14 @@
 
 Last updated: 2026-11-03 (Paykit, see below; before that 2026-10-26: Income & bills: Paused vs Ended + Ended archive #403; Remove / re-add a carry-over; 2026-10-25 Month-start balance card #395, then Scan gap check + Paste screenshot, see below). Previously 2026-10-14 (iOS catch-up). Correctness pass (review findings 1-5) implemented; see "Correctness pass". Wave K (exact iOS visual parity) merged. Waves A-D built, verified and merged (288 unit tests, lint clean). Hardening pass DONE. Wave E (voice + typed capture) DONE. Release builds are unsigned (signing/publishing is the owner's step).
 
-## Paykit (2026-11-03, Bmbsolution/spenditos#353 S5; local branch only)
+## Paykit (2026-11-03, Bmbsolution/spenditos#353 S5)
 - The old store SDK is gone. `PaykitPurchasesService` (`com.paykit:paykit-android:0.1.0`, GitHub Packages) sits behind the `PurchasesService` port; see ARCHITECTURE "Purchases" and D12.
 - `POST /payments/sync` after a link replaces the 10 x 2 s poll. A 503 `PaymentsUnavailable` shows the calm "Subscriptions aren't available right now." state.
 - `PremiumAccess` decodes unknown tiers and the additive fields (entitlements, activeProvider, plan, pendingChange, environment, version), each tolerant of malformed values. Settings shows the pending plan change; Profile shows the store-subscription notice before deletion.
 - Fixtures added by hand from `domain-fixtures.ts` (revoked, unknown tier, pending change); the backend's `premiumAccessFixture` still says "RevenueCat purchase" until #353 S6, so `sync-contract-fixtures.sh --check` reports that difference.
 - Inert until the owner sets `PAYKIT_BASE_URL` (no stage has a URL yet). Unit tests use the SDK's test support; not run against a real Play store or Paykit stage.
 - Every build now needs a `read:packages` token (docs/RELEASE.md).
+- Settings' active Pro row opens the Pro screen for paid subscribers. It shows who bills them, the scheduled change, Manage by provider and, for Play subscribers, Change plan. All new copy is in `strings.xml` with French.
 
 ## English + French localization (2026-10-31; branch feat/fr-localization; rules in spenditos docs/i18n/README.md)
 - **Strings**: all user-visible copy is in `res/values/strings.xml` (+ `plurals`) with a full `res/values-fr/strings.xml`; keys are prefixed by feature (`home_`, `debts_`, `settings_`...). Composables use `stringResource`; view models and helpers (no Context held) use `core/i18n/Strings.get(R.string.x, args)` / `Strings.plural(R.plurals.x, n)`, installed in `SpenditosApplication.onCreate`. Unit tests get a `StringResolver` from `src/test` (ServiceLoader) that reads the real `values/strings.xml`, so tests keep asserting English copy.

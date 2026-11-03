@@ -78,7 +78,7 @@ class SettingsViewModel @Inject constructor(
                     if (proAccess.current().hasLastingPro) Strings.get(R.string.settings_purchases_restored_you_have_pro) else Strings.get(R.string.settings_purchases_restored_pro_turns_on)
                 com.spenditos.android.data.purchases.PurchaseResult.Processing -> Strings.get(R.string.settings_purchases_restored_pro_turns_on)
                 com.spenditos.android.data.purchases.PurchaseResult.NothingToRestore -> Strings.get(R.string.data_purchases_no_purchases_to_restore)
-                com.spenditos.android.data.purchases.PurchaseResult.Unavailable -> Strings.get(R.string.pro_subscriptions_aren_t_available_in)
+                com.spenditos.android.data.purchases.PurchaseResult.Unavailable -> Strings.get(R.string.pro_subscriptions_aren_t_available_right_now)
                 com.spenditos.android.data.purchases.PurchaseResult.Cancelled -> null
                 com.spenditos.android.data.purchases.PurchaseResult.Pending -> Strings.get(R.string.common_your_purchase_is_pending_pro)
                 is com.spenditos.android.data.purchases.PurchaseResult.Failed -> result.message

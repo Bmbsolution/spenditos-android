@@ -4,6 +4,7 @@ import android.app.Activity
 import com.spenditos.android.data.model.PremiumAccess
 import com.spenditos.android.data.model.UserSettings
 import com.spenditos.android.data.model.UserSettingsUpdate
+import com.spenditos.android.data.purchases.ManageResult
 import com.spenditos.android.data.purchases.PaymentsUnavailableException
 import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.data.purchases.PurchaseResult
@@ -50,6 +51,11 @@ class ProViewModelTest {
         override suspend fun packages(): List<ProPackage> { packagesFailure?.let { throw it }; return packages }
         override suspend fun purchase(activity: Activity, packageId: String): PurchaseResult { purchased = packageId; onPurchase(); return purchaseResult }
         override suspend fun restore(): PurchaseResult { onPurchase(); return restoreResult }
+        var changed: Pair<String, String?>? = null
+        var changeResult: PurchaseResult = PurchaseResult.Success
+        var manageResult: ManageResult = ManageResult.Open("https://example.test/manage")
+        override suspend fun changePlan(activity: Activity, packageId: String, currentPeriod: String?): PurchaseResult { changed = packageId to currentPeriod; return changeResult }
+        override suspend fun manageUrl(premium: PremiumAccess?): ManageResult = manageResult
     }
 
     private fun proVm(purchases: PurchasesService, settings: FakeSettings) = ProViewModel(purchases, settings, settings.access)
@@ -185,6 +191,85 @@ class ProViewModelTest {
         advanceUntilIdle()
         assertFalse(vm.state.value.isPro)
         assertEquals(2, vm.state.value.packages.size)
+    }
+
+    private fun subscriber(provider: String?, period: String = "P1M", pending: String? = null) = FakeSettings(activeAfter = null).apply {
+        premium = PremiumAccess(
+            tier = "pro", active = true, activeProvider = provider, version = 3,
+            plan = com.spenditos.android.data.model.PremiumPlan(provider, "pro", period, null),
+            pendingChange = pending?.let { com.spenditos.android.data.model.PremiumPendingChange(period = it, effectiveAt = "2026-12-01T00:00:00.000Z") },
+        )
+        status = com.spenditos.android.data.model.PremiumStatus(true, null, "store")
+    }
+
+    @Test
+    fun `a play subscriber sees the other plan and can switch to it`() = runTest {
+        val purchases = FakePurchases()
+        val vm = proVm(purchases, subscriber("google_play"))
+        advanceUntilIdle()
+        assertTrue(vm.state.value.isPro)
+        assertEquals(com.paykit.core.Provider.GooglePlay, vm.state.value.provider)
+        assertEquals(listOf("yearly"), vm.state.value.changeOptions.map { it.id })
+        vm.changePlan(activity, "yearly"); advanceUntilIdle()
+        assertEquals("yearly" to "P1M", purchases.changed)
+        assertEquals("Your plan change is confirmed.", vm.state.value.notice)
+        assertFalse(vm.state.value.isBusy)
+    }
+
+    @Test
+    fun `a plan already scheduled is not offered again, and a cancelled change stays quiet`() = runTest {
+        val scheduled = proVm(FakePurchases(), subscriber("google_play", pending = "P1Y"))
+        advanceUntilIdle()
+        assertTrue(scheduled.state.value.changeOptions.isEmpty())
+        assertTrue(scheduled.state.value.pendingChangeText!!.startsWith("Switches to yearly on"))
+
+        val purchases = FakePurchases().apply { changeResult = PurchaseResult.Cancelled }
+        val vm = proVm(purchases, subscriber("google_play"))
+        advanceUntilIdle()
+        vm.changePlan(activity, "yearly"); advanceUntilIdle()
+        assertNull(vm.state.value.notice)
+        assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun `only play subscribers change plans here, and a grant has nothing to manage`() = runTest {
+        val apple = proVm(FakePurchases(), subscriber("apple_appstore"))
+        advanceUntilIdle()
+        assertEquals(com.paykit.core.Provider.AppleAppStore, apple.state.value.provider)
+        assertTrue(apple.state.value.changeOptions.isEmpty())
+
+        val grant = proVm(FakePurchases(), subscriber(null))
+        advanceUntilIdle()
+        assertTrue(grant.state.value.isPro)
+        assertNull(grant.state.value.provider)
+        assertTrue(grant.state.value.changeOptions.isEmpty())
+    }
+
+    @Test
+    fun `manage opens the provider's page, and failures stay on the screen`() = runTest {
+        val purchases = FakePurchases()
+        val vm = proVm(purchases, subscriber("stripe"))
+        advanceUntilIdle()
+        val opened = mutableListOf<String>()
+        vm.manage { opened += it }; advanceUntilIdle()
+        assertEquals(listOf("https://example.test/manage"), opened)
+        assertFalse(vm.state.value.isBusy)
+
+        purchases.manageResult = ManageResult.Failed("Couldn't open the billing portal. Try again.")
+        vm.manage { opened += it }; advanceUntilIdle()
+        assertEquals("Couldn't open the billing portal. Try again.", vm.state.value.error)
+        purchases.manageResult = ManageResult.Unavailable
+        vm.manage { opened += it }; advanceUntilIdle()
+        assertEquals("Subscriptions aren't available right now.", vm.state.value.error)
+        assertEquals(1, opened.size)
+    }
+
+    @Test
+    fun `a subscriber whose plans fail to load gets no error`() = runTest {
+        val vm = proVm(FakePurchases(packagesFailure = IOException("offline")), subscriber("google_play"))
+        advanceUntilIdle()
+        assertTrue(vm.state.value.isPro)
+        assertNull(vm.state.value.error)
     }
 
     @Test

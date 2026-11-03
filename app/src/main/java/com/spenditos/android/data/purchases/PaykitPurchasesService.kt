@@ -9,14 +9,20 @@ import com.paykit.core.PaykitError
 import com.paykit.core.PaykitHttpRequest
 import com.paykit.core.PaykitHttpResponse
 import com.paykit.core.PaykitProduct
+import com.paykit.core.PaykitReplacementMode
 import com.paykit.core.PaykitTransport
 import com.paykit.core.Provider
+import com.paykit.core.PurchaseState
 import com.paykit.core.RestoreResult
+import com.paykit.core.StoreProviding
 import com.paykit.core.UrlConnectionTransport
 import com.paykit.core.UserAccess
 import com.paykit.core.UserAccessPersistence
+import com.spenditos.android.R
 import com.spenditos.android.core.config.AppEnvironment
+import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.core.network.ApiError
+import com.spenditos.android.data.model.PremiumAccess
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -31,6 +37,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import java.io.IOException
+import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Singleton
 import com.paykit.core.PurchaseResult as PaykitPurchaseResult
@@ -44,6 +51,8 @@ class PaykitPurchasesService internal constructor(
     override val isAvailable: Boolean,
     private val backend: PaymentsBackend,
     private val scope: CoroutineScope,
+    private val packageName: String,
+    private val store: () -> StoreProviding,
     private val newPaykit: (tokenProvider: suspend () -> String, onAccessChanged: (UserAccess) -> Unit) -> Paykit,
 ) : PurchasesService {
     /** The SDK caches the ownership token and access per instance, so an instance never outlives its user. */
@@ -176,16 +185,69 @@ class PaykitPurchasesService internal constructor(
         }
     }
 
+    override suspend fun changePlan(activity: Activity, packageId: String, currentPeriod: String?): PurchaseResult {
+        val paykit = bound()?.paykit ?: return PurchaseResult.Unavailable
+        val product = products[packageId] ?: return PurchaseResult.Failed(PLAN_GONE)
+        foregroundFlows.incrementAndGet()
+        try {
+            readyToSell(paykit)?.let { return it }
+            return try {
+                // The SDK replaces this device's current purchase. Without one it would sell a second subscription.
+                if (store().queryCurrentPurchases().none { it.state == PurchaseState.Purchased }) {
+                    return PurchaseResult.Failed(Strings.get(R.string.data_purchases_change_plan_other_account))
+                }
+                paykit.changePlan(activity as Any?, product, replacementMode(currentPeriod, product.plan?.period))
+                confirmWithServer()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: PaykitError.NotSupported) {
+                planChangeNotCompleted(e)
+            } catch (e: PaykitError) {
+                afterStoreFailure(e)
+            } catch (_: Exception) {
+                PurchaseResult.Failed(NOT_CONFIRMED)
+            }
+        } finally {
+            foregroundFlows.decrementAndGet()
+        }
+    }
+
+    override suspend fun manageUrl(premium: PremiumAccess?): ManageResult = when (paidProvider(premium)) {
+        Provider.GooglePlay -> ManageResult.Open(playSubscriptionsUrl(packageName, premium?.plan?.productId))
+        Provider.AppleAppStore -> ManageResult.Open(APP_STORE_SUBSCRIPTIONS_URL)
+        Provider.Stripe -> stripePortal()
+        else -> ManageResult.Failed(PORTAL_FAILED)
+    }
+
+    private suspend fun stripePortal(): ManageResult {
+        val paykit = bound()?.paykit ?: return ManageResult.Unavailable
+        return try {
+            backend.token()
+            ManageResult.Open(paykit.manageSubscriptionRoute(Provider.Stripe, STRIPE_RETURN_URL).url)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: PaymentsUnavailableException) {
+            ManageResult.Unavailable
+        } catch (_: Exception) {
+            ManageResult.Failed(PORTAL_FAILED)
+        }
+    }
+
     private suspend fun confirmWithServer(): PurchaseResult =
         if (backend.sync() == PaymentsSyncResult.SYNCED) PurchaseResult.Success else PurchaseResult.Processing
 
     companion object {
         const val APP_ID = "spenditos"
-        const val GENERIC = "The purchase didn't go through. You haven't been charged. Try again."
-        const val OFFLINE = "You're offline. Check your connection and try again."
-        const val PLAN_GONE = "That plan isn't available right now. Refresh and try again."
-        const val RESTORE_FAILED = "Couldn't restore purchases. Try again."
-        const val NOT_CONFIRMED = "We couldn't confirm this purchase. Try Restore Purchases, or contact support if it keeps happening."
+        val GENERIC: String get() = Strings.get(R.string.data_purchases_the_purchase_didn_t_go)
+        val OFFLINE: String get() = Strings.get(R.string.common_you_re_offline_check_your)
+        val PLAN_GONE: String get() = Strings.get(R.string.data_purchases_that_plan_isn_t_available)
+        val RESTORE_FAILED: String get() = Strings.get(R.string.data_purchases_couldn_t_restore_purchases_try)
+        val NOT_CONFIRMED: String get() = Strings.get(R.string.data_purchases_could_not_confirm)
+        val PORTAL_FAILED: String get() = Strings.get(R.string.data_purchases_portal_failed)
+
+        private const val APP_STORE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions"
+        private const val PLAY_SUBSCRIPTIONS_URL = "https://play.google.com/store/account/subscriptions"
+        private const val STRIPE_RETURN_URL = "https://spenditos.com"
 
         /** Only builds with a Paykit URL, outside the test flavors, can sell anything. */
         internal fun isConfigurable(baseUrl: String, isHarness: Boolean, stage: String): Boolean =
@@ -204,8 +266,8 @@ class PaykitPurchasesService internal constructor(
                 ProPackage(
                     id = packageId(product),
                     title = when (period) {
-                        "month" -> "Monthly"
-                        "year" -> "Yearly"
+                        "month" -> Strings.get(R.string.pro_plan_monthly)
+                        "year" -> Strings.get(R.string.pro_plan_yearly)
                         else -> product.displayName.ifBlank { product.id }
                     },
                     price = product.displayPrice,
@@ -215,15 +277,32 @@ class PaykitPurchasesService internal constructor(
             }
         }
 
-        /** "P1M" to "month"; null for lifetime plans and anything this version doesn't know. */
-        internal fun periodName(period: String?): String? = when (period) {
-            "P1W", "P7D" -> "week"
-            "P1M" -> "month"
-            "P2M" -> "2 months"
-            "P3M" -> "3 months"
-            "P6M" -> "6 months"
-            "P1Y" -> "year"
+        /** The Play page for this app's subscription, or the account's list without a known product. */
+        internal fun playSubscriptionsUrl(packageName: String, productId: String?): String =
+            if (productId.isNullOrEmpty()) PLAY_SUBSCRIPTIONS_URL
+            else "$PLAY_SUBSCRIPTIONS_URL?package=$packageName&sku=${URLEncoder.encode(productId, "UTF-8")}"
+
+        /** A shorter billing period waits for the end of the paid one; anything else applies now, prorated. */
+        internal fun replacementMode(fromPeriod: String?, toPeriod: String?): PaykitReplacementMode {
+            val from = periodMonths(fromPeriod)
+            val to = periodMonths(toPeriod)
+            return if (from != null && to != null && to < from) PaykitReplacementMode.Deferred else PaykitReplacementMode.Prorated
+        }
+
+        private fun periodMonths(period: String?): Int? = when (period) {
+            "P1M" -> 1
+            "P2M" -> 2
+            "P3M" -> 3
+            "P6M" -> 6
+            "P1Y" -> 12
             else -> null
+        }
+
+        /** The SDK reports every unfinished plan change as NotSupported; its text is the only difference. */
+        internal fun planChangeNotCompleted(error: PaykitError.NotSupported): PurchaseResult = when {
+            error.what == "plan change was not completed" -> PurchaseResult.Cancelled
+            error.what.contains("payment pending") -> PurchaseResult.Pending
+            else -> PurchaseResult.Failed(GENERIC)
         }
 
         /**
@@ -240,7 +319,7 @@ class PaykitPurchasesService internal constructor(
             if (error.code != "cross_provider_active") return null
             val provider = (error as? PaykitError.Http)?.details?.activeProvider
             val where = provider?.takeIf { it is Provider.AppleAppStore || it is Provider.GooglePlay || it is Provider.Stripe }?.displayName
-            return if (where != null) "You're already subscribed through $where. Manage your plan there." else "You're already subscribed. Manage your plan where you signed up."
+            return if (where != null) Strings.get(R.string.data_purchases_already_subscribed_through, where) else Strings.get(R.string.data_purchases_already_subscribed)
         }
 
         private const val HIGHLIGHT_BEST_VALUE = "best_value"
@@ -288,6 +367,8 @@ abstract class PurchasesModule {
                 isAvailable = PaykitPurchasesService.isConfigurable(environment.paykitBaseUrl, environment.isHarness, environment.stage),
                 backend = backend,
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+                packageName = context.packageName,
+                store = { store },
             ) { tokenProvider, onAccessChanged ->
                 Paykit(
                     configuration = PaykitConfiguration(environment.paykitBaseUrl, PaykitPurchasesService.APP_ID, androidPackageName = context.packageName),

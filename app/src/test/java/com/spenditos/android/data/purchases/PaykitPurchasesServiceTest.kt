@@ -8,6 +8,7 @@ import com.paykit.core.PaykitErrorDetails
 import com.paykit.core.PaykitPlan
 import com.paykit.core.PaykitPlatform
 import com.paykit.core.PaykitProduct
+import com.paykit.core.PaykitReplacementMode
 import com.paykit.core.Provider
 import com.paykit.core.StorePurchaseOutcome
 import com.paykit.core.UserAccess
@@ -53,7 +54,7 @@ class PaykitPurchasesServiceTest {
     private var instances = 0
     private val activity: Activity get() = Robolectric.buildActivity(Activity::class.java).get()
 
-    private fun service(scope: CoroutineScope, available: Boolean = true) = PaykitPurchasesService(available, backend, scope) { tokenProvider, onAccessChanged ->
+    private fun service(scope: CoroutineScope, available: Boolean = true) = PaykitPurchasesService(available, backend, scope, "com.asaklex.spenditos", { store }) { tokenProvider, onAccessChanged ->
         instances++
         Paykit(
             configuration = PaykitConfiguration("https://paykit.test", PaykitPurchasesService.APP_ID),
@@ -313,6 +314,104 @@ class PaykitPurchasesServiceTest {
         service.logIn("user-1")
         assertEquals(PurchaseResult.Unavailable, service.restore())
         assertEquals(0, instances)
+    }
+
+    @Test
+    fun `a plan change replaces the device's purchase and syncs`() = runTest(UnconfinedTestDispatcher()) {
+        val service = service(this)
+        val packages = loaded(service)
+        store.currentPurchases = listOf(MockStoreProvider.purchase("old-token", "pro"))
+        transport.enqueueJson(identityJson)
+        transport.enqueueJson(identityJson)
+        store.enqueuePurchase(StorePurchaseOutcome.Success(MockStoreProvider.purchase("new-token", "pro")))
+        transport.enqueueJson(accessJson)
+
+        assertEquals(PurchaseResult.Success, service.changePlan(activity, packages.first { it.period == "month" }.id, "P1Y"))
+        val call = store.purchaseCalls.single()
+        assertEquals("old-token", call.oldPurchaseToken)
+        assertEquals("yearly to monthly waits for the paid year", PaykitReplacementMode.Deferred, call.replacementMode)
+        assertEquals(1, backend.syncs)
+    }
+
+    @Test
+    fun `no purchase on this device means no plan change, never a second subscription`() = runTest {
+        val service = service(this)
+        val id = loaded(service).first().id
+        transport.enqueueJson(identityJson)
+        val result = service.changePlan(activity, id, "P1M")
+        assertEquals(PurchaseResult.Failed("Change plans from the Google Play account you subscribed with."), result)
+        assertTrue(store.purchaseCalls.isEmpty())
+    }
+
+    @Test
+    fun `an unfinished plan change reads as what happened`() = runTest {
+        val service = service(this)
+        val id = loaded(service).first().id
+        store.currentPurchases = listOf(MockStoreProvider.purchase("old-token", "pro"))
+        repeat(4) { transport.enqueueJson(identityJson) }
+        store.enqueuePurchase(StorePurchaseOutcome.Cancelled)
+        assertEquals(PurchaseResult.Cancelled, service.changePlan(activity, id, "P1M"))
+        store.enqueuePurchase(StorePurchaseOutcome.Pending)
+        assertEquals(PurchaseResult.Pending, service.changePlan(activity, id, "P1M"))
+        store.enqueuePurchase(StorePurchaseOutcome.Failed("billing error 6"))
+        assertEquals(PurchaseResult.Failed(PaykitPurchasesService.GENERIC), service.changePlan(activity, id, "P1M"))
+        assertEquals(0, backend.syncs)
+    }
+
+    @Test
+    fun `longer plans apply now, shorter ones at period end`() {
+        assertEquals(PaykitReplacementMode.Prorated, PaykitPurchasesService.replacementMode("P1M", "P1Y"))
+        assertEquals(PaykitReplacementMode.Deferred, PaykitPurchasesService.replacementMode("P1Y", "P1M"))
+        assertEquals(PaykitReplacementMode.Prorated, PaykitPurchasesService.replacementMode(null, "P1M"))
+        assertEquals(PaykitReplacementMode.Prorated, PaykitPurchasesService.replacementMode("P1Y", "lifetime"))
+    }
+
+    @Test
+    fun `manage routes by provider`() = runTest {
+        val service = service(this)
+        fun access(provider: String?, product: String? = null) = PremiumAccess(
+            active = true, activeProvider = provider, version = 1,
+            plan = product?.let { com.spenditos.android.data.model.PremiumPlan(provider, it, "P1M", null) },
+        )
+        assertEquals(
+            ManageResult.Open("https://play.google.com/store/account/subscriptions?package=com.asaklex.spenditos&sku=pro+monthly"),
+            service.manageUrl(access("google_play", "pro monthly")),
+        )
+        assertEquals(ManageResult.Open("https://play.google.com/store/account/subscriptions"), service.manageUrl(access("google_play")))
+        assertEquals(ManageResult.Open("https://apps.apple.com/account/subscriptions"), service.manageUrl(access("apple_appstore")))
+
+        transport.enqueueJson("""{"url":"https://billing.test/session"}""")
+        assertEquals(ManageResult.Open("https://billing.test/session"), service.manageUrl(access("stripe")))
+        assertEquals("https://spenditos.com", transport.calls.single().bodyString("returnUrl"))
+
+        backend.tokenFailure = PaymentsUnavailableException()
+        assertEquals(ManageResult.Unavailable, service.manageUrl(access("stripe")))
+        backend.tokenFailure = null
+        transport.enqueueFailure()
+        assertEquals(ManageResult.Failed(PaykitPurchasesService.PORTAL_FAILED), service.manageUrl(access("stripe")))
+        assertEquals(ManageResult.Failed(PaykitPurchasesService.PORTAL_FAILED), service.manageUrl(access("manual")))
+    }
+
+    @Test
+    fun `store pages need no paykit, so an inert build still links to them`() = runTest {
+        val service = service(this, available = false)
+        assertEquals(
+            ManageResult.Open("https://play.google.com/store/account/subscriptions"),
+            service.manageUrl(PremiumAccess(active = true, activeProvider = "google_play", version = 1)),
+        )
+        assertEquals(ManageResult.Unavailable, service.manageUrl(PremiumAccess(active = true, activeProvider = "stripe", version = 1)))
+        assertEquals(0, instances)
+    }
+
+    @Test
+    fun `the paid provider follows Paykit, then the pre-Paykit source`() {
+        assertEquals(Provider.GooglePlay, paidProvider(PremiumAccess(active = true, activeProvider = "google_play", version = 1)))
+        assertNull("manual only on a Paykit item", paidProvider(PremiumAccess(active = true, source = "app_store", version = 1)))
+        assertEquals(Provider.AppleAppStore, paidProvider(PremiumAccess(active = true, source = "app_store")))
+        assertEquals(Provider.Stripe, paidProvider(PremiumAccess(active = true, source = "stripe_web")))
+        assertNull(paidProvider(PremiumAccess(active = true, source = "manual")))
+        assertNull("a store this version doesn't know", paidProvider(PremiumAccess(active = true, activeProvider = "a_new_store", version = 1)))
+        assertNull("revoked", paidProvider(PremiumAccess(active = false, activeProvider = "google_play", version = 1)))
     }
 
     @Test

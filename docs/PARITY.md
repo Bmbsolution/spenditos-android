@@ -86,7 +86,7 @@ Legend: **MVP** = Android v1 · **Later** = after v1 · **Skip** = don't port (d
 
 - All clients move to Paykit (Bmbsolution/spenditos#353: S3 web, S4 iOS, S5 Android). `GET /user/quota` (not in packages/types; `core/services/quota.ts:71-92`). Server truth = `settings.premium.active`, fed by Paykit; clients never gate on `tier` or `expiresAt`, so a revoked subscription reads as Free.
 - Android: `POST /payments/token` for the SDK, `POST /payments/sync` after a link, calm unavailable state on 503 `PaymentsUnavailable`. Settings shows `pendingChange` ("Switches to yearly on ..."); Profile shows the store-subscription notice before deleting the account.
-- Not yet: provider-aware Manage subscription (the Pro screen always opens the Play subscriptions page) and in-app plan changes (`changePlan`).
+- Manage goes by provider (Play page, App Store page, Stripe billing portal; a grant has nothing to manage). Change plan is offered to Play subscribers, as iOS offers it to App Store subscribers: longer plans apply now (prorated), shorter ones at period end.
 
 ## Import (MVP tail)
 

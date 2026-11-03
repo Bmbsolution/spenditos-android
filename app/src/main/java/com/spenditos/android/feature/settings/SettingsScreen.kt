@@ -286,7 +286,7 @@ fun SettingsScreen(
                             value = stringResource(R.string.common_active),
                             icon = SfSymbols.icon("sparkles"),
                             iconTint = IosColors.spendGold,
-                            chevron = false,
+                            onClick = if (plan.canManage) onOpenPro else null,
                             modifier = Modifier.testTag("settings.proActive"),
                         )
                         else -> IosRow(

@@ -4,6 +4,7 @@ import com.spenditos.android.core.i18n.Strings
 import com.spenditos.android.R
 import com.spenditos.android.data.entitlement.ProAccessState
 import com.spenditos.android.data.model.PremiumStatus
+import com.spenditos.android.data.purchases.paidProvider
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -16,6 +17,8 @@ data class SettingsPlan(
     val welcomeText: String? = null,
     /** "Switches to yearly on Dec 1, 2026" while the server reports a scheduled plan change; null otherwise. */
     val pendingChangeText: String? = null,
+    /** A paid subscription, so the Pro row leads to Manage and Change plan; a grant has neither. */
+    val canManage: Boolean = false,
 )
 
 /** Copy for the Settings plan row (iOS `SettingsPlanLabel`). */
@@ -25,6 +28,7 @@ object SettingsPlanLabel {
             isPro = state.effectiveIsPro,
             welcomeText = welcomePremiumText(state, locale, zone),
             pendingChangeText = pendingChangeText(state, locale, zone),
+            canManage = paidProvider(state.premium) != null,
         )
 
     /**
@@ -45,11 +49,10 @@ object SettingsPlanLabel {
         val change = state.premium?.pendingChange ?: return null
         val effective = PremiumStatus.parseInstant(change.effectiveAt) ?: return null
         val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).withZone(zone).format(effective)
-        val target = when (change.period) {
-            "P1M" -> "monthly"
-            "P1Y" -> "yearly"
-            else -> "a new plan"
+        return when (change.period) {
+            "P1M" -> Strings.get(R.string.settings_switches_to_monthly_on, date)
+            "P1Y" -> Strings.get(R.string.settings_switches_to_yearly_on, date)
+            else -> Strings.get(R.string.settings_switches_to_new_plan_on, date)
         }
-        return "Switches to $target on $date"
     }
 }

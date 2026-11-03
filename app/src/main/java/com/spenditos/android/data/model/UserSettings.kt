@@ -36,6 +36,8 @@ data class PremiumAccess(
     val tier: String? = null,
     val active: Boolean = false,
     val expiresAt: String? = null,
+    /** Origin as the pre-Paykit items report it (`app_store`, `play_store`, `stripe_web`, ...). */
+    val source: String? = null,
     @Serializable(with = TolerantPremiumEntitlementsSerializer::class)
     val entitlements: Map<String, PremiumEntitlementAccess>? = null,
     /** `apple_appstore` | `google_play` | `stripe` | a provider this version doesn't know; null when manual only. */

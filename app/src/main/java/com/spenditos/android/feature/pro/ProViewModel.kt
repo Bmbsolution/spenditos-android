@@ -6,11 +6,16 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.entitlement.ProAccess
+import com.paykit.core.Provider
+import com.spenditos.android.data.purchases.ManageResult
 import com.spenditos.android.data.purchases.PaymentsUnavailableException
 import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.data.purchases.PurchaseResult
 import com.spenditos.android.data.purchases.PurchasesService
+import com.spenditos.android.data.purchases.paidProvider
+import com.spenditos.android.data.purchases.periodName
 import com.spenditos.android.data.user.UserSettingsActions
+import com.spenditos.android.feature.settings.SettingsPlanLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +35,12 @@ data class ProUiState(
     val error: String? = null,
     /** Calm status after a purchase or restore. */
     val notice: String? = null,
+    /** Who bills this subscription; null for a grant or Free, which have nothing to manage. */
+    val provider: Provider? = null,
+    /** "Switches to yearly on Dec 1, 2026" while a change is scheduled. */
+    val pendingChangeText: String? = null,
+    /** Plans a Play subscriber can switch to; other stores change plans in their own place. */
+    val changeOptions: List<ProPackage> = emptyList(),
 )
 
 @HiltViewModel
@@ -48,7 +59,7 @@ class ProViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             val pro = currentlyPro()
             if (!purchases.isAvailable) {
-                _state.update { it.copy(isLoading = false, isAvailable = false, isPro = pro == true) }
+                _state.update { it.copy(isLoading = false, isAvailable = false, isPro = pro == true).withAccess() }
                 return@launch
             }
             try {
@@ -61,14 +72,14 @@ class ProViewModel @Inject constructor(
                         selectedId = it.selectedId?.takeIf { id -> list.any { p -> p.id == id } }
                             ?: (list.firstOrNull { p -> p.isBestValue } ?: list.firstOrNull())?.id,
                         error = if (list.isEmpty() && pro != true) Strings.get(R.string.pro_no_plans_are_available_right) else null,
-                    )
+                    ).withAccess()
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: PaymentsUnavailableException) {
-                _state.update { it.copy(isLoading = false, isAvailable = false, isPro = pro == true) }
+                _state.update { it.copy(isLoading = false, isAvailable = false, isPro = pro == true).withAccess() }
             } catch (_: Exception) {
-                _state.update { it.copy(isLoading = false, isPro = pro == true, error = Strings.get(R.string.pro_couldn_t_load_the_plans)) }
+                _state.update { it.copy(isLoading = false, isPro = pro == true, error = if (pro == true) null else Strings.get(R.string.pro_couldn_t_load_the_plans)).withAccess() }
             }
         }
     }
@@ -88,6 +99,48 @@ class ProViewModel @Inject constructor(
         viewModelScope.launch { handle(purchases.restore()) }
     }
 
+    fun changePlan(activity: Activity, packageId: String) {
+        if (_state.value.isBusy) return
+        _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        viewModelScope.launch {
+            val result = purchases.changePlan(activity, packageId, proAccess.current().premium?.plan?.period)
+            if (result == PurchaseResult.Success) {
+                _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.pro_plan_changed)).withAccess() }
+            } else {
+                handle(result)
+            }
+        }
+    }
+
+    /** [open] gets the provider's page: a store's subscriptions, or Stripe's billing portal. */
+    fun manage(open: (String) -> Unit) {
+        if (_state.value.isBusy) return
+        _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        viewModelScope.launch {
+            when (val result = purchases.manageUrl(proAccess.current().premium)) {
+                is ManageResult.Open -> {
+                    _state.update { it.copy(isBusy = false) }
+                    open(result.url)
+                }
+                ManageResult.Unavailable -> _state.update { it.copy(isBusy = false, error = Strings.get(R.string.pro_subscriptions_aren_t_available_right_now)) }
+                is ManageResult.Failed -> _state.update { it.copy(isBusy = false, error = result.message) }
+            }
+        }
+    }
+
+    /** The parts of the Pro card that come from the server's premium. */
+    private fun ProUiState.withAccess(): ProUiState {
+        val access = proAccess.current()
+        val provider = paidProvider(access.premium)
+        val current = periodName(access.premium?.plan?.period)
+        val pending = periodName(access.premium?.pendingChange?.period)
+        return copy(
+            provider = provider,
+            pendingChangeText = SettingsPlanLabel.pendingChangeText(access),
+            changeOptions = if (provider == Provider.GooglePlay && current != null) packages.filter { it.period != null && it.period != current && it.period != pending } else emptyList(),
+        )
+    }
+
     private fun handle(result: PurchaseResult) {
         when (result) {
             // The service already synced, so this is the server's answer; it can still lag the store.
@@ -101,7 +154,7 @@ class ProViewModel @Inject constructor(
         }
     }
 
-    private fun confirmed() = _state.update { it.copy(isBusy = false, isPro = true, notice = Strings.get(R.string.pro_you_have_pro_thank_you)) }
+    private fun confirmed() = _state.update { it.copy(isBusy = false, isPro = true, notice = Strings.get(R.string.pro_you_have_pro_thank_you)).withAccess() }
 
     /** Never leave the user wondering whether they paid for nothing. */
     private fun processing() = _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.pro_your_purchase_is_processing_pro)) }

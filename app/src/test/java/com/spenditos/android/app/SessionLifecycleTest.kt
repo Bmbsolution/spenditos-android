@@ -119,6 +119,8 @@ class SessionLifecycleTest {
         override suspend fun packages(): List<com.spenditos.android.data.purchases.ProPackage> = emptyList()
         override suspend fun purchase(activity: android.app.Activity, packageId: String) = PurchaseResult.Failed("not used")
         override suspend fun restore() = PurchaseResult.Failed("not used")
+        override suspend fun changePlan(activity: android.app.Activity, packageId: String, currentPeriod: String?) = PurchaseResult.Failed("not used")
+        override suspend fun manageUrl(premium: com.spenditos.android.data.model.PremiumAccess?) = error("not used")
     }
 
     @Before
