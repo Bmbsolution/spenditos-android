@@ -4,6 +4,7 @@ import android.app.Activity
 import com.spenditos.android.data.model.PremiumAccess
 import com.spenditos.android.data.model.UserSettings
 import com.spenditos.android.data.model.UserSettingsUpdate
+import com.spenditos.android.data.purchases.PaymentsUnavailableException
 import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.data.purchases.PurchaseResult
 import com.spenditos.android.data.purchases.PurchasesService
@@ -40,28 +41,31 @@ class ProViewModelTest {
         ),
         var purchaseResult: PurchaseResult = PurchaseResult.Success,
         var restoreResult: PurchaseResult = PurchaseResult.Success,
+        val packagesFailure: Exception? = null,
+        val onPurchase: () -> Unit = {},
     ) : PurchasesService {
         var purchased: String? = null
         override suspend fun logIn(userId: String) = Unit
         override suspend fun logOut() = Unit
-        override suspend fun packages(): List<ProPackage> = packages
-        override suspend fun purchase(activity: Activity, packageId: String): PurchaseResult { purchased = packageId; return purchaseResult }
-        override suspend fun restore(): PurchaseResult = restoreResult
+        override suspend fun packages(): List<ProPackage> { packagesFailure?.let { throw it }; return packages }
+        override suspend fun purchase(activity: Activity, packageId: String): PurchaseResult { purchased = packageId; onPurchase(); return purchaseResult }
+        override suspend fun restore(): PurchaseResult { onPurchase(); return restoreResult }
     }
 
     private fun proVm(purchases: PurchasesService, settings: FakeSettings) = ProViewModel(purchases, settings, settings.access)
 
-    /** Pro turns on after [activeAfter] refreshes (the webhook lag); never when null. */
+    /** The server reports Pro after [activeAfter] refreshes; never when null. */
     private class FakeSettings(var activeAfter: Int?) : UserSettingsActions {
         val access = com.spenditos.android.testing.FakeProAccess()
         var status: com.spenditos.android.data.model.PremiumStatus? = null
+        var premium: PremiumAccess? = null
         var refreshes = 0
         var failure: Throwable? = null
         override fun currency(): Flow<String> = flowOf("USD")
         override suspend fun refresh(): UserSettings {
             failure?.let { throw it }
             refreshes++
-            return UserSettings("u", premium = PremiumAccess(active = activeAfter?.let { refreshes > it } == true), premiumStatus = status).also { access.apply(it, null) }
+            return UserSettings("u", premium = premium ?: PremiumAccess(active = activeAfter?.let { refreshes > it } == true), premiumStatus = status).also { access.apply(it, null) }
         }
         override suspend fun updateSettings(update: UserSettingsUpdate): UserSettings = error("unused")
         override suspend fun changePassword(currentPassword: String, newPassword: String) = error("unused")
@@ -112,11 +116,13 @@ class ProViewModelTest {
     }
 
     @Test
-    fun `a purchase waits for the server to flip Pro and then confirms`() = runTest {
-        val purchases = FakePurchases()
-        val settings = FakeSettings(activeAfter = 3) // initial load = refresh 1, then lag
+    fun `a purchase the server confirms shows Pro at once, with no polling`() = runTest {
+        val settings = FakeSettings(activeAfter = null)
+        // The service syncs before it answers, which puts the server's premium in ProAccess.
+        val purchases = FakePurchases(onPurchase = { settings.access.setPro(true) })
         val vm = proVm(purchases, settings)
         advanceUntilIdle()
+        val before = settings.refreshes
         vm.select("monthly")
         vm.buy(activity)
         advanceUntilIdle()
@@ -124,10 +130,11 @@ class ProViewModelTest {
         assertTrue(vm.state.value.isPro)
         assertEquals("You have Pro. Thank you!", vm.state.value.notice)
         assertFalse(vm.state.value.isBusy)
+        assertEquals("no settings polling after a purchase", before, settings.refreshes)
     }
 
     @Test
-    fun `if the server never flips, the user is told it is processing`() = runTest {
+    fun `a synced purchase the server hasn't entitled yet is processing`() = runTest {
         val settings = FakeSettings(activeAfter = null)
         val vm = proVm(FakePurchases(), settings)
         advanceUntilIdle()
@@ -136,7 +143,57 @@ class ProViewModelTest {
         advanceUntilIdle()
         assertFalse(vm.state.value.isPro)
         assertEquals("Your purchase is processing. Pro will turn on shortly.", vm.state.value.notice)
-        assertEquals(ProViewModel.POLLS, settings.refreshes - before)
+        assertEquals(before, settings.refreshes)
+    }
+
+    @Test
+    fun `a link or sync that hasn't finished is processing, never an error`() = runTest {
+        val vm = proVm(FakePurchases(purchaseResult = PurchaseResult.Processing), FakeSettings(activeAfter = null))
+        advanceUntilIdle()
+        vm.buy(activity); advanceUntilIdle()
+        assertNull(vm.state.value.error)
+        assertEquals("Your purchase is processing. Pro will turn on shortly.", vm.state.value.notice)
+        assertFalse(vm.state.value.isBusy)
+    }
+
+    @Test
+    fun `payments off on this backend stage is a calm state`() = runTest {
+        val vm = proVm(FakePurchases(packagesFailure = PaymentsUnavailableException()), FakeSettings(activeAfter = null))
+        advanceUntilIdle()
+        assertFalse(vm.state.value.isAvailable)
+        assertNull(vm.state.value.error)
+        assertFalse(vm.state.value.isLoading)
+    }
+
+    @Test
+    fun `payments going off during a purchase is calm too`() = runTest {
+        val vm = proVm(FakePurchases(purchaseResult = PurchaseResult.Unavailable), FakeSettings(activeAfter = null))
+        advanceUntilIdle()
+        vm.buy(activity); advanceUntilIdle()
+        assertFalse(vm.state.value.isAvailable)
+        assertNull(vm.state.value.error)
+        assertFalse(vm.state.value.isBusy)
+    }
+
+    @Test
+    fun `a revoked subscription is not Pro`() = runTest {
+        val settings = FakeSettings(activeAfter = null).apply {
+            premium = PremiumAccess(tier = "pro", active = false, expiresAt = "2099-01-01T00:00:00.000Z")
+            status = com.spenditos.android.data.model.PremiumStatus(false, null, "none")
+        }
+        val vm = proVm(FakePurchases(), settings)
+        advanceUntilIdle()
+        assertFalse(vm.state.value.isPro)
+        assertEquals(2, vm.state.value.packages.size)
+    }
+
+    @Test
+    fun `nothing to restore says so`() = runTest {
+        val vm = proVm(FakePurchases(restoreResult = PurchaseResult.NothingToRestore), FakeSettings(activeAfter = null))
+        advanceUntilIdle()
+        vm.restore(); advanceUntilIdle()
+        assertEquals("No purchases to restore.", vm.state.value.notice)
+        assertFalse(vm.state.value.isPro)
     }
 
     @Test
@@ -156,7 +213,8 @@ class ProViewModelTest {
 
     @Test
     fun `restore confirms through the server too`() = runTest {
-        val vm = proVm(FakePurchases(), FakeSettings(activeAfter = 1))
+        val settings = FakeSettings(activeAfter = null)
+        val vm = proVm(FakePurchases(onPurchase = { settings.access.setPro(true) }), settings)
         advanceUntilIdle()
         vm.restore(); advanceUntilIdle()
         assertTrue(vm.state.value.isPro)

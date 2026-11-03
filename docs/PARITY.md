@@ -13,7 +13,7 @@ Legend: **MVP** = Android v1 · **Later** = after v1 · **Skip** = don't port (d
 | Launch gate | `App/SpenditosApp.swift:270-321`: authed → GET `/user/settings` `setupCompleted` → Onboarding or tabs; unauthed → login stack | same | MVP |
 | Tabs | `App/MainTabView.swift:20-58`: Home, Transactions, Plan (badge = next-month draft change count), Reports, Settings; QuickAdd sheet = FAB | bottom bar + FAB | MVP |
 | Deep links | notification payloads only (`App/DeepLinkHandler.swift:8-26`) | none until push exists | Later |
-| Config | `AppRuntime.swift:160-220`: `API_HOST`, `WEB_SOCKET_HOST`, `DEPLOYMENT_STAGE`, `APP_ENV_NAME`, `CLIENT_CONFIG_VERSION`, `REVENUECAT_API_KEY` (+ unused Cognito ids) | `config/<env>.properties` → BuildConfig | MVP |
+| Config | `AppRuntime.swift:160-220`: `API_HOST`, `WEB_SOCKET_HOST`, `DEPLOYMENT_STAGE`, `APP_ENV_NAME`, `CLIENT_CONFIG_VERSION` (+ store config, unused Cognito ids; Android has `PAYKIT_BASE_URL`) | `config/<env>.properties` → BuildConfig | MVP |
 
 ## Auth (MVP)
 
@@ -84,9 +84,9 @@ Legend: **MVP** = Android v1 · **Later** = after v1 · **Skip** = don't port (d
 
 ## Pro (Later)
 
-- iOS: RevenueCat, entitlement `pro`, `offerings.current`, product ids are iOS SKUs. `GET /user/quota` (not in packages/types; `core/services/quota.ts:71-92`). Server truth = `userSettings.premium.active` (webhook-driven).
-- **Backend gap:** `fn/webhooks/revenuecat-events.ts:62` tags every non-Stripe store as `rc_ios`, so Play purchases would overwrite the iOS provider snapshot. Needs an additive server change (`rc_android`) before Android billing ships.
-- Android v1 without billing still respects server gates: free quota for receipt scan, 403 on paycheck periods → explain Pro, no purchase button (pending owner decision).
+- All clients move to Paykit (Bmbsolution/spenditos#353: S3 web, S4 iOS, S5 Android). `GET /user/quota` (not in packages/types; `core/services/quota.ts:71-92`). Server truth = `settings.premium.active`, fed by Paykit; clients never gate on `tier` or `expiresAt`, so a revoked subscription reads as Free.
+- Android: `POST /payments/token` for the SDK, `POST /payments/sync` after a link, calm unavailable state on 503 `PaymentsUnavailable`. Settings shows `pendingChange` ("Switches to yearly on ..."); Profile shows the store-subscription notice before deleting the account.
+- Not yet: provider-aware Manage subscription (the Pro screen always opens the Play subscriptions page) and in-app plan changes (`changePlan`).
 
 ## Import (MVP tail)
 
@@ -101,7 +101,7 @@ Entry on iOS: Settings → Import data sheet (`ImportDataView.swift`), both opti
   4. `POST /statements/import-spreadsheet` + `Idempotency-Key` header (one UUID per file, reused across retries → deterministic ids `spreadsheet:<key>`) → `{message, count, stats{created, updated, skipped}}`.
 - Rules: processable = date + description + (amount | debit + credit) (`StatementImportService.swift:61-65`); description = merchant ?? description; backend stores `abs(amount)`, the category decides the sign.
 - Shapes are handler-only zod (`fn/api/statement-import.ts:23-55, 127, 215, 455-500`).
-- Gating: **server has no Pro/quota gate on `/statements/*`**; iOS gates client-side. Android v1 (no purchases) gates on `userSettings.premium.active`, same user-visible rule as iOS.
+- Gating: **server has no Pro/quota gate on `/statements/*`**; iOS gates client-side. Android gates on `userSettings.premium.active`, same user-visible rule as iOS.
 - Android additions: explicit client timeout (e.g. 120 s) on analyze/preview; keep the wizard state in the ViewModel (SavedStateHandle) so rotation/process death doesn't lose it.
 - Skip: `POST /statements/detect-recurring` (no iOS caller), `/statements/analyze-image` (unused).
 

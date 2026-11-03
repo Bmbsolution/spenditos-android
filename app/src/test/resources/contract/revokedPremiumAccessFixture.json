@@ -1,0 +1,18 @@
+{
+  "tier": "pro",
+  "active": false,
+  "expiresAt": "2099-01-01T00:00:00.000Z",
+  "source": "app_store",
+  "entitlements": {
+    "pro": {
+      "active": false,
+      "accessUntil": "2099-01-01T00:00:00.000Z",
+      "source": "apple_appstore"
+    }
+  },
+  "activeProvider": null,
+  "plan": null,
+  "pendingChange": null,
+  "environment": "production",
+  "version": 7
+}

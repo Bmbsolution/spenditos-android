@@ -13,7 +13,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 ./gradlew :app:testStagingDebugUnitTest :app:lintStagingDebug
 ```
 
-Needs Android SDK platform 37 and build-tools 37 (`local.properties` → `sdk.dir`).
+Needs Android SDK platform 37 and build-tools 37 (`local.properties` → `sdk.dir`), and a `read:packages` GitHub token for the private Paykit SDK: `gpr.user` / `gpr.key` in `~/.gradle/gradle.properties`, or `GITHUB_ACTOR` / `GITHUB_TOKEN` in the environment.
 
 | Variant | Backend | Notes |
 |---|---|---|

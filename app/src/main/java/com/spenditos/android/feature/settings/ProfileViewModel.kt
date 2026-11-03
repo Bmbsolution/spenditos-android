@@ -27,6 +27,8 @@ data class ProfileUiState(
     val success: Boolean = false,
     val isDeletingAccount: Boolean = false,
     val deleteError: String? = null,
+    /** Shown before deleting: store billing outlives the account; null without a store subscription. */
+    val storeSubscriptionNotice: String? = null,
 )
 
 @HiltViewModel
@@ -79,6 +81,7 @@ class ProfileViewModel @Inject constructor(
                         it.copy(
                             displayName = loaded.displayName.orEmpty(),
                             currency = loaded.currency,
+                            storeSubscriptionNotice = com.spenditos.android.data.purchases.storeSubscriptionNotice(loaded.premium),
                             isLoading = false,
                             error = null,
                             isOffline = false,

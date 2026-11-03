@@ -50,12 +50,19 @@ Rule: `feature/*` may depend on `data/*` and `ui/*`; never on `core/network` dir
 ## 3. Environments and config (never silently prod)
 
 - Product flavors on one `env` dimension: `staging`, `prod`. Optional `dev` flavor for a personal SST stage, values from an uncommitted `config/dev.properties` (the iOS Debug build targets the personal `asaklex` stage).
-- Values live in `config/<env>.properties` (committed, non-secret: `API_HOST`, `WEB_SOCKET_HOST`, `DEPLOYMENT_STAGE`, `APP_ENV_NAME`, `CLIENT_CONFIG_VERSION`, `REVENUECAT_API_KEY` public key) and are injected into `BuildConfig`.
+- Values live in `config/<env>.properties` (committed, non-secret: `API_HOST`, `WEB_SOCKET_HOST`, `DEPLOYMENT_STAGE`, `APP_ENV_NAME`, `CLIENT_CONFIG_VERSION`, `PAYKIT_BASE_URL`) and are injected into `BuildConfig`.
 - `API_HOST` is **host-only**. A Gradle check fails the build if it contains a scheme, a path, or any forbidden token from `packages/core/src/config/client-config.ts` (`localhost`, `placeholder`, …). The client always builds `https://<host>`.
 - **Debug builds are never prod.** `prodDebug` is removed with `variantFilter` / `beforeVariants`. The default run configuration is `stagingDebug`. Release builds of `prod` are the only prod variant.
 - Room database name and token store file are namespaced per environment (`spenditos-<env>.db`), the same idea as the iOS Keychain namespace.
 - An environment badge shows on non-prod builds (iOS `SHOW_ENV_BADGE`).
 - Config sync: iOS gets stage config through a `repository_dispatch` from the backend deploy workflow. Android starts with hand-maintained `config/*.properties`; adding a matching `sync-config` workflow is a later, separate task (needs a new PAT and a backend workflow edit, so it needs the owner's authorization).
+
+### Purchases (Paykit, D12)
+
+- `data/purchases`: `PurchasesService` is the port; `PaykitPurchasesService` drives `paykit-android` (Play Billing) and holds one SDK instance per signed-in user, because the SDK caches ownership and access per instance. `PaymentsRepository` is the backend side: `POST /payments/token` (cached until a minute before expiry, per user) and `POST /payments/sync`.
+- **Pro truth is the backend's `settings.premium`** through `ProAccess`. The SDK's access copy gates nothing. After a link, `sync` puts the server's answer in `ProAccess`, so Pro shows without waiting for the webhook.
+- A purchase, restore or token that gets 503 `PaymentsUnavailable` (Paykit off on `dev` and personal backend stages, or down) shows the calm unavailable state. After the store sheet, a link or sync that can't finish is "processing", never a failure: the purchase stays unacknowledged, Play redelivers it, and the updates listener or the reconcile at session start completes it.
+- The SDK comes from GitHub Packages. Credentials are read from `gpr.user` / `gpr.key` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR` / `GITHUB_TOKEN`, and only `com.paykit` is requested from that repository.
 
 ## 4. Networking and auth (mirrors `APIClient` + `TokenManager`)
 

@@ -6,13 +6,13 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spenditos.android.data.entitlement.ProAccess
+import com.spenditos.android.data.purchases.PaymentsUnavailableException
 import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.data.purchases.PurchaseResult
 import com.spenditos.android.data.purchases.PurchasesService
 import com.spenditos.android.data.user.UserSettingsActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,6 +65,8 @@ class ProViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: PaymentsUnavailableException) {
+                _state.update { it.copy(isLoading = false, isAvailable = false, isPro = pro == true) }
             } catch (_: Exception) {
                 _state.update { it.copy(isLoading = false, isPro = pro == true, error = Strings.get(R.string.pro_couldn_t_load_the_plans)) }
             }
@@ -86,29 +88,23 @@ class ProViewModel @Inject constructor(
         viewModelScope.launch { handle(purchases.restore()) }
     }
 
-    private suspend fun handle(result: PurchaseResult) {
+    private fun handle(result: PurchaseResult) {
         when (result) {
-            PurchaseResult.Success -> confirmEntitlement()
+            // The service already synced, so this is the server's answer; it can still lag the store.
+            PurchaseResult.Success -> if (proAccess.current().hasLastingPro) confirmed() else processing()
+            PurchaseResult.Processing -> processing()
             PurchaseResult.Cancelled -> _state.update { it.copy(isBusy = false) }
             PurchaseResult.Pending -> _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.common_your_purchase_is_pending_pro)) }
+            PurchaseResult.NothingToRestore -> _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.data_purchases_no_purchases_to_restore)) }
+            PurchaseResult.Unavailable -> _state.update { it.copy(isBusy = false, isAvailable = false) }
             is PurchaseResult.Failed -> _state.update { it.copy(isBusy = false, error = result.message) }
         }
     }
 
-    /**
-     * The store has the purchase, but Pro comes from our server (webhook), which can lag. Look a few times;
-     * never leave the user wondering whether they paid for nothing.
-     */
-    private suspend fun confirmEntitlement() {
-        repeat(POLLS) { attempt ->
-            if (currentlyPro() == true) {
-                _state.update { it.copy(isBusy = false, isPro = true, notice = Strings.get(R.string.pro_you_have_pro_thank_you)) }
-                return
-            }
-            if (attempt < POLLS - 1) delay(POLL_MILLIS)
-        }
-        _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.pro_your_purchase_is_processing_pro)) }
-    }
+    private fun confirmed() = _state.update { it.copy(isBusy = false, isPro = true, notice = Strings.get(R.string.pro_you_have_pro_thank_you)) }
+
+    /** Never leave the user wondering whether they paid for nothing. */
+    private fun processing() = _state.update { it.copy(isBusy = false, notice = Strings.get(R.string.pro_your_purchase_is_processing_pro)) }
 
     /**
      * Pro that needs no purchase (a subscription or an admin grant). Welcome Premium does not count:
@@ -121,10 +117,5 @@ class ProViewModel @Inject constructor(
         throw e
     } catch (_: Exception) {
         null
-    }
-
-    companion object {
-        const val POLLS = 10
-        const val POLL_MILLIS = 2_000L
     }
 }

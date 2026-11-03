@@ -1,0 +1,29 @@
+{
+  "tier": "pro",
+  "active": true,
+  "expiresAt": "2026-12-01T00:00:00.000Z",
+  "source": "app_store",
+  "entitlements": {
+    "pro": {
+      "active": true,
+      "accessUntil": "2026-12-01T00:00:00.000Z",
+      "source": "apple_appstore"
+    }
+  },
+  "activeProvider": "apple_appstore",
+  "plan": {
+    "provider": "apple_appstore",
+    "productId": "spenditos.pro.monthly",
+    "period": "P1M",
+    "renewsAt": "2026-12-01T00:00:00.000Z"
+  },
+  "pendingChange": {
+    "productId": "spenditos.pro.yearly",
+    "tier": "pro",
+    "period": "P1Y",
+    "effectiveAt": "2026-12-01T00:00:00.000Z",
+    "kind": "crossgrade"
+  },
+  "environment": "sandbox",
+  "version": 12
+}

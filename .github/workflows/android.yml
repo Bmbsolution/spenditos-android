@@ -6,6 +6,14 @@ on:
     branches: [main]
     tags: ['v*']
 
+# Gradle reads these for the private Paykit SDK on GitHub Packages (see settings.gradle.kts). The package
+# has to grant this repository Actions access.
+permissions:
+  contents: read
+  packages: read
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest

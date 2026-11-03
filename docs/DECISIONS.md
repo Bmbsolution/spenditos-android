@@ -18,7 +18,7 @@ Format: ID · date · decision · why · who decided.
 ## Owner answers (2026-10-06)
 
 - D11 · Debug builds target **staging** (`stagingDebug` default); prod is release-only; personal stage only via uncommitted `config/dev.properties`. · owner
-- D12 · **No purchases in v1.** Respect server gates (free receipt quota, paycheck-periods 403) with clear copy; RevenueCat + Play Billing later, after the additive `rc_android` webhook fix is deployed. · owner
+- D12 · **Pro purchases go through Paykit** (revised 2026-11-03, Bmbsolution/spenditos#353 S5; first decision: no purchases in v1, RevenueCat later). `paykit-android` behind the `PurchasesService` port, sold only where `PAYKIT_BASE_URL` is set and the backend mints tokens. Pro is read only from `settings.premium` / `premiumStatus`, never from the SDK's local copy, a tier name or an expiry. After a link the client calls `POST /payments/sync` instead of polling. A backend 503 `PaymentsUnavailable` is a calm "not available" state, not an error. · Same rule as web and iOS; provider logic stays in Paykit, zero live subscribers so no migration. · owner
 - D13 · Voice/text AI capture is **later** (v1.x); v1 = manual entry + receipt scan. · owner
 - D14 · Phase 1 verification: local e2e harness for data flows + the owner signs in to staging on the emulator once for the login path. · owner
 
