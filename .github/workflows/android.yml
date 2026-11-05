@@ -3,7 +3,7 @@ name: android
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [develop, main]
     tags: ['v*']
 
 # Gradle reads this for the private Paykit SDK on GitHub Packages (see settings.gradle.kts). GitHub Packages
