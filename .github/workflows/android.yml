@@ -1,4 +1,4 @@
-# CI template for the Android app. It has NOT been run (this repo has no remote yet): treat the first run as a test.
+# CI for the Android app.
 name: android
 on:
   pull_request:
@@ -6,13 +6,14 @@ on:
     branches: [main]
     tags: ['v*']
 
-# Gradle reads these for the private Paykit SDK on GitHub Packages (see settings.gradle.kts). The package
-# has to grant this repository Actions access.
+# Gradle reads this for the private Paykit SDK on GitHub Packages (see settings.gradle.kts). GitHub Packages
+# Maven can only be read by the workflow token from the repo that owns the package, so this is a classic PAT
+# with read:packages, stored as a repository secret. When it expires, CI fails with "Could not find
+# com.paykit:paykit-android": make a new one and update the secret.
 permissions:
   contents: read
-  packages: read
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.PAYKIT_PACKAGES_TOKEN }}
 
 jobs:
   verify:
