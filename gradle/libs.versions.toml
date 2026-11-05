@@ -26,7 +26,7 @@ glance = "1.2.0"
 biometric = "1.1.0"
 firebaseBom = "34.19.0"
 googleServices = "4.5.0"
-revenuecat = "10.25.0"
+paykit = "0.1.0"
 camerax = "1.6.2"
 
 [libraries]
@@ -48,7 +48,8 @@ androidx-glance-material3 = { module = "androidx.glance:glance-material3", versi
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
-revenuecat-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
+paykit-android = { module = "com.paykit:paykit-android", version.ref = "paykit" }
+paykit-test-support = { module = "com.paykit:paykit-test-support", version.ref = "paykit" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

@@ -19,6 +19,7 @@ class AppEnvironment @Inject constructor() {
     val showBadge: Boolean = BuildConfig.SHOW_ENV_BADGE
     val isHarness: Boolean = BuildConfig.IS_HARNESS
     val harnessToken: String = BuildConfig.HARNESS_AUTH_TOKEN
+    val paykitBaseUrl: String = BuildConfig.PAYKIT_BASE_URL
     val isDebug: Boolean = BuildConfig.DEBUG
 
     /** Namespaces local storage per environment, like the iOS Keychain service suffix. */

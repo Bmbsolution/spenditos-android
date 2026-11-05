@@ -51,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.paykit.core.Provider
+import com.spenditos.android.data.purchases.ProPackage
 import com.spenditos.android.ui.components.ErrorBanner
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.SfSymbols
@@ -115,12 +117,34 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                             verticalArrangement = Arrangement.spacedBy(Spacing.m),
                         ) {
                             Text(stringResource(R.string.pro_you_have_pro), style = IosText.headline, color = SystemBlue, modifier = Modifier.testTag("pro.active"))
-                            SystemButton(
-                                stringResource(R.string.pro_manage_subscription),
-                                null,
-                                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))) },
-                                modifier = Modifier.fillMaxWidth().testTag("pro.manage"),
-                            )
+                            state.provider?.let { provider ->
+                                Text(subscribedVia(provider), style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.subscribedVia"))
+                            }
+                            state.pendingChangeText?.let {
+                                Text(it, style = IosText.subheadline, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.pendingChange"))
+                            }
+                            // A grant by Spenditos has nothing to manage.
+                            if (state.provider != null) {
+                                SystemButton(
+                                    stringResource(R.string.pro_manage_subscription),
+                                    null,
+                                    enabled = !state.isBusy,
+                                    onClick = { viewModel.manage { url -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+                                    modifier = Modifier.fillMaxWidth().testTag("pro.manage"),
+                                )
+                            }
+                            if (state.changeOptions.isNotEmpty()) {
+                                Text(stringResource(R.string.pro_change_plan), style = IosText.headline, color = IosColors.textPrimary)
+                                state.changeOptions.forEach { pkg ->
+                                    SystemButton(
+                                        stringResource(R.string.pro_switch_to_plan, pkg.title, priceText(pkg)),
+                                        null,
+                                        enabled = !state.isBusy,
+                                        onClick = { context.findActivity()?.let { viewModel.changePlan(it, pkg.id) } },
+                                        modifier = Modifier.fillMaxWidth().testTag("pro.change.${pkg.id}"),
+                                    )
+                                }
+                            }
                         }
                     }
                     !state.isAvailable -> {
@@ -128,7 +152,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.m)).background(secondarySystemBackgroundColor()).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(Spacing.s),
                         ) {
-                            Text(stringResource(R.string.pro_subscriptions_aren_t_available_in), style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))
+                            Text(stringResource(R.string.pro_subscriptions_aren_t_available_right_now), style = IosText.callout, color = IosColors.textSecondary, modifier = Modifier.testTag("pro.unavailable"))
                         }
                     }
                     state.packages.isEmpty() -> OfferingsUnavailable(onRetry = viewModel::load, hasError = state.error != null)
@@ -154,7 +178,7 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
                                         ) {
                                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                                                 Text(pkg.title, style = IosText.headline, color = IosColors.textPrimary)
-                                                Text(pkg.price + (pkg.period?.let { " / $it" } ?: ""), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
+                                                Text(priceText(pkg), style = IosText.title2.w(FontWeight.Bold), color = IosColors.textPrimary)
                                                 if (pkg.isBestValue) Text(stringResource(R.string.pro_best_value), style = IosText.caption, color = SystemBlue)
                                             }
                                             Box(
@@ -208,6 +232,29 @@ fun ProScreen(onBack: () -> Unit, viewModel: ProViewModel = hiltViewModel()) {
         }
     }
 }
+
+@Composable
+private fun priceText(pkg: ProPackage): String {
+    val period = when (pkg.period) {
+        "week" -> stringResource(R.string.pro_period_week)
+        "month" -> stringResource(R.string.pro_period_month)
+        "2 months" -> stringResource(R.string.pro_period_2_months)
+        "3 months" -> stringResource(R.string.pro_period_3_months)
+        "6 months" -> stringResource(R.string.pro_period_6_months)
+        "year" -> stringResource(R.string.pro_period_year)
+        else -> null
+    }
+    return pkg.price + (period?.let { " / $it" } ?: "")
+}
+
+@Composable
+private fun subscribedVia(provider: Provider): String = stringResource(
+    when (provider) {
+        Provider.GooglePlay -> R.string.pro_subscribed_via_google_play
+        Provider.AppleAppStore -> R.string.pro_subscribed_via_app_store
+        else -> R.string.pro_subscribed_on_the_web
+    },
+)
 
 /** The paywall list, copied from iOS PaywallView.featuresSection (same rows, same words). */
 internal data class ProFeatureSpec(val symbol: String, val title: String, val description: String)

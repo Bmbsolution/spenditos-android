@@ -43,6 +43,12 @@ Use Play App Signing (upload the AAB signed with the upload key; Google holds th
    `deploy.yml`; a task for whoever owns that workflow).
 5. Deploy the backend support first for anything new the app requires; Android never relies on undeployed server behavior.
 
+## Building needs GitHub Packages access
+
+The Paykit SDK (`com.paykit:paykit-android`) is private. Every build, debug included, needs a token with `read:packages`: put `gpr.user` and
+`gpr.key` in `~/.gradle/gradle.properties`, or export `GITHUB_ACTOR` and `GITHUB_TOKEN`. Never put it in the project. CI uses the workflow token,
+and the package has to grant this repository Actions access once it has a remote.
+
 ## Owner inputs that switch features on (the code is built, inert until you supply them)
 
 - **Push notifications:** create a Firebase project, add Android apps for the ids you ship (`com.asaklex.spenditos`,
@@ -50,11 +56,10 @@ Use Play App Signing (upload the AAB signed with the upload key; Google holds th
   plugin is applied automatically when the file exists. The app then registers its FCM token (Settings > Notifications)
   with `POST /user/device-token` (platform android). A backend sender does not exist yet: nothing will arrive until
   one is built (tap targets already map the iOS types to Home add / Progress).
-- **Pro purchases:** create the Android app in RevenueCat, attach the Play subscriptions to the `pro` entitlement and an
-  offering, then set the Android public SDK key as `REVENUECAT_API_KEY` in `config/prod.properties` /
-  `config/staging.properties` (it is a public key). Without it the Pro screen says subscriptions are unavailable and no
-  upsell button is shown. Backend follow-up (not done here): `revenuecat-events.ts` labels every non-Stripe store as
-  source `rc_ios`; add an Android/Play source so entitlement reconciliation can tell stores apart.
+- **Pro purchases:** register the Play subscriptions as `android` plans in the Paykit tenant config (`spenditos/docs/features/paykit.md`), then set the
+  stage's Paykit URL as `PAYKIT_BASE_URL` in `config/prod.properties` / `config/staging.properties` (not a secret). The tenant's Google
+  `packageName` must match the app id of that build (`com.asaklex.spenditos`, `.staging` on staging). Without the URL the Pro screen says
+  subscriptions aren't available and no upsell button is shown. Deploy Paykit and the backend's `/payments/*` first.
 
 ## Not done (needs the owner)
 
