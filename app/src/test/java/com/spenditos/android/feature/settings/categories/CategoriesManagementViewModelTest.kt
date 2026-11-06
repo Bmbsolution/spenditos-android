@@ -84,7 +84,9 @@ class CategoriesManagementViewModelTest {
     private fun category(id: String = "c1", name: String = "Fake Food", isIncome: Boolean = false) =
         Category(id, "user-1", name, "#B85F42", "🍲", isIncome)
 
-    private suspend fun loaded(vm: CategoriesManagementViewModel) = vm.state.first { !it.isLoading }
+    // The refresh and Room finish independently (Room emits on its own executor), so wait for both.
+    private suspend fun loaded(vm: CategoriesManagementViewModel, categories: Int = 0) =
+        vm.state.first { !it.isLoading && it.categories.size == categories }
 
     private fun failures() = listOf(
         ApiError.Server(400, "Validation failed"),
@@ -95,7 +97,7 @@ class CategoriesManagementViewModelTest {
     fun `initial refresh loads categories and reports server or network failure`() = runTest {
         val success = graph(listOf(category(), category("c2", "Fake Salary", true)))
         val vm = CategoriesManagementViewModel(success.repository, success.invalidations)
-        val loaded = loaded(vm)
+        val loaded = loaded(vm, 2)
         assertEquals(2, loaded.categories.size)
         assertFalse(loaded.isOffline)
 
@@ -112,7 +114,7 @@ class CategoriesManagementViewModelTest {
     fun `duplicate check folds case and accents before create`() = runTest {
         val graph = graph(listOf(category(name = "Café")))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
         vm.saveCategory(null, CategoryDraft("CAFE\u0301", "#B85F42", null, false))
         runCurrent()
         assertEquals(0, graph.api.createCalls)
@@ -123,7 +125,7 @@ class CategoriesManagementViewModelTest {
     fun `create and edit succeed and update category cache`() = runTest {
         val graph = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
 
         val saved = async { vm.events.first() }
         vm.saveCategory(null, CategoryDraft("Fake Salary", "#3F7D70", "💰", true))
@@ -157,7 +159,7 @@ class CategoriesManagementViewModelTest {
         failures().forEach { failure ->
             val graph = graph(listOf(category()))
             val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-            loaded(vm)
+            loaded(vm, 1)
             graph.api.failureFor = "update"
             graph.api.failure = failure
             vm.saveCategory("c1", CategoryDraft("Fake Changed", "#B85F42", null, false))
@@ -171,7 +173,7 @@ class CategoriesManagementViewModelTest {
     fun `delete updates cache and shows server or offline errors`() = runTest {
         val success = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(success.repository, success.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
         val deleted = async { vm.events.first() }
         vm.deleteCategory("c1")
         runCurrent()
@@ -181,7 +183,7 @@ class CategoriesManagementViewModelTest {
         failures().forEach { failure ->
             val failedGraph = graph(listOf(category()))
             val failedVm = CategoriesManagementViewModel(failedGraph.repository, failedGraph.invalidations)
-            loaded(failedVm)
+            loaded(failedVm, 1)
             failedGraph.api.failureFor = "delete"
             failedGraph.api.failure = failure
             failedVm.deleteCategory("c1")
@@ -195,7 +197,7 @@ class CategoriesManagementViewModelTest {
     fun `delete of a category in use asks for a category to move to`() = runTest {
         val graph = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
         graph.api.failureFor = "delete"
         graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
         vm.deleteCategory("c1")
@@ -210,7 +212,7 @@ class CategoriesManagementViewModelTest {
     fun `delete with a target moves records then deletes and closes the dialog`() = runTest {
         val graph = graph(listOf(category(), category(id = "c2", name = "Other")))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 2)
         graph.api.failureFor = "delete"
         graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
         vm.deleteCategory("c1")
@@ -231,7 +233,7 @@ class CategoriesManagementViewModelTest {
     fun `other delete conflicts still show their message instead of the move dialog`() = runTest {
         val graph = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
         graph.api.failureFor = "delete"
         graph.api.failure = ApiError.Server(409, "CategoryDeleteInProgress")
         vm.deleteCategory("c1")
@@ -245,7 +247,7 @@ class CategoriesManagementViewModelTest {
     fun `dismissing the move dialog clears it`() = runTest {
         val graph = graph(listOf(category()))
         val vm = CategoriesManagementViewModel(graph.repository, graph.invalidations)
-        loaded(vm)
+        loaded(vm, 1)
         graph.api.failureFor = "delete"
         graph.api.failure = ApiError.Server(409, "CategoryHasReferences")
         vm.deleteCategory("c1")
