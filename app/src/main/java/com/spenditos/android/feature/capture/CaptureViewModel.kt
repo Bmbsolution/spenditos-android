@@ -23,6 +23,8 @@ import com.spenditos.android.data.quota.SentenceMeter
 import com.spenditos.android.data.quota.isSentenceQuota
 import com.spenditos.android.feature.transactions.AddTransactionPrefill
 import com.spenditos.android.data.receipt.ReceiptIoDispatcher
+import com.spenditos.android.data.scan.ExchangeRates
+import com.spenditos.android.feature.scan.prepareCurrencyAmounts
 import com.spenditos.android.data.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -119,9 +122,15 @@ data class CaptureUiState(
     val sentenceMeter: SentenceMeter? = null,
     /** Effective Pro (store or server Premium): no counter, no banner. */
     val isPro: Boolean = false,
+    /** Foreign-currency rows are being converted into [currency]; saving waits (same as Scan). Not persisted. */
+    val preparingCurrencies: Boolean = false,
+    /** A currency had no usable rate. Not persisted. */
+    val rateFailed: Boolean = false,
 ) {
     val includedItems: List<CaptureReviewItem> get() = items.filter { it.include }
-    val canSave: Boolean get() = step == CaptureStep.Review && includedItems.isNotEmpty() && includedItems.all {
+    /** Included rows that are still in another currency because no rate was found: the user must type the amount. */
+    val conversionUnavailableCount: Int get() = includedItems.count { it.reviewCurrency != null }
+    val canSave: Boolean get() = step == CaptureStep.Review && !preparingCurrencies && conversionUnavailableCount == 0 && includedItems.isNotEmpty() && includedItems.all {
         parseCaptureAmount(it.amountText) != null && it.description.trim().isNotEmpty() && runCatching { LocalDate.parse(it.date) }.isSuccess
     }
 }
@@ -145,6 +154,7 @@ class CaptureViewModel @Inject constructor(
     @ReceiptIoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val proAccess: ProAccess,
     private val quota: QuotaSource,
+    private val rates: ExchangeRates,
 ) : ViewModel() {
     private val _state = MutableStateFlow(restoreState(savedStateHandle, dataSource.currentUserId))
     val state: StateFlow<CaptureUiState> = _state.asStateFlow()
@@ -155,6 +165,7 @@ class CaptureViewModel @Inject constructor(
     private var activeRecording: File? = null
     private var recordingMonitor: Job? = null
     private var operationJob: Job? = null
+    private var currencyJob: Job? = null
     private var recordingStartedAtMillis: Long = 0
     private var voiceCaptureAnalysisId: String? = _state.value.transcriptAnalysisId
 
@@ -172,6 +183,27 @@ class CaptureViewModel @Inject constructor(
             proAccess.state.collect { access -> _state.update { it.copy(isPro = access.effectiveIsPro) } }
         }
         refreshSentenceMeter()
+        // A restored review whose conversion never finished is converted again, but only once the user's real currency
+        // is known (the state's default is a placeholder). Save stays blocked until then (restoreState sets the flag).
+        if (_state.value.preparingCurrencies) {
+            viewModelScope.launch {
+                val target = try {
+                    dataSource.currency().first()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    null
+                }
+                if (target == null) {
+                    _state.update { it.copy(preparingCurrencies = false) }
+                    return@launch
+                }
+                _state.update { it.copy(currency = target) }
+                val restored = _state.value
+                if (restored.step == CaptureStep.Review && restored.items.any { it.needsConversion(target) }) prepareCurrencies(restored.items)
+                else _state.update { it.copy(preparingCurrencies = false) }
+            }
+        }
     }
 
     /** Loads the counter shown under the sentence field. Free users only; best effort. */
@@ -362,7 +394,12 @@ class CaptureViewModel @Inject constructor(
     }
 
     fun toggleInclude(key: String) = updateItem(key, ReviewItemEditing::toggled)
-    fun onAmountChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withAmountText(it, text) }
+    /** A typed amount is in the user's currency: it settles a row that could not be converted. */
+    fun onAmountChange(key: String, text: String) = updateItem(key) {
+        // Settled: the typed amount is already in the user's currency, so a restore must not convert it again.
+        val settled = if (it.currency.isNullOrBlank()) it.convertedTo else it.convertedTo ?: _state.value.currency
+        ReviewItemEditing.withAmountText(it, text).copy(reviewCurrency = null, convertedTo = settled)
+    }
     fun onDescriptionChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withDescription(it, text) }
     fun onDateChange(key: String, date: LocalDate) = updateItem(key) { ReviewItemEditing.withDate(it, date) }
 
@@ -469,9 +506,47 @@ class CaptureViewModel @Inject constructor(
     private fun showReview(parsed: com.spenditos.android.data.capture.CaptureParseResult, source: String) {
         val items = parsed.items.map { item -> item.toReviewItem(_state.value.categories) }
         _state.update {
-            it.copy(step = CaptureStep.Review, items = items, analysisId = parsed.analysisId, source = source, error = null, offline = false)
+            it.copy(
+                step = CaptureStep.Review, items = items, analysisId = parsed.analysisId, source = source, error = null, offline = false,
+                preparingCurrencies = items.any { item -> item.needsConversion(it.currency) }, rateFailed = false,
+            )
         }
         persist()
+        if (_state.value.preparingCurrencies) prepareCurrencies(items)
+    }
+
+    private fun CaptureReviewItem.needsConversion(target: String): Boolean {
+        val source = currency?.trim()?.uppercase().orEmpty()
+        return source.isNotEmpty() && source != target.trim().uppercase() && convertedTo == null
+    }
+
+    /**
+     * A sentence or transcript in another currency ("20 euros") is converted into the user's currency (iOS
+     * `AddTransactionViewModel` rate lookup; same engine as Scan). Only the two currency codes leave the device. A row the
+     * user edited meanwhile keeps their value; a row with no rate blocks saving until the amount is typed or left out.
+     */
+    private fun prepareCurrencies(snapshot: List<CaptureReviewItem>) {
+        currencyJob?.cancel()
+        _state.update { it.copy(preparingCurrencies = true) }
+        currencyJob = viewModelScope.launch {
+            try {
+                val result = prepareCurrencyAmounts(snapshot, _state.value.currency, rates)
+                val original = snapshot.associate { it.idempotencyKeyId to it.amountText }
+                _state.update { current ->
+                    current.copy(
+                        items = current.items.map { item ->
+                            val prepared = result.items[item.idempotencyKeyId]
+                            if (prepared == null || item.amountText != original[item.idempotencyKeyId]) item
+                            else item.copy(amountText = prepared.amountText, convertedTo = prepared.convertedTo, reviewCurrency = prepared.reviewCurrency)
+                        },
+                        rateFailed = result.rateFailed,
+                    )
+                }
+            } finally {
+                _state.update { it.copy(preparingCurrencies = false) }
+                persist()
+            }
+        }
     }
 
     private fun CaptureAnalysisItem.toReviewItem(categories: List<Category>): CaptureReviewItem {
@@ -579,7 +654,7 @@ class CaptureViewModel @Inject constructor(
     }
 
     @Serializable
-    private data class PersistedCapture(
+    internal data class PersistedCapture(
         val step: String,
         val mode: String,
         val text: String,
@@ -633,6 +708,8 @@ class CaptureViewModel @Inject constructor(
                 items = data.items,
                 categoriesLoading = true,
                 savedCount = data.savedCount,
+                // Save stays blocked until the user's currency is known and unconverted foreign rows are converted.
+                preparingCurrencies = step == CaptureStep.Review && data.items.any { !it.currency.isNullOrBlank() && it.convertedTo == null },
             )
         }
     }
