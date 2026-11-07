@@ -156,8 +156,8 @@ class CaptureViewModelTest {
         val actions = FakeCaptureActions().apply {
             parsed = CaptureParseResult(
                 listOf(
-                    CaptureAnalysisItem(null, "USD", null, null, null, null, "", null, "expense"),
-                    CaptureAnalysisItem(10.0, "USD", null, null, null, null, "Coffee", null, "expense"),
+                    CaptureAnalysisItem(null, "CAD", null, null, null, null, "", null, "expense"),
+                    CaptureAnalysisItem(10.0, "CAD", null, null, null, null, "Coffee", null, "expense"),
                 ), "analysis-fake-validation", null, null, null,
             )
         }
@@ -184,9 +184,9 @@ class CaptureViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val actions = FakeCaptureActions().apply {
             parsed = CaptureParseResult(listOf(
-                CaptureAnalysisItem(10.0, "USD", "2026-10-04", null, null, null, "Coffee", null, "expense"),
-                CaptureAnalysisItem(20.0, "USD", "2026-10-04", null, null, null, "Lunch", null, "expense"),
-                CaptureAnalysisItem(30.0, "USD", "2026-10-04", null, null, null, "Bus", null, "expense"),
+                CaptureAnalysisItem(10.0, "CAD", "2026-10-04", null, null, null, "Coffee", null, "expense"),
+                CaptureAnalysisItem(20.0, "CAD", "2026-10-04", null, null, null, "Lunch", null, "expense"),
+                CaptureAnalysisItem(30.0, "CAD", "2026-10-04", null, null, null, "Bus", null, "expense"),
             ), "analysis-fake-partial", null, null, null)
             saveBlocks.add { items, _, _ ->
                 CaptureSaveResult(
@@ -238,8 +238,8 @@ class CaptureViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val actions = FakeCaptureActions().apply {
             parsed = CaptureParseResult(listOf(
-                CaptureAnalysisItem(10.0, "USD", "2026-10-04", null, null, null, "Coffee", null, "expense"),
-                CaptureAnalysisItem(20.0, "USD", "2026-10-04", null, null, null, "Lunch", null, "expense"),
+                CaptureAnalysisItem(10.0, "CAD", "2026-10-04", null, null, null, "Coffee", null, "expense"),
+                CaptureAnalysisItem(20.0, "CAD", "2026-10-04", null, null, null, "Lunch", null, "expense"),
             ), "analysis-fake-save", null, null, null)
             saveBlocks.add { _, _, _ -> throw ApiError.Network(IllegalStateException("offline")) }
             saveBlocks.add { items, _, _ -> CaptureSaveResult(items.map { it.idempotencyKeyId }.toSet(), emptyMap(), items.size) }
