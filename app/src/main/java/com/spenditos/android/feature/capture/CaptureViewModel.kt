@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -182,9 +183,27 @@ class CaptureViewModel @Inject constructor(
             proAccess.state.collect { access -> _state.update { it.copy(isPro = access.effectiveIsPro) } }
         }
         refreshSentenceMeter()
-        // A restored review whose conversion never finished (process death) is converted again.
-        val restored = _state.value
-        if (restored.step == CaptureStep.Review && restored.items.any { it.needsConversion(restored.currency) }) prepareCurrencies(restored.items)
+        // A restored review whose conversion never finished is converted again, but only once the user's real currency
+        // is known (the state's default is a placeholder). Save stays blocked until then (restoreState sets the flag).
+        if (_state.value.preparingCurrencies) {
+            viewModelScope.launch {
+                val target = try {
+                    dataSource.currency().first()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    null
+                }
+                if (target == null) {
+                    _state.update { it.copy(preparingCurrencies = false) }
+                    return@launch
+                }
+                _state.update { it.copy(currency = target) }
+                val restored = _state.value
+                if (restored.step == CaptureStep.Review && restored.items.any { it.needsConversion(target) }) prepareCurrencies(restored.items)
+                else _state.update { it.copy(preparingCurrencies = false) }
+            }
+        }
     }
 
     /** Loads the counter shown under the sentence field. Free users only; best effort. */
@@ -376,7 +395,11 @@ class CaptureViewModel @Inject constructor(
 
     fun toggleInclude(key: String) = updateItem(key, ReviewItemEditing::toggled)
     /** A typed amount is in the user's currency: it settles a row that could not be converted. */
-    fun onAmountChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withAmountText(it, text).copy(reviewCurrency = null) }
+    fun onAmountChange(key: String, text: String) = updateItem(key) {
+        // Settled: the typed amount is already in the user's currency, so a restore must not convert it again.
+        val settled = if (it.currency.isNullOrBlank()) it.convertedTo else it.convertedTo ?: _state.value.currency
+        ReviewItemEditing.withAmountText(it, text).copy(reviewCurrency = null, convertedTo = settled)
+    }
     fun onDescriptionChange(key: String, text: String) = updateItem(key) { ReviewItemEditing.withDescription(it, text) }
     fun onDateChange(key: String, date: LocalDate) = updateItem(key) { ReviewItemEditing.withDate(it, date) }
 
@@ -631,7 +654,7 @@ class CaptureViewModel @Inject constructor(
     }
 
     @Serializable
-    private data class PersistedCapture(
+    internal data class PersistedCapture(
         val step: String,
         val mode: String,
         val text: String,
@@ -685,6 +708,8 @@ class CaptureViewModel @Inject constructor(
                 items = data.items,
                 categoriesLoading = true,
                 savedCount = data.savedCount,
+                // Save stays blocked until the user's currency is known and unconverted foreign rows are converted.
+                preparingCurrencies = step == CaptureStep.Review && data.items.any { !it.currency.isNullOrBlank() && it.convertedTo == null },
             )
         }
     }

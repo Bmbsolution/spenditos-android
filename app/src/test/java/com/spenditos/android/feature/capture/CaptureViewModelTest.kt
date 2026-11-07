@@ -454,7 +454,7 @@ class CaptureViewModelTest {
         gate.complete(Unit)
         advanceUntilIdle()
         assertEquals("99", vm.state.value.items.single().amountText)
-        assertNull(vm.state.value.items.single().convertedTo)
+        assertEquals("CAD", vm.state.value.items.single().convertedTo) // settled: a restore must not convert it again
     }
 
     @Test
@@ -469,6 +469,67 @@ class CaptureViewModelTest {
             assertTrue(vm.state.value.canSave)
         }
         assertTrue(rates.asked.isEmpty())
+    }
+
+    private fun restoredHandle(amount: String, currency: String, convertedTo: String? = null) = SavedStateHandle().also { h ->
+        h["capture.owner"] = "user-1"
+        val item = CaptureReviewItem("k1", amount, "Lunch", "2026-10-04", currency = currency, convertedTo = convertedTo, transactionType = "expense")
+        val payload = CaptureViewModel.PersistedCapture("REVIEW", "TYPE", "", "", null, null, "analysis-fx", "text", listOf(item), 0)
+        h["capture.state"] = com.spenditos.android.core.network.SpenditosJson.encodeToString(CaptureViewModel.PersistedCapture.serializer(), payload)
+    }
+
+    @Test
+    fun `a restored review waits for the real currency and blocks saving until then`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        rates.rates = mapOf("EUR" to 1.5)
+        val gate = kotlinx.coroutines.CompletableDeferred<String>()
+        val source = FakeCaptureDataSource(categories(), lateCurrency = kotlinx.coroutines.flow.flow { emit(gate.await()) })
+        val vm = viewModel(FakeCaptureActions(), source, FakeRecorder(), handle = restoredHandle("20", "EUR"))
+        assertTrue(vm.state.value.preparingCurrencies)
+        assertFalse(vm.state.value.canSave)
+        advanceUntilIdle()
+        assertTrue(rates.asked.isEmpty()) // never converted to the placeholder USD
+        assertFalse(vm.state.value.canSave)
+        gate.complete("CAD")
+        advanceUntilIdle()
+        assertEquals(listOf("EUR" to "CAD"), rates.asked)
+        assertEquals("30", vm.state.value.items.single().amountText)
+        assertTrue(vm.state.value.canSave)
+    }
+
+    @Test
+    fun `a restored USD row for a CAD user is converted, and one in the user's currency is not`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        rates.rates = mapOf("USD" to 1.25)
+        val gate = kotlinx.coroutines.CompletableDeferred<String>()
+        val source = FakeCaptureDataSource(categories(), lateCurrency = kotlinx.coroutines.flow.flow { emit(gate.await()) })
+        val vm = viewModel(FakeCaptureActions(), source, FakeRecorder(), handle = restoredHandle("20", "USD"))
+        gate.complete("CAD")
+        advanceUntilIdle()
+        assertEquals("25", vm.state.value.items.single().amountText)
+        val same = viewModel(FakeCaptureActions(), FakeCaptureDataSource(categories()), FakeRecorder(), handle = restoredHandle("20", "CAD"))
+        advanceUntilIdle()
+        assertEquals("20", same.state.value.items.single().amountText)
+        assertTrue(same.state.value.canSave)
+    }
+
+    @Test
+    fun `an amount typed on a foreign row is not converted again after a restore`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().also { foreignParse(it, "EUR") }
+        rates.rates = mapOf("EUR" to 1.5)
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        rates.onRate = { gate.await() }
+        val handle = SavedStateHandle()
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), handle = handle)
+        advanceUntilIdle()
+        parseTyped(vm)
+        vm.onAmountChange(vm.state.value.items.single().idempotencyKeyId, "40")
+        rates.onRate = {}
+        val restored = viewModel(FakeCaptureActions(), FakeCaptureDataSource(categories()), FakeRecorder(), handle = handle)
+        advanceUntilIdle()
+        assertEquals("40", restored.state.value.items.single().amountText)
+        assertTrue(restored.state.value.canSave)
     }
 
     private fun viewModel(
@@ -651,12 +712,15 @@ class CaptureViewModelTest {
         Category("cat-income", "user-fake", "Side Income", "#000000", isIncome = true),
     )
 
-    private class FakeCaptureDataSource(categories: List<Category>) : CaptureDataSource {
+    private class FakeCaptureDataSource(
+        categories: List<Category>,
+        private val lateCurrency: kotlinx.coroutines.flow.Flow<String>? = null,
+    ) : CaptureDataSource {
         private val categoryFlow = MutableStateFlow(categories)
         private val currencyFlow = MutableStateFlow("CAD")
         fun setCategories(categories: List<Category>) { categoryFlow.value = categories }
         override fun categories() = categoryFlow
-        override fun currency() = currencyFlow
+        override fun currency(): kotlinx.coroutines.flow.Flow<String> = lateCurrency ?: currencyFlow
         override var currentUserId: String? = "user-1"
     }
 
