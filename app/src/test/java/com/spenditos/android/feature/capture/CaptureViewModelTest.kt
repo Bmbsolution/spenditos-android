@@ -38,6 +38,8 @@ import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CaptureViewModelTest {
+    private val rates = com.spenditos.android.testing.FakeExchangeRates()
+
     @After
     fun tearDown() {
         Dispatchers.resetMain()
@@ -367,6 +369,108 @@ class CaptureViewModelTest {
         assertFalse(vm.state.value.offline)
     }
 
+    // --- Foreign currency (typed / voice) ---
+
+    private fun foreignParse(actions: FakeCaptureActions, currency: String?) {
+        actions.parsed = CaptureParseResult(
+            listOf(CaptureAnalysisItem(20.0, currency, "2026-10-04", null, null, null, "Lunch", null, "expense")),
+            "analysis-fx", null, null, null,
+        )
+    }
+
+    private suspend fun kotlinx.coroutines.test.TestScope.parseTyped(vm: CaptureViewModel) {
+        vm.onTextChange("lunch 20 euros")
+        vm.parseTypedText()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `a foreign amount is converted into the user's currency and rounded to the cent`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().also { foreignParse(it, "EUR") }
+        rates.rates = mapOf("EUR" to 1.4567)
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder())
+        advanceUntilIdle()
+        parseTyped(vm)
+        val item = vm.state.value.items.single()
+        assertEquals("29.13", item.amountText)
+        assertEquals("CAD", item.convertedTo)
+        assertNull(item.reviewCurrency)
+        assertEquals(listOf("EUR" to "CAD"), rates.asked)
+        assertFalse(vm.state.value.preparingCurrencies)
+        vm.save()
+        advanceUntilIdle()
+        assertEquals(29.13, actions.saveCalls.single().items.single().amount, 0.0)
+    }
+
+    @Test
+    fun `saving waits while rates load`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().also { foreignParse(it, "EUR") }
+        rates.rates = mapOf("EUR" to 1.5)
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        rates.onRate = { gate.await() }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder())
+        advanceUntilIdle()
+        parseTyped(vm)
+        assertTrue(vm.state.value.preparingCurrencies)
+        assertFalse(vm.state.value.canSave)
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals("30", vm.state.value.items.single().amountText)
+        assertTrue(vm.state.value.canSave)
+    }
+
+    @Test
+    fun `no rate keeps the row in its own currency and blocks saving until the amount is typed`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().also { foreignParse(it, "EUR") }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder())
+        advanceUntilIdle()
+        parseTyped(vm)
+        val item = vm.state.value.items.single()
+        assertEquals("EUR", item.reviewCurrency)
+        assertTrue(vm.state.value.rateFailed)
+        assertFalse(vm.state.value.canSave)
+        vm.save()
+        advanceUntilIdle()
+        assertTrue(actions.saveCalls.isEmpty())
+        vm.onAmountChange(item.idempotencyKeyId, "27.5")
+        assertNull(vm.state.value.items.single().reviewCurrency)
+        assertTrue(vm.state.value.canSave)
+    }
+
+    @Test
+    fun `an amount edited while rates load is kept`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val actions = FakeCaptureActions().also { foreignParse(it, "EUR") }
+        rates.rates = mapOf("EUR" to 1.5)
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        rates.onRate = { gate.await() }
+        val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder())
+        advanceUntilIdle()
+        parseTyped(vm)
+        vm.onAmountChange(vm.state.value.items.single().idempotencyKeyId, "99")
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals("99", vm.state.value.items.single().amountText)
+        assertNull(vm.state.value.items.single().convertedTo)
+    }
+
+    @Test
+    fun `an amount in the user's currency or without a currency is left alone and asks for no rate`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        for (currency in listOf("CAD", "cad", null)) {
+            val actions = FakeCaptureActions().also { foreignParse(it, currency) }
+            val vm = viewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder())
+            advanceUntilIdle()
+            parseTyped(vm)
+            assertEquals("20", vm.state.value.items.single().amountText)
+            assertTrue(vm.state.value.canSave)
+        }
+        assertTrue(rates.asked.isEmpty())
+    }
+
     private fun viewModel(
         actions: FakeCaptureActions,
         source: FakeCaptureDataSource,
@@ -374,7 +478,7 @@ class CaptureViewModelTest {
         handle: SavedStateHandle = SavedStateHandle(),
         access: FakeProAccess = FakeProAccess(),
         quota: FakeQuotaSource = FakeQuotaSource(access = access),
-    ) = CaptureViewModel(actions, source, recorder, handle, Dispatchers.Main, access, quota)
+    ) = CaptureViewModel(actions, source, recorder, handle, Dispatchers.Main, access, quota, rates)
 
     // --- Free tier: sentence metering ---
 
@@ -448,7 +552,7 @@ class CaptureViewModelTest {
             override suspend fun refresh(force: Boolean): com.spenditos.android.data.model.QuotaOverview? = null
             override suspend fun sentenceMeter(forceRefresh: Boolean): com.spenditos.android.data.quota.SentenceMeter? = null
         }
-        val vm = CaptureViewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), SavedStateHandle(), Dispatchers.Main, access, quota)
+        val vm = CaptureViewModel(actions, FakeCaptureDataSource(categories()), FakeRecorder(), SavedStateHandle(), Dispatchers.Main, access, quota, rates)
         advanceUntilIdle()
         vm.onTextChange("lunch 12")
         vm.parseTypedText()

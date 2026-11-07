@@ -346,6 +346,21 @@ fun CaptureScreen(
                 )
             }
             if (state.step == CaptureStep.Review && state.items.isNotEmpty()) {
+                if (state.preparingCurrencies) {
+                    Text(
+                        stringResource(R.string.scan_preparing_categories_and_currencies),
+                        style = IosText.subheadline,
+                        color = IosColors.textSecondary,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("capture.preparingCurrencies"),
+                    )
+                } else if (state.conversionUnavailableCount > 0) {
+                    Text(
+                        stringResource(R.string.scan_one_or_more_foreign_currency),
+                        style = IosText.subheadline.w(FontWeight.SemiBold),
+                        color = IosColors.warning,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screen, vertical = Spacing.s).testTag("capture.conversion"),
+                    )
+                }
                 CaptureReviewFooter(
                     items = state.includedItems,
                     currency = state.currency,
