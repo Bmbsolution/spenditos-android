@@ -15,7 +15,7 @@ Status: **draft, waiting for owner approval** (2026-10-06). Read with `ARCHITECT
 | Import | statement import (accepts .csv and .xlsx); gated on `premium.active` like iOS | finance-first list; iOS's separate CSV flow is broken against the server, skipped |
 | Settings | profile, currency, categories, change password, delete account, sign out | account hygiene |
 
-**Later (v1.x):** voice/text AI capture with multi-item review, Pro purchases (RevenueCat + Play, needs a backend webhook change), WebSocket real-time, gamification/progress (visually secondary, best-effort), biometric lock, push (no backend sender exists), widgets, CSV export, Play Store release pipeline, config-sync workflow.
+**Later (v1.x):** voice/text AI capture with multi-item review, Pro purchases (Paykit + Play, see D12), WebSocket real-time, gamification/progress (visually secondary, best-effort), biometric lock, push (no backend sender exists), widgets, CSV export, Play Store release pipeline, config-sync workflow.
 
 **Not porting:** merchant mappings and the `/import/csv` flow (both broken against the server on iOS), everyday estimate (removed server-side), DEBUG-only export/import screens, dead iOS code listed in PARITY.md.
 
@@ -70,12 +70,12 @@ Opus review batches: end of Wave B (receipt confirm path), end of Wave C (plan a
 | Keystore flakiness on some devices | distinct recoverable error; never clear the session on it |
 | Workers drifting from the pattern | `ANDROID_STYLE.md` + slice as the reference file per layer; small specs; Claude re-runs verification |
 | Dependency downloads | first build fetches Gradle 9.x + AGP + AndroidX/Compose/Hilt/Room/OkHttp from Google Maven and Maven Central (~1 GB); needs owner approval |
-| No Play Billing in v1 | server gates still enforced; clear copy; billing is its own later task with a backend change |
+| No Play Billing in v1 | superseded by D12: Play Billing runs through Paykit, inert until `PAYKIT_BASE_URL` is set |
 
 ## 6. Server changes (none required for MVP)
 
 All additive, none needed to start; each needs the owner's go-ahead and lands/deploys before any Android build that depends on it:
-1. RevenueCat webhook: tag Play Store purchases `rc_android` (`fn/webhooks/revenuecat-events.ts:62`). Needed before Android billing.
+1. ~~`rc_android` webhook tag.~~ Obsolete: Paykit replaced the store webhook (#353), so nothing here is needed before Android billing.
 2. `POST /recurring` should persist `amountVaries` (`fn/api/recurring.ts:295-307`). Affects iOS too.
 3. Optional: honor `Idempotency-Key` on `POST /transactions` (would also fix iOS without a client release).
 4. Optional: export handler-only shapes (auth, quota, generate, imports) into `packages/types` with fixtures.

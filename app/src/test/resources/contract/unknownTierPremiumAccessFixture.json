@@ -1,0 +1,28 @@
+{
+  "tier": "plus_family",
+  "active": true,
+  "expiresAt": "2027-02-01T00:00:00.000Z",
+  "source": "stripe_web",
+  "entitlements": {
+    "pro": {
+      "active": true,
+      "accessUntil": "2027-02-01T00:00:00.000Z",
+      "source": "stripe"
+    },
+    "family_sharing": {
+      "active": true,
+      "accessUntil": "2027-02-01T00:00:00.000Z",
+      "source": "stripe"
+    }
+  },
+  "activeProvider": "stripe",
+  "plan": {
+    "provider": "stripe",
+    "productId": "price_plus_family_monthly",
+    "period": "P1M",
+    "renewsAt": "2027-02-01T00:00:00.000Z"
+  },
+  "pendingChange": null,
+  "environment": "production",
+  "version": 3
+}

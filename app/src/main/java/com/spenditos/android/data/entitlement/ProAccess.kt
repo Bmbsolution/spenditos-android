@@ -4,6 +4,7 @@ import com.spenditos.android.core.auth.EpochClock
 import com.spenditos.android.core.auth.SessionBinding
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.auth.SessionState
+import com.spenditos.android.data.model.PremiumAccess
 import com.spenditos.android.data.model.PremiumStatus
 import com.spenditos.android.data.model.UserSettings
 import com.spenditos.android.data.realtime.ForegroundMonitor
@@ -29,7 +30,7 @@ import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
-/** Store (Play Billing) entitlement. Inert on Android: purchases are being replaced, so it is always false. */
+/** Store (Play Billing) entitlement. Inert on Android, so always false: Pro comes only from the server's settings. */
 interface StoreEntitlement {
     val isActive: StateFlow<Boolean>
 }
@@ -53,6 +54,8 @@ data class ProAccessState(
     val serverStatus: PremiumStatus? = null,
     /** Raw `premium.active` from the same response (used only while [serverStatus] is null). */
     val legacyPremiumActive: Boolean = false,
+    /** Latest `settings.premium`, for display (plan, pending change, provider); Pro is decided above. */
+    val premium: PremiumAccess? = null,
 ) {
     /** Every Pro gate uses this. */
     val effectiveIsPro: Boolean get() = resolveEffectivePro(storeIsPro, serverStatus, legacyPremiumActive)
@@ -103,14 +106,14 @@ class ProAccessRepository @Inject constructor(
     private val clock: EpochClock,
     @ProAccessScope private val scope: CoroutineScope,
 ) : ProAccess {
-    private data class Held(val userId: String, val status: PremiumStatus?, val legacyActive: Boolean, val appliedAt: Long)
+    private data class Held(val userId: String, val status: PremiumStatus?, val premium: PremiumAccess?, val appliedAt: Long)
 
     private val held = MutableStateFlow<Held?>(null)
     private var started = false
 
     private fun compute(held: Held?, sessionState: SessionState, storeIsPro: Boolean): ProAccessState {
         val mine = held?.takeIf { (sessionState as? SessionState.SignedIn)?.userId == it.userId }
-        return ProAccessState(storeIsPro = storeIsPro, serverStatus = mine?.status, legacyPremiumActive = mine?.legacyActive == true)
+        return ProAccessState(storeIsPro = storeIsPro, serverStatus = mine?.status, legacyPremiumActive = mine?.premium?.active == true, premium = mine?.premium)
     }
 
     override val state: StateFlow<ProAccessState> = combine(held, session.state, store.isActive, ::compute)
@@ -136,7 +139,7 @@ class ProAccessRepository @Inject constructor(
 
     override fun apply(settings: UserSettings, binding: SessionBinding?) {
         if (binding == null || session.currentBinding != binding) return
-        held.value = Held(binding.userId, settings.premiumStatus, settings.premium?.active == true, clock.nowSeconds())
+        held.value = Held(binding.userId, settings.premiumStatus, settings.premium, clock.nowSeconds())
     }
 
     override suspend fun refresh(force: Boolean) {

@@ -4,7 +4,9 @@ import com.spenditos.android.core.network.ApiEnvelope
 import com.spenditos.android.core.network.SpenditosJson
 import com.spenditos.android.core.network.serverMessage
 import com.spenditos.android.data.model.BulkCreateResult
+import com.spenditos.android.data.entitlement.ProAccessState
 import com.spenditos.android.data.model.Category
+import com.spenditos.android.data.model.PremiumAccess
 import com.spenditos.android.data.model.Transaction
 import com.spenditos.android.data.model.TransactionMood
 import com.spenditos.android.data.model.TransactionsPage
@@ -14,6 +16,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -66,6 +69,53 @@ class ContractFixtureTest {
         decode("userSettingsFixture", UserSettings.serializer())
         decode("incompleteUserSettingsFixture", UserSettings.serializer())
         assertTrue(decode("premiumUserSettingsFixture", UserSettings.serializer()).premium!!.active)
+    }
+
+    @Test
+    fun `revoked Pro reads as Free, whatever the tier and expiry still say`() {
+        val access = decode("revokedPremiumAccessFixture", PremiumAccess.serializer())
+        assertEquals("pro", access.tier)
+        assertFalse(access.active)
+        assertFalse("without premiumStatus", ProAccessState(legacyPremiumActive = access.active, premium = access).effectiveIsPro)
+
+        val settings = decode("revokedPremiumUserSettingsFixture", UserSettings.serializer())
+        val state = ProAccessState(serverStatus = settings.premiumStatus, legacyPremiumActive = settings.premium!!.active, premium = settings.premium)
+        assertFalse("with premiumStatus", state.effectiveIsPro)
+        assertFalse(state.hasLastingPro)
+    }
+
+    @Test
+    fun `an unknown tier decodes and active decides access`() {
+        val access = decode("unknownTierPremiumAccessFixture", PremiumAccess.serializer())
+        assertEquals("plus_family", access.tier)
+        assertTrue(access.entitlements!!.getValue("pro").active)
+        assertTrue(access.entitlements!!.containsKey("family_sharing"))
+        assertEquals("stripe", access.activeProvider)
+        assertEquals("P1M", access.plan!!.period)
+        assertEquals(3L, access.version)
+        assertTrue(ProAccessState(legacyPremiumActive = access.active, premium = access).effectiveIsPro)
+    }
+
+    @Test
+    fun `a pending plan change decodes and stays Pro`() {
+        val access = decode("pendingChangePremiumAccessFixture", PremiumAccess.serializer())
+        assertTrue(access.active)
+        assertEquals("P1Y", access.pendingChange!!.period)
+        assertEquals("2026-12-01T00:00:00.000Z", access.pendingChange!!.effectiveAt)
+        assertEquals("crossgrade", access.pendingChange!!.kind)
+        assertEquals("sandbox", access.environment)
+        assertEquals(12L, access.version)
+    }
+
+    @Test
+    fun `malformed premium fields never break the settings response`() {
+        val base = "\"userId\":\"u\""
+        val badPending = SpenditosJson.decodeFromString(UserSettings.serializer(), """{$base,"premium":{"tier":"pro","active":true,"pendingChange":"soon","entitlements":[1],"plan":3}}""")
+        assertTrue(badPending.premium!!.active)
+        assertNull(badPending.premium!!.pendingChange)
+        assertNull(badPending.premium!!.entitlements)
+        assertNull(badPending.premium!!.plan)
+        assertNull(SpenditosJson.decodeFromString(UserSettings.serializer(), """{$base,"premium":"yes"}""").premium)
     }
 
     @Test

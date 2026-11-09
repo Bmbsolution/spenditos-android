@@ -161,8 +161,8 @@ internal fun ReviewSummaryRow(
     val subtitle = listOfNotNull(
         categoryLabel,
         item.date.takeIf { it.isNotBlank() },
-        // Scan rows are converted into the user's currency (iOS "USD → CAD"); voice and typed amounts are saved as
-        // parsed, so those say what was parsed.
+        // Rows in another currency are converted into the user's currency (iOS "USD → CAD"); one with no rate says
+        // what was parsed and blocks saving until the amount is typed.
         sourceCurrency?.let { source -> item.convertedTo?.let { "$source → $it" } ?: stringResource(R.string.capture_parsed_as, source) },
     ).joinToString(" · ")
     Row(

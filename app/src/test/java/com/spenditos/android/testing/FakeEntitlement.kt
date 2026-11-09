@@ -24,7 +24,7 @@ class FakeProAccess(initial: ProAccessState = ProAccessState()) : ProAccess {
     fun set(state: ProAccessState) { _state.value = state }
     fun setPro(pro: Boolean) { _state.value = ProAccessState(serverStatus = PremiumStatus(isPremium = pro, reason = if (pro) "store" else "none")) }
     override fun apply(settings: UserSettings, binding: SessionBinding?) {
-        _state.value = ProAccessState(serverStatus = settings.premiumStatus, legacyPremiumActive = settings.premium?.active == true)
+        _state.value = ProAccessState(serverStatus = settings.premiumStatus, legacyPremiumActive = settings.premium?.active == true, premium = settings.premium)
     }
     override suspend fun refresh(force: Boolean) { refreshes++ }
     override fun clear() { _state.value = ProAccessState() }

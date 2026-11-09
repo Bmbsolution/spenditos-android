@@ -107,6 +107,23 @@ class ProfileViewModelTest {
     }
 
     @Test
+    fun `a store subscription brings the deletion notice, a web one doesn't`() = runTest {
+        val onPlay = object : com.spenditos.android.data.user.UserSettingsActions by FakeUserSettingsActions() {
+            override suspend fun refresh() = com.spenditos.android.data.model.UserSettings(
+                "user-1",
+                premium = com.spenditos.android.data.model.PremiumAccess(active = true, activeProvider = "google_play"),
+            )
+        }
+        val playVm = ProfileViewModel(onPlay, com.spenditos.android.data.auth.AccountDeletion { })
+        advanceUntilIdle()
+        assertTrue(playVm.state.value.storeSubscriptionNotice!!.contains("Google Play"))
+
+        val free = ProfileViewModel(FakeUserSettingsActions(), com.spenditos.android.data.auth.AccountDeletion { })
+        advanceUntilIdle()
+        assertEquals(null, free.state.value.storeSubscriptionNotice)
+    }
+
+    @Test
     fun `profile load reports server and offline failures`() = runTest {
         failures().forEach { failure ->
             val actions = FakeUserSettingsActions().apply { failureFor = "refresh"; this.failure = failure }
@@ -264,6 +281,8 @@ class ProfileViewModelTest {
             override suspend fun packages(): List<com.spenditos.android.data.purchases.ProPackage> = emptyList()
             override suspend fun purchase(activity: android.app.Activity, packageId: String) = PurchaseResult.Failed("not used")
             override suspend fun restore() = PurchaseResult.Failed("not used")
+            override suspend fun changePlan(activity: android.app.Activity, packageId: String, currentPeriod: String?) = PurchaseResult.Failed("not used")
+            override suspend fun manageUrl(premium: com.spenditos.android.data.model.PremiumAccess?) = error("not used")
         }
         val unusedTransactionsApi = object : TransactionsApi {
             override suspend fun list(

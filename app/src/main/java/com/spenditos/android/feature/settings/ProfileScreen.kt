@@ -275,6 +275,16 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
                         modifier = Modifier.padding(horizontal = Spacing.screen + Spacing.m, vertical = Spacing.s),
                     )
                 }
+                state.storeSubscriptionNotice?.let { notice ->
+                    item {
+                        Text(
+                            notice,
+                            style = IosText.footnote,
+                            color = IosColors.textSecondary,
+                            modifier = Modifier.padding(horizontal = Spacing.screen + Spacing.m, vertical = Spacing.s).testTag("profile.storeSubscriptionNotice"),
+                        )
+                    }
+                }
             }
         }
     }
@@ -284,7 +294,7 @@ fun ProfileScreen(onBack: () -> Unit, onOpenChangePassword: () -> Unit, viewMode
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
             title = { Text(stringResource(R.string.settings_delete_account)) },
-            text = { Text(stringResource(R.string.settings_this_will_permanently_schedule_your)) },
+            text = { Text(stringResource(R.string.settings_this_will_permanently_schedule_your) + state.storeSubscriptionNotice?.let { "\n\n$it" }.orEmpty()) },
             confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text(stringResource(R.string.common_continue), color = IosColors.expense) } },
             dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text(stringResource(R.string.common_cancel)) } },
         )

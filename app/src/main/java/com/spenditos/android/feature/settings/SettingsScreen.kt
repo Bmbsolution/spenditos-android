@@ -282,10 +282,11 @@ fun SettingsScreen(
                         // Pro from a subscription or a grant by Spenditos.
                         plan.isPro -> IosRow(
                             stringResource(R.string.common_spenditos_pro),
+                            subtitle = plan.pendingChangeText,
                             value = stringResource(R.string.common_active),
                             icon = SfSymbols.icon("sparkles"),
                             iconTint = IosColors.spendGold,
-                            chevron = false,
+                            onClick = if (plan.canManage) onOpenPro else null,
                             modifier = Modifier.testTag("settings.proActive"),
                         )
                         else -> IosRow(
