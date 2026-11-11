@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.data.restore.RestoreProgressPhase
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
@@ -80,7 +81,9 @@ fun DownloadDataScreen(
     onBack: () -> Unit,
     viewModel: ExportViewModel = hiltViewModel(),
     fullCopyViewModel: FullCopyViewModel = hiltViewModel(),
+    restoreViewModel: RestoreViewModel = hiltViewModel(),
 ) {
+    val restore by restoreViewModel.state.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val fullCopy by fullCopyViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -89,6 +92,9 @@ fun DownloadDataScreen(
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         fullCopyViewModel.destinationPicked(uri)
+    }
+    val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        restoreViewModel.filePicked(uri)
     }
     LaunchedEffect(fullCopy.phase, fullCopy.pickerRequested) {
         val name = fullCopy.suggestedName
@@ -115,7 +121,7 @@ fun DownloadDataScreen(
             Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
-            DownloadHeader(onBack = { viewModel.cancel(); fullCopyViewModel.cancel(); onBack() })
+            DownloadHeader(onBack = { viewModel.cancel(); fullCopyViewModel.cancel(); restoreViewModel.cancel(); onBack() })
 
             Text(
                 stringResource(R.string.export_your_data_is_saved_to),
@@ -164,6 +170,46 @@ fun DownloadDataScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                }
+            }
+
+            // Restore
+            GlassCard(Modifier.padding(horizontal = Spacing.screen).testTag("download.restore")) {
+                Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                    CardHeader(
+                        icon = SfSymbols.icon("arrow.up.circle"),
+                        tint = IosColors.spendOrange,
+                        title = stringResource(R.string.restore_title),
+                        subtitle = stringResource(R.string.restore_subtitle),
+                    )
+                    DownloadButton(
+                        title = stringResource(R.string.restore_choose_file),
+                        icon = SfSymbols.icon("arrow.up.circle"),
+                        busyLabel = restoreBusyLabel(restore),
+                        busy = restore.isBusy,
+                        onClick = { openLauncher.launch(arrayOf("application/json", "application/gzip", "application/octet-stream", "*/*")) },
+                        modifier = Modifier.testTag("restore.button"),
+                    )
+                    when (restore.phase) {
+                        RestoreUiPhase.Done -> Text(
+                            restore.summary?.let {
+                                stringResource(R.string.restore_done, it.transactions, it.incomeAndBills, it.debts, it.categories, it.rules)
+                            }.orEmpty(),
+                            style = IosText.caption,
+                            color = IosColors.income,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().testTag("restore.done"),
+                        )
+                        RestoreUiPhase.Uploading -> Text(
+                            stringResource(R.string.common_cancel),
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = restoreViewModel::cancel).padding(vertical = Spacing.xs)
+                                .testTag("restore.cancel"),
+                        )
+                        else -> Unit
                     }
                 }
             }
@@ -230,6 +276,24 @@ fun DownloadDataScreen(
         )
     }
 
+    if (restore.phase == RestoreUiPhase.Confirming) {
+        AlertDialog(
+            onDismissRequest = restoreViewModel::cancelConfirmation,
+            title = { Text(stringResource(R.string.restore_confirm_title)) },
+            text = { Text(stringResource(R.string.restore_confirm_message), modifier = Modifier.testTag("restore.confirm.message")) },
+            confirmButton = { TextButton(onClick = restoreViewModel::confirm, modifier = Modifier.testTag("restore.confirm")) { Text(stringResource(R.string.restore_confirm_action)) } },
+            dismissButton = { TextButton(onClick = restoreViewModel::cancelConfirmation) { Text(stringResource(R.string.common_cancel)) } },
+        )
+    }
+    if (restore.phase == RestoreUiPhase.Failed) {
+        AlertDialog(
+            onDismissRequest = restoreViewModel::dismissError,
+            title = { Text(stringResource(R.string.restore_failed_title)) },
+            text = { Text(restore.error.orEmpty(), modifier = Modifier.testTag("restore.error")) },
+            confirmButton = { TextButton(onClick = restoreViewModel::dismissError) { Text(stringResource(R.string.common_ok)) } },
+        )
+    }
+
     picking?.let { target ->
         val initial = if (target == DateTarget.START) state.start else state.end
         val pickerState = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli())
@@ -247,6 +311,26 @@ fun DownloadDataScreen(
             dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
+}
+
+/** "Uploading 2/5", "Checking the file" or "Restoring entries 40/120" while a restore runs. */
+@Composable
+private fun restoreBusyLabel(state: RestoreUiState): String = when (state.phase) {
+    RestoreUiPhase.Uploading -> stringResource(R.string.restore_uploading, state.uploadedParts, state.totalParts)
+    RestoreUiPhase.Restoring -> state.progress?.let { progress ->
+        val phase = when (progress.phase) {
+            RestoreProgressPhase.SETTINGS -> R.string.restore_phase_settings
+            RestoreProgressPhase.CATEGORIES -> R.string.restore_phase_categories
+            RestoreProgressPhase.INCOME_AND_BILLS -> R.string.restore_phase_income_and_bills
+            RestoreProgressPhase.DEBTS -> R.string.restore_phase_debts
+            RestoreProgressPhase.RULES -> R.string.restore_phase_rules
+            RestoreProgressPhase.TRANSACTIONS -> R.string.restore_phase_transactions
+            RestoreProgressPhase.MONTH_BALANCE_CHOICES -> R.string.restore_phase_month_choices
+            RestoreProgressPhase.UNKNOWN -> null
+        }
+        phase?.let { stringResource(R.string.restore_restoring, stringResource(it), progress.done, progress.total) }
+    } ?: stringResource(R.string.restore_restoring_plain)
+    else -> stringResource(R.string.restore_checking)
 }
 
 @Composable
