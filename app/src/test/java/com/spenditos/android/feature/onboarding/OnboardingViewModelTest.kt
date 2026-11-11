@@ -136,14 +136,34 @@ class OnboardingViewModelTest {
         ),
     )
 
+    @Test
+    fun `a finished restore leaves setup`() = runTest {
+        val viewModel = OnboardingViewModel(FakeOnboardingActions(restoreDone = true), SavedStateHandle())
+        val finished = async { viewModel.events.first() }
+        viewModel.restoreFinished()
+        advanceUntilIdle()
+        assertEquals(OnboardingEvent.Finished, finished.await())
+    }
+
+    @Test
+    fun `a restore the server did not mark as setup completed stays on setup with an error`() = runTest {
+        val viewModel = OnboardingViewModel(FakeOnboardingActions(restoreDone = false), SavedStateHandle())
+        viewModel.restoreFinished()
+        advanceUntilIdle()
+        assertEquals(OnboardingErrorKind.COMPLETE, viewModel.state.value.errorKind)
+    }
+
     private class FakeOnboardingActions(
         var country: String? = "US",
         var countryError: Throwable? = null,
         var completeError: Throwable? = null,
+        var restoreDone: Boolean = true,
     ) : OnboardingActions {
         var completedWith: List<String>? = null
 
         override suspend fun needsOnboarding(): Boolean = true
+
+        override suspend fun restoreFinished(): Boolean = restoreDone
 
         override suspend fun detectCountry(): String? {
             countryError?.let { throw it }
