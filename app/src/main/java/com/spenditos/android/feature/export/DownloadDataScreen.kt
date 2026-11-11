@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spenditos.android.data.restore.RestoreUndoStatus
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
@@ -80,7 +81,9 @@ fun DownloadDataScreen(
     onBack: () -> Unit,
     viewModel: ExportViewModel = hiltViewModel(),
     fullCopyViewModel: FullCopyViewModel = hiltViewModel(),
+    restoreViewModel: RestoreViewModel = hiltViewModel(),
 ) {
+    val restore by restoreViewModel.state.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val fullCopy by fullCopyViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -90,6 +93,9 @@ fun DownloadDataScreen(
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         fullCopyViewModel.destinationPicked(uri)
     }
+    val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        restoreViewModel.filePicked(uri)
+    }
     LaunchedEffect(fullCopy.phase, fullCopy.pickerRequested) {
         val name = fullCopy.suggestedName
         if (fullCopy.phase == FullCopyPhase.ChooseDestination && !fullCopy.pickerRequested && name != null) {
@@ -97,6 +103,8 @@ fun DownloadDataScreen(
             saveLauncher.launch(name)
         }
     }
+
+    LaunchedEffect(Unit) { restoreViewModel.loadUndo() }
 
     LaunchedEffect(state.file) {
         val file = state.file ?: return@LaunchedEffect
@@ -115,7 +123,7 @@ fun DownloadDataScreen(
             Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
-            DownloadHeader(onBack = { viewModel.cancel(); fullCopyViewModel.cancel(); onBack() })
+            DownloadHeader(onBack = { viewModel.cancel(); fullCopyViewModel.cancel(); restoreViewModel.cancel(); onBack() })
 
             Text(
                 stringResource(R.string.export_your_data_is_saved_to),
@@ -164,6 +172,75 @@ fun DownloadDataScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                }
+            }
+
+            // Restore
+            GlassCard(Modifier.padding(horizontal = Spacing.screen).testTag("download.restore")) {
+                Column(Modifier.padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                    CardHeader(
+                        icon = SfSymbols.icon("arrow.up.circle"),
+                        tint = IosColors.spendOrange,
+                        title = stringResource(R.string.restore_title),
+                        subtitle = stringResource(R.string.restore_subtitle),
+                    )
+                    DownloadButton(
+                        title = stringResource(R.string.restore_choose_file),
+                        icon = SfSymbols.icon("arrow.up.circle"),
+                        busyLabel = restoreBusyLabel(restore),
+                        busy = restore.isBusy,
+                        onClick = { openLauncher.launch(arrayOf("application/json", "application/gzip", "application/octet-stream", "*/*")) },
+                        modifier = Modifier.testTag("restore.button"),
+                    )
+                    when (restore.phase) {
+                        RestoreUiPhase.Done -> Text(
+                            restore.summary?.let {
+                                stringResource(R.string.restore_done, it.transactions, it.incomeAndBills, it.debts, it.categories, it.rules)
+                            }.orEmpty(),
+                            style = IosText.caption,
+                            color = IosColors.income,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().testTag("restore.done"),
+                        )
+                        RestoreUiPhase.Uploading -> Text(
+                            stringResource(R.string.common_cancel),
+                            style = IosText.caption,
+                            color = IosColors.textSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = restoreViewModel::cancel).padding(vertical = Spacing.xs)
+                                .testTag("restore.cancel"),
+                        )
+                        else -> Unit
+                    }
+                    if (restore.undoDone) {
+                        Text(
+                            stringResource(R.string.restore_undo_done),
+                            style = IosText.caption,
+                            color = IosColors.income,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().testTag("restore.undo.done"),
+                        )
+                    }
+                    restore.undoSession?.let { session ->
+                        val failed = session.undo?.status == RestoreUndoStatus.FAILED
+                        val until = session.undo?.availableUntil?.let(::formatUntil).orEmpty()
+                        Column(
+                            Modifier.fillMaxWidth().clickable(enabled = !restore.undoBusy && !restore.isBusy, role = Role.Button, onClick = restoreViewModel::requestUndo)
+                                .padding(vertical = Spacing.xs).testTag("restore.undo.row"),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                if (restore.undoBusy) stringResource(R.string.restore_undo_running) else stringResource(R.string.restore_undo_row),
+                                style = IosText.callout.w(FontWeight.SemiBold),
+                                color = IosColors.spendOrange,
+                            )
+                            Text(
+                                if (failed) stringResource(R.string.restore_undo_try_again) else stringResource(R.string.restore_undo_available_until, until),
+                                style = IosText.caption,
+                                color = IosColors.textSecondary,
+                            )
+                        }
                     }
                 }
             }
@@ -229,6 +306,9 @@ fun DownloadDataScreen(
             confirmButton = { TextButton(onClick = { fullCopyViewModel.dismissError(); viewModel.dismissError() }) { Text(stringResource(R.string.common_ok)) } },
         )
     }
+
+    RestoreDialogs(restore, restoreViewModel)
+    UndoDialogs(restore, restoreViewModel)
 
     picking?.let { target ->
         val initial = if (target == DateTarget.START) state.start else state.end

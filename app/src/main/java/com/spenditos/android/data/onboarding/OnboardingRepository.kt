@@ -14,6 +14,12 @@ import javax.inject.Singleton
 interface OnboardingActions {
     suspend fun needsOnboarding(): Boolean
     suspend fun detectCountry(): String?
+
+    /**
+     * After a restore from the setup screen: the server set `setupCompleted`. Reads it back, remembers it on this
+     * device and warms the caches. False when the server does not report setup as completed.
+     */
+    suspend fun restoreFinished(): Boolean
     suspend fun complete(
         displayName: String,
         currency: String,
@@ -50,6 +56,18 @@ class OnboardingRepository @Inject constructor(
         } catch (_: Exception) {
             true
         }
+    }
+
+    override suspend fun restoreFinished(): Boolean {
+        val done = apiCall { api.settings() }.setupCompleted
+        if (!done) return false
+        session.currentUserId?.let { flags.markCompleted(it) }
+        try {
+            settings.refresh()
+            categories.refresh()
+        } catch (_: ApiError) {
+        }
+        return true
     }
 
     override suspend fun detectCountry(): String? =
