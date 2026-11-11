@@ -1709,4 +1709,22 @@
     <string name="restore_error_in_progress">Another restore is already running. Wait for it to finish.</string>
     <string name="restore_error_expired">This upload expired. Start the restore again.</string>
     <string name="restore_error_unreadable">Couldn\'t read that file.</string>
+    <string name="restore_phase_snapshot">Saving a copy for Undo</string>
+    <string name="restore_phase_wipe">Erasing current data</string>
+    <string name="restore_replace_title">Replace your current data?</string>
+    <string name="restore_replace_erased">%1$s entries, %2$s income &amp; bills, %3$s debts, %4$s categories, %5$s rules will be erased.</string>
+    <string name="restore_replace_undo_note">A copy of your current data is kept for 7 days so you can undo.</string>
+    <string name="restore_replace_type_hint">Type REPLACE to confirm</string>
+    <string name="restore_replace_action">Replace</string>
+    <string name="restore_undo_row">Undo last restore</string>
+    <string name="restore_undo_available_until">Available until %1$s</string>
+    <string name="restore_undo_try_again">Undo didn\'t finish. Try again.</string>
+    <string name="restore_undo_confirm_title">Undo last restore?</string>
+    <string name="restore_undo_confirm_message">Your data goes back to how it was before the restore. Anything added since will be erased.</string>
+    <string name="restore_undo_confirm_action">Undo restore</string>
+    <string name="restore_undo_running">Undoing…</string>
+    <string name="restore_undo_done">Your data is back as it was before the restore.</string>
+    <string name="restore_undo_failed_title">Undo failed</string>
+    <string name="restore_undo_error_failed">The undo did not finish. Try again.</string>
+    <string name="restore_undo_error_unavailable">This restore can no longer be undone.</string>
 </resources>

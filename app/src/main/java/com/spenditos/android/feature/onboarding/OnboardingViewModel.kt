@@ -138,6 +138,24 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    /** A restore from the first screen finished: the server completed setup, so leave the wizard. */
+    fun restoreFinished() {
+        viewModelScope.launch {
+            val done = try {
+                onboarding.restoreFinished()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+            if (done) {
+                _events.send(OnboardingEvent.Finished)
+            } else {
+                update { it.copy(error = Strings.get(R.string.onboarding_couldn_t_finish_setup_please), errorKind = OnboardingErrorKind.COMPLETE) }
+            }
+        }
+    }
+
     fun finish() {
         val current = _state.value
         if (current.page != READY_PAGE || current.isSaving) return

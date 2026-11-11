@@ -5,7 +5,13 @@ import androidx.compose.ui.res.stringResource
 import com.spenditos.android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import com.spenditos.android.feature.export.RestoreUiPhase
+import com.spenditos.android.feature.export.RestoreViewModel
+import com.spenditos.android.feature.export.restoreBusyLabel
+import com.spenditos.android.feature.export.RestoreDialogs
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -125,8 +131,16 @@ private val currencyPickerPopularCodes = listOf("USD", "EUR", "GBP", "CAD", "AUD
 fun OnboardingScreen(
     onFinished: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
+    restoreViewModel: RestoreViewModel = hiltViewModel(key = "restore:setup"),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val restore by restoreViewModel.state.collectAsStateWithLifecycle()
+    val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        // A new account: always mode fresh, no data summary.
+        restoreViewModel.filePicked(uri, freshOnly = true)
+    }
+    // The server completed setup with the restore: read it back and leave the wizard.
+    LaunchedEffect(restore.phase) { if (restore.phase == RestoreUiPhase.Done) viewModel.restoreFinished() }
     var showCurrencyPicker by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
@@ -188,6 +202,24 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 when (state.page) {
+                    0 -> {
+                        if (restore.isBusy) {
+                            Row(
+                                Modifier.padding(bottom = 8.dp).testTag("onboarding.restore.busy"),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = IosColors.spendOrange)
+                                Text(restoreBusyLabel(restore), style = IosText.callout, color = IosColors.textSecondary)
+                            }
+                        } else {
+                            TextButton(
+                                onClick = { openLauncher.launch(arrayOf("application/json", "application/gzip", "application/octet-stream", "*/*")) },
+                                colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
+                                modifier = Modifier.testTag("onboarding.restore"),
+                            ) { Text(stringResource(R.string.restore_title), style = IosText.callout) }
+                        }
+                    }
                     1 -> OnboardingActionButton(
                         text = stringResource(R.string.common_continue),
                         onClick = viewModel::onContinue,
@@ -209,6 +241,8 @@ fun OnboardingScreen(
             }
         }
     }
+
+    RestoreDialogs(restore, restoreViewModel)
 
     if (showCurrencyPicker) {
         OnboardingCurrencyPicker(

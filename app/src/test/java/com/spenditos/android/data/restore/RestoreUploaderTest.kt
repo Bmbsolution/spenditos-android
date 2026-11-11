@@ -38,6 +38,7 @@ class RestoreUploaderTest {
 
         override suspend fun start(body: StartRestoreRequest, binding: SessionBinding?): ApiEnvelope<RestoreSession> {
             startBody = body
+            startedMode = body.mode
             return ApiEnvelope(session(RestoreSessionStatus.UPLOADING))
         }
 
@@ -51,10 +52,29 @@ class RestoreUploaderTest {
         }
 
         override suspend fun get(id: String, binding: SessionBinding?): ApiEnvelope<RestoreSession> {
+            if (undoCalls > 0) return ApiEnvelope(undoSession(undoStatuses.removeFirstOrNull() ?: RestoreUndoStatus.DONE))
             val next = statusQueue.removeFirstOrNull() ?: session(RestoreSessionStatus.DONE)
             statuses += next
             return ApiEnvelope(next)
         }
+
+        var undoCalls = 0
+        var undoFailure: Throwable? = null
+        var undoStatuses = ArrayDeque<RestoreUndoStatus>()
+        var startedMode: RestoreMode? = null
+
+        override suspend fun undo(id: String, binding: SessionBinding?): ApiEnvelope<RestoreSession> {
+            undoCalls++
+            undoFailure?.let { throw it }
+            return ApiEnvelope(undoSession(undoStatuses.removeFirstOrNull() ?: RestoreUndoStatus.RUNNING))
+        }
+
+        fun undoSession(status: RestoreUndoStatus) =
+            session(RestoreSessionStatus.DONE).copy(mode = RestoreMode.REPLACE, undo = RestoreUndo(status, "2026-11-18T10:00:00Z"))
+
+        override suspend fun list(binding: SessionBinding?): ApiEnvelope<List<RestoreSession>> = ApiEnvelope(emptyList())
+
+        override suspend fun dataSummary(binding: SessionBinding?): ApiEnvelope<AccountDataCounts> = ApiEnvelope(AccountDataCounts())
 
         override suspend fun complete(id: String, binding: SessionBinding?): ApiEnvelope<RestoreSession> {
             completeCalls++
@@ -197,5 +217,74 @@ class RestoreUploaderTest {
         val updates = uploader(api).run(bytes, "abc").toList()
         assertEquals(2, api.completeCalls)
         assertTrue(updates.last() is RestoreUpdate.Finished)
+    }
+
+    @Test
+    fun `the start request carries the mode`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        uploader(api).run(bytes, "abc").toList()
+        assertEquals(RestoreMode.FRESH, api.startedMode)
+        val replaceApi = FakeRestoreApi(partSize = 10, total = 10)
+        uploader(replaceApi).run(bytes, "abc", RestoreMode.REPLACE).toList()
+        assertEquals(RestoreMode.REPLACE, replaceApi.startedMode)
+    }
+
+    private fun undoer(api: RestoreApi) = RestoreUndoer(api, SessionBinding("u", 1), pollIntervalMs = 2_000, backoffMs = { 100L })
+
+    @Test
+    fun `undo polls until done`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        api.undoStatuses = ArrayDeque(listOf(RestoreUndoStatus.RUNNING, RestoreUndoStatus.RUNNING, RestoreUndoStatus.DONE))
+        undoer(api).run("r1")
+        assertEquals(1, api.undoCalls)
+        assertEquals(2 * 2_000L, currentTime)
+    }
+
+    @Test
+    fun `undo failed throws`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        api.undoStatuses = ArrayDeque(listOf(RestoreUndoStatus.RUNNING, RestoreUndoStatus.FAILED))
+        try {
+            undoer(api).run("r1")
+            fail("expected failure")
+        } catch (_: RestoreUndoFailedException) {
+        }
+    }
+
+    @Test
+    fun `undo expired throws`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        api.undoStatuses = ArrayDeque(listOf(RestoreUndoStatus.EXPIRED))
+        try {
+            undoer(api).run("r1")
+            fail("expected failure")
+        } catch (_: RestoreUndoExpiredException) {
+        }
+    }
+
+    @Test
+    fun `undo 409 is not retried`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        api.undoFailure = ApiError.Server(409, "UndoUnavailable")
+        try {
+            undoer(api).run("r1")
+            fail("expected failure")
+        } catch (e: ApiError.Server) {
+            assertEquals("UndoUnavailable", e.serverMessage)
+        }
+        assertEquals(1, api.undoCalls)
+    }
+
+    @Test
+    fun `undo retries a network blip`() = runTest {
+        val api = FakeRestoreApi(partSize = 10, total = 10)
+        api.undoFailure = network()
+        api.undoStatuses = ArrayDeque(listOf(RestoreUndoStatus.DONE))
+        try {
+            undoer(api).run("r1")
+            fail("expected failure")
+        } catch (_: ApiError.Network) {
+        }
+        assertEquals(4, api.undoCalls)
     }
 }

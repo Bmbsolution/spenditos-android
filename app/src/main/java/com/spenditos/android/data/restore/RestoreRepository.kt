@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.spenditos.android.core.auth.SessionManager
 import com.spenditos.android.core.network.ApiError
+import com.spenditos.android.core.network.apiCall
 import com.spenditos.android.core.sync.Aggregate
 import com.spenditos.android.core.sync.FinanceInvalidationBus
 import com.spenditos.android.data.categories.CategoryRepository
@@ -35,7 +36,19 @@ interface RestoreActions {
      * Throws [RestoreFailedException], [RestoreExpiredException], [RestoreFileTooLargeException],
      * [RestoreFileUnreadableException] or an [ApiError]. Cancelling the collector stops the upload.
      */
-    fun restore(source: Uri): Flow<RestoreUpdate>
+    fun restore(source: Uri, mode: RestoreMode = RestoreMode.FRESH): Flow<RestoreUpdate>
+
+    /** `GET /user/data-summary`: what the account holds now (decides fresh or replace). */
+    suspend fun dataSummary(): AccountDataCounts
+
+    /** The newest restore whose Undo is `available` or `failed` (try again), or null. `GET /user/restores`. */
+    suspend fun undoableRestore(): RestoreSession?
+
+    /**
+     * Puts the data a replace erased back and waits for it. Throws [RestoreUndoFailedException],
+     * [RestoreUndoExpiredException], [RestoreExpiredException] or an [ApiError] (409 `UndoUnavailable` / `RestoreInProgress`).
+     */
+    suspend fun undo(id: String)
 
     /** After a finished restore: refresh what the app already caches and tell screens to reload. Best-effort. */
     suspend fun refreshAfterRestore()
@@ -51,12 +64,29 @@ class RestoreRepository @Inject constructor(
     private val invalidations: FinanceInvalidationBus,
     @ExportIoDispatcher private val io: CoroutineDispatcher,
 ) : RestoreActions {
-    override fun restore(source: Uri): Flow<RestoreUpdate> = flow {
+    override fun restore(source: Uri, mode: RestoreMode): Flow<RestoreUpdate> = flow {
         val binding = session.currentBinding ?: throw ApiError.Unauthorized
         val bytes = withContext(io) { readBytes(source) }
         val sha256 = withContext(io) { sha256Hex(bytes) }
-        emitAll(RestoreUploader(api, binding).run(bytes, sha256))
+        emitAll(RestoreUploader(api, binding).run(bytes, sha256, mode))
     }.flowOn(io)
+
+    override suspend fun dataSummary(): AccountDataCounts {
+        val binding = session.currentBinding ?: throw ApiError.Unauthorized
+        return apiCall { api.dataSummary(binding) }
+    }
+
+    override suspend fun undoableRestore(): RestoreSession? {
+        val binding = session.currentBinding ?: throw ApiError.Unauthorized
+        return apiCall { api.list(binding) }.firstOrNull {
+            it.undo?.status == RestoreUndoStatus.AVAILABLE || it.undo?.status == RestoreUndoStatus.FAILED
+        }
+    }
+
+    override suspend fun undo(id: String) {
+        val binding = session.currentBinding ?: throw ApiError.Unauthorized
+        RestoreUndoer(api, binding).run(id)
+    }
 
     override suspend fun refreshAfterRestore() {
         // The same refreshes a fresh sign-in runs (SessionLifecycle), then every finance aggregate reloads.

@@ -63,7 +63,7 @@ class RestoreApiTest {
         val start = server.takeRequest()
         assertEquals("POST", start.method)
         assertEquals("/user/restore", start.url.encodedPath)
-        assertEquals("""{"totalBytes":5,"sha256":"${"ab".repeat(32)}"}""", start.body!!.utf8())
+        assertEquals("""{"totalBytes":5,"sha256":"${"ab".repeat(32)}","mode":"fresh"}""", start.body!!.utf8())
         val part0 = server.takeRequest()
         assertEquals("PUT", part0.method)
         assertEquals("/user/restore/r1/parts/0", part0.url.encodedPath)
@@ -108,5 +108,67 @@ class RestoreApiTest {
             assertEquals("BackupTooLarge", e.serverMessage)
         }
         assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun `start sends the mode`() = runTest {
+        server.enqueue(MockResponse(code = 201, body = session("uploading")))
+        api.start(StartRestoreRequest(5, "ab".repeat(32), RestoreMode.REPLACE), null)
+        assertEquals("""{"totalBytes":5,"sha256":"${"ab".repeat(32)}","mode":"replace"}""", server.takeRequest().body!!.utf8())
+    }
+
+    @Test
+    fun `new fields decode`() = runTest {
+        server.enqueue(
+            MockResponse(
+                body = """{"data":{"id":"r1","mode":"replace","status":"done","replaced":{"entries":1240,"incomeAndBills":12,"debts":2,"categories":18,"rules":4},""" +
+                    """"undo":{"status":"available","availableUntil":"2026-11-18T10:00:00Z"}}}""",
+            ),
+        )
+        val decoded = api.get("r1", null).data!!
+        assertEquals(RestoreMode.REPLACE, decoded.mode)
+        assertEquals(AccountDataCounts(1240, 12, 2, 18, 4), decoded.replaced)
+        assertEquals(RestoreUndo(RestoreUndoStatus.AVAILABLE, "2026-11-18T10:00:00Z"), decoded.undo)
+    }
+
+    @Test
+    fun `a session without mode or undo reads as fresh with no undo`() = runTest {
+        server.enqueue(MockResponse(body = session("done")))
+        val decoded = api.get("r1", null).data!!
+        assertEquals(RestoreMode.FRESH, decoded.mode)
+        assertNull(decoded.undo)
+        assertNull(decoded.replaced)
+    }
+
+    @Test
+    fun `unknown mode undo status and the new phases decode safely`() = runTest {
+        server.enqueue(
+            MockResponse(
+                body = """{"data":{"id":"r1","mode":"merge","status":"restoring","progress":{"phase":"snapshot","done":1,"total":2},"undo":{"status":"frozen","availableUntil":"x"}}}""",
+            ),
+        )
+        val decoded = api.get("r1", null).data!!
+        assertEquals(RestoreMode.UNKNOWN, decoded.mode)
+        assertEquals(RestoreUndoStatus.UNKNOWN, decoded.undo?.status)
+        assertEquals(RestoreProgressPhase.SNAPSHOT, decoded.progress?.phase)
+        server.enqueue(MockResponse(body = """{"data":{"id":"r1","progress":{"phase":"wipe","done":0,"total":0}}}"""))
+        assertEquals(RestoreProgressPhase.WIPE, api.get("r1", null).data!!.progress?.phase)
+    }
+
+    @Test
+    fun `summary, list and undo routes`() = runTest {
+        server.enqueue(MockResponse(body = """{"data":{"entries":3,"incomeAndBills":2,"debts":1,"categories":4,"rules":5}}"""))
+        assertEquals(AccountDataCounts(3, 2, 1, 4, 5), api.dataSummary(null).data)
+        assertEquals("/user/data-summary", server.takeRequest().url.encodedPath)
+
+        server.enqueue(MockResponse(body = """{"data":[{"id":"a","undo":{"status":"available","availableUntil":"t"}},{"id":"b"}]}"""))
+        assertEquals(listOf("a", "b"), api.list(null).data!!.map { it.id })
+        assertEquals("/user/restores", server.takeRequest().url.encodedPath)
+
+        server.enqueue(MockResponse(code = 202, body = session("done")))
+        api.undo("r1", null)
+        val undo = server.takeRequest()
+        assertEquals("POST", undo.method)
+        assertEquals("/user/restore/r1/undo", undo.url.encodedPath)
     }
 }

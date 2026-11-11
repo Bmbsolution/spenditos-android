@@ -47,8 +47,8 @@ class RestoreUploader(
     private val maxRetries: Int = MAX_RETRIES,
     private val backoffMs: (attempt: Int) -> Long = { attempt -> 500L shl (attempt - 1) },
 ) {
-    fun run(bytes: ByteArray, sha256: String): Flow<RestoreUpdate> = flow {
-        val started = withRetry { apiCall { api.start(StartRestoreRequest(bytes.size.toLong(), sha256), binding) } }
+    fun run(bytes: ByteArray, sha256: String, mode: RestoreMode = RestoreMode.FRESH): Flow<RestoreUpdate> = flow {
+        val started = withRetry { apiCall { api.start(StartRestoreRequest(bytes.size.toLong(), sha256, mode), binding) } }
         val partSize = started.partSize
         require(partSize > 0 && started.partCount > 0) { "Server sent an unusable part plan" }
         val received = started.receivedParts.toMutableSet()
@@ -89,28 +89,63 @@ class RestoreUploader(
         }
     }
 
-    /** Runs [block], retrying transport failures and 5xx up to [maxRetries] times with backoff. HTTP 410 becomes [RestoreExpiredException]. */
-    private suspend fun <T> withRetry(block: suspend () -> T): T {
-        var attempt = 0
-        while (true) {
-            try {
-                return block()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: ApiError.Server) {
-                if (e.status == 410 || e.serverMessage == "RestoreExpired") throw RestoreExpiredException()
-                if (e.status < 500 || attempt >= maxRetries) throw e
-            } catch (e: ApiError.Network) {
-                if (attempt >= maxRetries) throw e
-            }
-            attempt++
-            delay(backoffMs(attempt))
-        }
-    }
+    private suspend fun <T> withRetry(block: suspend () -> T): T = retrying(maxRetries, backoffMs, block)
 
     companion object {
         const val POLL_INTERVAL_MS = 2_000L
         const val MAX_RETRIES = 3
         private val OCTET_STREAM = "application/octet-stream".toMediaType()
+    }
+}
+
+/** Runs [block], retrying transport failures and 5xx up to [maxRetries] times with backoff. HTTP 410 becomes [RestoreExpiredException]. */
+internal suspend fun <T> retrying(maxRetries: Int, backoffMs: (Int) -> Long, block: suspend () -> T): T {
+    var attempt = 0
+    while (true) {
+        try {
+            return block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: ApiError.Server) {
+            if (e.status == 410 || e.serverMessage == "RestoreExpired") throw RestoreExpiredException()
+            if (e.status < 500 || attempt >= maxRetries) throw e
+        } catch (e: ApiError.Network) {
+            if (attempt >= maxRetries) throw e
+        }
+        attempt++
+        delay(backoffMs(attempt))
+    }
+}
+
+/** Undo ended `failed` (the user may try again while the copy is kept). */
+class RestoreUndoFailedException : Exception("Undo did not finish")
+
+/** The saved copy is gone. */
+class RestoreUndoExpiredException : Exception("The saved copy has expired")
+
+/**
+ * Puts the data a replace erased back: `POST /user/restore/{id}/undo`, then polls the session until
+ * `undo.status` is done, failed or expired. 409 `UndoUnavailable` / `RestoreInProgress` surface as [ApiError.Server].
+ */
+class RestoreUndoer(
+    private val api: RestoreApi,
+    private val binding: SessionBinding?,
+    private val pollIntervalMs: Long = RestoreUploader.POLL_INTERVAL_MS,
+    private val maxRetries: Int = RestoreUploader.MAX_RETRIES,
+    private val backoffMs: (attempt: Int) -> Long = { attempt -> 500L shl (attempt - 1) },
+) {
+    suspend fun run(id: String) {
+        val started = retrying(maxRetries, backoffMs) { apiCall { api.undo(id, binding) } }
+        var undo = started.undo
+        while (true) {
+            when (undo?.status) {
+                RestoreUndoStatus.DONE -> return
+                RestoreUndoStatus.FAILED -> throw RestoreUndoFailedException()
+                RestoreUndoStatus.EXPIRED -> throw RestoreUndoExpiredException()
+                else -> Unit
+            }
+            delay(pollIntervalMs)
+            undo = retrying(maxRetries, backoffMs) { apiCall { api.get(id, binding) } }.undo
+        }
     }
 }

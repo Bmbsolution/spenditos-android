@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.spenditos.android.data.restore.RestoreProgressPhase
+import com.spenditos.android.data.restore.RestoreUndoStatus
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosRow
 import com.spenditos.android.ui.components.IosScreen
@@ -103,6 +103,8 @@ fun DownloadDataScreen(
             saveLauncher.launch(name)
         }
     }
+
+    LaunchedEffect(Unit) { restoreViewModel.loadUndo() }
 
     LaunchedEffect(state.file) {
         val file = state.file ?: return@LaunchedEffect
@@ -211,6 +213,35 @@ fun DownloadDataScreen(
                         )
                         else -> Unit
                     }
+                    if (restore.undoDone) {
+                        Text(
+                            stringResource(R.string.restore_undo_done),
+                            style = IosText.caption,
+                            color = IosColors.income,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().testTag("restore.undo.done"),
+                        )
+                    }
+                    restore.undoSession?.let { session ->
+                        val failed = session.undo?.status == RestoreUndoStatus.FAILED
+                        val until = session.undo?.availableUntil?.let(::formatUntil).orEmpty()
+                        Column(
+                            Modifier.fillMaxWidth().clickable(enabled = !restore.undoBusy && !restore.isBusy, role = Role.Button, onClick = restoreViewModel::requestUndo)
+                                .padding(vertical = Spacing.xs).testTag("restore.undo.row"),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                if (restore.undoBusy) stringResource(R.string.restore_undo_running) else stringResource(R.string.restore_undo_row),
+                                style = IosText.callout.w(FontWeight.SemiBold),
+                                color = IosColors.spendOrange,
+                            )
+                            Text(
+                                if (failed) stringResource(R.string.restore_undo_try_again) else stringResource(R.string.restore_undo_available_until, until),
+                                style = IosText.caption,
+                                color = IosColors.textSecondary,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -276,23 +307,8 @@ fun DownloadDataScreen(
         )
     }
 
-    if (restore.phase == RestoreUiPhase.Confirming) {
-        AlertDialog(
-            onDismissRequest = restoreViewModel::cancelConfirmation,
-            title = { Text(stringResource(R.string.restore_confirm_title)) },
-            text = { Text(stringResource(R.string.restore_confirm_message), modifier = Modifier.testTag("restore.confirm.message")) },
-            confirmButton = { TextButton(onClick = restoreViewModel::confirm, modifier = Modifier.testTag("restore.confirm")) { Text(stringResource(R.string.restore_confirm_action)) } },
-            dismissButton = { TextButton(onClick = restoreViewModel::cancelConfirmation) { Text(stringResource(R.string.common_cancel)) } },
-        )
-    }
-    if (restore.phase == RestoreUiPhase.Failed) {
-        AlertDialog(
-            onDismissRequest = restoreViewModel::dismissError,
-            title = { Text(stringResource(R.string.restore_failed_title)) },
-            text = { Text(restore.error.orEmpty(), modifier = Modifier.testTag("restore.error")) },
-            confirmButton = { TextButton(onClick = restoreViewModel::dismissError) { Text(stringResource(R.string.common_ok)) } },
-        )
-    }
+    RestoreDialogs(restore, restoreViewModel)
+    UndoDialogs(restore, restoreViewModel)
 
     picking?.let { target ->
         val initial = if (target == DateTarget.START) state.start else state.end
@@ -311,26 +327,6 @@ fun DownloadDataScreen(
             dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.common_cancel)) } },
         ) { DatePicker(state = pickerState) }
     }
-}
-
-/** "Uploading 2/5", "Checking the file" or "Restoring entries 40/120" while a restore runs. */
-@Composable
-private fun restoreBusyLabel(state: RestoreUiState): String = when (state.phase) {
-    RestoreUiPhase.Uploading -> stringResource(R.string.restore_uploading, state.uploadedParts, state.totalParts)
-    RestoreUiPhase.Restoring -> state.progress?.let { progress ->
-        val phase = when (progress.phase) {
-            RestoreProgressPhase.SETTINGS -> R.string.restore_phase_settings
-            RestoreProgressPhase.CATEGORIES -> R.string.restore_phase_categories
-            RestoreProgressPhase.INCOME_AND_BILLS -> R.string.restore_phase_income_and_bills
-            RestoreProgressPhase.DEBTS -> R.string.restore_phase_debts
-            RestoreProgressPhase.RULES -> R.string.restore_phase_rules
-            RestoreProgressPhase.TRANSACTIONS -> R.string.restore_phase_transactions
-            RestoreProgressPhase.MONTH_BALANCE_CHOICES -> R.string.restore_phase_month_choices
-            RestoreProgressPhase.UNKNOWN -> null
-        }
-        phase?.let { stringResource(R.string.restore_restoring, stringResource(it), progress.done, progress.total) }
-    } ?: stringResource(R.string.restore_restoring_plain)
-    else -> stringResource(R.string.restore_checking)
 }
 
 @Composable

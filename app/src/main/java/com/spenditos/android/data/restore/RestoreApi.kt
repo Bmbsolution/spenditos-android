@@ -38,4 +38,16 @@ interface RestoreApi {
     /** `POST /user/restore/{id}/complete` (202); safe to repeat. */
     @POST("user/restore/{id}/complete")
     suspend fun complete(@Path("id") id: String, @Tag binding: SessionBinding?): ApiEnvelope<RestoreSession>
+
+    /** `POST /user/restore/{id}/undo` (202). 409 `UndoUnavailable` / `RestoreInProgress`. */
+    @POST("user/restore/{id}/undo")
+    suspend fun undo(@Path("id") id: String, @Tag binding: SessionBinding?): ApiEnvelope<RestoreSession>
+
+    /** `GET /user/restores`: up to 10 sessions, newest first. */
+    @GET("user/restores")
+    suspend fun list(@Tag binding: SessionBinding?): ApiEnvelope<List<RestoreSession>>
+
+    /** `GET /user/data-summary`. */
+    @GET("user/data-summary")
+    suspend fun dataSummary(@Tag binding: SessionBinding?): ApiEnvelope<AccountDataCounts>
 }

@@ -1754,4 +1754,22 @@
     <string name="restore_error_in_progress">Une autre restauration est déjà en cours. Attendez qu\'elle se termine.</string>
     <string name="restore_error_expired">Cet envoi a expiré. Relancez la restauration.</string>
     <string name="restore_error_unreadable">Impossible de lire ce fichier.</string>
+    <string name="restore_phase_snapshot">Enregistrement d\'une copie pour Annuler</string>
+    <string name="restore_phase_wipe">Effacement des données actuelles</string>
+    <string name="restore_replace_title">Remplacer vos données actuelles ?</string>
+    <string name="restore_replace_erased">%1$s entrées, %2$s revenus et factures, %3$s dettes, %4$s catégories et %5$s règles seront effacés.</string>
+    <string name="restore_replace_undo_note">Une copie de vos données actuelles est conservée 7 jours pour que vous puissiez annuler.</string>
+    <string name="restore_replace_type_hint">Tapez REPLACE pour confirmer</string>
+    <string name="restore_replace_action">Remplacer</string>
+    <string name="restore_undo_row">Annuler la dernière restauration</string>
+    <string name="restore_undo_available_until">Disponible jusqu\'au %1$s</string>
+    <string name="restore_undo_try_again">L\'annulation ne s\'est pas terminée. Réessayez.</string>
+    <string name="restore_undo_confirm_title">Annuler la dernière restauration ?</string>
+    <string name="restore_undo_confirm_message">Vos données reviennent comme avant la restauration. Tout ce qui a été ajouté depuis sera effacé.</string>
+    <string name="restore_undo_confirm_action">Annuler la restauration</string>
+    <string name="restore_undo_running">Annulation en cours…</string>
+    <string name="restore_undo_done">Vos données sont revenues comme avant la restauration.</string>
+    <string name="restore_undo_failed_title">Échec de l\'annulation</string>
+    <string name="restore_undo_error_failed">L\'annulation ne s\'est pas terminée. Réessayez.</string>
+    <string name="restore_undo_error_unavailable">Cette restauration ne peut plus être annulée.</string>
 </resources>

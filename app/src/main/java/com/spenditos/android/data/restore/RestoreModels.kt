@@ -8,6 +8,53 @@ import kotlinx.serialization.Serializable
  * Server-owned enums decode leniently: a value this client does not know becomes `UNKNOWN`.
  */
 
+/** `fresh` needs an account without entries, income & bills or debts; `replace` saves, erases, then restores. */
+@Serializable(with = RestoreModeSerializer::class)
+enum class RestoreMode(val wire: String) {
+    FRESH("fresh"),
+    REPLACE("replace"),
+    UNKNOWN("unknown"),
+}
+
+object RestoreModeSerializer : LenientEnumSerializer<RestoreMode>(
+    "RestoreMode", RestoreMode.entries, { it.wire }, RestoreMode.UNKNOWN,
+)
+
+/** Undo of a replace: `available -> running -> done | failed`, or `expired`. */
+@Serializable(with = RestoreUndoStatusSerializer::class)
+enum class RestoreUndoStatus(val wire: String) {
+    AVAILABLE("available"),
+    RUNNING("running"),
+    DONE("done"),
+    FAILED("failed"),
+    EXPIRED("expired"),
+    UNKNOWN("unknown"),
+}
+
+object RestoreUndoStatusSerializer : LenientEnumSerializer<RestoreUndoStatus>(
+    "RestoreUndoStatus", RestoreUndoStatus.entries, { it.wire }, RestoreUndoStatus.UNKNOWN,
+)
+
+@Serializable
+data class RestoreUndo(
+    val status: RestoreUndoStatus = RestoreUndoStatus.UNKNOWN,
+    /** ISO timestamp the saved copy is kept until. */
+    val availableUntil: String = "",
+)
+
+/** What an account holds (`GET /user/data-summary`); also what a replace erased. */
+@Serializable
+data class AccountDataCounts(
+    val entries: Int = 0,
+    val incomeAndBills: Int = 0,
+    val debts: Int = 0,
+    val categories: Int = 0,
+    val rules: Int = 0,
+) {
+    /** A fresh restore needs these three to be zero (categories and rules may exist). */
+    val isEmptyForFreshRestore: Boolean get() = entries + incomeAndBills + debts == 0
+}
+
 /** `uploading -> validating -> restoring -> done | failed`; `expired` is an upload left unfinished for 24 h. */
 @Serializable(with = RestoreSessionStatusSerializer::class)
 enum class RestoreSessionStatus(val wire: String) {
@@ -42,6 +89,8 @@ object RestoreErrorCodeSerializer : LenientEnumSerializer<RestoreErrorCode>(
 /** The part of the restore that is running. */
 @Serializable(with = RestoreProgressPhaseSerializer::class)
 enum class RestoreProgressPhase(val wire: String) {
+    SNAPSHOT("snapshot"),
+    WIPE("wipe"),
     SETTINGS("settings"),
     CATEGORIES("categories"),
     INCOME_AND_BILLS("incomeAndBills"),
@@ -84,6 +133,8 @@ data class RestoreFailure(
 @Serializable
 data class RestoreSession(
     val id: String,
+    /** Absent on sessions created before replace existed: read as fresh. */
+    val mode: RestoreMode = RestoreMode.FRESH,
     val status: RestoreSessionStatus = RestoreSessionStatus.UNKNOWN,
     val totalBytes: Long = 0,
     val partSize: Int = 0,
@@ -96,8 +147,12 @@ data class RestoreSession(
     val progress: RestoreProgress? = null,
     val summary: RestoreSummary? = null,
     val error: RestoreFailure? = null,
+    /** Replace only: what was erased, once the erase ran. */
+    val replaced: AccountDataCounts? = null,
+    /** Replace only: the Undo state, once the copy was saved. */
+    val undo: RestoreUndo? = null,
 )
 
 /** `POST /user/restore` body. */
 @Serializable
-data class StartRestoreRequest(val totalBytes: Long, val sha256: String)
+data class StartRestoreRequest(val totalBytes: Long, val sha256: String, val mode: RestoreMode = RestoreMode.FRESH)
