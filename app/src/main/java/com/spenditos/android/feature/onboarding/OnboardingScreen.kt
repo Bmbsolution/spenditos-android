@@ -82,6 +82,7 @@ import com.spenditos.android.ui.components.DismissKeyboardWhen
 import com.spenditos.android.ui.components.DismissKeyboardWhenInactive
 import com.spenditos.android.ui.components.GlassCard
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.LanguageMenuButton
 import com.spenditos.android.ui.components.SfSymbols
 import com.spenditos.android.ui.components.dismissKeyboardOnScroll
 import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
@@ -172,6 +173,8 @@ fun OnboardingScreen(
                     )
                     else -> ReadyPage(state = state)
                 }
+
+                LanguageMenuButton(Modifier.align(Alignment.TopEnd).testTag("onboarding.language"))
 
                 if (state.page > 0) {
                     TextButton(

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.LanguageMenuButton
 import com.spenditos.android.ui.components.dismissKeyboardOnScroll
 import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
 import com.spenditos.android.ui.components.doneKeyboardOptions
@@ -143,6 +144,7 @@ fun RegisterScreen(onRegistered: (email: String) -> Unit, onBack: () -> Unit) {
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).testTag("register.back"),
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
             ) { Text(stringResource(R.string.common_back), style = IosText.subheadline) }
+            LanguageMenuButton(Modifier.align(Alignment.TopEnd))
         }
     }
 }
