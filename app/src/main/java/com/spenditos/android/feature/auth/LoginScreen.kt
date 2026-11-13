@@ -61,6 +61,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spenditos.android.ui.components.EnvBadge
 import com.spenditos.android.ui.components.IosScreen
+import com.spenditos.android.ui.components.LanguageMenuButton
 import com.spenditos.android.ui.components.dismissKeyboardOnScroll
 import com.spenditos.android.ui.components.dismissKeyboardOnTapOutside
 import com.spenditos.android.ui.components.rememberKeyboardDismisser
@@ -87,8 +88,9 @@ fun LoginScreen(
             containerColor = Color.Transparent,
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding)
+                modifier = Modifier.fillMaxSize()
                     .dismissKeyboardOnTapOutside().dismissKeyboardOnScroll()
                     .verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(32.dp),
@@ -166,6 +168,8 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp).testTag("login.createAccount"),
                     colors = ButtonDefaults.textButtonColors(contentColor = IosColors.spendOrange),
                 ) { Text(stringResource(R.string.auth_create_account), style = IosText.subheadline) }
+            }
+            LanguageMenuButton(Modifier.align(Alignment.TopEnd))
             }
         }
     }

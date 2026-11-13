@@ -166,7 +166,8 @@ class OnboardingViewModel @Inject constructor(
                     displayName = current.displayName.trim(),
                     currency = current.currency,
                     country = current.country,
-                    language = current.language,
+                    // The picker on these screens can switch it after this view model was created.
+                    language = com.spenditos.android.core.i18n.AppLanguage.resolved(),
                     seedCategories = OnboardingData.categorySeeds.map { it.toRequest() },
                 )
                 update { it.copy(isSaving = false) }
