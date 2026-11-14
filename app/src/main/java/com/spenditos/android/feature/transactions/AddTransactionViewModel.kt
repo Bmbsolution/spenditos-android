@@ -787,7 +787,7 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     private fun deleteErrorMessage(e: Exception): String = when (e) {
-        is TransactionBusyException -> e.message.orEmpty()
+        is TransactionBusyException -> Strings.get(R.string.transactions_this_transaction_is_saving_right_now)
         is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_delete)
         is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
         else -> Strings.get(R.string.transactions_couldn_t_delete_please_try)

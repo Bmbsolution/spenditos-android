@@ -430,7 +430,7 @@ class TransactionListViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 val message = when (e) {
-                    is com.spenditos.android.data.transactions.TransactionBusyException -> e.message.orEmpty()
+                    is com.spenditos.android.data.transactions.TransactionBusyException -> Strings.get(R.string.transactions_this_transaction_is_saving_right_now)
                     is ApiError.Network -> Strings.get(R.string.common_you_re_offline_check_your)
                     is ApiError.Unauthorized -> Strings.get(R.string.transactions_sign_in_again_to_delete)
                     else -> Strings.get(R.string.transactions_couldn_t_delete_please_try)

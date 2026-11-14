@@ -1193,6 +1193,7 @@
     <string name="transactions_close_search">Close search</string>
     <string name="transactions_couldn_t_delete">Couldn\'t delete</string>
     <string name="transactions_couldn_t_delete_please_try">Couldn\'t delete. Please try again.</string>
+    <string name="transactions_this_transaction_is_saving_right_now">This transaction is saving right now. Try again in a moment.</string>
     <string name="transactions_couldn_t_refresh_transactions_pull">Couldn\'t refresh transactions. Pull down to try again.</string>
     <string name="transactions_couldn_t_save_please_try">Couldn\'t save. Please try again.</string>
     <string name="transactions_couldn_t_save_the_category">Couldn\'t save the category. Please try again.</string>
