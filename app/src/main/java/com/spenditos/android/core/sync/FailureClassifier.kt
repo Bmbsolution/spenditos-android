@@ -35,7 +35,7 @@ object FailureClassifier {
         is ApiError.KeystoreUnavailable -> SendOutcome.Failed(FailureCode.TRANSPORT, Strings.get(R.string.core_sync_secure_storage_is_locked_we))
         is ApiError.Unauthorized -> SendOutcome.Failed(FailureCode.AUTHENTICATION, Strings.get(R.string.core_sync_your_session_expired_sign_in))
         is ApiError.Server -> fromStatus(error.status, error.serverMessage)
-        else -> SendOutcome.Failed(FailureCode.UNKNOWN, error.message ?: Strings.get(R.string.core_sync_something_went_wrong))
+        else -> SendOutcome.Failed(FailureCode.UNKNOWN, Strings.get(R.string.core_sync_something_went_wrong))
     }
 
     private fun fromStatus(status: Int, message: String): SendOutcome.Failed = when {

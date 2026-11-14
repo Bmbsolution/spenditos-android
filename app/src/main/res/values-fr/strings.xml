@@ -1193,6 +1193,7 @@
     <string name="transactions_close_search">Fermer la recherche</string>
     <string name="transactions_couldn_t_delete">Suppression impossible</string>
     <string name="transactions_couldn_t_delete_please_try">Impossible de supprimer. Veuillez réessayer.</string>
+    <string name="transactions_this_transaction_is_saving_right_now">Cette transaction est en cours d’enregistrement. Réessayez dans un instant.</string>
     <string name="transactions_couldn_t_refresh_transactions_pull">Impossible d’actualiser les transactions. Tirez vers le bas pour réessayer.</string>
     <string name="transactions_couldn_t_save_please_try">Impossible d’enregistrer. Veuillez réessayer.</string>
     <string name="transactions_couldn_t_save_the_category">Impossible d’enregistrer la catégorie. Veuillez réessayer.</string>
